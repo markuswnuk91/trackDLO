@@ -1,0 +1,13 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+#pytest module
+.pytest_cache/
+
+#vscode files
+.vscode/settings.json
+

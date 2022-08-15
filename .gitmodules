@@ -1,0 +1,3 @@
+[submodule "darus_data_download"]
+	path = data/darus_data_download
+	url = https://github.com/iswunistuttgart/darus_data_download.git

@@ -97,7 +97,7 @@ class NonRigidRegistration(object):
             self.iterate()
             if callable(callback):
                 kwargs = {'iteration': self.iteration,
-                           'error':self.diff, 'X': self.X, 'Y': self.T}
+                           'error':self.q, 'X': self.Y, 'Y': self.T}
                 callback(**kwargs)
 
         return self.T, self.getParameters()

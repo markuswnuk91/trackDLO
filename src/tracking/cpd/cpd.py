@@ -73,10 +73,10 @@ def initialize_sigma2(X, Y):
     Initialize the variance (sigma2).
     Attributes
     ----------
-    X: numpy array
+    Y: numpy array
         NxD array of points for target.
     
-    Y: numpy array
+    X: numpy array
         MxD array of points for source.
     
     Returns
@@ -136,7 +136,7 @@ class CoherentPointDrift(NonRigidRegistration):
         Number of eigenvectors to use in lowrank calculation.
     """
 
-    def __init__(self, alpha=None, beta=None, sigma2=None, w=None, low_rank=False, num_eig=100, *args, **kwargs):
+    def __init__(self, alpha=None, beta=None, sigma2=None, mu=None, low_rank=False, num_eig=100, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if alpha is not None and (not isinstance(alpha, numbers.Number) or alpha <= 0):
             raise ValueError(
@@ -150,23 +150,23 @@ class CoherentPointDrift(NonRigidRegistration):
             raise ValueError(
                 "Expected a positive value for sigma2 instead got: {}".format(sigma2))
         
-        if w is not None and (not isinstance(w, numbers.Number) or w < 0 or w >= 1):
+        if mu is not None and (not isinstance(w, numbers.Number) or mu < 0 or mu >= 1):
             raise ValueError(
-                "Expected a value between 0 (inclusive) and 1 (exclusive) for w instead got: {}".format(w))
+                "Expected a value between 0 (inclusive) and 1 (exclusive) for mu instead got: {}".format(w))
            
         self.alpha = 2 if alpha is None else alpha
         self.beta = 2 if beta is None else beta
         self.sigma2 = initialize_sigma2(self.X, self.Y) if sigma2 is None else sigma2
-        self.w = 0.0 if w is None else w
+        self.mu = 0.0 if mu is None else mu
         self.diff = np.inf
         self.q = np.inf
-        self.P = np.zeros((self.M, self.N))
-        self.Pt1 = np.zeros((self.N, ))
-        self.P1 = np.zeros((self.M, ))
-        self.PX = np.zeros((self.M, self.D))
+        self.P = np.zeros((self.N, self.M))
+        self.Pt1 = np.zeros((self.M, ))
+        self.P1 = np.zeros((self.N, ))
+        self.PY = np.zeros((self.N, self.D))
         self.Np = 0
-        self.W = np.zeros((self.M, self.D))
-        self.G = gaussian_kernel(self.Y, self.beta)
+        self.W = np.zeros((self.N, self.D))
+        self.G = gaussian_kernel(self.X, self.beta)
         self.low_rank = low_rank
         self.num_eig = num_eig
         if self.low_rank is True:
@@ -185,15 +185,15 @@ class CoherentPointDrift(NonRigidRegistration):
         """
         Compute the expectation step of the EM algorithm.
         """
-        P = np.sum((self.X[None, :, :] - self.T[:, None, :]) ** 2, axis=2)
+        P = np.sum((self.Y[None, :, :] - self.T[:, None, :]) ** 2, axis=2)
 
         c = (2 * np.pi * self.sigma2) ** (self.D / 2)
-        c = c * self.w / (1 - self.w)
-        c = c * self.M / self.N
+        c = c * self.mu / (1 - self.mu)
+        c = c * self.N / self.M
 
         P = np.exp(-P / (2 * self.sigma2))
         den = np.sum(P, axis=0)
-        den = np.tile(den, (self.M, 1))
+        den = np.tile(den, (self.N, 1))
         den[den == 0] = np.finfo(float).eps
         den += c
 
@@ -201,33 +201,33 @@ class CoherentPointDrift(NonRigidRegistration):
         self.Pt1 = np.sum(self.P, axis=0)
         self.P1 = np.sum(self.P, axis=1)
         self.Np = np.sum(self.P1)
-        self.PX = np.matmul(self.P, self.X)
+        self.PY = np.matmul(self.P, self.Y)
 
-    def computeTargets(self, Y=None):
+    def computeTargets(self, X=None):
         """
         Update the targets using the new estimate of the parameters.
         Attributes
         ----------
-        Y: numpy array, optional
+        X: numpy array, optional
             Array of points to transform - use to predict on new set of points.
             Best for predicting on new points not used to run initial registration.
-                If None, self.Y used.
+                If None, self.X used.
         
         Returns
         -------
-        If Y is None, returns None.
-        Otherwise, returns the transformed Y.
+        If X is None, returns None.
+        Otherwise, returns the transformed X.
                 
         """
-        if Y is not None:
-            G = gaussian_kernel(X=Y, beta=self.beta, Y=self.Y)
-            return Y + np.dot(G, self.W)
+        if X is not None:
+            G = gaussian_kernel(X=X, beta=self.beta, Y=self.Y)
+            return X + np.dot(G, self.W)
         else:
             if self.low_rank is False:
-                self.T = self.Y + np.dot(self.G, self.W)
+                self.T = self.X + np.dot(self.G, self.W)
 
             elif self.low_rank is True:
-                self.T = self.Y + np.matmul(self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W)))
+                self.T = self.X + np.matmul(self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W)))
                 return
 
     def updateParameters(self):
@@ -237,8 +237,8 @@ class CoherentPointDrift(NonRigidRegistration):
         """
         if self.low_rank is False:
             A = np.dot(np.diag(self.P1), self.G) + \
-                self.alpha * self.sigma2 * np.eye(self.M)
-            B = self.PX - np.dot(np.diag(self.P1), self.Y)
+                self.alpha * self.sigma2 * np.eye(self.N)
+            B = self.PY - np.dot(np.diag(self.P1), self.X)
             self.W = np.linalg.solve(A, B)
 
         elif self.low_rank is True:
@@ -246,14 +246,14 @@ class CoherentPointDrift(NonRigidRegistration):
             # https://github.com/markeroon/matlab-computer-vision-routines/tree/master/third_party/CoherentPointDrift
             dP = np.diag(self.P1)
             dPQ = np.matmul(dP, self.Q)
-            F = self.PX - np.matmul(dP, self.Y)
+            F = self.PY - np.matmul(dP, self.X)
 
             self.W = 1 / (self.alpha * self.sigma2) * (F - np.matmul(dPQ, (
                 np.linalg.solve((self.alpha * self.sigma2 * self.inv_S + np.matmul(self.Q.T, dPQ)),
                                 (np.matmul(self.Q.T, F))))))
             QtW = np.matmul(self.Q.T, self.W)
             self.E = self.E + self.alpha / 2 * np.trace(np.matmul(QtW.T, np.matmul(self.S, QtW)))
-        
+        self.computeTargets()
         self.update_variance()
 
     def getParameters(self):
@@ -280,11 +280,11 @@ class CoherentPointDrift(NonRigidRegistration):
         # the Gaussian kernel used for regularization.
         self.q = np.inf
 
-        xPx = np.dot(np.transpose(self.Pt1), np.sum(
-            np.multiply(self.X, self.X), axis=1))
-        yPy = np.dot(np.transpose(self.P1),  np.sum(
+        yPy = np.dot(np.transpose(self.Pt1), np.sum(
+            np.multiply(self.Y, self.Y), axis=1))
+        xPx = np.dot(np.transpose(self.P1),  np.sum(
             np.multiply(self.T, self.T), axis=1))
-        trPXY = np.sum(np.multiply(self.T, self.PX))
+        trPXY = np.sum(np.multiply(self.T, self.PY))
 
         self.sigma2 = (xPx - 2 * trPXY + yPy) / (self.Np * self.D)
 

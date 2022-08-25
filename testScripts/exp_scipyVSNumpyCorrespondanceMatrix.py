@@ -1,3 +1,4 @@
+#script compares the runtime of manually implemented gaussian_kernel difference matrix vs. scipy inpmentation
 import time
 
 from scipy.spatial import distance_matrix

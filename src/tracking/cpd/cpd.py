@@ -7,40 +7,11 @@ import numbers
 try:
     sys.path.append(os.getcwd().replace("/src/tracking/cpd", ""))
     from src.tracking.registration import NonRigidRegistration
+    from src.tracking.utils.utils import gaussian_kernel, initialize_sigma2
 except:
     print("Imports for CPD failed.")
     raise
 
-
-def gaussian_kernel(X, beta, Y=None):
-    """
-    Calculate gaussian kernel matrix.
-    Attributes
-    ----------
-    X: numpy array
-        NxD array of points for creating gaussian.
-    
-    beta: float
-        Width of the Gaussian kernel.
-    
-    Y: numpy array, optional
-        MxD array of secondary points to calculate
-        kernel with. Used if predicting on points
-        not used to train.
-        
-    Returns
-    -------
-    K: numpy array
-        Gaussian kernel matrix.
-            NxN if Y is None
-            NxM if Y is not None
-    """
-    if Y is None:
-        Y = X
-    diff = X[:, None, :] - Y[None, :,  :]
-    diff = np.square(diff)
-    diff = np.sum(diff, 2)
-    return np.exp(-diff / (2 * beta**2))
 
 def low_rank_eigen(G, num_eig):
     """
@@ -68,28 +39,6 @@ def low_rank_eigen(G, num_eig):
     S = S[eig_indices]  # eigenvalues.
     return Q, S
 
-def initialize_sigma2(X, Y):
-    """
-    Initialize the variance (sigma2).
-    Attributes
-    ----------
-    Y: numpy array
-        NxD array of points for target.
-    
-    X: numpy array
-        MxD array of points for source.
-    
-    Returns
-    -------
-    sigma2: float
-        Initial variance.
-    """
-    (N, D) = X.shape
-    (M, _) = Y.shape
-    diff = X[None, :, :] - Y[:, None, :]
-    err = diff ** 2
-    return np.sum(err) / (D * M * N)
-
 class CoherentPointDrift(NonRigidRegistration):
     """
     Implementation of the Coherent Point Drift Algorithm (CPD) according to: 
@@ -113,7 +62,7 @@ class CoherentPointDrift(NonRigidRegistration):
     diff: float (positive)
         The absolute difference between the current and previous objective function values.
 
-        P: numpy array
+    P: numpy array
         MxN array of probabilities.
         P[m, n] represents the probability that the m-th source point
         corresponds to the n-th target point.
@@ -183,7 +132,7 @@ class CoherentPointDrift(NonRigidRegistration):
 
     def estimateCorrespondance(self):
         """
-        Compute the expectation step of the EM algorithm.
+        E-step: Compute the expectation step  of the EM algorithm.
         """
         P = np.sum((self.Y[None, :, :] - self.T[:, None, :]) ** 2, axis=2)
 
@@ -232,7 +181,7 @@ class CoherentPointDrift(NonRigidRegistration):
 
     def updateParameters(self):
         """
-        Calculate a new estimate of the deformable transformation.
+        M-step: Calculate a new estimate of the deformable transformation.
         See Eq. 22 of https://arxiv.org/pdf/0905.2635.pdf.
         """
         if self.low_rank is False:

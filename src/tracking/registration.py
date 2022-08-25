@@ -53,7 +53,9 @@ class NonRigidRegistration(object):
             if X.shape[1] != Y.shape[1]:
                 raise ValueError(
                     "Both point clouds need to have the same number of dimensions.")
-
+            if X.shape[0] < X.shape[1] or Y.shape[0] < Y.shape[1]:
+                raise ValueError(
+                    "The dimensionality is larger than the number of points. Possibly the wrong orientation of X and Y.")
             if max_iterations is not None and (not isinstance(max_iterations, numbers.Number) or max_iterations < 0):
                 raise ValueError(
                     "Expected a positive integer for max_iterations instead got: {}".format(max_iterations))

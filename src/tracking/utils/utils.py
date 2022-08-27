@@ -1,5 +1,35 @@
 import numpy as np
 
+
+def sqdistance_matrix(X, Y=None):
+    """
+    Calculate the squared distance matrix.
+    Computing the squared distance is computationally easier, since the root is not required
+
+    Attributes
+    ----------
+    X: numpy array
+        NxD array of points.
+
+    Y: numpy array, optional
+        MxD array of secondary points to calculate
+        distance with.
+
+    Returns
+    -------
+    diff: numpy array
+        Distance matrix.
+            NxN if Y is None
+            NxM if Y is not None
+    """
+    if Y is None:
+        Y = X
+    diff = X[:, None, :] - Y[None, :, :]
+    diff = np.square(diff)
+    diff = np.sum(diff, 2)
+    return diff
+
+
 def gaussian_kernel(X, beta, Y=None):
     """
     Calculate gaussian kernel matrix.
@@ -7,15 +37,15 @@ def gaussian_kernel(X, beta, Y=None):
     ----------
     X: numpy array
         NxD array of points for creating gaussian.
-    
+
     beta: float
         Width of the Gaussian kernel.
-    
+
     Y: numpy array, optional
         MxD array of secondary points to calculate
         kernel with. Used if predicting on points
         not used to train.
-        
+
     Returns
     -------
     K: numpy array
@@ -25,10 +55,11 @@ def gaussian_kernel(X, beta, Y=None):
     """
     if Y is None:
         Y = X
-    diff = X[:, None, :] - Y[None, :,  :]
+    diff = X[:, None, :] - Y[None, :, :]
     diff = np.square(diff)
     diff = np.sum(diff, 2)
     return np.exp(-diff / (2 * beta**2))
+
 
 def initialize_sigma2(X, Y):
     """
@@ -37,10 +68,10 @@ def initialize_sigma2(X, Y):
     ----------
     Y: numpy array
         NxD array of points for target.
-    
+
     X: numpy array
         MxD array of points for source.
-    
+
     Returns
     -------
     sigma2: float
@@ -49,5 +80,5 @@ def initialize_sigma2(X, Y):
     (N, D) = X.shape
     (M, _) = Y.shape
     diff = X[None, :, :] - Y[:, None, :]
-    err = diff ** 2
+    err = diff**2
     return np.sum(err) / (D * M * N)

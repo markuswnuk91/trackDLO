@@ -13,7 +13,8 @@ except:
 
 
 def testMLLE():
-    mlle(X, k, D)
+    testMlle = mlle(X, k, 2)
+    testMlle.solve()
 
 
 X = genfromtxt("tests/testdata/spr/Xinit.csv", delimiter=",")

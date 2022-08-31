@@ -176,13 +176,13 @@ class mlle:
             Vhat = Vi[:, int(self.k - s[i]) :]
             vi = np.sum(Vhat, 0)  # equivalent to Vhat.transpose() @ np.ones(k, 1)
             alphai = np.linalg.norm(vi) / np.sqrt(s[i])
-            ui = np.ones((int(s[i]), 1)) * alphai - vi
+            ui = np.ones((int(s[i]))) * alphai - vi
             uiNorm = np.linalg.norm(ui)
             if uiNorm > 1e-5:
                 ui = ui / uiNorm
             else:
                 ui = np.zeros((int(s[i]), 1))
-            Hi = np.eye(int(s[i])) - 2 * ui @ ui.transpose()
+            Hi = np.eye(int(s[i])) - 2 * np.outer(ui, ui)
             Wi = (1 - alphai) ** 2 * WOpti[i] @ np.ones((1, int(s[i]))) + (
                 2 - alphai
             ) * Vhat @ Hi
@@ -210,8 +210,11 @@ class mlle:
             try:
                 tol = 1e-6
                 max_iter = 100
+                # eiVals, eiVecs = eigsh(
+                #     self.Phi, self.d + 1, maxiter=max_iter, which="SM"
+                # )
                 eiVals, eiVecs = eigsh(
-                    self.Phi, self.d + 1, maxiter=max_iter, which="SM"
+                    self.Phi, self.d + 1, maxiter=max_iter, sigma=0.0
                 )
             except RuntimeError as e:
                 raise ValueError(

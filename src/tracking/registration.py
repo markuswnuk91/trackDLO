@@ -119,7 +119,7 @@ class NonRigidRegistration(object):
             if callable(callback):
                 kwargs = {
                     "iteration": self.iteration,
-                    "error": self.q,
+                    "error": self.diff,
                     "X": self.Y,
                     "Y": self.T,
                 }

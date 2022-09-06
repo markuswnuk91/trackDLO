@@ -175,35 +175,6 @@ class CoherentPointDrift(NonRigidRegistration):
         self.Np = np.sum(self.P1)
         self.PY = np.matmul(self.P, self.Y)
 
-    def computeTargets(self, X=None):
-        """
-        Update the targets using the new estimate of the parameters.
-        Attributes
-        ----------
-        X: numpy array, optional
-            Array of points to transform - use to predict on new set of points.
-            Best for predicting on new points not used to run initial registration.
-                If None, self.X used.
-
-        Returns
-        -------
-        If X is None, returns None.
-        Otherwise, returns the transformed X.
-
-        """
-        if X is not None:
-            G = gaussian_kernel(X=X, beta=self.beta, Y=self.Y)
-            return X + np.dot(G, self.W)
-        else:
-            if self.low_rank is False:
-                self.T = self.X + np.dot(self.G, self.W)
-
-            elif self.low_rank is True:
-                self.T = self.X + np.matmul(
-                    self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))
-                )
-                return
-
     def updateParameters(self):
         """
         M-step: Calculate a new estimate of the deformable transformation.
@@ -249,17 +220,34 @@ class CoherentPointDrift(NonRigidRegistration):
         self.computeTargets()
         self.update_variance()
 
-    def getParameters(self):
+    def computeTargets(self, X=None):
         """
-        Return the current estimate of the deformable transformation parameters.
+        Update the targets using the new estimate of the parameters.
+        Attributes
+        ----------
+        X: numpy array, optional
+            Array of points to transform - use to predict on new set of points.
+            Best for predicting on new points not used to run initial registration.
+                If None, self.X used.
+
         Returns
         -------
-        self.G: numpy array
-            Gaussian kernel matrix.
-        self.W: numpy array
-            Deformable transformation matrix.
+        If X is None, returns None.
+        Otherwise, returns the transformed X.
+
         """
-        return self.G, self.W
+        if X is not None:
+            G = gaussian_kernel(X=X, beta=self.beta, Y=self.Y)
+            return X + np.dot(G, self.W)
+        else:
+            if self.low_rank is False:
+                self.T = self.X + np.dot(self.G, self.W)
+
+            elif self.low_rank is True:
+                self.T = self.X + np.matmul(
+                    self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))
+                )
+                return
 
     def update_variance(self):
         """
@@ -287,3 +275,15 @@ class CoherentPointDrift(NonRigidRegistration):
         # Here we use the difference between the current and previous
         # estimate of the variance as a proxy to test for convergence.
         self.diff = np.abs(self.sigma2 - qprev)
+
+    def getParameters(self):
+        """
+        Return the current estimate of the deformable transformation parameters.
+        Returns
+        -------
+        self.G: numpy array
+            Gaussian kernel matrix.
+        self.W: numpy array
+            Deformable transformation matrix.
+        """
+        return self.G, self.W

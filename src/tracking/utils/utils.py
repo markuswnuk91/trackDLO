@@ -82,3 +82,25 @@ def initialize_sigma2(X, Y):
     diff = X[None, :, :] - Y[:, None, :]
     err = diff**2
     return np.sum(err) / (D * M * N)
+
+
+def knn(X, Y, k):
+    """
+    Finds the k nearest neighbors of Y in X. (Brute Force Implementation)
+    Input:
+    X = N x D matrix. N=rows and D=dimensions/features
+    Y = M x D matrix. M=rows and D=dimensions/features
+    k = number of nearest neighbors to be found
+
+    Output:
+    indices = Nxk matrix of indices of k nearest neighbors of Y to X
+    dists = distances between X/Y points. Size of N x M
+    """
+    sqdistances = sqdistance_matrix(X, Y)
+    indices = np.argsort(sqdistances, 1)
+    distances = np.sort(sqdistances, 1)
+    distances = distances[:, 0:k] ** 0.5
+    distances[
+        distances <= np.finfo(float).eps
+    ] = 0  # makes sure we do not calculate negative values
+    return indices[:, 0:k], distances

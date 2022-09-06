@@ -6,15 +6,16 @@ from pytest import approx
 from sklearn import manifold, datasets
 import matplotlib.pyplot as plt
 from matplotlib import ticker
+from numpy.random import RandomState
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.tracking.spr.spr import mlle
+    from src.tracking.spr.mlle import mlle
 except:
     print("Imports for Test MLLE failed.")
     raise
 
-vis = True  # enable for visualization
+vis = False  # enable for visualization
 
 
 def plot_3d(points, points_color, title):
@@ -62,9 +63,9 @@ def testMLLE():
 
 # X = genfromtxt("tests/testdata/spr/Xinit.csv", delimiter=",")
 # Y = genfromtxt("tests/testdata/spr/Y.csv", delimiter=",")
-
+rng = RandomState(0)
 n_points = 1500
-X, color = datasets.make_s_curve(n_points, random_state=1)
+X, color = datasets.make_s_curve(n_points, random_state=rng)
 
 D = X.shape[1]
 k = 12

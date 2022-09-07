@@ -12,7 +12,7 @@ try:
 except:
     print("Imports for CPD failed.")
     raise
-vis = True  # enable for visualization
+vis = False  # enable for visualization
 
 
 def difference_Matrix(X, Y):
@@ -44,7 +44,7 @@ def visualize(iteration, error, X, Y, ax):
     plt.text(
         0.7,
         0.92,
-        "Iteration: {:d}, error{}".format(iteration, error),
+        "Iteration: {:d}, error{:.4f}".format(iteration, error),
         horizontalalignment="center",
         verticalalignment="center",
         transform=ax.transAxes,

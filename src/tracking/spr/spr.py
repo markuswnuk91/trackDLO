@@ -3,11 +3,7 @@ from inspect import Parameter
 import os
 import sys
 import numpy as np
-from scipy.linalg import schur
-from scipy.sparse.linalg import eigsh
-from scipy.linalg import eigh
 import numbers
-from warnings import warn
 
 try:
     sys.path.append(os.getcwd().replace("/src/tracking/spr", ""))
@@ -53,7 +49,7 @@ class StructurePreservedRegistration(NonRigidRegistration):
         The absolute normalized difference between the current and previous objective function values.
 
     L: float
-        The value of the objective function.
+        The log-likelyhood of the dataset probability given the parameterization. SPR aims to update the parameters such that they maximize this value.
 
     P: numpy array
         MxN array of probabilities.
@@ -68,10 +64,10 @@ class StructurePreservedRegistration(NonRigidRegistration):
         Number of nearest neighbors used for contructing the local regularization from Modified Locally Linear Embeddings (MLLE).
 
     tauAnnealing: float (between 0 and 1)
-        Annealing factor for the local regularization (MLLE). The factor is reduced every iteration by the annealing factor.
+        Annealing factor for the local regularization (MLLE). The factor is reduced every iteration by the annealing factor. 1 is no annealing.
 
     lambdaAnnealing: float (between 0 and 1)
-        Annealing factor for the global regularization (CPD). The factor is reduced every iteration by the annealing factor.
+        Annealing factor for the global regularization (CPD). The factor is reduced every iteration by the annealing factor. 1 is no annealing.
     """
 
     def __init__(
@@ -89,7 +85,7 @@ class StructurePreservedRegistration(NonRigidRegistration):
     ):
         super().__init__(*args, **kwargs)
         if tauFactor is not None and (
-            not isinstance(tauFactor, numbers.Number) or tauFactor <= 0
+            not isinstance(tauFactor, numbers.Number) or tauFactor < 0
         ):
             raise ValueError(
                 "Expected a positive value for regularization parameter tau. Instead got: {}".format(
@@ -98,7 +94,7 @@ class StructurePreservedRegistration(NonRigidRegistration):
             )
 
         if lambdaFactor is not None and (
-            not isinstance(lambdaFactor, numbers.Number) or lambdaFactor <= 0
+            not isinstance(lambdaFactor, numbers.Number) or lambdaFactor < 0
         ):
             raise ValueError(
                 "Expected a positive value for regularization parameter tau. Instead got: {}".format(
@@ -136,8 +132,8 @@ class StructurePreservedRegistration(NonRigidRegistration):
 
         if tauAnnealing is not None and (
             not isinstance(tauAnnealing, numbers.Number)
-            or tauAnnealing < 0
-            or tauAnnealing >= 1
+            or tauAnnealing <= 0
+            or tauAnnealing > 1
         ):
             raise ValueError(
                 "Expected a value between 0 and 1 for tauAnnealing instead got: {}".format(
@@ -147,8 +143,8 @@ class StructurePreservedRegistration(NonRigidRegistration):
 
         if lambdaAnnealing is not None and (
             not isinstance(lambdaAnnealing, numbers.Number)
-            or lambdaAnnealing < 0
-            or lambdaAnnealing >= 1
+            or lambdaAnnealing <= 0
+            or lambdaAnnealing > 1
         ):
             raise ValueError(
                 "Expected a value between 0 and 1 for lambdaAnnealing instead got: {}".format(
@@ -156,20 +152,21 @@ class StructurePreservedRegistration(NonRigidRegistration):
                 )
             )
 
-        self.tauFactor = 3 if tauFactor is None else tauFactor
-        self.lambdaFactor = 3 if lambdaFactor is None else lambdaFactor
+        self.tauFactor = 2 if tauFactor is None else tauFactor
+        self.lambdaFactor = 2 if lambdaFactor is None else lambdaFactor
         self.beta = 2 if beta is None else beta
         self.sigma2 = initialize_sigma2(self.X, self.Y) if sigma2 is None else sigma2
         self.mu = 0.0 if mu is None else mu
         self.tauAnnealing = 0.97 if tauAnnealing is None else tauAnnealing
         self.lambdaAnnealing = 0.97 if lambdaAnnealing is None else lambdaAnnealing
         self.diff = np.inf
-        self.L = np.inf
+        self.L = -np.inf
 
         self.P = np.zeros((self.N, self.M))
+        self.Pden = np.zeros((self.M))
         self.Pt1 = np.zeros((self.M,))
         self.P1 = np.zeros((self.N,))
-        self.PY = np.zeros((self.N, self.D))
+        self.Np = 0
         self.PY = np.zeros((self.N, self.D))
         self.W = np.zeros((self.N, self.D))
         self.G = gaussian_kernel(self.X, self.beta)
@@ -197,7 +194,8 @@ class StructurePreservedRegistration(NonRigidRegistration):
         den[den == 0] = np.finfo(float).eps
         den += c
 
-        self.P = np.divide(P, den)
+        self.Pden = den[0, :]
+        self.P = np.divide(P, self.Pden)
         self.Pt1 = np.sum(self.P, axis=0)
         self.P1 = np.sum(self.P, axis=1)
         self.Np = np.sum(self.P1)
@@ -234,18 +232,10 @@ class StructurePreservedRegistration(NonRigidRegistration):
         tauFactor = (self.tauAnnealing) ** (self.iteration) * self.tauFactor
         lambdaFactor = (self.lambdaAnnealing) ** (self.iteration) * self.lambdaFactor
 
-        Lold = self.L
-        self.L = (
-            self.L
-            + lambdaFactor / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
-            + tauFactor / 2 * np.trace(np.transpose(self.T) @ self.Phi @ self.T)
-        )
-        self.L
-
         dP1 = np.diag(self.P1)
         A = (
             np.dot(dP1, self.G)
-            + tauFactor * self.sigma2 * np.eye(self.N)
+            + lambdaFactor * self.sigma2 * np.eye(self.N)
             + tauFactor * self.sigma2 * np.dot(self.Phi, self.G)
         )
         B = (
@@ -258,6 +248,17 @@ class StructurePreservedRegistration(NonRigidRegistration):
         # set the new targets
         self.computeTargets()
 
+        # update objective function
+        Lold = self.L
+        self.L = (
+            np.sum(np.log(self.Pden))
+            + self.D * self.M * np.log(self.sigma2) / 2
+            - lambdaFactor / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
+            - tauFactor / 2 * np.trace(np.transpose(self.T) @ self.Phi @ self.T)
+        )
+
+        self.diff = np.abs((self.L - Lold) / self.L)
+
         # update sigma
         yPy = np.dot(
             np.transpose(self.Pt1), np.sum(np.multiply(self.Y, self.Y), axis=1)
@@ -265,6 +266,9 @@ class StructurePreservedRegistration(NonRigidRegistration):
         xPx = np.dot(np.transpose(self.P1), np.sum(np.multiply(self.T, self.T), axis=1))
         trPXY = np.sum(np.multiply(self.T, self.PY))
         self.sigma2 = (xPx - 2 * trPXY + yPy) / (self.Np * self.D)
+
+        if self.sigma2 <= 0:
+            self.sigma2 = self.tolerance / 10
 
     def getParameters(self):
         """

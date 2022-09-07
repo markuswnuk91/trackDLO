@@ -9,10 +9,11 @@ from pytest import approx
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
     from src.tracking.spr.spr import StructurePreservedRegistration
+    from src.tracking.cpd.cpd import CoherentPointDrift
 except:
-    print("Imports for SPR failed.")
+    print("Imports for Test SPR failed.")
     raise
-vis = True  # enable for visualization
+vis = False  # enable for visualization
 
 
 def difference_Matrix(X, Y):
@@ -42,9 +43,9 @@ def visualize(iteration, error, X, Y, ax):
     ax.scatter(X[:, 0], X[:, 1], color="red", label="Target")
     ax.scatter(Y[:, 0], Y[:, 1], color="blue", label="Source")
     plt.text(
-        0.87,
+        0.7,
         0.92,
-        "Iteration: {:d}, error{}".format(iteration, error),
+        "Iteration: {:d}, error{:.4f}".format(iteration, error),
         horizontalalignment="center",
         verticalalignment="center",
         transform=ax.transAxes,
@@ -59,7 +60,9 @@ def runSPR():
     X = np.loadtxt("tests/testdata/pycpd/fish_source.txt")
     Y = np.loadtxt("tests/testdata/pycpd/fish_target.txt")
 
-    reg = StructurePreservedRegistration(**{"X": X, "Y": Y})
+    reg = StructurePreservedRegistration(
+        **{"X": X, "Y": Y, "lambdaFactor": 0, "tauFactor": 1000, "beta": 0.1}
+    )
     if vis:
         fig = plt.figure()
         fig.add_axes([0, 0, 1, 1])
@@ -72,12 +75,38 @@ def runSPR():
     return reg.T
 
 
+def runSPRvsCPD():
+    X = np.loadtxt("tests/testdata/pycpd/fish_source.txt")
+    Y = np.loadtxt("tests/testdata/pycpd/fish_target.txt")
+
+    sprreg = StructurePreservedRegistration(
+        **{"X": X, "Y": Y, "tauFactor": 0, "lambdaAnnealing": 1}
+    )
+    if vis:
+        fig = plt.figure()
+        fig.add_axes([0, 0, 1, 1])
+        callback = partial(visualize, ax=fig.axes[0])
+        sprreg.register(callback)
+        # plt.show()
+    else:
+        sprreg.register()
+    cpdreg = CoherentPointDrift(**{"X": X, "Y": Y})
+    cpdreg.register()
+
+    return cpdreg.T - sprreg.T, cpdreg.iteration - sprreg.iteration
+
+
 def testSPR():
     T_test = runSPR()
     T_ref = np.loadtxt("tests/testdata/pycpd/fish_deformable_2D_result_Targets.txt")
     diffMat = np.linalg.norm(T_test - T_ref)
     diffSum = 1 / T_test.size * diffMat.sum()
     assert diffSum == approx(0, abs=1e-2)
+
+    accuracyDiff, iterationDiff = runSPRvsCPD()
+
+    assert accuracyDiff == approx(0, abs=1e-5)
+    assert iterationDiff == 0
 
 
 if __name__ == "__main__":

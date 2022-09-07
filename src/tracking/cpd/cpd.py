@@ -84,6 +84,9 @@ class CoherentPointDrift(NonRigidRegistration):
 
     num_eig: int
         Number of eigenvectors to use in lowrank calculation.
+
+    q: float
+        Objective function CPD aims to minimize (negative log-likelyhood)
     """
 
     def __init__(
@@ -133,6 +136,7 @@ class CoherentPointDrift(NonRigidRegistration):
         self.diff = np.inf
         self.q = np.inf
         self.P = np.zeros((self.N, self.M))
+        self.Pden = np.zeros((self.M))
         self.Pt1 = np.zeros((self.M,))
         self.P1 = np.zeros((self.N,))
         self.PY = np.zeros((self.N, self.D))
@@ -169,6 +173,7 @@ class CoherentPointDrift(NonRigidRegistration):
         den[den == 0] = np.finfo(float).eps  # makes sure we do not divide by zero
         den += c
 
+        self.Pden = den[0, :]
         self.P = np.divide(P, den)
         self.Pt1 = np.sum(self.P, axis=0)
         self.P1 = np.sum(self.P, axis=1)
@@ -254,12 +259,21 @@ class CoherentPointDrift(NonRigidRegistration):
         Update the variance of the mixture model using the new estimate of the deformable transformation.
         See the update rule for sigma2 in Eq. 23 of of https://arxiv.org/pdf/0905.2635.pdf.
         """
-        qprev = self.sigma2
 
         # The original CPD paper does not explicitly calculate the objective functional.
-        # This functional will include terms from both the negative log-likelihood and
+        # This functional includes terms from both the negative log-likelihood and
         # the Gaussian kernel used for regularization.
-        self.q = np.inf
+        qold = self.q
+        self.q = (
+            np.sum(-np.log(self.Pden))
+            - self.D * self.M * np.log(self.sigma2) / 2
+            + self.alpha / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
+        )
+        self.diff = np.abs((self.q - qold) / self.q)
+
+        # Optionally we could use the difference between the current and previous
+        # estimate of the variance as a proxy to test for convergence.
+        # qprev = self.sigma2 #comment in to use variance to test convergence
 
         yPy = np.dot(
             np.transpose(self.Pt1), np.sum(np.multiply(self.Y, self.Y), axis=1)
@@ -272,9 +286,7 @@ class CoherentPointDrift(NonRigidRegistration):
         if self.sigma2 <= 0:
             self.sigma2 = self.tolerance / 10
 
-        # Here we use the difference between the current and previous
-        # estimate of the variance as a proxy to test for convergence.
-        self.diff = np.abs(self.sigma2 - qprev)
+        # self.diff = np.abs(self.sigma2 - qprev) # comment in to use variance to test convergence
 
     def getParameters(self):
         """

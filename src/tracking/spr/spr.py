@@ -1,5 +1,4 @@
 from builtins import super
-from inspect import Parameter
 import os
 import sys
 import numpy as np
@@ -12,8 +11,6 @@ try:
     from src.tracking.utils.utils import (
         gaussian_kernel,
         initialize_sigma2,
-        sqdistance_matrix,
-        knn,
     )
 except:
     print("Imports for SPR failed.")

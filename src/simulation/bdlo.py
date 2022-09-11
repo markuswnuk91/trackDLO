@@ -1,6 +1,6 @@
-from operator import length_hint
 import dartpy as dart
 import numpy as np
+from warnings import warn
 
 
 class node:
@@ -9,29 +9,64 @@ class node:
     Each node contains the information to which parent it is connected.
 
     Attributes:
-        parentNode: The parent of this node
-        edge: The edge connecting this node with its paretent.
-        Edges can contain additional infromation such as weights
+        parentNode (node): The parent of this node
+        edges (edge): The edges connecting this node with its parent node and child nodes. parent edge is the fist edge in self.
+        edgeInfo (dict): information to be stored in the edge connectiong this node to the parent node
+        nodeInfo (dict): information to be stored in this node
+
     """
 
     ID = 0
 
-    def __init__(self, parentNode=None, **kwargs):
-        self.parentNode = parentNode
-        if parentNode is None:
-            self.edge = None
-        self.edge = edge(parentNode, self, **kwargs)
+    def __init__(
+        self, parentNode=None, edgeInfo: dict = None, nodeInfo: dict = None, name=None
+    ):
         self.ID = node.ID
         node.ID += 1
+        if name is None:
+            self.name = "Node_" + str(self.ID)
+        else:
+            self.name = name
+
+        self.parentNode = parentNode
+
+        self.childNodes = []
+        self.childEdges = []
+        if parentNode is not None:
+            self.parentEdge = edge(self.parentNode, self, edgeInfo)
+            self.parentNode._addChildNode(self)
+        else:
+            self.parentEdge = None
+
+        self.nodeInfo = nodeInfo
+
+    def getName(self):
+        return self.name
 
     def getParent(self):
         return self.parentNode
 
-    def getEdge(self):
-        return self.edge
+    def getChilds(self):
+        return self.childNodes
+
+    def getNodeInfo(self):
+        return self.nodeInfo
+
+    def setNodeInfo(self, nodeInfo):
+        self.nodeInfo = nodeInfo
+
+    def getParentEdge(self):
+        return self.parentEdge
+
+    def getChildEdges(self):
+        return self.childEdges
 
     def hasParentNode(self):
         return self.parentNode is not None
+
+    def _addChildNode(self, node):
+        self.childNodes.append(node)
+        self.childEdges.append(node.parentEdge)
 
 
 class edge:
@@ -43,15 +78,28 @@ class edge:
     Attributes:
         parentNode (node): The parent node of this edge
         childNode (node): The child node of this edge.
-        weights (dict): Weights can contain additional information in a dict.
+        edgeInfo (dict): Information to be stored in this edge.
     """
 
-    def __init__(self, parentNode, childNode, **kwargs):
+    ID = 0
+
+    def __init__(
+        self, parentNode: node, childNode: node, edgeInfo: dict = None, name: str = None
+    ):
+        self.ID = edge.ID
+        edge.ID += 1
+        if name is None:
+            self.name = "Edge_" + str(parentNode.ID) + "_to_" + str(childNode.ID)
+        else:
+            self.name = name
         self.parentNode = parentNode
         self.childNode = childNode
-        self.weights = {}
-        for weight in kwargs:
-            self.weights[weight] = kwargs[weight]
+        self.edgeInfos = edgeInfo
+        if edgeInfo is not None:
+            self.edgeInfo = edgeInfo
+
+    def getName(self):
+        return self.name
 
     def getParentNode(self):
         return self.parentNode
@@ -59,42 +107,89 @@ class edge:
     def getChildNode(self):
         return self.childNode
 
-    def getWeight(self):
-        return self.weights
+    def getEdgeInfo(self):
+        return self.edgeInfo
 
-    def setWeights(self, weigths):
-        self.weights = weigths
+    def setEdgeInfo(self, edgeInfo):
+        self.edgeInfo = edgeInfo
 
 
 class branch:
     """
-    A branch is a collection of nodes.
+    A branch is a collection of nodes and edges, where each node is connected to its adjacent node by exactly one edge.
 
     Attributes:
+        numNodes: The number of nodes the branch should consist of.
         startNode (node): The node the branch starts at.
         endNode (node): The node the branch ends at.
-        memberNodes (list of nodes): Membernodes of the branch (exclusively the start and end node)
+        memberNodes (list of nodes): The member nodes of thse branch (exclusively the start and end node).
     """
 
     ID = 0
 
-    def __init__(self, name, startNode, endNode, branchLength, radius):
-        self.name = name
-        self.startNode = startNode
-        self.endNode = endNode
-        self.memberNodes = []
-        self.nodes = []
-        self.edges = []
-        self.branchLength = branchLength
-        self.radius = radius
+    def __init__(
+        self,
+        numNodes: int = None,
+        startNode: node = None,
+        endNode: node = None,
+        name: str = None,
+    ):
         self.ID = branch.ID
         branch.ID += 1
 
-        self._collectMemberNodes()
+        self.memberNodes = []
+        self.nodes = []
+        self.edges = []
+
+        if startNode is None:
+            self.startNode = node()
+        else:
+            self.startNode = startNode
+
+        if endNode is None and numNodes is not None:
+            if numNodes <= 1:
+                raise ValueError(
+                    "Expected an integer larger than 1 for numNodes instead got: {}".format(
+                        numNodes
+                    )
+                )
+            else:
+                newNode = node(startNode)
+                for i in range(numNodes - 2):
+                    self.memberNodes.append(newNode)
+                    newNode = node(self.newNode)
+                self.endNode = newNode
+        elif endNode is None and numNodes is None:
+            self.endNode = node(self.startNode)
+        elif endNode is not None and numNodes is not None:
+            self.endNode = endNode
+            self.memberNodes = self._collectMemberNodes()
+            if len(self.memberNodes) + 2 != numNodes:
+                warn(
+                    "Number of nodes given does not equal the desired number of nodes of the branch. Expected number of nodes is: {}, number of Nodes from startNode to endNode are {}.".format(
+                        numNodes, len(self.memberNodes) + 2
+                    )
+                )
+        else:
+            self.endNode = endNode
+            self.memberNodes = self._collectMemberNodes()
+
+        if name is None:
+            self.name = (
+                "Branch_"
+                + "Node_"
+                + str(startNode.ID)
+                + "_to_"
+                + "Node_"
+                + str(endNode.ID)
+            )
+        else:
+            self.name = name
+
+        self.nodes = self.memberNodes
         self.nodes.insert(0, startNode)
         self.nodes.append(endNode)
         self._collectEdges()
-        self._initEdges()
 
     def getStartNode(self):
         return self.startNode
@@ -108,17 +203,8 @@ class branch:
     def getNodes(self):
         return self.nodes
 
-    def getBranchLength(self):
-        return self.branchLength
-
-    def getRadius(self):
-        return self.radius
-
-    def getParentBranch(self):
-        return self.parent
-
-    def hasParentBranch(self):
-        return self.parent is not None
+    def getNumNodes(self):
+        return len(self.nodes)
 
     def _collectMemberNodes(self):
         node = self.endNode
@@ -131,19 +217,24 @@ class branch:
         self.memberNodes.reverse()
 
     def _collectEdges(self):
-        for node in self.nodes:
-            self.edges.append(node.getEdge())
-
-    def _initEdges(self):
-        numNodes = len(self.nodes)
-        weights = {"length": self.length / numNodes, "radius": self.radius}
-        for edge in self.edges:
-            edge.setWeights(weights)
+        node = self.endNode
+        while node is not self.startNode:
+            if node is not None:
+                self.edges.append(node.getParentEdge())
+                node = node.getParentNode()
+        self.edges.reverse()
 
     def __str__(self):
         _str = ""
         _str += "Branch ID: {}".format(self.ID)
         return _str
+
+
+class tree:
+
+    self.branches = []
+    self.leafNodes = []
+    self.branchNodes = []
 
 
 class BDLO:
@@ -163,7 +254,6 @@ class BDLO:
 
         self.name = name
         self.skel = dart.dynamics.Skeleton(name=name)
-        self.branches = []
 
     def addBranch(
         self,

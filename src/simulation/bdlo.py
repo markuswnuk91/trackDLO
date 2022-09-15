@@ -419,9 +419,9 @@ class branchnode:
         self.branchIndices.append(branchIndex)
 
 
-class topologyGraph:
+class topologyTree:
     """
-    A topologyGraph is a collection of branches, where each branch is connected to the other branches by branchnodes. Open ends of the topology graph are called leafnodes.
+    A topologyTree is a collection of branches, where each branch is connected to the other branches by branchnodes. Open ends of the topology tree are called leafnodes.
 
     Attributes:
         nodes (node): The nodes the graph consists of.
@@ -440,8 +440,8 @@ class topologyGraph:
         Args:
             adjacenyMatrix (np.array): NxN symmetric graph representation of the topology.
         """
-        self.ID = topologyGraph.ID
-        topologyGraph.ID += 1
+        self.ID = topologyTree.ID
+        topologyTree.ID += 1
         self.nodes = []
         self.branches = []
         self.leafNodes = []
@@ -450,7 +450,7 @@ class topologyGraph:
         self.branchNodeInfo = []
 
         if name is None:
-            self.name = "TopologyGraph_" + str(topologyGraph.ID)
+            self.name = "TopologyTree_" + str(topologyTree.ID)
         else:
             self.name = name
 
@@ -547,7 +547,7 @@ class topologyGraph:
                                 )
                             )
                         elif thisNode.getNumChilds() >= 2:
-                            thisBranchNode = self.getBranchNodeFromNode(thisNode)
+                            thisBranchNode = self._getBranchNodeFromNode(thisNode)
                             thisBranchNode.appendBranch(
                                 newBranch, len(self.branches) - 1
                             )
@@ -608,30 +608,30 @@ class topologyGraph:
     def getNumLeafNodes(self):
         return len(self.leafNodes)
 
-    def getBranchNodeFromNode(self, node: node):
-        branchNodeList = self.getBranchNodesAsNodes()
+    def _getBranchNodeFromNode(self, node: node):
+        branchNodeList = self._getBranchNodesAsNodes()
         branchNodeIdx = branchNodeList.index(node)
         return self.branchNodes[branchNodeIdx]
 
-    def getBranchNodesAsNodes(self):
+    def _getBranchNodesAsNodes(self):
         branchNodesList = []
         for branchNode in self.branchNodes:
             branchNodesList.append(branchNode.getNode())
         return branchNodesList
 
-    # def getLeafNodeIndices(self):
-    #     leafNodeIndices = []
-    #     for leafNodeInfo in self.leafNodes:
-    #         leafNodeIndex = self.nodes.index(leafNodeInfo["node"])
-    #         leafNodeIndices.append(leafNodeIndex)
-    #     return leafNodeIndices
+    def getLeafNodeIndices(self):
+        leafNodeIndices = []
+        for leafNode in self.leafNodes:
+            leafNodeIndex = leafNode.getNodeIndex()
+            leafNodeIndices.append(leafNodeIndex)
+        return leafNodeIndices
 
-    # def getBranchNodeIndices(self):
-    #     branchNodeIndices = []
-    #     for branchNodeInfo in self.branchNodes:
-    #         branchNodeIndex = self.nodes.index(branchNodeInfo["node"])
-    #         branchNodeIndices.append(branchNodeIndex)
-    #     return branchNodeIndices
+    def getBranchNodeIndices(self):
+        branchNodeIndices = []
+        for branchNode in self.branchNodes:
+            branchNodeIndex = branchNode.getNodeIndex()
+            branchNodeIndices.append(branchNodeIndex)
+        return branchNodeIndices
 
     def getNodeIndex(self, node: node):
         return self.nodes.index(node)
@@ -649,107 +649,6 @@ class topologyGraph:
                         self._findNextBranchOrLeafNodes(childNode)[0]
                     )
             return nextBrachOrLeafNodes
-
-    # visitedNodes = []
-    # nodes = []
-    # unvisitedNodes = list(range(len(csgraph)))
-    # rootNode = node(name=str(self.name) + "_rootNode")
-    # numConnections = np.cound_nonzero(csgraph[0, :])
-    # if numConnections != 1: # start search from leaf node
-    #     raise ValueError(
-    #         "Error first node needs to be a leafnode with one connection, but has {} connections".format(
-    #             numConnections
-    #         )
-    #     )
-    # else:
-    #     startNode = rootNode
-    #     while len(unvisitedNodes)>0:
-    #         startNodeIdx = unvisitedNodes.pop(0)
-    #         numConnections = np.count_nonzero(csgraph[startNodeIdx, :])
-    #         if numConnections < 1: # node is not parent to any other node
-    #             visitedNodes.append(startNodeIdx)
-    #         else:
-    #             if numConnections == 1: # start node is the root node
-    #                 nextNodeIdx = np.nonzero(csgraph[startNodeIdx, :])
-    #                 lastNode = startNode
-    #                 while nextNodeIdx in unvisitedNodes:
-    #                     numConnections = np.count_nonzero(csgraph[nextNodeIdx, :])
-    #                     nextNode = node(lastNode)
-    #                     if numConnections == 1: # found another leaf node
-    #                         newBranch = branch(startNode, nextNode)
-    #                         self.branches.append(newBranch)
-    #                         self.leafNodes.append(leafnode(nextNode,newBranch))
-    #                         unvisitedNodes.pop(np.where(unvisitedNodes == nextNodeIdx))
-    #                         visitedNodes.append(nextNodeIdx)
-    #                         break
-
-    #                     elif numConnections == 2: # found a member node
-    #                         lastNode = nextNode
-    #                         nextPossibleNodeIdx = np.where(csgraph[nextNodeIdx, :] != 0)
-    #                         if nextPossibleNodeIdx[0] in visitedNodes and nextPossibleNodeIdx[1] in visitedNodes:
-    #                             print("Something went wrong during pathing along the graph.")
-    #                         elif nextPossibleNodeIdx[0] not in visitedNodes and nextPossibleNodeIdx[1] in visitedNodes:
-    #                             nextNodeIdx = nextPossibleNodeIdx[0]
-    #                         elif nextPossibleNodeIdx[0] in visitedNodes and nextPossibleNodeIdx[1] not in visitedNodes:
-    #                             nextNodeIdx = nextPossibleNodeIdx[1]
-    #                         else:
-    #                             print("Something went wrong during pathing along the graph.")
-
-    #                     elif numConnections > 2: # found a branch node
-    #                         if startNode = rootNode:
-    #                             newBranch = branch(nextNode, startNode)
-    #                         # foundBranch = branch(nextNode, rootNode)
-    #                         # self.branches.append(foundBranch)
-    #                         # self.branchNodes.append(branchNode(nextNode), foundBranch)
-    #                     else:
-    #                         print("Error")
-
-    #             elif numConnections == 2: #this node is a memberNode
-    #                 # start search only at rootnode or branchnodes.
-
-    #             elif numConnections > 2: #this node is a branch node
-
-    #             nextNode = node(startNode)
-
-    #     while nextNodeIdx not in visitedNodes and numConnections != 1 or numConnections > 2:
-    #         numConnections = np.cound_nonzero(csgraph[nextNodeIdx, :])
-    #         if numConnections == 1: #another leaf node
-    #             foundBranch = branch(rootNode, nextNode)
-    #             self.branches.append(foundBranch)
-    #             self.leafNodes.append(leafnode(nextNode), foundBranch)
-    #             visitedNodes.append(nextNodeIdx)
-    #         elif num Connections > 2: # branch node
-    #             foundBranch = branch(nextNode, rootNode)
-    #             self.branches.append(foundBranch)
-    #             self.branchNodes.append(branchNode(nextNode), foundBranch)
-    #             visitedNodes.append(nextNodeIdx)
-    #         else: # member node
-    #             visitedNodes.append(nextNodeIdx)
-
-    #             nextNodeIdx = np.where(csgraph[nextNodeIdx, :] != nextNodeIdx and =! 0)
-
-    # numNodes = len(csgraph)
-    # unvisitedNodes = list(range(numNodes))
-    # visitedNodes = []
-    # for nodeIdx in range(numNodes):
-
-    #     # search form leaf node until next branch or leaf node --> create branch.
-
-    #     # repeat until all nodes are sorted into branches.
-
-    #     if numConnections == 0:
-    #         raise ValueError(
-    #             "Connectivity Graph Error. Node {} not connected to any other node".format(
-    #                 i
-    #             )
-    #         )
-    #     elif numConnections == 1:
-    #         rootNode = node()
-    #         self.leafNodes.append()
-    #         leafnode()
-    #     for j in range(len(csgraph)):
-    #         if csgraph[i, j] != 0:
-    #             node()
 
 
 class BDLO:

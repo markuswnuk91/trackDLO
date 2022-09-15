@@ -3,7 +3,7 @@ import numpy as np
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.simulation.bdlo import node, edge, branch, topologyGraph
+    from src.simulation.bdlo import node, edge, branch, topologyTree
 except:
     print("Imports for CPD failed.")
     raise
@@ -88,9 +88,9 @@ def testBranch():
     assert secondBranch.getNumNodes() == 5
 
 
-def testTopologyGraph():
+def testTopologyTree():
     testGraph = np.array([[0, 5, 5, 0], [5, 0, 0, 0], [5, 0, 0, 5], [0, 0, 5, 0]])
-    testTopology = topologyGraph(testGraph)
+    testTopology = topologyTree(testGraph)
     assert testTopology.getNumNodes() == 4
     assert testTopology.getNodes()[0].getEdgeInfo(1)["length"] == 5
     assert testTopology.getNumBranches() == 2
@@ -110,10 +110,12 @@ def testTopologyGraph():
             [0, 0, 0, 3, 0, 0, 0, 0, 0],
         ]
     )
-    testTopologyBranched = topologyGraph(testGraphBranched)
+    testTopologyBranched = topologyTree(testGraphBranched)
     assert testTopologyBranched.getNumNodes() == 9
     assert testTopologyBranched.getNumBranchNodes() == 3
     assert testTopologyBranched.getNumLeafNodes() == 5
+    assert set(testTopologyBranched.getLeafNodeIndices()) == set([4, 5, 6, 7, 8])
+    assert set(testTopologyBranched.getBranchNodeIndices()) == set([0, 1, 2])
 
     testGraphSingleDLO = np.array(
         [
@@ -122,11 +124,12 @@ def testTopologyGraph():
             [0, 3, 0],
         ]
     )
-    singleDLOTopology = topologyGraph(testGraphSingleDLO)
+    singleDLOTopology = topologyTree(testGraphSingleDLO)
     assert singleDLOTopology.getNumNodes() == 3
     assert singleDLOTopology.getNumBranches() == 1
     assert singleDLOTopology.getNumBranchNodes() == 0
     assert singleDLOTopology.getNumLeafNodes() == 2
+    assert singleDLOTopology.getLeafNodeIndices() == [0, 2]
 
 
 if __name__ == "__main__":

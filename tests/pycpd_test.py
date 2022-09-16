@@ -12,7 +12,7 @@ try:
 except:
     print("Imports for CPD failed.")
     raise
-vis = False  # enable for visualization
+vis = True  # enable for visualization
 
 
 def difference_Matrix(X, Y):

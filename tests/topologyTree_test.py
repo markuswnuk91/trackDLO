@@ -3,7 +3,7 @@ import numpy as np
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.simulation.bdlo import node, edge, branch, topologyTree
+    from src.simulation.topologyTree import node, edge, branch, topologyTree
 except:
     print("Imports for CPD failed.")
     raise
@@ -130,9 +130,13 @@ def testTopologyTree():
     assert singleDLOTopology.getNumBranchNodes() == 0
     assert singleDLOTopology.getNumLeafNodes() == 2
     assert singleDLOTopology.getLeafNodeIndices() == [0, 2]
+    assert (
+        singleDLOTopology.getBranchesFromNode(singleDLOTopology[1])[0].getStartNode()
+        == singleDLOTopology[0]
+    )
 
 
 if __name__ == "__main__":
     testNode()
     testBranch()
-    testTopologyGraph()
+    testTopologyTree()

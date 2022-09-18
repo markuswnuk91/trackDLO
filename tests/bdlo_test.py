@@ -1,6 +1,7 @@
 # tests dart installation
-import dartpy as dart
 import os, sys
+import dartpy as dart
+import time as time
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
@@ -27,9 +28,18 @@ def make_DLO():
     grid.setOffset([0, 0, 0])
     viewer.addAttachment(grid)
 
-    viewer.setUpViewInWindow(0, 0, 1280, 760)
+    viewer.setUpViewInWindow(0, 0, 300, 200)
     viewer.setCameraHomePosition([8.0, 8.0, 4.0], [0, 0, -2.5], [0, 0, 1])
-    viewer.run()
+    # while True:
+    #     viewer.frame()
+    #     time.sleep(0.01)
+    i = 0
+    while True:
+        world.step()
+        if i % 2 == 0:
+            viewer.frame()
+        print(i)
+        i += 1
 
 
 if __name__ == "__main__":

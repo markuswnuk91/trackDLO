@@ -1,4 +1,6 @@
+import os, sys
 import numpy as np
+import math
 import dartpy as dart
 
 
@@ -11,6 +13,12 @@ class DeformableLinearObject:
     length (float): Length of the DLO
     radius (float): Radius of the DLO
     density (float): Density of the DLO
+    name (str): Name of the skeleton. If None name is generated automatically.
+    stiffness(float): stiffness of the DLO.
+    dampint(float): daming of the DLO.
+    color (np.array): Color of the DLO in RGB values, e.g. [0,0,1] for blue.
+    gravity (bool): If the DLO should be affected by gravity. If None defaults to true.
+    collidble (bool): If the DLO is collidable. If None defaults to true.
     """
 
     ID = 0
@@ -25,6 +33,8 @@ class DeformableLinearObject:
         stiffness: float = 1,
         damping: float = 0.1,
         color: np.array = np.array([0, 0, 1]),
+        gravity: bool = True,
+        collidable: bool = True,
     ):
 
         self.ID = DeformableLinearObject.ID
@@ -44,12 +54,29 @@ class DeformableLinearObject:
         self.damping = damping
         self.color = color
         self.segmentLength = self.length / self.numSegments
+        if gravity is None:
+            self.gravityMode = True
+        else:
+            self.gravity = gravity
 
+        if collidable is None:
+            self.collidable = True
+        else:
+            self.collidable = collidable
         # disable adjacent body collision check by default
         self.skel.setAdjacentBodyCheck(False)
         # enable selfCollisionChecking by default
         self.skel.enableSelfCollisionCheck()
 
+        self.makeRootBody()
+
+        for i in range(self.numSegments - 1):
+            self.addBody(self.skel.getBodyNodes()[-1])
+            i += 1
+
+        print("Succesfully created Skeleton: " + self.name)
+
+    def makeRootBody(self):
         # rootJoint properties
         rootjoint_prop = dart.dynamics.FreeJointProperties()
         rootjoint_prop.mName = self.name + "_root" + "_joint"
@@ -59,7 +86,7 @@ class DeformableLinearObject:
 
         # rootbody properties
         rootbody_aspect_prop = dart.dynamics.BodyNodeAspectProperties(
-            name=self.name + "root_body"
+            name=self.name + "_root_body"
         )
         rootbody_prop = dart.dynamics.BodyNodeProperties(rootbody_aspect_prop)
 
@@ -67,32 +94,65 @@ class DeformableLinearObject:
         [rootjoint, rootbody] = self.skel.createFreeJointAndBodyNodePair(
             None, rootjoint_prop, rootbody_prop
         )
-        rootbody.setGravityMode(True)
-        rootbody.setCollidable(True)
+        rootbody.setGravityMode(self.gravity)
+        rootbody.setCollidable(self.collidable)
 
         # set shapes
-        self.setBodyShape_Cylinder(rootbody)
+        self.setBodyShape_Cylinder(
+            rootbody, radius=self.radius, length=self.segmentLength, color=self.color
+        )
 
         # set the transformation between rootjoint and rootbody
         tf = dart.math.Isometry3()
-        bodyNodeCenter = [0, 0, self.segmentLength / 2.0]
+        bodyNodeCenter = [0, 0, -self.segmentLength / 2.0]
         tf.set_translation(bodyNodeCenter)
-        rootjoint.setTransformFromChildBodyNode(-tf)
+        rootjoint.setTransformFromChildBodyNode(tf)
 
-    def addBody(self, parentNode, name, offset):
+        self.setJointShape_Ball(body=rootbody, radius=self.radius)
+
+    def addBody(self, parentNode, name=None, offset=0.0):
         joint_prop = dart.dynamics.BallJointProperties()
-        joint_prop.mName = self.name + "_" + str(self.skel.getNumBodyNodes()) + "_joint"
+        if name is None:
+            joint_prop.mName = (
+                self.name + "_" + str(self.skel.getNumBodyNodes()) + "_joint"
+            )
+        else:
+            joint_prop.mName = name + "_joint"
+
         joint_prop.mRestPositions = np.zeros(3)
         joint_prop.mSpringStiffnesses = np.ones(3) * self.stiffness
         joint_prop.mDampingCoefficients = np.ones(3) * self.damping
         joint_prop.mT_ParentBodyToJoint.set_translation(
-            [0, 0, self.segmentLength + offset]
+            [0, 0, self.segmentLength / 2.0 + offset]
         )
-        body_aspect_prop = dart.dynamics.BodyNodeAspectProperties(name)
-        body_prop = dart.dynamics.BodyNodeProperties(body_aspect_prop)
+        if name is None:
+            body_aspect_prop = dart.dynamics.BodyNodeAspectProperties(
+                name=(self.name + "_" + str(self.skel.getNumBodyNodes()) + "_body")
+            )
+        else:
+            body_aspect_prop = dart.dynamics.BodyNodeAspectProperties(name=name)
 
-    def setJointShape_Ball(self, joint, radius, color=[0, 0, 1]):
-        ballShape = dart.dynamics.BallShape(radius)
+        body_prop = dart.dynamics.BodyNodeProperties(body_aspect_prop)
+        [joint, body] = self.skel.createBallJointAndBodyNodePair(
+            parentNode, joint_prop, body_prop
+        )
+        body.setGravityMode(self.gravity)
+        body.setCollidable(self.collidable)
+
+        self.setBodyShape_Cylinder(
+            body, radius=self.radius, length=self.segmentLength, color=self.color
+        )
+
+        self.setJointShape_Ball(body=body, radius=self.radius)
+
+    def setJointShape_Ball(self, body, radius, color=[0, 0, 1]):
+        ballShape = dart.dynamics.SphereShape(radius)
+        shape_node = body.createShapeNode(ballShape)
+        visual = shape_node.createVisualAspect()
+        visual.setColor(color)
+        tf = dart.math.Isometry3()
+        jointCenter = [0, 0, -self.segmentLength / 2.0]
+        shape_node.setRelativeTransform(tf)
 
     def setBodyShape_Cylinder(self, body, radius, length, color=[0, 0, 1]):
         cylinderShape = dart.dynamics.CylinderShape(radius, length)

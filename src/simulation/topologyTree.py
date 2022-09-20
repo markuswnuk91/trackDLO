@@ -426,9 +426,9 @@ class topologyTree:
         nodes (node): The nodes the graph consists of.
         branches (branch): The branches the topology graph consists of.
         branchNodes(list(dict)): The nodes where the branches are connected.
-        leafNodes (list(dict)): The nodes the at the open ends of the topology.
-        leafNodeInfo (list(dict)): The additional information for the leaf nodes the at the open ends of the topology.
-        leafNodes (list(dict)): The nodes the at the open ends of the topology.
+        leafNodes (list(dict)): The nodes at the open ends of the topology.
+        leafNodeInfo (list(dict)): The additional information for the leaf nodes at the open ends of the topology.
+        leafNodes (list(dict)): The nodes at the open ends of the topology.
     """
 
     ID = 0
@@ -465,12 +465,12 @@ class topologyTree:
             np.abs(csgraph - csgraph.T) < 1e-8
         ):  # check if input matrix is symmetric
             raise ValueError(
-                "Got an unsymmetric adjacency matrix. This method needs a symmetric cs graph as input."
+                "Got an unsymmetric adjacency matrix. This method needs a undirected graph expressed as a symmetric adjacency matrix as input."
             )
         unvisitedNodesIdxs = list(range(len(csgraph)))
         blacklist = np.array(
             []
-        )  # elements for which were already generated are blacklisted
+        )  # elements for which nodes were already generated are blacklisted
         self.nodes = [None] * len(csgraph)
         rootNode = node(name=str(self.name) + "_Node_0")
         currentNode = rootNode
@@ -524,6 +524,7 @@ class topologyTree:
                         newBranch.setBranchInfo({"branchLength": branchLength})
                         self.branches.append(newBranch)
 
+                        # determine the node type of the beginning of the branch
                         if (
                             thisNode == rootNode
                             and rootNode.getNumChilds() >= 2
@@ -560,6 +561,7 @@ class topologyTree:
                         else:
                             pass
 
+                        # determine the node type of the end of the branch
                         if branchOrLeafNode.getNumChilds() == 0:  # leaf node
                             newLeafNode = leafnode(
                                 node=branchOrLeafNode,
@@ -569,7 +571,6 @@ class topologyTree:
                             )
                             self.leafNodes.append(newLeafNode)
                         else:  # branch node
-                            # check if new branch node required or if it already exists
                             newBranchNode = branchnode(
                                 node=branchOrLeafNode,
                                 nodeIndex=self.getNodeIndex(branchOrLeafNode),
@@ -577,7 +578,6 @@ class topologyTree:
                                 branchIndex=len(self.branches) - 1,
                             )
                             self.branchNodes.append(newBranchNode)
-                            thisNode
             else:
                 pass
 
@@ -615,6 +615,16 @@ class topologyTree:
         return len(self.leafNodes)
 
     def _getBranchNodeFromNode(self, node: node):
+        """
+        Internal Method, which is not recommended for external use.
+        Returns the BranchNode corresponding to a given node from the
+        list of branchNodes.
+        Args:
+            node (node): node for which the branchNode should be determined
+
+        Returns:
+            branchNode (branchNode): branchNode
+        """
         branchNodeList = self._getBranchNodesAsNodes()
         branchNodeIdx = branchNodeList.index(node)
         return self.branchNodes[branchNodeIdx]

@@ -13,7 +13,7 @@ except:
     print("Imports for DLO failed.")
     raise
 
-visualize = True
+visualize = False
 
 
 def test_initDLO():
@@ -101,7 +101,12 @@ def test_initDLO():
         bodyNodeNumber=0,
     )
     testTransform = np.array(
-        ([1, 0, 0, 0.1], [0, 1, 0, 0.2], [0, 0, 1, 0.3], [0, 0, 0, 1])
+        (
+            [1, 0, 0, testDLO.radius],
+            [0, 1, 0, 2 * testDLO.radius],
+            [0, 0, 1, testDLO.segmentLength / 2],
+            [0, 0, 0, 1],
+        )
     )
     testDLO.addSimpleFrame(
         key="Testframes",
@@ -146,6 +151,7 @@ def test_initDLO():
             viewer.setUpViewInWindow(0, 0, 1200, 900)
             viewer.setCameraHomePosition([8.0, 8.0, 4.0], [0, 0, -2.5], [0, 0, 1])
             viewer.run()
+
             visError = False
         except:
             visError = True

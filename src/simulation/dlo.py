@@ -71,10 +71,18 @@ class DeformableLinearObject:
         else:
             self.collidable = collidable
 
-        self.makeRootBody()
+        self.makeRootBody(self.segmentLength, self.radius, self.color)
 
         for i in range(self.numSegments - 1):
-            self.addBody(self.skel.getBodyNodes()[-1])
+            self.addBody(
+                parentNode=self.skel.getBodyNodes()[-1],
+                segmentLength=self.segmentLength,
+                radius=self.radius,
+                stiffnesses=np.ones(3) * self.stiffness,
+                dampingCoeffs=np.ones(3) * self.damping,
+                restPositions=np.zeros(3),
+                color=np.array([0, 0, 1]),
+            )
             i += 1
 
         # disable adjacent body collision check by default
@@ -88,18 +96,32 @@ class DeformableLinearObject:
 
         print("Succesfully created Skeleton: " + self.name)
 
-    def makeRootBody(self):
+    def makeRootBody(
+        self,
+        segmentLength: float,
+        radius: float,
+        color: np.array = np.array([0, 0, 1]),
+        name: str = None,
+    ):
+
         # rootJoint properties
         rootjoint_prop = dart.dynamics.FreeJointProperties()
-        rootjoint_prop.mName = self.name + "_root" + "_joint"
+        if name is None:
+            rootjoint_prop.mName = self.name + "_root" + "_joint"
+        else:
+            rootjoint_prop.mName = name + "_root" + "_joint"
         rootjoint_prop.mRestPositions = np.zeros(6)
         rootjoint_prop.mSpringStiffnesses = np.zeros(6)
         rootjoint_prop.mDampingCoefficients = np.zeros(6)
 
         # rootbody properties
-        rootbody_aspect_prop = dart.dynamics.BodyNodeAspectProperties(
-            name=self.name + "_root_body"
-        )
+        if name is None:
+            rootbody_aspect_prop = dart.dynamics.BodyNodeAspectProperties(
+                name=self.name + "_root_body"
+            )
+        else:
+            rootbody_aspect_prop = dart.dynamics.BodyNodeAspectProperties(name=name)
+
         rootbody_prop = dart.dynamics.BodyNodeProperties(rootbody_aspect_prop)
 
         # create joint&bodyNode pair
@@ -113,19 +135,31 @@ class DeformableLinearObject:
         self.setBodyShape_Cylinder(
             rootbody,
             radius=self.radius,
-            length=(self.segmentLength - 2 * self.radius),
-            color=self.color,
+            length=(segmentLength - 2 * radius),
+            color=color,
+            denisty=self.density,
         )
 
         # set the transformation between rootjoint and rootbody
         tf = dart.math.Isometry3()
-        bodyNodeCenter = [0, 0, -self.segmentLength / 2.0]
+        bodyNodeCenter = [0, 0, -segmentLength / 2.0]
         tf.set_translation(bodyNodeCenter)
         rootjoint.setTransformFromChildBodyNode(tf)
 
-        self.setJointShape_Ball(body=rootbody, radius=self.radius)
+        self.setJointShape_Ball(body=rootbody, radius=radius)
 
-    def addBody(self, parentNode, name=None, offset=0.0):
+    def addBody(
+        self,
+        parentNode,
+        segmentLength: float,
+        radius: float,
+        stiffnesses: np.array,
+        dampingCoeffs: np.array,
+        restPositions: np.array = np.zeros(3),
+        color: np.array = np.array([0, 0, 1]),
+        offset: float = 0.0,
+        name: str = None,
+    ):
         joint_prop = dart.dynamics.BallJointProperties()
         if name is None:
             joint_prop.mName = (
@@ -134,11 +168,11 @@ class DeformableLinearObject:
         else:
             joint_prop.mName = name + "_joint"
 
-        joint_prop.mRestPositions = np.zeros(3)
-        joint_prop.mSpringStiffnesses = np.ones(3) * self.stiffness
-        joint_prop.mDampingCoefficients = np.ones(3) * self.damping
+        joint_prop.mRestPositions = restPositions
+        joint_prop.mSpringStiffnesses = stiffnesses
+        joint_prop.mDampingCoefficients = np.ones(3) * dampingCoeffs
         joint_prop.mT_ParentBodyToJoint.set_translation(
-            [0, 0, self.segmentLength / 2.0 + offset]
+            [0, 0, segmentLength / 2.0 + offset]
         )
         if name is None:
             body_aspect_prop = dart.dynamics.BodyNodeAspectProperties(
@@ -156,17 +190,18 @@ class DeformableLinearObject:
 
         self.setBodyShape_Cylinder(
             body,
-            radius=self.radius,
-            length=(self.segmentLength - 2 * self.radius),
-            color=self.color,
+            radius=radius,
+            length=(segmentLength - 2 * radius),
+            color=color,
+            denisty=self.density,
         )
         # set the transformation between parent joint and body
         tf = dart.math.Isometry3()
-        bodyNodeCenter = [0, 0, -self.segmentLength / 2.0]
+        bodyNodeCenter = [0, 0, -segmentLength / 2.0]
         tf.set_translation(bodyNodeCenter)
         joint.setTransformFromChildBodyNode(tf)
 
-        self.setJointShape_Ball(body=body, radius=self.radius)
+        self.setJointShape_Ball(body=body, radius=radius)
 
     def setJointShape_Ball(self, body, radius, color=[0, 0, 1]):
         ballShape = dart.dynamics.SphereShape(radius)
@@ -174,11 +209,13 @@ class DeformableLinearObject:
         visual = shape_node.createVisualAspect()
         visual.setColor(color)
         tf = dart.math.Isometry3()
-        jointCenter = [0, 0, -self.segmentLength / 2.0]
+        jointCenter = (
+            body.getParentJoint().getTransformFromChildBodyNode().translation()
+        )
         tf.set_translation(jointCenter)
         shape_node.setRelativeTransform(tf)
 
-    def setBodyShape_Cylinder(self, body, radius, length, color=[0, 0, 1]):
+    def setBodyShape_Cylinder(self, body, radius, length, denisty, color=[0, 0, 1]):
         cylinderShape = dart.dynamics.CylinderShape(radius, length)
         shape_node = body.createShapeNode(cylinderShape)
         visual = shape_node.createVisualAspect()
@@ -187,7 +224,7 @@ class DeformableLinearObject:
         visual.setColor(color)
 
         # set mass and inertia of the body
-        inertia = cylinderShape.computeInertiaFromDensity(self.density)
+        inertia = cylinderShape.computeInertiaFromDensity(denisty)
         volume = cylinderShape.getVolume()
         inertia_dart = dart.dynamics.Inertia()
         inertia_dart.setMoment(inertia)

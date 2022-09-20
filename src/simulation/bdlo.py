@@ -6,81 +6,108 @@ import dartpy as dart
 try:
     sys.path.append(os.getcwd().replace("/src/simulation", ""))
     from src.simulation.dlo import DeformableLinearObject
+    from src.simulation.topologyTree import topologyTree
 except:
     print("Imports for DLO failed.")
     raise
 
 
-# class BranchedDeformableLinearObject(DeformableLinearObject):
-#     """
-#     Class implementing a discription for BDLOs based on a graph representation to interface with dart's skeleton class.
-#     A BDLO is a collection of branches.
+class bdloDiscretization(topologyTree):
+    """
+    A bdloTopology is a topologyTree with additional information about the discretization, specifying the desired number of segments which should be used in the simulaton to represent each branch.
 
-#     Attributes:
-#         name (str): name of the BDLO
-#         branches (list of branches): The branches the BDLO consists of.
-#         skel (dart.dynamics.Skeleton): dart skeleton used to simulate the BDLO.
-#     """
+    The information for the discretization is stored as a list of tupels containing each branch with its corresponding discretization.
 
-#     ID = 0
+    Attributes:
+        see topologyTree
+        discretization (list of tuple): Tuples of branches together with the desired number of segments
+    """
 
-#     def __init__(self, name, skel) -> None:
+    def __init__(self):
+        super().__init__()
 
-#         self.name = name
-#         self.skel = dart.dynamics.Skeleton(name=name)
+        # add additional information about the discretization
+        # self.discretization = ...
 
-#     def addBranch(
-#         self,
-#         branchLength: float,
-#         radius: float,
-#         discretization: int,
-#         startNode: node = None,
-#         endNode: node = None,
-#     ):
-#         """
-#         Branches
 
-#         Args:
-#             startNode (node): starting node the branch is connected to.
-#             endNode (node): end node of the branch
-#             length (float): length of the branch in m
-#             radius (float): radius of the branch in m
-#             discretization (int): number of segements the dart model should have for this branch.
-#         """
-#         segmentLength = branchLength / discretization
-#         edgeWeihgts = {"length": segmentLength, "radius": radius}
-#         if startNode is None:
-#             nodes = []
-#             rootNode = node()
-#             nodes.append(rootNode)
-#             for i in range(discretization):
-#                 newNode = node(nodes[-1], edgeWeihgts)
-#                 nodes.append(newNode)
-#             self.branches.append(
-#                 branch("Branch_0", rootNode, nodes[-1], branchLength, radius)
-#             )
-#         elif endNode is None:
-#             nodes = []
-#             nodes.append(startNode)
-#             for i in range(discretization):
-#                 newNode = node(nodes[-1], edgeWeihgts)
-#                 nodes.append(newNode)
-#             self.branches.append(
-#                 branch(
-#                     "Branch_" + str(self.branches[-1].ID),
-#                     startNode,
-#                     nodes[-1],
-#                     branchLength,
-#                     radius,
-#                 )
-#             )
-#         else:
-#             self.branches.append(
-#                 branch(
-#                     "Branch_" + str(self.branches[-1].ID),
-#                     startNode,
-#                     endNode,
-#                     branchLength,
-#                     radius,
-#                 )
-#             )
+class BranchedDeformableLinearObject(DeformableLinearObject):
+    """
+    Class implementing a interface for handling Branched Defromable Linear Objects (BDLO) with dart's skeleton class.
+    The class consists of a topologyTree descring its topology and a dartSkeleton used for simulation.
+
+    Attributes:
+        name (str): name of the BDLO
+    """
+
+    ID = 0
+
+    def __init__(self, name, topology: topologyTree) -> None:
+
+        self.ID = BranchedDeformableLinearObject.ID
+        BranchedDeformableLinearObject.ID += 1
+
+        if name is None:
+            self.name = "BDLO_" + str(self.ID)
+        else:
+            self.name = name
+
+        self.topology = topology
+        self.skel = dart.dynamics.Skeleton(name=self.name)
+
+        for i, branch in enumerate(self.topology.getBranches()):
+            branchLength = branch.getBranchInfo["branchLength"]
+            branchRadius = branch.getBranchInfo["branchRadius"]
+            numSegments = branch.getBranchInfo["numSegments"]
+            branchColor = branch.getBranchInfo["color"]
+
+            if i == 0 and branch.getStartNode().getParentNode() is not None:
+                raise ValueError(
+                    "Expected the first branch to start with the RootNode, but got branch with startNode that has parent: ".format(
+                        branch.getStartNode().getParentNode()
+                    )
+                )
+            elif i == 0 and branch.getStartNode().getParentNode() is None:
+                self.makeRootBody(
+                    segmentLength=branchLength / numSegments,
+                    radius=branchRadius,
+                    color=branchColor,
+                )
+                # branch.addBranchInfo["dartIndices"] = [self.skel.getNumBodyNodes()]
+
+                # generate the rest of the rootBranch here
+
+                # determine the branchNodes belongign to the branch
+                # determine the leafNodes belonging to the branch
+                # set the corresponding dartIndices as nodeInfo
+
+            else:
+                # determine the branchNodes belongign to the branch
+
+                # if both have already dart indices something went wrong
+
+                # determine the parentBodyNode in the dart skeleton
+                # parentBodyNode =
+                self.addBody()
+                dartIndices = branch.getBranchInfo["dartIndices"]
+                dartIndices.append(self.skel.getNumBodyNodes())
+                branch.setBranchInfo["dartIndices"] = dartIndices
+
+    def getBranchBodyNodes(self, branchNumber):
+        """
+        Returns the dart bodyNodes corresponding to a branch
+        """
+
+    def getBranchBodyNodeIndices(self, branchNumber):
+        """
+        Returns the dart bodyNodes indices corresponding to a branch
+        """
+
+    def getLeafNodeBodyNodes(self):
+        """
+        Returns the DART bodyNodes corresponding to the leafNodes in the topology of the BDLO
+        """
+
+    def getBranchNodeBodyNodes(self):
+        """
+        Returns the DART bodyNodes corresponding to the branchNodes in the topology of the BDLO
+        """

@@ -94,8 +94,9 @@ def testTopologyTree():
     assert testTopology.getNumNodes() == 4
     assert testTopology.getNodes()[0].getEdgeInfo(1)["length"] == 5
     assert testTopology.getNumBranches() == 2
-    assert testTopology.getBranches()[0].getBranchInfo()["branchLength"] == 5
-    assert testTopology.getBranches()[1].getBranchInfo()["branchLength"] == 10
+    assert testTopology.getBranches()[0].getBranchInfo()["length"] == 5
+    assert testTopology.getBranches()[1].getBranchInfo()["length"] == 10
+    assert testTopology.getSummedLength() == 15
 
     testGraphBranched = np.array(
         [
@@ -116,6 +117,18 @@ def testTopologyTree():
     assert testTopologyBranched.getNumLeafNodes() == 5
     assert set(testTopologyBranched.getLeafNodeIndices()) == set([4, 5, 6, 7, 8])
     assert set(testTopologyBranched.getBranchNodeIndices()) == set([0, 1, 2])
+    assert testTopologyBranched.getChildBranches(testTopologyBranched.getBranch(0)) == [
+        testTopologyBranched.getBranch(3),
+        testTopologyBranched.getBranch(4),
+    ]
+    # test isRootBranch
+    assert testTopologyBranched.isRootBranch(testTopologyBranched.getBranch(0)) == True
+    assert testTopologyBranched.isRootBranch(testTopologyBranched.getBranch(1)) == True
+    assert testTopologyBranched.isRootBranch(testTopologyBranched.getBranch(2)) == True
+    assert testTopologyBranched.isRootBranch(testTopologyBranched.getBranch(3)) == False
+    assert testTopologyBranched.isRootBranch(testTopologyBranched.getBranch(4)) == False
+    assert testTopologyBranched.isRootBranch(testTopologyBranched.getBranch(5)) == False
+    assert testTopologyBranched.isRootBranch(testTopologyBranched.getBranch(6)) == False
 
     testGraphSingleDLO = np.array(
         [
@@ -134,6 +147,9 @@ def testTopologyTree():
         singleDLOTopology.getBranchesFromNode(singleDLOTopology[1])[0].getStartNode()
         == singleDLOTopology[0]
     )
+
+    # test getChildBranches
+    assert singleDLOTopology.getChildBranches(singleDLOTopology.getBranches()[0]) == []
 
 
 if __name__ == "__main__":

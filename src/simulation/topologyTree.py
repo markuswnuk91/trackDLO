@@ -261,6 +261,11 @@ class branch:
     def getBranchInfo(self):
         return self.branchInfo
 
+    def addBranchInfo(self, key: str, info):
+        if key in self.branchInfo:
+            warn("Key is already in dict. The old value is overwritten")
+        self.branchInfo[key] = info
+
     def setBranchInfo(self, branchInfo: dict):
         self.branchInfo = branchInfo
 
@@ -316,7 +321,7 @@ class leafnode:
         nodeIndex: int,
         branch: branch,
         branchIndex: int,
-        leafnodeInfo: dict = None,
+        leafNodeInfo: dict = None,
         name=None,
     ):
         if name is None:
@@ -330,10 +335,10 @@ class leafnode:
         self.branch = branch
         self.nodeIndex = nodeIndex
         self.branchIndex = branchIndex
-        if leafnodeInfo is None:
-            self.leafnodeInfo = {}
+        if leafNodeInfo is None:
+            self.leafNodeInfo = {}
         else:
-            self.leafnodeInfo = leafnodeInfo
+            self.leafNodeInfo = leafNodeInfo
 
     def getName(self):
         return self.name
@@ -349,6 +354,12 @@ class leafnode:
 
     def getBranchIndex(self):
         return self.branchIndex
+
+    def getLeafNodeInfo(self):
+        return self.leafNodeInfo
+
+    def setLeafNodeInfo(self, leafNodeInfo: dict):
+        self.leafNodeInfo = leafNodeInfo
 
 
 class branchnode:
@@ -373,7 +384,7 @@ class branchnode:
         nodeIndex: int,
         branch: branch,
         branchIndex: int,
-        branchnodeInfo: dict = None,
+        branchNodeInfo: dict = None,
         name=None,
     ):
         if name is None:
@@ -387,10 +398,10 @@ class branchnode:
         self.branches = [branch]
         self.nodeIndex = nodeIndex
         self.branchIndices = [branchIndex]
-        if branchnodeInfo is None:
-            self.branchnodeInfo = {}
+        if branchNodeInfo is None:
+            self.branchNodeInfo = {}
         else:
-            self.branchnodeInfo = branchnodeInfo
+            self.branchNodeInfo = branchNodeInfo
 
     def getName(self):
         return self.name
@@ -401,6 +412,9 @@ class branchnode:
     def getNodeIndex(self):
         return self.nodeIndex
 
+    def getNumBranches(self):
+        return len(self.branches)
+
     def getBranches(self):
         return self.branches
 
@@ -409,6 +423,12 @@ class branchnode:
 
     def getBranchIndices(self):
         return self.branchIndices
+
+    def getBranchNodeInfo(self):
+        return self.branchNodeInfo
+
+    def setBranchNodeInfo(self, branchNodeInfo: dict):
+        self.branchNodeInfo = branchNodeInfo
 
     def getBranchIndex(self, num):
         return self.branchIndices[num]
@@ -473,6 +493,7 @@ class topologyTree:
         )  # elements for which nodes were already generated are blacklisted
         self.nodes = [None] * len(csgraph)
         rootNode = node(name=str(self.name) + "_Node_0")
+        self.rootNode = rootNode
         currentNode = rootNode
         nextNodeCandidateIdxs = [0]
         self.nodes[0] = rootNode
@@ -521,7 +542,7 @@ class topologyTree:
                         branchLength = 0
                         for edges in newBranch.getEdges():
                             branchLength += edges.getEdgeInfo()["length"]
-                        newBranch.setBranchInfo({"branchLength": branchLength})
+                        newBranch.setBranchInfo({"length": branchLength})
                         self.branches.append(newBranch)
 
                         # determine the node type of the beginning of the branch
@@ -584,6 +605,9 @@ class topologyTree:
     def __getitem__(self, num):
         return self.nodes[num]
 
+    def getRootNode(self):
+        return self.rootNode
+
     def getNumNodes(self):
         return len([node for node in self.nodes if node is not None])
 
@@ -635,6 +659,38 @@ class topologyTree:
             branchNodesList.append(branchNode.getNode())
         return branchNodesList
 
+    def _getLeafNodesAsNodes(self):
+        leafNodeList = []
+        for leafNode in self.leafNodes:
+            leafNodeList.append(leafNode.getNode())
+        return leafNodeList
+
+    def _findNextBranchOrLeafNodes(self, thisNode):
+        nextBrachOrLeafNodes = []
+        if thisNode.getNumChilds() < 1:
+            return nextBrachOrLeafNodes
+        else:
+            for childNode in thisNode.getChilds():
+                if childNode.getNumChilds() == 0 or childNode.getNumChilds() >= 2:
+                    nextBrachOrLeafNodes.append(childNode)
+                else:  # member node
+                    nextBrachOrLeafNodes.append(
+                        self._findNextBranchOrLeafNodes(childNode)[0]
+                    )
+            return nextBrachOrLeafNodes
+
+    def getLeafNodeFromNode(self, node: node):
+        if node in self._getLeafNodesAsNodes():
+            return self.leafNodes[self._getLeafNodesAsNodes().index(node)]
+        else:
+            return None
+
+    def getBranchNodeFromNode(self, node: node):
+        if node in self._getBranchNodesAsNodes():
+            return self.branchNodes[self._getBranchNodesAsNodes().index(node)]
+        else:
+            return None
+
     def getLeafNodeIndices(self):
         leafNodeIndices = []
         for leafNode in self.leafNodes:
@@ -659,16 +715,57 @@ class topologyTree:
                 branchList.append(branch)
         return branchList
 
-    def _findNextBranchOrLeafNodes(self, thisNode):
-        nextBrachOrLeafNodes = []
-        if thisNode.getNumChilds() < 1:
-            return nextBrachOrLeafNodes
+    def isLeafNode(self, node: node):
+        if node in self._getLeafNodesAsNodes():
+            return True
         else:
-            for childNode in thisNode.getChilds():
-                if childNode.getNumChilds() == 0 or childNode.getNumChilds() >= 2:
-                    nextBrachOrLeafNodes.append(childNode)
-                else:  # member node
-                    nextBrachOrLeafNodes.append(
-                        self._findNextBranchOrLeafNodes(childNode)[0]
-                    )
-            return nextBrachOrLeafNodes
+            return False
+
+    def isBranchNode(self, node: node):
+        if node in self._getBranchNodesAsNodes():
+            return True
+        else:
+            return False
+
+    def getChildBranches(self, branch: branch):
+        childBranches = []
+        if self.isBranchNode(branch.getEndNode()):
+            branchNode = self._getBranchNodeFromNode(branch.getEndNode())
+            childBranches = branchNode.getBranches().copy()
+            childBranches.remove(branch)
+        return childBranches
+
+    def isRootBranch(self, branch: branch):
+        if (
+            branch.getStartNode() == self.rootNode
+            or branch.getEndNode() == self.rootNode
+        ):
+            return True
+        else:
+            return False
+
+    def getSummedLength(self):
+        length = 0
+        for branch in self.branches:
+            length += branch.getBranchInfo()["length"]
+        return length
+
+    def getBranchIndex(self, branch: branch):
+        return self.branches.index(branch)
+
+    def getBranchIndices(self, branches: list):
+        branchIndices = []
+        for branch in branches:
+            branchIndices.append(self.getBranchIndex(branch))
+        return branchIndices
+
+    def getSiblingBranches(self, branch: branch):
+        """
+        Returns the siblings to this branch.
+        Sibling branches are branches which start at the same start node.
+        """
+        siblingBranches = []
+        for siblingCandidate in self.branches:
+            if siblingCandidate.getStartNode() == branch.getStartNode():
+                siblingBranches.append(siblingCandidate)
+        return siblingBranches

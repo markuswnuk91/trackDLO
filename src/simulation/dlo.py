@@ -62,7 +62,7 @@ class DeformableLinearObject:
         self.frames = {}
 
         if gravity is None:
-            self.gravityMode = True
+            self.gravity = True
         else:
             self.gravity = gravity
 
@@ -71,13 +71,19 @@ class DeformableLinearObject:
         else:
             self.collidable = collidable
 
-        self.makeRootBody(self.segmentLength, self.radius, self.color)
+        self.makeRootBody(
+            segmentLength=self.segmentLength,
+            radius=self.radius,
+            density=self.density,
+            color=self.color,
+        )
 
         for i in range(self.numSegments - 1):
             self.addBody(
                 parentNode=self.skel.getBodyNodes()[-1],
                 segmentLength=self.segmentLength,
                 radius=self.radius,
+                density=self.density,
                 stiffnesses=np.ones(3) * self.stiffness,
                 dampingCoeffs=np.ones(3) * self.damping,
                 restPositions=np.zeros(3),
@@ -100,6 +106,7 @@ class DeformableLinearObject:
         self,
         segmentLength: float,
         radius: float,
+        density: float,
         color: np.array = np.array([0, 0, 1]),
         name: str = None,
     ):
@@ -134,10 +141,10 @@ class DeformableLinearObject:
         # set shapes
         self.setBodyShape_Cylinder(
             rootbody,
-            radius=self.radius,
+            radius=radius,
             length=(segmentLength - 2 * radius),
             color=color,
-            denisty=self.density,
+            density=density,
         )
 
         # set the transformation between rootjoint and rootbody
@@ -153,6 +160,7 @@ class DeformableLinearObject:
         parentNode,
         segmentLength: float,
         radius: float,
+        density: float,
         stiffnesses: np.array,
         dampingCoeffs: np.array,
         restPositions: np.array = np.zeros(3),
@@ -170,7 +178,7 @@ class DeformableLinearObject:
 
         joint_prop.mRestPositions = restPositions
         joint_prop.mSpringStiffnesses = stiffnesses
-        joint_prop.mDampingCoefficients = np.ones(3) * dampingCoeffs
+        joint_prop.mDampingCoefficients = dampingCoeffs
         joint_prop.mT_ParentBodyToJoint.set_translation(
             [0, 0, segmentLength / 2.0 + offset]
         )
@@ -193,7 +201,7 @@ class DeformableLinearObject:
             radius=radius,
             length=(segmentLength - 2 * radius),
             color=color,
-            denisty=self.density,
+            density=density,
         )
         # set the transformation between parent joint and body
         tf = dart.math.Isometry3()
@@ -215,7 +223,7 @@ class DeformableLinearObject:
         tf.set_translation(jointCenter)
         shape_node.setRelativeTransform(tf)
 
-    def setBodyShape_Cylinder(self, body, radius, length, denisty, color=[0, 0, 1]):
+    def setBodyShape_Cylinder(self, body, radius, length, density, color=[0, 0, 1]):
         cylinderShape = dart.dynamics.CylinderShape(radius, length)
         shape_node = body.createShapeNode(cylinderShape)
         visual = shape_node.createVisualAspect()
@@ -224,12 +232,12 @@ class DeformableLinearObject:
         visual.setColor(color)
 
         # set mass and inertia of the body
-        inertia = cylinderShape.computeInertiaFromDensity(denisty)
+        inertia = cylinderShape.computeInertiaFromDensity(density)
         volume = cylinderShape.getVolume()
         inertia_dart = dart.dynamics.Inertia()
         inertia_dart.setMoment(inertia)
         body.setInertia(inertia_dart)
-        body.setMass(volume * self.density)
+        body.setMass(volume * density)
 
     def getNumSegments(self):
         return self.skel.getNumBodyNodes()

@@ -168,7 +168,7 @@ class bdloSpecification(topologyTree):
                     childBranchIndices = self.getBranchIndices(siblingBranches)
                     k = childBranchIndices.index(i)
                     initRestAngle = -60 / 180 * math.pi
-                    deltaAngle = 120 / 180 * math.pi / numBranches
+                    deltaAngle = 120 / 180 * math.pi / (numBranches - 1)
                     restAngle = initRestAngle + k * deltaAngle
 
                 if i == 0:
@@ -278,7 +278,7 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
                     branchInfo["torsionalDampingCoeffs"],
                 ]
             )
-            restPosition = branchInfo["restPosition"]
+            restPositions = branchInfo["restPosition"]
             segmentLength = length / numSegments
             correspondingBodyNodes = []
 
@@ -301,9 +301,10 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
                     segmentLength=segmentLength,
                     radius=radius,
                     density=density,
+                    restPositions=restPositions,
                     color=color,
                 )
-                correspondingBodyNodes.append(self.skel.getNumBodyNodes())
+                correspondingBodyNodes.append(self.skel.getNumBodyNodes() - 1)
                 for i in range(numSegments - 1):
                     self.addBody(
                         parentNode=self.skel.getBodyNodes()[-1],
@@ -315,7 +316,7 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
                         restPositions=np.zeros(3),
                         color=color,
                     )
-                    correspondingBodyNodes.append(self.skel.getNumBodyNodes())
+                    correspondingBodyNodes.append(self.skel.getNumBodyNodes() - 1)
                     i += 1
 
                 # add information of the corresponding bodyNodes to the branch
@@ -349,29 +350,36 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
                     branchNode.setBranchNodeInfo(
                         {"bodyNodeIndex": correspondingBodyNodes[-1]}
                     )
-
-                # get next branch candidates for which bodyNodes are generated
-                childBranches = self.topology.getChildBranches(branch)
-                if len(childBranches) > 0:
-                    for childBranch in self.topology.getChildBranches(branch):
-                        nextBranchCandidates.append(childBranch)
-                unvisitedBranches.remove(branch)
-                blacklist.append(branch)
             else:
                 # generate bodyNodes for remaining branches
                 parentBodyNodeIdx = branch.getStartNode().getNodeInfo()["bodyNodeIndex"]
                 parentBodyNode = self.skel.getBodyNode(parentBodyNodeIdx)
                 for i in range(numSegments):
-                    self.addBody(
-                        parentNode=parentBodyNode,
-                        segmentLength=segmentLength,
-                        radius=radius,
-                        stiffnesses=np.ones(3) * stiffness,
-                        dampingCoeffs=np.ones(3) * damping,
-                        restPositions=restPosition,
-                        color=color,
-                    )
-                    correspondingBodyNodes.append(self.skel.getNumBodyNodes())
+                    if i == 0:
+                        self.addBody(
+                            parentNode=parentBodyNode,
+                            segmentLength=segmentLength,
+                            radius=radius,
+                            density=density,
+                            stiffnesses=np.ones(3) * stiffness,
+                            dampingCoeffs=np.ones(3) * damping,
+                            restPositions=restPositions,
+                            color=color,
+                            offset=-segmentLength,
+                        )
+                    else:
+                        self.addBody(
+                            parentNode=self.skel.getBodyNodes()[-1],
+                            segmentLength=segmentLength,
+                            radius=radius,
+                            density=density,
+                            stiffnesses=np.ones(3) * stiffness,
+                            dampingCoeffs=np.ones(3) * damping,
+                            restPositions=np.zeros(3),
+                            color=color,
+                        )
+
+                    correspondingBodyNodes.append(self.skel.getNumBodyNodes() - 1)
                     i += 1
 
                 # add information of the corresponding bodyNodes to the branch
@@ -392,12 +400,13 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
                         {"bodyNodeIndex": correspondingBodyNodes[-1]}
                     )
 
-                childBranches = self.topology.getChildBranches(branch)
-                if len(childBranches) > 0:
-                    for childBranch in self.topology.getChildBranches(branch):
-                        nextBranchCandidates.append(childBranch)
-                unvisitedBranches.remove(branch)
-                blacklist.append(branch)
+            # get next branch candidates for which bodyNodes are generated
+            siblingBranches = self.topology.getSiblingBranches(branch)
+            for siblingBranch in siblingBranches:
+                if siblingBranch not in blacklist and siblingBranch is not branch:
+                    nextBranchCandidates.append(siblingBranch)
+            unvisitedBranches.remove(branch)
+            blacklist.append(branch)
 
     def getBranchBodyNodes(self, branchNumber):
         """
@@ -417,4 +426,9 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
     def getBranchNodeBodyNodes(self):
         """
         Returns the DART bodyNodes corresponding to the branchNodes in the topology of the BDLO
+        """
+
+    def getBranchFromBodyNodeIdx(self):
+        """
+        Returns the branch corresponding to a dart bodyNode index.
         """

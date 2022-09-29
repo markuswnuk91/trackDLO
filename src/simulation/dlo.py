@@ -107,6 +107,9 @@ class DeformableLinearObject:
         segmentLength: float,
         radius: float,
         density: float,
+        stiffnesses: np.array = np.zeros(6),
+        dampingCoeffs: np.array = np.zeros(6),
+        restPositions: np.array = np.zeros(6),
         color: np.array = np.array([0, 0, 1]),
         name: str = None,
     ):
@@ -117,9 +120,10 @@ class DeformableLinearObject:
             rootjoint_prop.mName = self.name + "_root" + "_joint"
         else:
             rootjoint_prop.mName = name + "_root" + "_joint"
-        rootjoint_prop.mRestPositions = np.zeros(6)
-        rootjoint_prop.mSpringStiffnesses = np.zeros(6)
-        rootjoint_prop.mDampingCoefficients = np.zeros(6)
+        rootjoint_prop.mRestPositions = restPositions
+        rootjoint_prop.mInitialPositions = restPositions
+        rootjoint_prop.mSpringStiffnesses = stiffnesses
+        rootjoint_prop.mDampingCoefficients = dampingCoeffs
 
         # rootbody properties
         if name is None:
@@ -177,6 +181,7 @@ class DeformableLinearObject:
             joint_prop.mName = name + "_joint"
 
         joint_prop.mRestPositions = restPositions
+        joint_prop.mInitialPositions = restPositions
         joint_prop.mSpringStiffnesses = stiffnesses
         joint_prop.mDampingCoefficients = dampingCoeffs
         joint_prop.mT_ParentBodyToJoint.set_translation(

@@ -17,17 +17,31 @@ except:
 
 visualize = True
 
-testTopologyModel_1 = np.array([[0, 5, 5, 0], [5, 0, 0, 0], [5, 0, 0, 5], [0, 0, 5, 0]])
+testTopologyModel_1 = np.array([[0, 1, 1, 0], [1, 0, 0, 0], [1, 0, 0, 1], [0, 0, 1, 0]])
+testTopologyModel_2 = 0.1 * np.array(
+    [
+        [0, 3, 3, 3, 0, 0, 0, 0, 0],
+        [3, 0, 0, 0, 3, 3, 0, 0, 0],
+        [3, 0, 0, 0, 0, 0, 3, 3, 0],
+        [3, 0, 0, 0, 0, 0, 0, 0, 3],
+        [0, 3, 0, 0, 0, 0, 0, 0, 0],
+        [0, 3, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 3, 0, 0, 0, 0, 0, 0],
+        [0, 0, 3, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 3, 0, 0, 0, 0, 0],
+    ]
+)
+testTopologyModel_3 = np.array([[0, 1], [1, 0]])
 
 
-def test_bdloTopology():
+def test_bdloTopology_1():
 
     testBdloSpec = bdloSpecification(testTopologyModel_1)
     assert testBdloSpec.getNumNodes() == 4
-    assert testBdloSpec.getNodes()[0].getEdgeInfo(1)["length"] == 5
+    assert testBdloSpec.getNodes()[0].getEdgeInfo(1)["length"] == 1
     assert testBdloSpec.getNumBranches() == 2
-    assert testBdloSpec.getBranches()[0].getBranchInfo()["length"] == 5
-    assert testBdloSpec.getBranches()[1].getBranchInfo()["length"] == 10
+    assert testBdloSpec.getBranches()[0].getBranchInfo()["length"] == 1
+    assert testBdloSpec.getBranches()[1].getBranchInfo()["length"] == 2
 
     for i, branch in enumerate(testBdloSpec.getBranches()):
         assert (
@@ -37,8 +51,16 @@ def test_bdloTopology():
 
 
 def test_branchedDeformableLinearObject():
-    testSpec = bdloSpecification(testTopologyModel_1)
-    testBDLO_1 = BranchedDeformableLinearObject(testSpec, name="Test_BDLO")
+    testSpec_1 = bdloSpecification(testTopologyModel_1)
+    testBDLO_1 = BranchedDeformableLinearObject(testSpec_1, name="Test_BDLO_1")
+
+    testSpec_2 = bdloSpecification(testTopologyModel_2)
+    testBDLO_2 = BranchedDeformableLinearObject(testSpec_2, name="Test_BDLO_2")
+    testBDLO_2.skel.setPosition(3, 0.2)
+
+    testSpec_3 = bdloSpecification(testTopologyModel_3)
+    testBDLO_3 = BranchedDeformableLinearObject(testSpec_3)
+    testBDLO_3.skel.setPosition(3, 0.4)
 
     if visualize:
         world = dart.simulation.World()
@@ -49,6 +71,8 @@ def test_branchedDeformableLinearObject():
 
         # add skeleton
         world.addSkeleton(testBDLO_1.skel)
+        world.addSkeleton(testBDLO_2.skel)
+        world.addSkeleton(testBDLO_3.skel)
 
         # Grid settings
         grid = dart.gui.osg.GridVisual()
@@ -62,5 +86,5 @@ def test_branchedDeformableLinearObject():
 
 
 if __name__ == "__main__":
-    test_bdloTopology()
+    test_bdloTopology_1()
     test_branchedDeformableLinearObject()

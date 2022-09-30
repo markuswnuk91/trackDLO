@@ -151,6 +151,15 @@ def testTopologyTree():
     # test getChildBranches
     assert singleDLOTopology.getChildBranches(singleDLOTopology.getBranches()[0]) == []
 
+    # test input checking against wrong adjacency matrix
+    wrongTopologyGraph = np.array([[1, 0], [0, 1]])
+    try:
+        testWrongTopologyTree = topologyTree(wrongTopologyGraph)
+        detectedWrongTopologyInput = False
+    except:
+        detectedWrongTopologyInput = True
+    assert detectedWrongTopologyInput == True
+
 
 if __name__ == "__main__":
     testNode()

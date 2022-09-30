@@ -481,11 +481,15 @@ class topologyTree:
             self.treeInfo = treeInfo
 
         # 1) build nodes from adjacency matrix
-        if not np.all(
-            np.abs(csgraph - csgraph.T) < 1e-8
-        ):  # check if input matrix is symmetric
+        # check if input matrix is symmetric
+        if not np.all(np.abs(csgraph - csgraph.T) < 1e-8):
             raise ValueError(
                 "Got an unsymmetric adjacency matrix. This method needs a undirected graph expressed as a symmetric adjacency matrix as input."
+            )
+        # check if input matrix is has zeros on diagonal
+        if not np.all(csgraph.diagonal() == 0):
+            raise ValueError(
+                "Got non zero entries on diagonal of adjacency matrix. This method requires a adjacency matrix with zero entries on the diagonal."
             )
         unvisitedNodesIdxs = list(range(len(csgraph)))
         blacklist = np.array(
@@ -762,7 +766,7 @@ class topologyTree:
     def getSiblingBranches(self, branch: branch):
         """
         Returns the siblings to this branch.
-        Sibling branches are branches which start at the same start node.
+        Sibling branches are branches which start at the same start branch node.
         """
         siblingBranches = []
         for siblingCandidate in self.branches:

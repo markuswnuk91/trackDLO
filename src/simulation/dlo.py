@@ -143,10 +143,14 @@ class DeformableLinearObject:
         rootbody.setCollidable(self.collidable)
 
         # set shapes
+        if (segmentLength - 2 * radius) <= 0:
+            bodyLength = segmentLength
+        else:
+            bodyLength = segmentLength - 2 * radius
         self.setBodyShape_Cylinder(
             rootbody,
             radius=radius,
-            length=(segmentLength - 2 * radius),
+            length=bodyLength,
             color=color,
             density=density,
         )
@@ -201,10 +205,14 @@ class DeformableLinearObject:
         body.setGravityMode(self.gravity)
         body.setCollidable(self.collidable)
 
+        if (segmentLength - 2 * radius) <= 0:
+            bodyLength = segmentLength
+        else:
+            bodyLength = segmentLength - 2 * radius
         self.setBodyShape_Cylinder(
             body,
             radius=radius,
-            length=(segmentLength - 2 * radius),
+            length=bodyLength,
             color=color,
             density=density,
         )

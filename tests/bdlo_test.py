@@ -33,6 +33,30 @@ testTopologyModel_2 = 0.1 * np.array(
 )
 testTopologyModel_3 = np.array([[0, 1], [1, 0]])
 
+testTolologyModel_ICRA = np.array(
+    [
+        [0, 0.175, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0.175, 0, 0.08, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0.08, 0, 0.07, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0.07, 0, 0.07, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0.07, 0, 0.035, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.255, 0],
+        [0, 0, 0, 0, 0.035, 0, 0.088, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0.088, 0, 0.032, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0.032, 0, 0, 0, 0, 0, 0.105, 0, 0.105, 0, 0, 0, 0],
+        [0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0.155, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.155, 0, 0.09, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.09, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0.105, 0, 0, 0, 0, 0, 0.065, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.065, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0.105, 0, 0, 0, 0, 0, 0, 0, 0.225, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.225, 0, 0.1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0],
+        [0, 0, 0, 0, 0.255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.19],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.19, 0],
+    ]
+)
+
 
 def test_bdloTopology_1():
 
@@ -62,6 +86,42 @@ def test_branchedDeformableLinearObject():
     testBDLO_3 = BranchedDeformableLinearObject(testSpec_3)
     testBDLO_3.skel.setPosition(3, 0.4)
 
+    testSpec_ICRA = bdloSpecification(testTolologyModel_ICRA)
+    testBDLO_ICRA = BranchedDeformableLinearObject(testSpec_ICRA, name="Test_BDLO_ICRA")
+    testBDLO_ICRA.skel.setPosition(3, 0.5)
+    # test branch lengths
+    assert testBDLO_ICRA.topology.getBranch(0).getBranchInfo()["length"] == 0.255
+    assert testBDLO_ICRA.topology.getBranch(1).getBranchInfo()["length"] == 0.07
+    assert testBDLO_ICRA.topology.getBranch(2).getBranchInfo()["length"] == 0.1
+    assert testBDLO_ICRA.topology.getBranch(3).getBranchInfo()["length"] == 0.07
+    assert testBDLO_ICRA.topology.getBranch(4).getBranchInfo()["length"] == 0.345
+    assert testBDLO_ICRA.topology.getBranch(5).getBranchInfo()["length"] == 0.155
+    assert testBDLO_ICRA.topology.getBranch(6).getBranchInfo()["length"] == 0.445
+    assert testBDLO_ICRA.topology.getBranch(7).getBranchInfo()[
+        "length"
+    ] - 0.170 == approx(0, abs=1e-8)
+    assert testBDLO_ICRA.topology.getBranch(8).getBranchInfo()[
+        "length"
+    ] - 0.43 == approx(0, abs=1e-8)
+
+    # test getBranchBodyNodes
+    assert testBDLO_ICRA.getBranchBodyNodes(0)[0] == testBDLO_ICRA.skel.getBodyNode(0)
+
+    # test getBranchBodyNodeIndices
+    assert testBDLO_ICRA.getBranchBodyNodeIndices(0)[0] == 0
+
+    # test getLeafBodyNodes
+    assert testBDLO_ICRA.getLeafBodyNodes()[0] == testBDLO_ICRA.skel.getBodyNode(0)
+    assert testBDLO_ICRA.getLeafBodyNodeIndices()[0] == 0
+
+    # test getBranchPointBodyNodes
+    assert len(testBDLO_ICRA.getBranchPointBodyNodes()) == 4
+    assert len(testBDLO_ICRA.getBranchPointBodyNodeIndices()) == 4
+
+    # test getBranchIndexFromBodyNode
+    testBDLO_ICRA.getBranchIndexFromBodyNodeIndex(0)
+
+    # test getBranchBodyNodes
     if visualize:
         world = dart.simulation.World()
         node = dart.gui.osg.WorldNode(world)
@@ -73,6 +133,7 @@ def test_branchedDeformableLinearObject():
         world.addSkeleton(testBDLO_1.skel)
         world.addSkeleton(testBDLO_2.skel)
         world.addSkeleton(testBDLO_3.skel)
+        world.addSkeleton(testBDLO_ICRA.skel)
 
         # Grid settings
         grid = dart.gui.osg.GridVisual()

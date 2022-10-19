@@ -160,6 +160,14 @@ def testTopologyTree():
         detectedWrongTopologyInput = True
     assert detectedWrongTopologyInput == True
 
+    # test getLocalCoordinateFromBranchNode
+    assert (
+        singleDLOTopology.getLocalCoordinateFromBranchNode(
+            singleDLOTopology.getBranch(0), singleDLOTopology.getNodes()[1]
+        )
+        == 0.5
+    )
+
 
 if __name__ == "__main__":
     testNode()

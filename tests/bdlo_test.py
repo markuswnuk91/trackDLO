@@ -104,6 +104,16 @@ def test_branchedDeformableLinearObject():
         "length"
     ] - 0.43 == approx(0, abs=1e-8)
 
+    # test taht branch points are located correctly
+
+    assert (
+        testBDLO_ICRA.topology.getBranchLength(0)
+        - testBDLO_ICRA.getSegmentLengthFromBranch(0) / 2
+        == testBDLO_ICRA.getBranchPointBodyNodes()[0]
+        .getWorldTransform()
+        .translation()[2]
+    )
+
     # test getBranchBodyNodes
     assert testBDLO_ICRA.getBranchBodyNodes(0)[0] == testBDLO_ICRA.skel.getBodyNode(0)
 
@@ -119,7 +129,7 @@ def test_branchedDeformableLinearObject():
     assert len(testBDLO_ICRA.getBranchPointBodyNodeIndices()) == 4
 
     # test getBranchIndexFromBodyNode
-    testBDLO_ICRA.getBranchIndexFromBodyNodeIndex(0)
+    assert testBDLO_ICRA.getBranchIndexFromBodyNodeIndex(0) == 0
 
     # test getBranchBodyNodes
     if visualize:

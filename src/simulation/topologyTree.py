@@ -543,6 +543,7 @@ class topologyTree:
                             endNode=branchOrLeafNode,
                             name=self.name + "_Branch_" + str(len(self.branches)),
                         )
+                        # set branch length
                         branchLength = 0
                         for edges in newBranch.getEdges():
                             branchLength += edges.getEdgeInfo()["length"]
@@ -773,3 +774,30 @@ class topologyTree:
             if siblingCandidate.getStartNode() == branch.getStartNode():
                 siblingBranches.append(siblingCandidate)
         return siblingBranches
+
+    def getBranchLength(self, branchNumber: int):
+        return self.getBranch(branchNumber).getBranchInfo()["length"]
+
+    def getLocalCoordinateFromBranchNode(self, branch: branch, node: node):
+        if node not in branch.getNodes():
+            raise ValueError("The given node is not in the given branch")
+        else:
+            if node == branch.getStartNode():
+                return 0
+            elif node == branch.getEndNode():
+                return 0
+            else:
+                branchLength = branch.getBranchInfo()["length"]
+                localLength = 0
+                currentNode = node
+                while currentNode is not branch.getStartNode():
+                    if currentNode is not None:
+                        localLength += currentNode.getParentEdge().getEdgeInfo()[
+                            "length"
+                        ]
+                        currentNode = currentNode.getParent()
+                    else:
+                        raise ValueError(
+                            "End node and start node seem to be not connected."
+                        )
+            return localLength / branchLength

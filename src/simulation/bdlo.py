@@ -401,6 +401,19 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
                         branchNode.setBranchNodeInfo(
                             {"bodyNodeIndex": correspondingBodyNodes[-1]}
                         )
+
+                    # add information of the corresponding bodyNodes to the memberNodes
+                    for node in branch.getMemberNodes():
+                        localCoord = self.topology.getLocalCoordinateFromBranchNode(
+                            branch, node
+                        )
+                        bodyNodeIndex = self.getBodyNodeFromLocalBranchCoordinate(
+                            branch, localCoord
+                        )
+                        node.setNodeInfo(
+                            {"bodyNodeIndex": correspondingBodyNodes[bodyNodeIndex]}
+                        )
+
                 else:
                     # generate bodyNodes for remaining branches
                     parentBodyNodeIdx = branch.getStartNode().getNodeInfo()[
@@ -451,6 +464,18 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
                         branchNode = self.topology.getBranchNodeFromNode(endNode)
                         branchNode.setBranchNodeInfo(
                             {"bodyNodeIndex": correspondingBodyNodes[-1]}
+                        )
+
+                    # add information of the corresponding bodyNodes to the memberNodes
+                    for node in branch.getMemberNodes():
+                        localCoord = self.topology.getLocalCoordinateFromBranchNode(
+                            branch, node
+                        )
+                        bodyNodeIndex = self.getBodyNodeFromLocalBranchCoordinate(
+                            branch, localCoord
+                        )
+                        node.setNodeInfo(
+                            {"bodyNodeIndex": correspondingBodyNodes[bodyNodeIndex]}
                         )
 
                 # get next branch candidates for which bodyNodes are generated
@@ -534,3 +559,22 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
         if branchIndex == -1:
             warn("Given bodyNodeIndex is not in skeleton.")
             return None
+
+    def getSegmentLengthFromBranch(self, branchNumber: int):
+        return (
+            self.topology.getBranch(branchNumber).getBranchInfo()["length"]
+            / self.topology.getBranch(branchNumber).getBranchInfo()["numSegments"]
+        )
+
+    def getBodyNodeFromLocalBranchCoordinate(self, branch, s: float):
+        branchLength = branch.getBranchInfo()["length"]
+        numSegments = branch.getBranchInfo()["numSegments"]
+        segmentLength = branchLength / numSegments
+        if s > 1 or s < 0:
+            raise ValueError(
+                "Obtained {} as value of the local coordinate. The expected value is from [0, 1]".format(
+                    s
+                )
+            )
+        else:
+            return int(np.ceil(s * branchLength / segmentLength))

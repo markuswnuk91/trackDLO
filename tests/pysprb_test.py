@@ -14,7 +14,7 @@ try:
 except:
     print("Imports for Test SPR failed.")
     raise
-vis = False  # enable for visualization
+vis = True  # enable for visualization
 
 
 def visualize(iteration, error, X, Y, ax):
@@ -75,6 +75,66 @@ def runSPRBvsCPD():
     return cpdreg.T - sprbreg.T
 
 
+def runSPRBvsCPD_Occluded():
+    X = np.loadtxt("tests/testdata/pysprb/fish_source.txt")
+    # Y = np.loadtxt("tests/testdata/pysprb/fish_target_Occluded_10.txt")
+    # Y = np.loadtxt("tests/testdata/pysprb/fish_target_Occluded_20.txt")
+    Y = np.loadtxt("tests/testdata/pysprb/fish_target_occluded_30.txt")
+    sprbreg = StructurePreservedRegistration4BDLO(
+        **{"X": X, "Y": Y, "tauFactor": 1, "lambdaAnnealing": 1}
+    )
+    if vis:
+        fig = plt.figure()
+        fig.add_axes([0, 0, 1, 1])
+        callback = partial(visualize, ax=fig.axes[0])
+        sprbreg.register(callback)
+        # plt.show()
+    else:
+        sprbreg.register()
+    cpdreg = CoherentPointDrift(**{"X": X, "Y": Y})
+    if vis:
+        fig = plt.figure()
+        fig.add_axes([0, 0, 1, 1])
+        callback = partial(visualize, ax=fig.axes[0])
+        cpdreg.register(callback)
+        # plt.show()
+    else:
+        cpdreg.register()
+
+    return cpdreg.T - sprbreg.T
+
+
+def runSPRBvsSPR_Occluded():
+    X = np.loadtxt("tests/testdata/pysprb/fish_source.txt")
+    # Y = np.loadtxt("tests/testdata/pysprb/fish_target_Occluded_10.txt")
+    # Y = np.loadtxt("tests/testdata/pysprb/fish_target_Occluded_20.txt")
+    Y = np.loadtxt("tests/testdata/pysprb/fish_target_occluded_30.txt")
+    sprbreg = StructurePreservedRegistration4BDLO(
+        **{"X": X, "Y": Y, "tauFactor": 1, "lambdaAnnealing": 1}
+    )
+    if vis:
+        fig = plt.figure()
+        fig.add_axes([0, 0, 1, 1])
+        callback = partial(visualize, ax=fig.axes[0])
+        sprbreg.register(callback)
+        # plt.show()
+    else:
+        sprbreg.register()
+    sprreg = StructurePreservedRegistration(
+        **{"X": X, "Y": Y, "tauFactor": 1, "lambdaAnnealing": 1}
+    )
+    if vis:
+        fig = plt.figure()
+        fig.add_axes([0, 0, 1, 1])
+        callback = partial(visualize, ax=fig.axes[0])
+        sprreg.register(callback)
+        # plt.show()
+    else:
+        sprreg.register()
+
+    return sprreg.T - sprbreg.T
+
+
 def testSPRB():
     T_test = runSPRB()
     T_ref = np.loadtxt("tests/testdata/pycpd/fish_deformable_2D_result_Targets.txt")
@@ -88,6 +148,12 @@ def testSPRBvsCPD():
     assert np.sum(accuracyDiff) / len(accuracyDiff) == approx(0, abs=2e-4)
 
 
+def testSPRBvsCPD_Occlusion():
+    accuracyDiff = runSPRBvsCPD_Occluded()
+
+
 if __name__ == "__main__":
-    testSPRB()
-    testSPRBvsCPD()
+    # testSPRB()
+    # testSPRBvsCPD()
+    # testSPRBvsCPD_Occlusion()
+    runSPRBvsSPR_Occluded()

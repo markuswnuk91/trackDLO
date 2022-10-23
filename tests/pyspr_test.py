@@ -96,6 +96,21 @@ def runSPRvsCPD():
     return cpdreg.T - sprreg.T, cpdreg.iteration - sprreg.iteration
 
 
+def runSPR3D():
+    X = np.genfromtxt("tests/testdata/spr/Xinit.csv", delimiter=",")
+    Y = np.genfromtxt("tests/testdata/spr/Y.csv", delimiter=",")
+    reg3D = StructurePreservedRegistration(**{"X": X, "Y": Y})
+    if vis:
+        fig = plt.figure()
+        fig.add_axes([0, 0, 1, 1])
+        callback = partial(visualize, ax=fig.axes[0])
+        reg3D.register(callback)
+        # plt.show()
+    else:
+        reg3D.register()
+    return reg3D.T
+
+
 def testSPR():
     T_test = runSPR()
     T_ref = np.loadtxt("tests/testdata/pycpd/fish_deformable_2D_result_Targets.txt")
@@ -104,9 +119,9 @@ def testSPR():
     assert diffSum == approx(0, abs=1e-2)
 
     accuracyDiff, iterationDiff = runSPRvsCPD()
-
     assert accuracyDiff == approx(0, abs=1e-5)
     assert iterationDiff == 0
+    runSPR3D()
 
 
 if __name__ == "__main__":

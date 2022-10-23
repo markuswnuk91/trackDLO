@@ -24,10 +24,7 @@ class NonRigidRegistration(object):
         Number of data points
 
     D: int
-        Dimensionality of source and target poitns
-
-    C: numpy array
-        Correspondance vector such that X corresponds to Y(C,:)
+        Dimensionality of source and target points
 
     iterations: int
         The current iteration throughout the registration
@@ -46,10 +43,10 @@ class NonRigidRegistration(object):
 
     def __init__(self, X, Y, max_iterations=None, tolerance=None, *args, **kwargs):
         if type(X) is not np.ndarray or X.ndim != 2:
-            raise ValueError("The target point cloud (X) must be at a 2D numpy array.")
+            raise ValueError("The source point cloud (X) must be at a 2D numpy array.")
 
         if type(Y) is not np.ndarray or Y.ndim != 2:
-            raise ValueError("The source point cloud (Y) must be a 2D numpy array.")
+            raise ValueError("The target point cloud (Y) must be a 2D numpy array.")
 
         if X.shape[1] != Y.shape[1]:
             raise ValueError(

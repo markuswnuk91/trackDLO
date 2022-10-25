@@ -9,8 +9,8 @@ class ShapeReconstruction(object):
 
     Attributes:
     -------------
-    X: numpy array
-        MxD array of source points (e.g. from a registration result)
+    Y: numpy array
+        MxD array of target points (e.g. from a registration result)
 
     M: int
         Number of data points
@@ -28,11 +28,13 @@ class ShapeReconstruction(object):
         Dimensionality of source points and weights
     """
 
-    def __init__(self, X, Sx, numSc=None):
-        if type(X) is not np.ndarray or X.ndim != 2:
-            raise ValueError("The source points (X) must be at a 2D numpy array.")
+    def __init__(
+        self, Y, Sx, L, numSc=None, callback=lambda **kwargs: None, *args, **kwargs
+    ):
+        if type(Y) is not np.ndarray or Y.ndim != 2:
+            raise ValueError("The target points (Y) must be at a 2D numpy array.")
 
-        if X.shape[0] < X.shape[1]:
+        if Y.shape[0] < Y.shape[1]:
             raise ValueError(
                 "The dimensionality is larger than the number of points. Possibly wrong orientation of X."
             )
@@ -51,11 +53,19 @@ class ShapeReconstruction(object):
             )
             numSc = int(numSc)
 
-        self.X = X
+        if L is not None and (not isinstance(L, numbers.Number) or L < 0):
+            raise ValueError(
+                "Expected a positive float for length of the DLO. Instead got: {}".format(
+                    L
+                )
+            )
+        self.Y = Y
         self.Sx = Sx
-        (self.M, self.D) = self.X.shape
+        self.L = L
+        (self.M, self.D) = self.Y.shape
         self.numSc = 100 if numSc is None else numSc
-        self.Sc = np.linspace(0, 1, self.numSc)
+        self.Sc = np.linspace(0, self.L, self.numSc)
+        self.callback = None if callback is None else callback
 
     def evalAnsatzFuns(self, S):
         """Placeholder for child class."""

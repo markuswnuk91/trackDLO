@@ -32,10 +32,10 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
 
         Sintegral: List
             List of local coodiante vectors the integral over zeta should be solved for.
-            For each point in X the integral needs to be solved.
+            For each point in Y the integral needs to be solved.
     """
 
-    def __init__(self, L, N=None, W=None, *args, **kwargs):
+    def __init__(self, N=None, W=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if N is not None and (not isinstance(N, numbers.Number) or N < 4 or N % 2 != 0):
             raise ValueError(
@@ -61,23 +61,19 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         #         "Second dimension of weight array must have the same number of entries as the number of ansatz functions."
         #     )
 
-        if L is not None and (not isinstance(L, numbers.Number) or L < 0):
-            raise ValueError(
-                "Expected a positive float for length of the DLO. Instead got: {}".format(
-                    L
-                )
-            )
-
         self.N = 10 if N is None else N
         self.W = np.zeros(3 + 2 * self.N) if W is None else W
-        self.L = L
         self.Ec = self.evalAnsatzFuns(self.Sc)
         self.Ex = self.evalAnsatzFuns(self.Sx)
         self.Zeta = np.array((1, 0, 1))
-        self.aPhi = self.W[3 : self.N + 3]
-        self.aTheta = self.W[self.N + 3 : 2 * self.N + 3]
+        # self.aPhi = self.W[3 : self.N + 3]
+        # self.aTheta = self.W[self.N + 3 : 2 * self.N + 3]
         # self.x0 = np.zeros(3)
-        self.x0 = self.X[0]
+        # self.aPhi = np.linspace(1, 0, 10)
+        # self.aTheta = np.linspace(1, 0, 10)
+        self.aPhi = np.zeros(self.N)
+        self.aTheta = np.zeros(self.N)
+        self.x0 = self.Y[0]
         self.Sintegral = self.determineIntegrationPoints(self.Sc, self.Sx)
         self.optimVars = self.initOptimVars()
 
@@ -85,16 +81,16 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         """returns the ansatz functions evaluated at the local coodinates in S
 
         Args:
-            S (np.array): Array of local coordinates in [0,1] where the ansatz functions should be evaluated
+            S (np.array): Array of local coordinates in [0,L] where the ansatz functions should be evaluated
 
         Returns:
             E (np.array): NxD array of ansatz functions evaluated at local coodinates in S
         """
         E = np.ones((self.N, len(S)))
-        E[1, :] = S * self.L
+        E[1, :] = S
         for i in range(1, int((self.N / 2))):
-            E[2 * i, :] = np.sin(2 * np.pi * i * S)
-            E[2 * i + 1, :] = np.cos(2 * np.pi * i * S)
+            E[2 * i, :] = np.sin(2 * np.pi * i * S / self.L)
+            E[2 * i + 1, :] = np.cos(2 * np.pi * i * S / self.L)
         return E
 
     def evalTheta(self, S):
@@ -133,29 +129,40 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         return zetaIntegral
 
     def updateParameters(self, optimVars):
-        self.x0 = optimVars[:3]
-        self.aPhi = optimVars[3 : self.N + 3]
-        self.aTheta = optimVars[self.N + 3 : 2 * self.N + 3]
+        # self.x0 = optimVars[:3]
+        # self.aPhi = optimVars[3 : self.N + 3]
+        # self.aTheta = optimVars[self.N + 3 : 2 * self.N + 3]
+
+        self.aPhi = optimVars[0 : self.N]
+        self.aTheta = optimVars[self.N : 2 * self.N]
+        self.X = self.x0 + self.integrateZeta(self.Sintegral)
 
     def costFun(self, optimVars):
         self.updateParameters(optimVars)
-        error = np.linalg.norm(
-            self.X
-            - (
-                np.tile(optimVars[:3], (len(self.X), 1))
-                + self.L * self.integrateZeta(self.Sintegral)
-            )
-        )
-        print(error)
+        error = np.linalg.norm(self.Y - self.X)
+
+        if callable(self.callback):
+            kwargs = {
+                "X": self.X,
+                "Y": self.Y,
+            }
+            self.callback(**kwargs)
         return error
 
     def initOptimVars(self):
-        optimVars = np.zeros(2 * self.N + 3)
-        optimVars[:3] = self.x0
-        optimVars[3 : self.N + 3] = self.aPhi
-        optimVars[self.N + 3 : 2 * self.N + 3] = self.aTheta
+        # optimVars = np.zeros(2 * self.N + 3)
+        # optimVars[:3] = self.x0
+        # optimVars[3 : self.N + 3] = self.aPhi
+        # optimVars[self.N + 3 : 2 * self.N + 3] = self.aTheta
+
+        optimVars = np.ones(2 * self.N)
+        optimVars[0 : self.N] = self.aPhi
+        optimVars[self.N : 2 * self.N] = self.aTheta
         return optimVars
 
     def estimateShape(self):
         res = least_squares(self.costFun, self.optimVars, verbose=2)
         self.W = res.x
+
+    def registerCallback(self, callback):
+        self.callback = callback

@@ -22,10 +22,10 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
     Attributes
         ----------
         N: int
-            Number of ansatz functions
+            Number of ansatz functions. Wakamatsu et al. use N = 10 in their implementation.
 
-        W: numpy array
-            NxD array of weights. Provide as input to initialize weights. Otherwise defaults to all zero.
+        aPhi: numpy array
+            Nx1 array of initial values for the weights to approximate angle Phi. Provide as input to initialize weights. Otherwise defaults to all zero.
 
         L: float
             Length of the DLO which should be reconstructed
@@ -35,21 +35,8 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             For each point in Y the integral needs to be solved.
     """
 
-    def __init__(self, N=None, W=None, *args, **kwargs):
+    def __init__(self, aPhi=None, aTheta=None, Rflex=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if N is not None and (not isinstance(N, numbers.Number) or N < 4 or N % 2 != 0):
-            raise ValueError(
-                "Expected a positive even integer larger than 4 for the number of ansazt functions. Using less ansatz functions is not useful for the Wakamatsu model. Instead got: {}".format(
-                    N
-                )
-            )
-        elif isinstance(N, numbers.Number) and not isinstance(N, int):
-            warn(
-                "Received a non-integer value for max_iterations: {}. Casting to integer.".format(
-                    N
-                )
-            )
-            N = int(N)
 
         # if W is not None and W.shape[0] != 2:
         #     raise ValueError(
@@ -61,19 +48,15 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         #         "Second dimension of weight array must have the same number of entries as the number of ansatz functions."
         #     )
 
-        self.N = 10 if N is None else N
-        self.W = np.zeros(3 + 2 * self.N) if W is None else W
+        self.N = 10
+
+        self.aPhi = 0.001 * np.ones(self.N) if aPhi is None else aPhi
+        self.aTheta = 0.001 * np.ones(self.N) if aTheta is None else aTheta
+        self.x0 = self.Y[0]
+        self.Rflex = 0.1 if Rflex is None else Rflex
+
         self.Ec = self.evalAnsatzFuns(self.Sc)
         self.Ex = self.evalAnsatzFuns(self.Sx)
-        self.Zeta = np.array((1, 0, 1))
-        # self.aPhi = self.W[3 : self.N + 3]
-        # self.aTheta = self.W[self.N + 3 : 2 * self.N + 3]
-        # self.x0 = np.zeros(3)
-        # self.aPhi = np.linspace(1, 0, 10)
-        # self.aTheta = np.linspace(1, 0, 10)
-        self.aPhi = np.zeros(self.N)
-        self.aTheta = np.zeros(self.N)
-        self.x0 = self.Y[0]
         self.Sintegral = self.determineIntegrationPoints(self.Sc, self.Sx)
         self.optimVars = self.initOptimVars()
 
@@ -87,17 +70,39 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             E (np.array): NxD array of ansatz functions evaluated at local coodinates in S
         """
         E = np.ones((self.N, len(S)))
-        E[1, :] = S
+        E[1, :] = S / self.L
         for i in range(1, int((self.N / 2))):
             E[2 * i, :] = np.sin(2 * np.pi * i * S / self.L)
             E[2 * i + 1, :] = np.cos(2 * np.pi * i * S / self.L)
         return E
 
+    def evalAnsatzFunDerivs(self, S):
+        """returns the derivatives of the ansatz functions evaluated at the local coodinates in S
+
+        Args:
+            S (np.array): Array of local coordinates in [0,L] where the ansatz functions should be evaluated
+
+        Returns:
+            dE (np.array): NxD array of derivatives of the ansatz functions evaluated at local coodinates in S
+        """
+        dE = np.zeros((self.N, len(S)))
+        dE[1, :] = np.ones(len(S)) / self.L
+        for i in range(1, int((self.N / 2))):
+            dE[2 * i, :] = np.cos(2 * np.pi * i * S / self.L) * (2 * np.pi * i / self.L)
+            dE[2 * i + 1, :] = -np.sin(2 * np.pi * i * S / self.L) * (
+                2 * np.pi * i / self.L
+            )
+        return dE
+
     def evalTheta(self, S):
-        return self.aTheta @ self.evalAnsatzFuns(S)
+        theta = self.aTheta @ self.evalAnsatzFuns(S)
+        # print("Theta: {}".format(theta))
+        return theta
 
     def evalPhi(self, S):
-        return self.aPhi @ self.evalAnsatzFuns(S)
+        phi = self.aPhi @ self.evalAnsatzFuns(S)
+        # print("Phi: {}".format(phi))
+        return phi
 
     def evalZeta(self, S):
         """from eq.5, where we assume zero strain"""
@@ -109,24 +114,52 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             )
         )
 
+    def evalKappa(self, S):
+        dThetaSquared = np.square(self.aTheta @ self.evalAnsatzFunDerivs(S))
+        dPhiSquared = np.square(self.aPhi @ self.evalAnsatzFunDerivs(S))
+        return dThetaSquared + dPhiSquared * np.square(np.sin(self.evalTheta(S)))
+
     def determineIntegrationPoints(self, Sc, Sx):
         Sintegral = []
         for sx in Sx:
             Sintegral.append(np.append(Sc[Sc < sx], sx))
         return Sintegral
 
-    def integrateZeta(self, Sintegal):
+    def evalUflex(self, s):
+        Uflex = self.Rflex * self.integrateOverS(self.evalKappa, s)
+        # print(Uflex)
+        return Uflex
+
+    def integrateOverS(self, fun, SLim):
+        """returns the integrals over [0,sLim] of a function fun, the function is evaluated at all collocation points Sc up to the values sLim given as a list in SLim.
+
+        Args:
+            fun (function(S)): funcntion that can be evaluated at different local coordinates, where teh results for different s are ordered along the second dimenstion.
+            SLim (np.array): array of local coodinates determining the upper limit of the integrals
+
+        Returns:
+            integrals( np.array): 1xD array
+        """
         # XS = np.array(len(Sx), self.D)
         # for i, s in enumerate(S):
         #     Ec = self.Ec[self.Sc < s]
         #     Ex = Ex(i)
         #     Eall = np.hstack(Ec, Ex)
         #     XS[i, 1] = np.sin(aTheta @ Eall) * np.cos(aPhi @ Eall)
-        zetaIntegral = np.zeros((len(Sintegal), self.D))
-        for i, S in enumerate(Sintegal):
-            for d in range(self.D):
-                zetaIntegral[i, d] = np.trapz(self.evalZeta(S)[d, :], S)
-        return zetaIntegral
+        SIntervals = self.determineIntegrationPoints(self.Sc, SLim)
+        results = []
+        for i, Sintegral in enumerate(SIntervals):
+            funValues = fun(Sintegral)
+            integral = np.trapz(funValues, Sintegral)
+            results.append(integral)
+        return np.array(results).transpose()
+
+    # def integrateZeta(self, Sintegral):
+    #     zetaIntegral = np.zeros((len(Sintegral), self.D))
+    #     for i, S in enumerate(Sintegral):
+    #         for d in range(self.D):
+    #             zetaIntegral[i, d] = np.trapz(self.evalZeta(S)[d, :], S)
+    #     return zetaIntegral
 
     def updateParameters(self, optimVars):
         # self.x0 = optimVars[:3]
@@ -135,11 +168,11 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
 
         self.aPhi = optimVars[0 : self.N]
         self.aTheta = optimVars[self.N : 2 * self.N]
-        self.X = self.x0 + self.integrateZeta(self.Sintegral)
+        self.X = self.x0 + self.integrateOverS(self.evalZeta, self.Sx).transpose()
 
     def costFun(self, optimVars):
         self.updateParameters(optimVars)
-        error = np.linalg.norm(self.Y - self.X)
+        error = self.evalUflex([self.L]) + np.linalg.norm(self.Y - self.X)
 
         if callable(self.callback):
             kwargs = {
@@ -155,7 +188,7 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         # optimVars[3 : self.N + 3] = self.aPhi
         # optimVars[self.N + 3 : 2 * self.N + 3] = self.aTheta
 
-        optimVars = np.ones(2 * self.N)
+        optimVars = np.zeros(2 * self.N)
         optimVars[0 : self.N] = self.aPhi
         optimVars[self.N : 2 * self.N] = self.aTheta
         return optimVars

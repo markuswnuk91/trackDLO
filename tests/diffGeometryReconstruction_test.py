@@ -41,6 +41,7 @@ def visualize(X, Y, ax):
 def runReconstruction():
     Y = np.ones((10, 3))
     Y[:, 1] = np.linspace(0, 100, 10)
+    # Y[:, 2] = np.linspace(0, 90, 10)
     # X[5, 2] = 55
     Sx = np.linspace(0, 100, 10)
     if vis:
@@ -48,11 +49,11 @@ def runReconstruction():
         ax = fig.add_subplot(projection="3d")
         callback = partial(visualize, ax=ax)
         testReconstruction = DifferentialGeometryReconstruction(
-            **{"Y": Y, "Sx": Sx, "L": 100, "numSc": 20, "callback": callback}
+            **{"Y": Y, "Sx": Sx, "L": 100, "numSc": 100, "callback": callback}
         )
     else:
         testReconstruction = DifferentialGeometryReconstruction(
-            **{"Y": Y, "Sx": Sx, "L": 100, "numSc": 20}
+            **{"Y": Y, "Sx": Sx, "L": 100, "numSc": 100}
         )
     testReconstruction.estimateShape()
 

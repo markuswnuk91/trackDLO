@@ -41,7 +41,7 @@ def visualize(X, Y, ax):
 def runReconstruction():
     Y = np.ones((10, 3))
     Y[:, 1] = np.linspace(0, 100, 10)
-    # Y[:, 2] = np.linspace(0, 90, 10)
+    # Y[:, 2] = np.linspace(0, 50, 10)
     # X[5, 2] = 55
     Sx = np.linspace(0, 100, 10)
     if vis:

@@ -35,7 +35,9 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             For each point in Y the integral needs to be solved.
     """
 
-    def __init__(self, aPhi=None, aTheta=None, Rflex=None, *args, **kwargs):
+    def __init__(
+        self, aPhi=None, aTheta=None, aPsi=None, Rflex=None, Rtor=None, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
 
         # if W is not None and W.shape[0] != 2:
@@ -50,15 +52,20 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
 
         self.N = 10
 
-        self.aPhi = 0.001 * np.ones(self.N) if aPhi is None else aPhi
-        self.aTheta = 0.001 * np.ones(self.N) if aTheta is None else aTheta
+        self.aPhi = 0.1 * np.ones(self.N) if aPhi is None else aPhi
+        self.aTheta = 0.1 * np.ones(self.N) if aTheta is None else aTheta
+        self.aPsi = 0 * np.ones(self.N) if aPsi is None else aPsi
+        self.Rflex = 1 if Rflex is None else Rflex
+        self.Rtor = 1 if Rtor is None else Rtor
+        self.Density = 0.1  # kg/m
         self.x0 = self.Y[0]
-        self.Rflex = 0.1 if Rflex is None else Rflex
 
         self.Ec = self.evalAnsatzFuns(self.Sc)
         self.Ex = self.evalAnsatzFuns(self.Sx)
         self.Sintegral = self.determineIntegrationPoints(self.Sc, self.Sx)
-        self.optimVars = self.initOptimVars()
+        self.optimVars, self.mappingDict = self.initOptimVars(
+            **{"aPhi": self.aPhi, "aTheta": self.aTheta, "aPsi": self.aPsi}
+        )
 
     def evalAnsatzFuns(self, S):
         """returns the ansatz functions evaluated at the local coodinates in S
@@ -114,10 +121,23 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             )
         )
 
-    def evalKappa(self, S):
+    def evalKappaSquared(self, S):
         dThetaSquared = np.square(self.aTheta @ self.evalAnsatzFunDerivs(S))
         dPhiSquared = np.square(self.aPhi @ self.evalAnsatzFunDerivs(S))
         return dThetaSquared + dPhiSquared * np.square(np.sin(self.evalTheta(S)))
+
+    def evalOmegaSquared(self, S):
+        dPhi = self.aPhi @ self.evalAnsatzFunDerivs(S)
+        dPsi = self.aPsi @ self.evalAnsatzFunDerivs(S)
+        omegaSquared = np.square(dPhi * np.cos(self.evalTheta(S)) + dPsi)
+        # print(omegaSquared)
+        return omegaSquared
+
+    def evalPositions(self, S):
+        Xintegral = self.integrateOverS(self.evalZeta, S).transpose()
+        x0 = self.x0
+        X = self.x0 + Xintegral
+        return X.transpose()
 
     def determineIntegrationPoints(self, Sc, Sx):
         Sintegral = []
@@ -126,19 +146,27 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         return Sintegral
 
     def evalUflex(self, s):
-        Uflex = self.Rflex * self.integrateOverS(self.evalKappa, s)
+        Uflex = 0.5 * self.Rflex * self.integrateOverS(self.evalKappaSquared, s)
         # print(Uflex)
         return Uflex
+
+    def evalUtor(self, s):
+        Utor = 0.5 * self.Rtor * self.integrateOverS(self.evalOmegaSquared, s)
+        return Utor
+
+    def evalUgrav(self, s):
+        Ugrav = self.Density * self.integrateOverS(self.evalPositions, s)[2]
+        return Ugrav
 
     def integrateOverS(self, fun, SLim):
         """returns the integrals over [0,sLim] of a function fun, the function is evaluated at all collocation points Sc up to the values sLim given as a list in SLim.
 
         Args:
-            fun (function(S)): funcntion that can be evaluated at different local coordinates, where teh results for different s are ordered along the second dimenstion.
+            fun (function(S)): vector valued function that can be evaluated at different local coordinates, where the dimension of the result is ordered along the first dimension and the results for different S are ordered along the second dimension.
             SLim (np.array): array of local coodinates determining the upper limit of the integrals
 
         Returns:
-            integrals( np.array): 1xD array
+            integrals( np.array): Dxdim(SLim) array of integals
         """
         # XS = np.array(len(Sx), self.D)
         # for i, s in enumerate(S):
@@ -148,7 +176,7 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         #     XS[i, 1] = np.sin(aTheta @ Eall) * np.cos(aPhi @ Eall)
         SIntervals = self.determineIntegrationPoints(self.Sc, SLim)
         results = []
-        for i, Sintegral in enumerate(SIntervals):
+        for Sintegral in SIntervals:
             funValues = fun(Sintegral)
             integral = np.trapz(funValues, Sintegral)
             results.append(integral)
@@ -166,13 +194,19 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         # self.aPhi = optimVars[3 : self.N + 3]
         # self.aTheta = optimVars[self.N + 3 : 2 * self.N + 3]
 
-        self.aPhi = optimVars[0 : self.N]
-        self.aTheta = optimVars[self.N : 2 * self.N]
-        self.X = self.x0 + self.integrateOverS(self.evalZeta, self.Sx).transpose()
+        self.aPhi = optimVars[self.mappingDict["aPhi"]]
+        self.aTheta = optimVars[self.mappingDict["aTheta"]]
+        self.aPsi = optimVars[self.mappingDict["aPsi"]]
+        self.X = self.evalPositions(self.Sx).transpose()
 
     def costFun(self, optimVars):
         self.updateParameters(optimVars)
-        error = self.evalUflex([self.L]) + np.linalg.norm(self.Y - self.X)
+        error = (
+            self.evalUflex([self.L])
+            + self.evalUtor([self.L])
+            + self.evalUgrav([self.L])
+            + 100 * np.linalg.norm(self.Y - self.X)
+        )
 
         if callable(self.callback):
             kwargs = {
@@ -182,16 +216,25 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             self.callback(**kwargs)
         return error
 
-    def initOptimVars(self):
+    def initOptimVars(self, **kwargs):
         # optimVars = np.zeros(2 * self.N + 3)
         # optimVars[:3] = self.x0
         # optimVars[3 : self.N + 3] = self.aPhi
         # optimVars[self.N + 3 : 2 * self.N + 3] = self.aTheta
+        numOptVars = 0
+        for key in kwargs:
+            numOptVars += len(kwargs[key])
+        optimVars = np.zeros(numOptVars)
 
-        optimVars = np.zeros(2 * self.N)
-        optimVars[0 : self.N] = self.aPhi
-        optimVars[self.N : 2 * self.N] = self.aTheta
-        return optimVars
+        startOptVarIdx = 0
+        endOptVarIdx = 0
+        mappingDict = {}
+        for key in kwargs:
+            endOptVarIdx += len(kwargs[key])
+            optimVars[startOptVarIdx:endOptVarIdx] = kwargs[key]
+            mappingDict[key] = list(range(startOptVarIdx, endOptVarIdx))
+            startOptVarIdx = endOptVarIdx
+        return optimVars, mappingDict
 
     def estimateShape(self):
         res = least_squares(self.costFun, self.optimVars, verbose=2)

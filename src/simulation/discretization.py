@@ -147,8 +147,8 @@ def determineNumSegments(
     return numSegments
 
 
-def calcualteSegmentLength(numSegments, segmentLength):
-    return segmentLength / numSegments
+def calcualteSegmentLength(numSegments, length):
+    return length / numSegments
 
 
 def calculateWidthErrorSecant(minBendingRadius, segmentLength):

@@ -18,10 +18,10 @@ except:
 vis = True  # enable for visualization
 
 # DLO parameters
-length = 1
+length = 0.5
 minBendingRadius = 0.12
 errorLengthTol = 0.03
-errorWidthTol = 0.005
+errorWidthTol = 0.01
 
 numSegments = determineNumSegments(
     length, minBendingRadius, errorLengthTol, errorWidthTol

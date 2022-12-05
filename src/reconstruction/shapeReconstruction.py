@@ -15,7 +15,7 @@ class ShapeReconstruction(object):
     M: int
         Number of data points
 
-    numS: int
+    numSc: int
         Number of collocation points along the DLO used to sample the continous shape
 
     Sc: numpy array

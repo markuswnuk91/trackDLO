@@ -89,7 +89,7 @@ class bdloSpecification(topologyTree):
 
             if "numSegments" not in branchSpec:
                 warn(
-                    "Expected the branch radius to be specified in the branch specification, but specification has no parameter numSegments for branch {}.".format(
+                    "Expected the desired number of segments to be specified in the branch specification, but specification has no parameter numSegments for branch {}.".format(
                         i
                     )
                 )

@@ -53,8 +53,8 @@ def determineNumSegments(
         )
     elif 2 * minBendingRadius > length:
         raise ValueError(
-            "Expected the DLO's length to be larger than the expected minimal bending radius: {}".format(
-                minBendingRadius
+            "Expected the DLO's length to be larger than the diameter of the osculating circle of the expected maximum curvature: {}".format(
+                2 * minBendingRadius
             )
         )
 
@@ -98,7 +98,7 @@ def determineNumSegments(
         )
         numSegmentsTol = int(numSegmentsTol)
 
-    if secantMode is not isinstance(secantMode, bool):
+    if not isinstance(secantMode, bool):
         warn("Received a non-bool for mode. Defaulting to secant-based mode")
         secantMode = True
 
@@ -136,10 +136,12 @@ def determineNumSegments(
             numSegments += 1
 
         segmentLength = calcualteSegmentLength(numSegments, length)
-        errorLength = calculateLengthErrorTangent(minBendingRadius, segmentLength)
+        errorLength = calculateLengthErrorTangent(
+            minBendingRadius, segmentLength, numSegments
+        )
         while errorLength > errorLengthTol:
             segmentLength = calcualteSegmentLength(numSegments, length)
-            segmenerrorLength = calculateLengthErrorTangent(
+            errorLength = calculateLengthErrorTangent(
                 minBendingRadius, segmentLength, numSegments
             )
             numSegments += 1
@@ -163,8 +165,13 @@ def calculateLengthErrorSecant(minBendingRadius, segmentLength, numSegments):
 
 
 def calculateWidthErrorTangent(minBendingRadius, segmentLength):
-    raise NotImplementedError
+    return np.sqrt(minBendingRadius**2 + (segmentLength / 2) ** 2) - minBendingRadius
 
 
 def calculateLengthErrorTangent(minBendingRadius, segmentLength, numSegments):
-    raise NotImplementedError
+    alpha = np.arctan(minBendingRadius / (segmentLength / 2))
+    s = segmentLength * np.sin(alpha)
+    eLength = segmentLength - (
+        2 * minBendingRadius * np.arcsin(s / (2 * minBendingRadius))
+    )
+    return numSegments * eLength

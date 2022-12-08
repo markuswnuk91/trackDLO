@@ -25,6 +25,7 @@ class bdloSpecification(topologyTree):
         - length (float) : length of the branch [m]
         - radius (float): radius of the branch [m]
         - numSegments (int): desired number of segments the branch should be discretized into
+        - density (float): density of the DLO material [kg/m^3]
         - color (np.array): color of the branch [RGB Values]
         - bendingStiffness (float): bending stiffness of the branch [N/rad]
         - torsionalStiffness (float): torsional stiffness of the branch [N/rad]

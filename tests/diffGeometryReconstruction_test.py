@@ -57,6 +57,8 @@ def runReconstruction():
         )
     testReconstruction.estimateShape()
 
+    testReconstruction
+
 
 if __name__ == "__main__":
     runReconstruction()

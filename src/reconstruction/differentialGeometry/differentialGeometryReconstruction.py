@@ -121,6 +121,26 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             )
         )
 
+    def evalZetaDeriv(self, S):
+        return np.array(
+            (
+                np.cos(self.evalTheta(S))
+                * np.cos(self.evalPhi(S))
+                * (self.aTheta @ self.evalAnsatzFunDerivs(S))
+                - np.sin(self.evalTheta(S))
+                * np.sin(self.evalPhi(S))
+                * (self.aPhi @ self.evalAnsatzFunDerivs(S)),
+                np.cos(self.evalTheta(S))
+                * np.sin(self.evalPhi(S))
+                * (self.aTheta @ self.evalAnsatzFunDerivs(S))
+                + np.sin(self.evalTheta(S))
+                * np.cos(self.evalPhi(S))
+                * (self.aPhi @ self.evalAnsatzFunDerivs(S)),
+                -np.sin(self.evalTheta(S))
+                * (self.aTheta @ self.evalAnsatzFunDerivs(S)),
+            )
+        )
+
     def evalKappaSquared(self, S):
         dThetaSquared = np.square(self.aTheta @ self.evalAnsatzFunDerivs(S))
         dPhiSquared = np.square(self.aPhi @ self.evalAnsatzFunDerivs(S))
@@ -214,6 +234,7 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
                 "Y": self.Y,
             }
             self.callback(**kwargs)
+            print(self.estimateLength())
         return error
 
     def initOptimVars(self, **kwargs):
@@ -237,8 +258,14 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         return optimVars, mappingDict
 
     def estimateShape(self):
-        res = least_squares(self.costFun, self.optimVars, verbose=2)
+        res = least_squares(self.costFun, self.optimVars, max_nfev=10, verbose=2)
         self.W = res.x
+
+    def estimateLength(self):
+        return np.trapz(
+            np.linalg.norm(self.evalZeta(self.Sintegral[-1]), axis=0),
+            self.Sintegral[-1],
+        )
 
     def registerCallback(self, callback):
         self.callback = callback

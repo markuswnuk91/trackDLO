@@ -25,9 +25,9 @@ vis = True  # enable for visualization
 
 
 length = 0.2
-minBendingRadius = 0.08
-errorLengthTol = 0.01
-errorWidthTol = 0.01
+minBendingRadius = 0.01
+errorLengthTol = 0.03
+errorWidthTol = 0.003
 
 numSegments = determineNumSegments(
     length, minBendingRadius, errorLengthTol, errorWidthTol

@@ -79,6 +79,10 @@ def determineNumSegments(
                 errorWidthTol
             )
         )
+    elif errorWidthTol >= minBendingRadius:
+        raise ValueError(
+            "Expected the tolerated width error to be smaller than the minimal bending radius."
+        )
 
     if numSegmentsTol is not None and (
         not isinstance(numSegmentsTol, numbers.Number) or numSegmentsTol < 0
@@ -105,7 +109,7 @@ def determineNumSegments(
     numSegments = 1
     segmentLength = calcualteSegmentLength(numSegments, length)
 
-    while segmentLength > minBendingRadius:
+    while segmentLength > 2 * minBendingRadius:
         segmentLength = calcualteSegmentLength(numSegments, length)
         numSegments += 1
 

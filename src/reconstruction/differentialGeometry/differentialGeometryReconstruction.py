@@ -5,6 +5,7 @@ import numpy as np
 import numbers
 from warnings import warn
 from scipy.optimize import least_squares
+import scipy.integrate as integrate
 
 try:
     sys.path.append(os.getcwd().replace("/src/reconstruction/differentialGeometry", ""))
@@ -66,6 +67,9 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         self.optimVars, self.mappingDict = self.initOptimVars(
             **{"aPhi": self.aPhi, "aTheta": self.aTheta, "aPsi": self.aPsi}
         )
+        # self.optimVars, self.mappingDict = self.initOptimVars(
+        #     **{"aPhi": self.aPhi, "aTheta": self.aTheta}
+        # )
 
     def evalAnsatzFuns(self, S):
         """returns the ansatz functions evaluated at the local coodinates in S
@@ -214,9 +218,12 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         # self.aPhi = optimVars[3 : self.N + 3]
         # self.aTheta = optimVars[self.N + 3 : 2 * self.N + 3]
 
-        self.aPhi = optimVars[self.mappingDict["aPhi"]]
-        self.aTheta = optimVars[self.mappingDict["aTheta"]]
-        self.aPsi = optimVars[self.mappingDict["aPsi"]]
+        if "aPhi" in self.mappingDict:
+            self.aPhi = optimVars[self.mappingDict["aPhi"]]
+        if "aTheta" in self.mappingDict:
+            self.aTheta = optimVars[self.mappingDict["aTheta"]]
+        if "aPsi" in self.mappingDict:
+            self.aPsi = optimVars[self.mappingDict["aPsi"]]
         self.X = self.evalPositions(self.Sx).transpose()
 
     def costFun(self, optimVars):
@@ -234,8 +241,11 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
                 "Y": self.Y,
             }
             self.callback(**kwargs)
-            print(self.estimateLength())
+            # print(self.estimateLength())
         return error
+
+    def costFunJac(self, optimVars):
+        return np.ones([1, self.optimVars.size])
 
     def initOptimVars(self, **kwargs):
         # optimVars = np.zeros(2 * self.N + 3)
@@ -258,7 +268,13 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         return optimVars, mappingDict
 
     def estimateShape(self):
-        res = least_squares(self.costFun, self.optimVars, max_nfev=10, verbose=2)
+        res = least_squares(
+            self.costFun,
+            self.optimVars,
+            self.costFunJac,
+            max_nfev=100,
+            verbose=2,
+        )
         self.W = res.x
 
     def estimateLength(self):

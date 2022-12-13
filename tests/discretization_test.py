@@ -8,7 +8,7 @@ from pytest import approx
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.simulation.discretization import (
+    from src.modelling.discretization import (
         determineNumSegments,
         calcualteSegmentLength,
     )

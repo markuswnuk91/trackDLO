@@ -28,18 +28,23 @@ if __name__ == "__main__":
     # helix definition & reconstuction
     helixCurve = lambda s: helixShape(s, heightScaling=1.0, frequency=2.0)
     arcLenght = calcArcLengthFromCurveFun(helixCurve, 0, 1)
-    s = np.linspace(0, 1, 100)
+    s = np.linspace(0, 1, 30)
     Sx = s * arcLenght
     Y = helixCurve(s)
+    Y_rot = Y.copy()
+    Y_rot[:, 2] = Y[:, 1]
+    Y_rot[:, 1] = -Y[:, 2]
     continousReconstruction = DifferentialGeometryReconstruction(
         **{
-            "Y": Y,
+            "Y": Y_rot,
             "Sx": Sx,
             "L": arcLenght,
-            "numSc": 100,
+            "numSc": 10,
             "callback": visCallback,
-            "Rtor": 0.01,
-            "Rflex": 10,
+            "Rtor": 10,
+            "Rflex": 0.01,
+            "Density": 0.1,
+            "wPosDiff": 0.3,
         }
     )
-    continousReconstruction.estimateShape()
+    continousReconstruction.estimateShape(numIter=100)

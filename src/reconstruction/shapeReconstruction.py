@@ -52,6 +52,13 @@ class ShapeReconstruction(object):
                 )
             )
             numSc = int(numSc)
+        elif isinstance(numSc, numbers.Number) and numSc < Sx.size:
+            warn(
+                "Received less collocation points than local coodinates corresponding to the target points: {}. Increasing the number of collocation points to match the number of tartget points.".format(
+                    numSc
+                )
+            )
+            numSc = int(Sx.size)
 
         if L is not None and (not isinstance(L, numbers.Number) or L < 0):
             raise ValueError(

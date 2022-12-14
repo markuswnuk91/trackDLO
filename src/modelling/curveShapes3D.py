@@ -17,8 +17,8 @@ def helixShape(s, widthScaling=1.0, heightScaling=1.0, frequency=1.0, offset=[0,
     """
     curveVecs = np.array(
         [
-            widthScaling * np.sin(frequency * s * np.pi) + offset[0],
-            widthScaling * np.cos(frequency * s * np.pi) + offset[1],
+            widthScaling * np.cos(frequency * s * np.pi) + offset[0],
+            widthScaling * np.sin(frequency * s * np.pi) + offset[1],
             heightScaling * s + offset[2],
         ]
     )

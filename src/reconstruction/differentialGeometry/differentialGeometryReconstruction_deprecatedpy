@@ -55,7 +55,9 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         aPsi=None,
         Rflex=None,
         Rtor=None,
-        Density=None,
+        weigthUFlex=None,
+        weigthUTor=None,
+        weightUGrav=None,
         wPosDiff=None,
         *args,
         **kwargs
@@ -74,14 +76,17 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
 
         self.N = 10
 
-        self.aPhi = 0 * np.ones(self.N) if aPhi is None else aPhi
-        self.aTheta = 0 * np.ones(self.N) if aTheta is None else aTheta
+        self.aPhi = 0.1 * np.ones(self.N) if aPhi is None else aPhi
+        self.aTheta = 0.1 * np.ones(self.N) if aTheta is None else aTheta
         self.aPsi = 0 * np.ones(self.N) if aPsi is None else aPsi
         self.Rflex = 1 if Rflex is None else Rflex
         self.Rtor = 1 if Rtor is None else Rtor
-        self.Density = 0.1 if Density is None else Density  # kg/m
+        self.Density = 0.1  # kg/m
         self.x0 = self.Y[0]
-        self.wPosDiff = 1 if wPosDiff is None else wPosDiff
+        self.weigthUFlex = 1 if weigthUFlex is None else weigthUFlex
+        self.weigthUTor = 1 if weigthUTor is None else weigthUTor
+        self.weightUGrav = 1 if weightUGrav is None else weightUGrav
+        self.wPosDiff = 100 if wPosDiff is None else wPosDiff
 
         self.Ec = self.evalAnsatzFuns(self.Sc)
         self.Ex = self.evalAnsatzFuns(self.Sx)
@@ -132,24 +137,10 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         # print("Theta: {}".format(theta))
         return theta
 
-    def evalThetaDervi_S(self, S):
-        return self.aTheta @ self.evalAnsatzFunDerivs(S)
-
     def evalPhi(self, S):
         phi = self.aPhi @ self.evalAnsatzFuns(S)
         # print("Phi: {}".format(phi))
         return phi
-
-    def evalPhiDeriv_S(self, S):
-        return self.aPhi @ self.evalAnsatzFunDerivs(S)
-
-    def evalPsi(self, S):
-        psi = self.aPsi @ self.evalAnsatzFuns(S)
-        # print("Phi: {}".format(phi))
-        return psi
-
-    def evalPsiDeriv_S(self, S):
-        return self.aPsi @ self.evalAnsatzFunDerivs(S)
 
     def evalZeta(self, S):
         """from eq.5, where we assume zero strain"""
@@ -161,75 +152,30 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             )
         )
 
-    # def evalZetaDeriv_S(self, S):
-    #     return np.array(
-    #         (
-    #             np.cos(self.evalTheta(S))
-    #             * np.cos(self.evalPhi(S))
-    #             * (self.aTheta @ self.evalAnsatzFunDerivs(S))
-    #             - np.sin(self.evalTheta(S))
-    #             * np.sin(self.evalPhi(S))
-    #             * (self.aPhi @ self.evalAnsatzFunDerivs(S)),
-    #             np.cos(self.evalTheta(S))
-    #             * np.sin(self.evalPhi(S))
-    #             * (self.aTheta @ self.evalAnsatzFunDerivs(S))
-    #             + np.sin(self.evalTheta(S))
-    #             * np.cos(self.evalPhi(S))
-    #             * (self.aPhi @ self.evalAnsatzFunDerivs(S)),
-    #             -np.sin(self.evalTheta(S))
-    #             * (self.aTheta @ self.evalAnsatzFunDerivs(S)),
-    #         )
-    #     )
-
-    def evalZetaDeriv_aTheta(self, S):
-        res = np.zeros([3, S.size])
-        res[0, :] = np.cos(self.evalTheta(S)) * np.cos(self.evalPhi(S))
-        res[1, :] = np.cos(self.evalTheta(S)) * np.sin(self.evalPhi(S))
-        res[2, :] = -np.sin(self.evalTheta(S))
-        return res
-
-    def evalZetaDeriv_aPhi(self, S):
-        res = np.zeros([3, S.size])
-        res[0, :] = -np.sin(self.evalTheta(S)) * np.sin(self.evalPhi(S))
-        res[1, :] = np.sin(self.evalTheta(S)) * np.cos(self.evalPhi(S))
-        res[2, :] = 0
-        return res
+    def evalZetaDeriv(self, S):
+        return np.array(
+            (
+                np.cos(self.evalTheta(S))
+                * np.cos(self.evalPhi(S))
+                * (self.aTheta @ self.evalAnsatzFunDerivs(S))
+                - np.sin(self.evalTheta(S))
+                * np.sin(self.evalPhi(S))
+                * (self.aPhi @ self.evalAnsatzFunDerivs(S)),
+                np.cos(self.evalTheta(S))
+                * np.sin(self.evalPhi(S))
+                * (self.aTheta @ self.evalAnsatzFunDerivs(S))
+                + np.sin(self.evalTheta(S))
+                * np.cos(self.evalPhi(S))
+                * (self.aPhi @ self.evalAnsatzFunDerivs(S)),
+                -np.sin(self.evalTheta(S))
+                * (self.aTheta @ self.evalAnsatzFunDerivs(S)),
+            )
+        )
 
     def evalKappaSquared(self, S):
         dThetaSquared = np.square(self.aTheta @ self.evalAnsatzFunDerivs(S))
         dPhiSquared = np.square(self.aPhi @ self.evalAnsatzFunDerivs(S))
         return dThetaSquared + dPhiSquared * np.square(np.sin(self.evalTheta(S)))
-
-    def evalKappaSquaredDeriv_aTheta(self, S):
-        return 2 * (
-            self.aTheta * np.square(self.evalAnsatzFunDerivs(S)).T
-        ).T + np.square(self.aPhi @ self.evalAnsatzFunDerivs(S)) * 2 * np.sin(
-            self.evalTheta(S)
-        ) * self.evalAnsatzFuns(
-            S
-        )
-
-    def evalKappaSquaredDeriv_aPhi(self, S):
-        return (
-            2
-            * self.aPhi
-            * (
-                np.square(self.evalAnsatzFunDerivs(S))
-                * np.square(np.sin(self.evalTheta(S)))
-            ).T
-        ).T
-
-    def evalKappaSquaredDerivs(self, S):
-        kappaSqaredJac = np.zeros([self.optimVars.size, S.size])
-        if "aPhi" in self.mappingDict:
-            kappaSqaredJac[
-                self.mappingDict["aPhi"], :
-            ] = self.evalKappaSquaredDeriv_aPhi(S)
-        if "aTheta" in self.mappingDict:
-            kappaSqaredJac[
-                self.mappingDict["aTheta"], :
-            ] = self.evalKappaSquaredDeriv_aTheta(S)
-        return kappaSqaredJac
 
     def evalOmegaSquared(self, S):
         dPhi = self.aPhi @ self.evalAnsatzFunDerivs(S)
@@ -238,119 +184,11 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         # print(omegaSquared)
         return omegaSquared
 
-    def evalOmegaSquaredDeriv_aTheta(self, S):
-        return (
-            (
-                2
-                * (self.evalPhiDeriv_S(S))
-                * np.cos(self.evalTheta(S) + self.evalPsiDeriv_S(S))
-            )
-            * self.evalPhiDeriv_S(S)
-            * (-np.sin(self.evalTheta(S)))
-            * self.evalAnsatzFuns(S)
-        )
-
-    def evalOmegaSquaredDeriv_aPhi(self, S):
-        return (
-            2
-            * (
-                self.evalPhiDeriv_S(S) * np.cos(self.evalTheta(S))
-                + self.evalPsiDeriv_S(S)
-            )
-            * self.evalAnsatzFunDerivs(S)
-            * np.cos(self.evalTheta(S))
-        )
-
-    def evalOmegaSquaredDeriv_aPsi(self, S):
-        return (
-            2
-            * (
-                self.evalPhiDeriv_S(S) * np.cos(self.evalTheta(S))
-                + self.evalPsiDeriv_S(S)
-            )
-            * self.evalAnsatzFunDerivs(S)
-        )
-
-    def evalOmegaSquaredDerivs(self, S):
-        omegaSqaredJac = np.zeros([self.optimVars.size, S.size])
-        if "aPhi" in self.mappingDict:
-            omegaSqaredJac[
-                self.mappingDict["aPhi"], :
-            ] = self.evalOmegaSquaredDeriv_aPhi(S)
-        if "aTheta" in self.mappingDict:
-            omegaSqaredJac[
-                self.mappingDict["aTheta"], :
-            ] = self.evalOmegaSquaredDeriv_aTheta(S)
-        if "aPsi" in self.mappingDict:
-            omegaSqaredJac[
-                self.mappingDict["aPsi"], :
-            ] = self.evalOmegaSquaredDeriv_aPsi(S)
-        return omegaSqaredJac
-
     def evalPositions(self, S):
         Xintegral = self.integrateOverS(self.evalZeta, S).transpose()
         x0 = self.x0
         X = self.x0 + Xintegral
         return X.transpose()
-
-    def evalPositionsDeriv_aTheta_i(self, S, i):
-        dZeta_daTheta_i = (
-            lambda s: self.evalZetaDeriv_aTheta(s) * self.evalAnsatzFuns(s)[i % self.N]
-        )
-        return self.integrateOverS(dZeta_daTheta_i, S)
-
-    def evalPositionsDeriv_aPhi_i(self, S, i):
-        dZeta_daPhi_i = (
-            lambda s: self.evalZetaDeriv_aPhi(s) * self.evalAnsatzFuns(s)[i % self.N]
-        )
-        return self.integrateOverS(dZeta_daPhi_i, S)
-
-    # def evalPositionsJac_aTheta(self, S):
-    #     PosJac_aTheta = np.zeros([self.aTheta.size, S.size])
-    #     for i in self.mappingDict["aTheta"]:
-    #         dZeta_daTheta_i = (
-    #             lambda s: np.sum(self.evalZetaDeriv_aTheta(s), axis=0)
-    #             * self.evalAnsatzFuns(s)[i % self.N]
-    #         )
-    #         PosJac_aTheta[i % self.N, :] = self.integrateOverS(dZeta_daTheta_i, S)
-    #     return PosJac_aTheta
-
-    # def evalPositionsJac_aPhi(self, S):
-    #     PosJac_aPhi = np.zeros([self.aPhi.size, S.size])
-    #     for i in self.mappingDict["aPhi"]:
-    #         dZeta_daPhi_i = (
-    #             lambda s: np.sum(self.evalZetaDeriv_aPhi(s), axis=0)
-    #             * self.evalAnsatzFuns(s)[i % self.N]
-    #         )
-    #         PosJac_aPhi[i % self.N, :] = self.integrateOverS(dZeta_daPhi_i, S)
-    #     return PosJac_aPhi
-
-    def evalPositionsJac(self, S):
-        positionDiffJac = np.zeros(self.optimVars.size)
-        if "aPhi" in self.mappingDict:
-            for i in self.mappingDict["aPhi"]:
-                positionDiffJac[i] = -2 * np.sum(
-                    (self.Y - self.X)
-                    * self.evalPositionsDeriv_aPhi_i(S, i % self.N).transpose()
-                )
-        if "aTheta" in self.mappingDict:
-            for i in self.mappingDict["aTheta"]:
-                positionDiffJac[i] = -2 * np.sum(
-                    (self.Y - self.X)
-                    * self.evalPositionsDeriv_aTheta_i(S, i % self.N).transpose()
-                )
-        # if "aPhi" in self.mappingDict:
-        #     positionDiffJac[self.mappingDict["aPhi"]] = (
-        #         -2 * np.sum(self.Y - self.X) * self.evalPositionsDeriv_aTheta_i(S, 0)
-        #     )
-        # if "aTheta" in self.mappingDict:
-        #     positionDiffJac[self.mappingDict["aTheta"]] = (
-        #         -2
-        #         * np.sum(self.Y - self.X)
-        #         * np.sum(self.evalPositionsJac_aTheta(S), axis=1)
-        #     )
-
-        return positionDiffJac
 
     def determineIntegrationPoints(self, Sc, Sx):
         Sintegral = []
@@ -418,11 +256,12 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
     def costFun(self, optimVars):
         self.updateParameters(optimVars)
         error = (
-            self.evalUflex([self.L])
-            + self.evalUtor([self.L])
-            + self.evalUgrav([self.L])
-            + self.wPosDiff * np.square(np.linalg.norm(self.Y - self.X))
+            self.weigthUFlex * self.evalUflex([self.L])
+            + self.weigthUTor * self.evalUtor([self.L])
+            + self.weightUGrav * self.evalUgrav([self.L])
+            + self.wPosDiff * np.linalg.norm(self.Y - self.X)
         )
+
         if callable(self.callback):
             kwargs = {
                 "X": self.X,
@@ -430,25 +269,7 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             }
             self.callback(**kwargs)
             # print(self.estimateLength())
-
-        # print("Theta: {}".format(self.evalTheta(self.Sx)))
-        # print("Kappa: {}".format(self.evalKappaSquared(self.Sx)))
-        # print("Uflex: {}".format(self.evalUflex([self.L])))
-        # print("Utor: {}".format(self.evalUtor([self.L])))
-        # print("Ugrav: {}".format(self.evalUgrav([self.L])))
         return error
-
-    def costFunJac(self, optimVars):
-        self.updateParameters(optimVars)
-        jacobianUFelx = self.Rflex * np.trapz(
-            self.evalKappaSquaredDerivs(self.Sc), self.Sc
-        )
-        jacobianUTor = self.Rtor * np.trapz(
-            self.evalOmegaSquaredDerivs(self.Sc), self.Sc
-        )
-        jacPosDiff = self.wPosDiff * self.evalPositionsJac(self.Sx)
-        jacobian = jacobianUFelx + jacobianUTor + jacPosDiff
-        return jacobian
 
     def initOptimVars(self, **kwargs):
         # optimVars = np.zeros(2 * self.N + 3)

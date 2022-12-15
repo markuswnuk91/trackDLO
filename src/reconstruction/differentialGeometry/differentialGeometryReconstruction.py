@@ -57,6 +57,8 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         Rtor=None,
         Density=None,
         wPosDiff=None,
+        annealingFlex=None,
+        annealingTor=None,
         *args,
         **kwargs
     ):
@@ -82,16 +84,23 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         self.Density = 0.1 if Density is None else Density  # kg/m
         self.x0 = self.Y[0]
         self.wPosDiff = 1 if wPosDiff is None else wPosDiff
+        self.annealingFlex = 1 if annealingFlex is None else annealingFlex
+        self.annealingTor = 1 if annealingTor is None else annealingTor
+        # self.lambdaPhi = 0.0001
+        # self.lambdaTheta = 0.0001
+        # self.lambdaPsi = 0.0001
 
         self.Ec = self.evalAnsatzFuns(self.Sc)
         self.Ex = self.evalAnsatzFuns(self.Sx)
         self.Sintegral = self.determineIntegrationPoints(self.Sc, self.Sx)
+        self.i = 0
         self.optimVars, self.mappingDict = self.initOptimVars(
             **{"aPhi": self.aPhi, "aTheta": self.aTheta, "aPsi": self.aPsi}
         )
         # self.optimVars, self.mappingDict = self.initOptimVars(
         #     **{"aPhi": self.aPhi, "aTheta": self.aTheta}
         # )
+        self.beta = 0.1
 
     def evalAnsatzFuns(self, S):
         """returns the ansatz functions evaluated at the local coodinates in S
@@ -205,6 +214,8 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             self.aTheta * np.square(self.evalAnsatzFunDerivs(S)).T
         ).T + np.square(self.aPhi @ self.evalAnsatzFunDerivs(S)) * 2 * np.sin(
             self.evalTheta(S)
+        ) * np.cos(
+            self.evalTheta(S)
         ) * self.evalAnsatzFuns(
             S
         )
@@ -241,9 +252,8 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
     def evalOmegaSquaredDeriv_aTheta(self, S):
         return (
             (
-                2
-                * (self.evalPhiDeriv_S(S))
-                * np.cos(self.evalTheta(S) + self.evalPsiDeriv_S(S))
+                2 * (self.evalPhiDeriv_S(S)) * np.cos(self.evalTheta(S))
+                + self.evalPsiDeriv_S(S)
             )
             * self.evalPhiDeriv_S(S)
             * (-np.sin(self.evalTheta(S)))
@@ -417,17 +427,19 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
 
     def costFun(self, optimVars):
         self.updateParameters(optimVars)
+
         error = (
-            self.evalUflex([self.L])
-            + self.evalUtor([self.L])
+            self.annealingFlex**self.i * self.evalUflex([self.L])
+            + self.annealingTor**self.i * self.evalUtor([self.L])
             + self.evalUgrav([self.L])
             + self.wPosDiff * np.square(np.linalg.norm(self.Y - self.X))
+            # + self.wPosDiff * (1 - np.exp(-np.linalg.norm(self.Y - self.X) / 1000))
+            # + np.sum(self.aPsi)
         )
+
         if callable(self.callback):
-            kwargs = {
-                "X": self.X,
-                "Y": self.Y,
-            }
+            kwargs = {"X": self.X, "Y": self.Y, "fileName": "img_" + str(self.i)}
+            self.i += 1
             self.callback(**kwargs)
             # print(self.estimateLength())
 
@@ -440,11 +452,15 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
 
     def costFunJac(self, optimVars):
         self.updateParameters(optimVars)
-        jacobianUFelx = self.Rflex * np.trapz(
-            self.evalKappaSquaredDerivs(self.Sc), self.Sc
+        jacobianUFelx = (
+            self.annealingFlex**self.i
+            * self.Rflex
+            * np.trapz(self.evalKappaSquaredDerivs(self.Sc), self.Sc)
         )
-        jacobianUTor = self.Rtor * np.trapz(
-            self.evalOmegaSquaredDerivs(self.Sc), self.Sc
+        jacobianUTor = (
+            self.annealingTor**self.i
+            * self.Rtor
+            * np.trapz(self.evalOmegaSquaredDerivs(self.Sc), self.Sc)
         )
         jacPosDiff = self.wPosDiff * self.evalPositionsJac(self.Sx)
         jacobian = jacobianUFelx + jacobianUTor + jacPosDiff
@@ -470,10 +486,11 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             startOptVarIdx = endOptVarIdx
         return optimVars, mappingDict
 
-    def estimateShape(self, numIter):
+    def estimateShape(self, numIter=None):
         res = least_squares(
             self.costFun,
             self.optimVars,
+            self.costFunJac,
             max_nfev=numIter,
             verbose=2,
         )

@@ -103,14 +103,14 @@ if __name__ == "__main__":
             "L": arcLenght,
             "numSc": 30,
             "callback": visCallback,
-            "Rtor": 1000,
-            "Rflex": 1000,  # e = 0.05
+            "Rtor": 1000,  # use 1000
+            "Rflex": 1000,  # use 1000
             "Density": 0,
-            "wPosDiff": 10,  # e = 10
+            "wPosDiff": 10,  # use 10
             #            "aPhi": aPhi,
             #            "aTheta": aTheta,
-            "annealingFlex": 0.99,
-            "annealingTor": 0.8,
+            "annealingFlex": 0.99,  # use 0.99
+            "annealingTor": 0.8,  # use 0.8
         }
     )
     continousReconstruction.estimateShape(numIter=None)

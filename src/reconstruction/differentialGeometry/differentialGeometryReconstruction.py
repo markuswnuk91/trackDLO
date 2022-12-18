@@ -6,6 +6,7 @@ import numbers
 from warnings import warn
 from scipy.optimize import least_squares
 import scipy.integrate as integrate
+import json
 
 try:
     sys.path.append(os.getcwd().replace("/src/reconstruction/differentialGeometry", ""))
@@ -97,6 +98,7 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         self.optimVars, self.mappingDict = self.initOptimVars(
             **{"aPhi": self.aPhi, "aTheta": self.aTheta, "aPsi": self.aPsi}
         )
+        self.paramDict = {}
         # self.optimVars, self.mappingDict = self.initOptimVars(
         #     **{"aPhi": self.aPhi, "aTheta": self.aTheta}
         # )
@@ -504,3 +506,29 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
 
     def registerCallback(self, callback):
         self.callback = callback
+
+    def writeParametersToJson(
+        self, savePath="src/plot/plotdata/", fileName="continuousDLO"
+    ):
+
+        if savePath is not None and type(savePath) is not str:
+            raise ValueError(
+                "Error saving parameter dict. The given path should be a string."
+            )
+
+        if fileName is not None and type(fileName) is not str:
+            raise ValueError(
+                "Error saving parameter dict. The given file name should be a string."
+            )
+
+        self.paramDict["aPhi"] = self.aPhi.tolist()
+        self.paramDict["aTheta"] = self.aTheta.tolist()
+        self.paramDict["aPsi"] = self.aPsi.tolist()
+        self.paramDict["L"] = self.L
+        self.paramDict["Rtor"] = self.Rtor
+        self.paramDict["Rflex"] = self.Rflex
+        self.paramDict["Density"] = self.Density
+        self.paramDict["numAnsatzFuns"] = self.N
+
+        with open(savePath + fileName + ".json", "w") as fp:
+            json.dump(self.paramDict, fp)

@@ -5,7 +5,6 @@ import numpy as np
 import numbers
 from warnings import warn
 from scipy.optimize import least_squares
-import scipy.integrate as integrate
 import json
 
 try:
@@ -56,7 +55,7 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         aPsi=None,
         Rflex=None,
         Rtor=None,
-        Density=None,
+        Roh=None,
         wPosDiff=None,
         annealingFlex=None,
         annealingTor=None,
@@ -82,7 +81,7 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         self.aPsi = 0 * np.ones(self.N) if aPsi is None else aPsi
         self.Rflex = 1 if Rflex is None else Rflex
         self.Rtor = 1 if Rtor is None else Rtor
-        self.Density = 0.1 if Density is None else Density  # kg/m
+        self.Roh = 0.1 if Roh is None else Roh  # kg/m
         self.x0 = self.Y[0]
         self.wPosDiff = 1 if wPosDiff is None else wPosDiff
         self.annealingFlex = 1 if annealingFlex is None else annealingFlex
@@ -380,7 +379,7 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         return Utor
 
     def evalUgrav(self, s):
-        Ugrav = self.Density * self.integrateOverS(self.evalPositions, s)[2]
+        Ugrav = self.Roh * self.integrateOverS(self.evalPositions, s)[2]
         return Ugrav
 
     def integrateOverS(self, fun, SLim):
@@ -527,7 +526,7 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
         self.paramDict["L"] = self.L
         self.paramDict["Rtor"] = self.Rtor
         self.paramDict["Rflex"] = self.Rflex
-        self.paramDict["Density"] = self.Density
+        self.paramDict["Roh"] = self.Roh
         self.paramDict["numAnsatzFuns"] = self.N
 
         with open(savePath + fileName + ".json", "w") as fp:

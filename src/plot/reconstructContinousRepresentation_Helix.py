@@ -46,7 +46,7 @@ if __name__ == "__main__":
             "callback": visCallback,
             "Rtor": 1000,  # use 1000
             "Rflex": 1000,  # use 1000
-            "Density": 10,
+            "Roh": 10,
             "wPosDiff": 10,  # use 10
             #            "aPhi": aPhi,
             #            "aTheta": aTheta,

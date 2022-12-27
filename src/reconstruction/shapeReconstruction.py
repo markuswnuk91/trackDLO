@@ -15,22 +15,16 @@ class ShapeReconstruction(object):
     M: int
         Number of data points
 
-    numSc: int
-        Number of collocation points along the DLO used to sample the continous shape
-
-    Sc: numpy array
-       numSx1 array of local coodinates of collocation points along the DLO used to sample the continous shape.
-
-    Sx: numpy array
-       Mx1 array of local coodinates the source points in X correspond to.
+    SY: numpy array
+       Mx1 array of nomrlaized local coodinates in [0,1] the target points in Y correspond to.
 
     D: int
         Dimensionality of source points and weights
     """
 
-    def __init__(
-        self, Y, Sx, L, numSc=None, callback=lambda **kwargs: None, *args, **kwargs
-    ):
+    def __init__(self, Y, SY, callback=lambda **kwargs: None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
         if type(Y) is not np.ndarray or Y.ndim != 2:
             raise ValueError("The target points (Y) must be at a 2D numpy array.")
 
@@ -39,46 +33,14 @@ class ShapeReconstruction(object):
                 "The dimensionality is larger than the number of points. Possibly wrong orientation of X."
             )
 
-        if numSc is not None and (not isinstance(numSc, numbers.Number) or numSc < 2):
+        if np.any(SY > 1) or np.any(SY < 0):
             raise ValueError(
-                "Expected a positive integer of at least two sample poitns for S instead got: {}".format(
-                    numSc
-                )
-            )
-        elif isinstance(numSc, numbers.Number) and not isinstance(numSc, int):
-            warn(
-                "Received a non-integer value for number of collocations (S): {}. Casting to integer.".format(
-                    numSc
-                )
-            )
-            numSc = int(numSc)
-        elif isinstance(numSc, numbers.Number) and numSc < Sx.size:
-            warn(
-                "Received less collocation points than local coodinates corresponding to the target points: {}. Increasing the number of collocation points to match the number of tartget points.".format(
-                    numSc
-                )
-            )
-            numSc = int(Sx.size)
-
-        if L is not None and (not isinstance(L, numbers.Number) or L < 0):
-            raise ValueError(
-                "Expected a positive float for length of the DLO. Instead got: {}".format(
-                    L
-                )
+                "Obtained non-nomalized coordinates for local coordinates. Expected values to be normalized by the length of the DLO in [0,1]"
             )
         self.Y = Y
-        self.Sx = Sx
-        self.L = L
+        self.SY = SY
         (self.M, self.D) = self.Y.shape
-        self.numSc = 100 if numSc is None else numSc
-        self.Sc = np.linspace(0, self.L, self.numSc)
         self.callback = None if callback is None else callback
-
-    def evalAnsatzFuns(self, S):
-        """Placeholder for child class."""
-        raise NotImplementedError(
-            "Evalues the ansatz functions at the given sample points."
-        )
 
     def getPosition(self, S):
         """Placeholder for child class."""

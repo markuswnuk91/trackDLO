@@ -44,7 +44,7 @@ class DifferentialGeometryReconstruction(ShapeReconstruction):
             Length of the DLO which should be reconstructed
 
         Sintegral: List
-            List of local coodiante vectors the integral over zeta should be solved for.
+            List of local coordinate vectors the integral over zeta should be solved for.
             For each point in Y the integral needs to be solved.
     """
 

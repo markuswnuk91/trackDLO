@@ -4,7 +4,7 @@ import numbers
 from warnings import warn
 
 
-class WakamatsuModel:
+class WakamatsuModel(object):
     """Implementation of the differential geometry DLO model by H. Wakamatsu and S. Hirai from the paper:
     Wakamatsu H, Hirai S. Static Modeling of Linear Object Deformation Based on Differential Geometry. The International Journal of Robotics Research. 2004;23(3):293-311
 
@@ -375,6 +375,7 @@ class WakamatsuModel:
         """returns the position of a point on the DLO evaluated at the local coodinate s.
         Args:
             s (float): local coordinate in [0,L]
+            numEvaluationPoints (int): number of evaluation points
         Returns:
             x (np.array): 1x3 array of positions corresponding to the local coodinate s
         """
@@ -386,12 +387,13 @@ class WakamatsuModel:
         """returns the positions of points on the DLO evaluated at the local coodinates S.
         Args:
             S (np.array): local coordinates in [0,L]
+            numEvaluationPoints (list): list of numer of evaluation points
         Returns:
             X (np.array): (S.size)x3 array of positions corresponding to the local coodinates in S
         """
         X = np.zeros((S.size, 3))
         for i, s in enumerate(S):
-            X[i, :] = self.evalPosition(s, numEvaluationPoints)
+            X[i, :] = self.evalPosition(s, numEvaluationPoints[i])
         return X
 
     def evalUflex(self, s, numEvaluationPoints):
@@ -401,7 +403,7 @@ class WakamatsuModel:
         Returns:
             Uflex (flaot): flexural energy accumulated up to the local coodinate s
         """
-        sEval = np.linalg(0, s, numEvaluationPoints)
+        sEval = np.linspace(0, s, numEvaluationPoints)
         Uflex = 0.5 * self.Rflex * np.trapz(self.evalKappaSquared(sEval), sEval)
         return Uflex
 
@@ -412,7 +414,7 @@ class WakamatsuModel:
         Returns:
             Uflex (flaot): torsional energy accumulated up to the local coodinate s
         """
-        sEval = np.linalg(0, s, numEvaluationPoints)
+        sEval = np.linspace(0, s, numEvaluationPoints)
         Utor = 0.5 * self.Rtor * np.trapz(self.evalOmegaSquared(sEval), sEval)
         return Utor
 
@@ -423,6 +425,10 @@ class WakamatsuModel:
         Returns:
             Ugrav (flaot): gravitational energy accumulated up to the local coodinate s
         """
-        sEval = np.linalg(0, s, numEvaluationPoints)
-        Ugrav = self.Roh * np.trapz(self.evalPositions(sEval), sEval) * self.gravity
+        sEval = np.linspace(0, s, numEvaluationPoints)
+        numIntegrationPointList = [2, 2] + [
+            *range(2, sEval.size)
+        ]  # make sure the first positions have at least two integration points for numerical integration
+        XGravity = self.evalPositions(sEval, numIntegrationPointList)
+        Ugrav = self.Roh * np.trapz(XGravity @ self.gravity, sEval)
         return Ugrav

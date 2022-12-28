@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 
 try:
     sys.path.append(os.getcwd().replace("/plot", ""))
-    from src.plot.utils.plot3DCurve import (
+    from plot.utils.plot3DCurve import (
         plot3DCurve,
     )
     from src.modelling.utils.calculateArcLength import calcArcLengthFromCurveFun
     from src.modelling.curveShapes3D import helixShape
-    from src.plot.utils.visualization import (
+    from plot.utils.visualization import (
         visualizePointSets,
         setupVisualizationCallback,
     )

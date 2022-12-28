@@ -14,8 +14,8 @@ try:
         visualizePointSets,
         setupVisualizationCallback,
     )
-    from src.reconstruction.differentialGeometry.differentialGeometryReconstruction import (
-        DifferentialGeometryReconstruction,
+    from src.reconstruction.continuous.continuousReconstruction import (
+        ContinuousReconstruction,
     )
 except:
     print("Imports for DifferentialGeometryReconstruction failed.")
@@ -35,12 +35,12 @@ if __name__ == "__main__":
     helixCurve = lambda s: helixShape(s, heightScaling=1.0, frequency=2.0)
     arcLenght = calcArcLengthFromCurveFun(helixCurve, 0, 1)
     s = np.linspace(0, 1, 30)
-    Sx = s * arcLenght
     Y = helixCurve(s)
-    continousReconstruction = DifferentialGeometryReconstruction(
+    continousReconstruction = ContinuousReconstruction(
         **{
             "Y": Y,
-            "Sx": Sx,
+            "SY": s,
+            "x0": Y[0, :],
             "L": arcLenght,
             "numSc": 30,
             "callback": visCallback,
@@ -50,11 +50,11 @@ if __name__ == "__main__":
             "wPosDiff": 10,  # use 10
             #            "aPhi": aPhi,
             #            "aTheta": aTheta,
-            "annealingFlex": 0.9,  # use 0.99
+            "annealingFlex": 0.99,  # use 0.99
             "annealingTor": 0.8,  # use 0.8
         }
     )
     continousReconstruction.estimateShape(numIter=None)
     continousReconstruction.writeParametersToJson(
-        savePath="src/plot/plotdata/", fileName="helixExample"
+        savePath="src/plot/plotdata/", fileName="helixExample_2"
     )

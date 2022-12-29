@@ -42,6 +42,9 @@ class ShapeReconstruction(object):
         (self.M, self.D) = self.Y.shape
         self.callback = None if callback is None else callback
 
+    def registerCallback(self, callback):
+        self.callback = callback
+
     def getPosition(self, S):
         """Placeholder for child class."""
         raise NotImplementedError(

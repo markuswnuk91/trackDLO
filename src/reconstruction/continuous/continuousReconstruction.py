@@ -186,8 +186,7 @@ class ContinuousReconstruction(ShapeReconstruction, WakamatsuModel):
             # + np.sum(self.aPsi)
         )
         if callable(self.callback):
-            kwargs = {"X": self.X, "Y": self.Y}
-            self.callback(**kwargs)
+            self.callback()
         return error
 
     def evalPositionsDeriv_aTheta_i(self, S, i):
@@ -276,9 +275,6 @@ class ContinuousReconstruction(ShapeReconstruction, WakamatsuModel):
             np.linalg.norm(self.evalZeta(self.Sintegral[-1]), axis=0),
             self.Sintegral[-1],
         )
-
-    def registerCallback(self, callback):
-        self.callback = callback
 
     def writeParametersToJson(
         self, savePath="src/plot/plotdata/", fileName="continuousDLO"

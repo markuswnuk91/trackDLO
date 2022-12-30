@@ -91,7 +91,7 @@ if __name__ == "__main__":
     )
     visCallback = setupVisualizationCallback(continousReconstruction)
     continousReconstruction.registerCallback(visCallback)
-    continousReconstruction.estimateShape(numIter=None)
+    continousReconstruction.reconstructShape(numIter=None)
     continousReconstruction.writeParametersToJson(
         savePath="plot/plotdata/", fileName="helixExample_2"
     )

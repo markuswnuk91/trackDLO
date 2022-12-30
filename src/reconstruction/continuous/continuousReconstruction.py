@@ -8,11 +8,11 @@ from scipy.optimize import least_squares
 import json
 
 try:
-    sys.path.append(os.getcwd().replace("/src/reconstruction/differentialGeometry", ""))
+    sys.path.append(os.getcwd().replace("/src/reconstruction/coninuous", ""))
     from src.reconstruction.shapeReconstruction import ShapeReconstruction
     from src.modelling.wakamatsuModel import WakamatsuModel
 except:
-    print("Imports for differential geometry shape reconstruction failed.")
+    print("Imports for coninuous shape reconstruction failed.")
     raise
 
 
@@ -165,30 +165,6 @@ class ContinuousReconstruction(ShapeReconstruction, WakamatsuModel):
             results.append(integral)
         return np.array(results).transpose()
 
-    def updateParameters(self, optimVars):
-        if "aPhi" in self.mappingDict:
-            self.aPhi = optimVars[self.mappingDict["aPhi"]]
-        if "aTheta" in self.mappingDict:
-            self.aTheta = optimVars[self.mappingDict["aTheta"]]
-        if "aPsi" in self.mappingDict:
-            self.aPsi = optimVars[self.mappingDict["aPsi"]]
-        self.X = self.evalPositions(self.Sy, self.numIntegrationPoints)
-        self.iter += 1
-
-    def costFun(self, optimVars):
-        self.updateParameters(optimVars)
-        error = (
-            self.annealingFlex**self.iter * self.evalUflex(self.L, self.numSc)
-            + self.annealingTor**self.iter * self.evalUtor(self.L, self.numSc)
-            + self.evalUgrav(self.L, self.numSc)
-            + self.wPosDiff * np.square(np.linalg.norm(self.Y - self.X))
-            # + self.wPosDiff * (1 - np.exp(-np.linalg.norm(self.Y - self.X) / 1000))
-            # + np.sum(self.aPsi)
-        )
-        if callable(self.callback):
-            self.callback()
-        return error
-
     def evalPositionsDeriv_aTheta_i(self, S, i):
         dZeta_daTheta_i = (
             lambda s: self.evalZetaDeriv_aTheta(s) * self.evalAnsatzFuns(s)[i % self.N]
@@ -245,6 +221,30 @@ class ContinuousReconstruction(ShapeReconstruction, WakamatsuModel):
             ] = self.evalOmegaSquaredDeriv_aPsi(S)
         return omegaSqaredJac
 
+    def updateParameters(self, optimVars):
+        if "aPhi" in self.mappingDict:
+            self.aPhi = optimVars[self.mappingDict["aPhi"]]
+        if "aTheta" in self.mappingDict:
+            self.aTheta = optimVars[self.mappingDict["aTheta"]]
+        if "aPsi" in self.mappingDict:
+            self.aPsi = optimVars[self.mappingDict["aPsi"]]
+        self.X = self.evalPositions(self.Sy, self.numIntegrationPoints)
+        self.iter += 1
+
+    def costFun(self, optimVars):
+        self.updateParameters(optimVars)
+        error = (
+            self.annealingFlex**self.iter * self.evalUflex(self.L, self.numSc)
+            + self.annealingTor**self.iter * self.evalUtor(self.L, self.numSc)
+            + self.evalUgrav(self.L, self.numSc)
+            + self.wPosDiff * np.square(np.linalg.norm(self.Y - self.X))
+            # + self.wPosDiff * (1 - np.exp(-np.linalg.norm(self.Y - self.X) / 1000))
+            # + np.sum(self.aPsi)
+        )
+        if callable(self.callback):
+            self.callback()
+        return error
+
     def costFunJac(self, optimVars):
         jacobianUFelx = (
             self.annealingFlex**self.iter
@@ -260,7 +260,7 @@ class ContinuousReconstruction(ShapeReconstruction, WakamatsuModel):
         jacobian = jacobianUFelx + jacobianUTor + jacPosDiff
         return jacobian
 
-    def estimateShape(self, numIter=None):
+    def reconstructShape(self, numIter=None):
         res = least_squares(
             self.costFun,
             self.optimVars,

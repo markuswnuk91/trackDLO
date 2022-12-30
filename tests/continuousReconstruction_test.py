@@ -64,7 +64,7 @@ def runReconstruction():
         testReconstruction = ContinuousReconstruction(
             **{"Y": Y, "SY": SY, "L": 100, "numSc": 100}
         )
-    testReconstruction.estimateShape()
+    testReconstruction.reconstructShape()
 
     testReconstruction
 

@@ -20,6 +20,8 @@ class DeformableLinearObject:
     color (np.array): Color of the DLO in RGB values, e.g. [0,0,1] for blue.
     gravity (bool): If the DLO should be affected by gravity. If None defaults to true.
     collidable (bool): If the DLO is collidable. If None defaults to true.
+    segmentLengths (list): list of segment lenghts for each body
+    frames (dict): dict of frames for frame semantics
     """
 
     ID = 0
@@ -59,6 +61,7 @@ class DeformableLinearObject:
         self.segmentLength = self.length / self.numSegments
         self.adjacentBodyCheck = adjacentBodyCheck
         self.enableSelfCollisionCheck = enableSelfCollisionCheck
+        self.segmentLengths = []
         self.frames = {}
 
         if gravity is None:
@@ -141,6 +144,7 @@ class DeformableLinearObject:
         )
         rootbody.setGravityMode(self.gravity)
         rootbody.setCollidable(self.collidable)
+        self.segmentLengths.append(segmentLength)
 
         # set shapes
         if (segmentLength - 2 * radius) <= 0:
@@ -199,11 +203,14 @@ class DeformableLinearObject:
             body_aspect_prop = dart.dynamics.BodyNodeAspectProperties(name=name)
 
         body_prop = dart.dynamics.BodyNodeProperties(body_aspect_prop)
+
+        # add the body
         [joint, body] = self.skel.createBallJointAndBodyNodePair(
             parentNode, joint_prop, body_prop
         )
         body.setGravityMode(self.gravity)
         body.setCollidable(self.collidable)
+        self.segmentLengths.append(segmentLength)
 
         if (segmentLength - 2 * radius) <= 0:
             bodyLength = segmentLength
@@ -272,6 +279,128 @@ class DeformableLinearObject:
 
     def getPosition(self, dof: int):
         return self.skel.getDof(dof).getPosition()
+
+    def getJointLocalCoordinates(self):
+        return np.insert(np.cumsum(np.array(self.segmentLengths)) / self.length, 0, 0)
+
+    def getBodyNodeIndexFromLocalCoodinate(self, s: float):
+        """returns the bodyNode index corresponding to a local coordinate
+
+        Args:
+            s (float): local coordinate in [0,1]
+
+        Returns:
+            int: bodyNode index of the body the local coordinate corresponds to.
+        """
+        if s >= 1:
+            return self.skel.getNumBodyNodes() - 1
+        elif s <= 0:
+            return 0
+        else:
+            jointLocalCoordinates = self.getJointLocalCoordinates()
+            return (
+                next(
+                    index[0]
+                    for index in enumerate(jointLocalCoordinates)
+                    if index[1] > s
+                )
+                - 1
+            )
+
+    def getCartesianPositionFromLocalCoordinate(self, s: float):
+        cumNormalizedLengths = np.cumsum(np.array(self.segmentLengths)) / self.length
+        if s <= 0:
+            return self.getCartesianPositionSegmentStart(0)
+        elif s >= 1:
+            return self.getCartesianPositionSegmentEnd(-1)
+        else:
+            correspondBodyNodeIdx = self.getBodyNodeIndexFromLocalCoodinate(s)
+            localCoordsJoints = self.getJointLocalCoordinates()
+            sLower = localCoordsJoints[correspondBodyNodeIdx]
+            sUpper = localCoordsJoints[correspondBodyNodeIdx + 1]
+            sCenter = sLower + (sUpper - sLower) / 2
+            sOffset = (s - sCenter) / (sUpper - sLower)
+            offset = np.array(
+                [0, 0, sOffset * self.segmentLengths[correspondBodyNodeIdx]]
+            )
+            return self.getCartesianPositionSegmentWithOffset(
+                correspondBodyNodeIdx, offset
+            )
+
+    def getCartesianPositionSegmentCenter(self, bodyNodeIndex: int):
+        """returns the cartesian position of the center of a segment
+
+        Args:
+            bodyNodeIndex (int): the index of the bodyNode
+
+        Returns:
+            np.array: cartesian position of the center of the segement
+        """
+        return self.skel.getBodyNode(bodyNodeIndex).getWorldTransform().translation()
+
+    def getCartesianPositionSegmentWithOffset(
+        self, bodyNodeIndex: int, offset: np.array
+    ):
+        """returns the cartesian position of the center of a segment
+
+        Args:
+            bodyNodeIndex (int): the index of the bodyNode
+
+        Returns:
+            np.array: cartesian position of the center of the segement
+        """
+        return (
+            self.skel.getBodyNode(bodyNodeIndex).getWorldTransform().matrix()
+            @ np.append(offset, 1)
+        )[:3]
+
+    def getCartesianPositionSegmentStart(self, bodyNodeIndex: int):
+        """returns the cartesian position of the beginning of a segment
+
+        Args:
+            bodyNodeIndex (int): the index of the bodyNode
+
+        Returns:
+            np.array: cartesian position of the start of the segement
+        """
+        bodyNodeTransform = (
+            self.skel.getBodyNode(bodyNodeIndex).getWorldTransform().matrix()
+        )
+        relativeTransformToParentJoint = (
+            self.skel.getBodyNode(bodyNodeIndex)
+            .getParentJoint()
+            .getTransformFromChildBodyNode()
+            .matrix()
+        )
+        return (bodyNodeTransform @ relativeTransformToParentJoint)[:3, 3]
+
+    def getCartesianPositionSegmentEnd(self, bodyNodeIndex: int):
+        """returns the cartesian position of the beginning of a segment
+
+        Args:
+            bodyNodeIndex (int): the index of the bodyNode
+
+        Returns:
+            np.array: cartesian position of the start of the segement
+        """
+        if bodyNodeIndex == -1:
+            bodyNodeIndex = self.skel.getNumBodyNodes() - 1
+
+        bodyNodeTransform = (
+            self.skel.getBodyNode(bodyNodeIndex).getWorldTransform().matrix()
+        )
+        relativeTransformToParentJoint = (
+            self.skel.getBodyNode(bodyNodeIndex)
+            .getParentJoint()
+            .getTransformFromChildBodyNode()
+            .matrix()
+        )
+        # reverse direction to go to end of segment
+        relativeTransformToParentJoint[:3, 3] = -relativeTransformToParentJoint[:3, 3]
+        return (bodyNodeTransform @ relativeTransformToParentJoint)[:3, 3]
+
+    def getCartesianPositionRootJoint(self):
+        return self.getCartesianPositionSegmentStart(0)
 
     def addSimpleFrame(
         self,

@@ -268,7 +268,6 @@ class ContinuousReconstruction(ShapeReconstruction, WakamatsuModel):
             max_nfev=numIter,
             verbose=2,
         )
-        self.W = res.x
 
     def estimateLength(self):
         return np.trapz(

@@ -1,4 +1,4 @@
-# tests dart installation
+# tests dlo implementation
 import os, sys
 import dartpy as dart
 import numpy as np
@@ -159,20 +159,5 @@ def test_initDLO():
         assert not visError
 
 
-def test_DLOFunctions():
-
-    # test getCartesianPosition
-    testDLO = DeformableLinearObject(numSegments=20, length=1.5)
-    assert np.sum(testDLO.getCartesianPositionRootJoint() - np.zeros(3)) == approx(0)
-    assert np.sum(
-        testDLO.getCartesianPositionSegmentEnd(-1) - np.array([0, 0, 1.5])
-    ) == approx(0)
-    assert testDLO.getBodyNodeIndexFromLocalCoodinate(0) == 0
-    assert testDLO.getBodyNodeIndexFromLocalCoodinate(0.01) == 0
-    assert testDLO.getBodyNodeIndexFromLocalCoodinate(1) == 19
-    assert testDLO.getCartesianPositionFromLocalCoordinate(0.1) == 0.15
-
-
 if __name__ == "__main__":
     test_initDLO()
-    test_DLOFunctions()

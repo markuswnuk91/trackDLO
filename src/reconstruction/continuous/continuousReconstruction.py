@@ -31,8 +31,11 @@ class ContinuousReconstruction(ShapeReconstruction, WakamatsuModel):
         Sc: numpy array
             (numSc)x1 array of local coordinates of collocation points along the DLO used to sample the continous shape.
 
+        SY: numpy array
+            Mx1 array of normalized local coordinates in [0,1] corresponding to the Y target points.
+
         Sy: numpy array
-            Mx1 array of local coordinates corresponding to the Y target points.
+            Mx1 array of local coordinates in [0,L] corresponding to the Y target points.
 
         weigthUFlex: float
             factor for weighting the flexibility error term in the cost function

@@ -112,7 +112,7 @@ class FiniteSegmentModel(DeformableLinearObject):
         self.gammas = np.zeros(self.N - 1) if gammas is None else gammas
         self.gravity = np.array([0, 0, 9.81]) if gravity is None else gravity
 
-        self.numDofs = 3 * N + 3
+        self.numDofs = 3 * self.N + 3
         # self.phis = np.zeros(self.N - 1) if phis is None else phis
         # self.thetas = np.zeros(self.N - 1) if thetas is None else thetas
 

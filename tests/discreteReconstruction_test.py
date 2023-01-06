@@ -8,11 +8,11 @@ from pytest import approx
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.reconstruction.discrete.discreteReconstruction import (
+    from src.reconstruction.discreteReconstruction import (
         DiscreteReconstruction,
     )
-    from plot.utils.visualization import (
-        visualizePointSets,
+    from src.visualization.plot3D import (
+        plotPointSets,
     )
 except:
     print("Imports for DiscreteReconstruction Test failed.")
@@ -52,7 +52,7 @@ def visualizationCallback(
     if fileName is not None and type(fileName) is not str:
         raise ValueError("Error saving 3D plot. The given filename should be a string.")
     plt.cla()
-    visualizePointSets(
+    plotPointSets(
         X=discreteModel.X,
         Y=discreteModel.Y,
         ax=ax,
@@ -95,7 +95,7 @@ def runReconstruction():
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
 
-        visualizePointSets(
+        plotPointSets(
             X=testReconstruction.X,
             Y=testReconstruction.Y,
             ax=ax,

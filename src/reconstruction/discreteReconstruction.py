@@ -8,7 +8,7 @@ from scipy.optimize import least_squares
 import json
 
 try:
-    sys.path.append(os.getcwd().replace("/src/reconstruction/discrete", ""))
+    sys.path.append(os.getcwd().replace("/src/reconstruction", ""))
     from src.reconstruction.shapeReconstruction import ShapeReconstruction
     from src.modelling.finiteSegmentModel import FiniteSegmentModel
 except:

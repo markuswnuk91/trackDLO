@@ -8,7 +8,7 @@ from pytest import approx
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.reconstruction.continuous.continuousReconstruction import (
+    from reconstruction.continuousReconstruction import (
         ContinuousReconstruction,
     )
 except:

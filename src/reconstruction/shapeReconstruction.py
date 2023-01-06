@@ -50,3 +50,7 @@ class ShapeReconstruction(object):
         raise NotImplementedError(
             "Returns the positions of the DLO at the given sample points."
         )
+
+    def writeParametersToJson(self, savePath, fileName):
+        """Placeholder for child class."""
+        raise NotImplementedError("Saves the parameters of this models to a json file.")

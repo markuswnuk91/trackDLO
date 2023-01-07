@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 try:
     sys.path.append(os.getcwd().replace("/plot", ""))
     from src.modelling.utils.calculateArcLength import calcArcLengthFromCurveFun
-    from src.modelling.curveShapes3D import helixShape
+    from src.visualization.curveShapes3D import helixShape
     from src.visualization.plot3D import (
         plotPointSets,
         plotPointSetAsLine,
@@ -20,7 +20,7 @@ except:
     print("Imports for DifferentialGeometryReconstruction failed.")
     raise
 
-saveParams = True
+saveParams = False
 plotSteps = True
 plotFinal = True
 

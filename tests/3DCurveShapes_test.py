@@ -12,12 +12,12 @@ try:
         calcArcLengthFromCurveFun,
         calcArcLengthFromPolygonization,
     )
-    from visualization.curveShapes3D import helixShape
+    from src.visualization.curveShapes3D import helixShape, gaussianShape
 except:
-    print("Imports for DifferentialGeometryReconstruction failed.")
+    print("Imports for 3D Curve Shape Tests failed.")
     raise
 
-vis = False  # enable for visualization
+vis = True  # enable for visualization
 
 
 def testHelixShape():
@@ -33,5 +33,21 @@ def testHelixShape():
     assert approxArcLenght_Polygon == approx(2 * np.pi, 0.001)
 
 
+def testGaussianShape():
+    s = np.linspace(0, 1, 100)
+    testGassian = lambda s: gaussianShape(
+        s, mu=0.5, width=0.02, height=0.4, offset=np.array([0, 0.5, 0])
+    )
+    if vis:
+        plot3DCurve(
+            testGassian(s),
+            axisLimX=[0, 1],
+            axisLimY=[0, 1],
+            axisLimZ=[0, 1],
+            block=True,
+        )
+
+
 if __name__ == "__main__":
-    testHelixShape()
+    # testHelixShape()
+    testGaussianShape()

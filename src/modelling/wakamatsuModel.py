@@ -56,6 +56,7 @@ class WakamatsuModel(object):
                     L
                 )
             )
+        self.L = 1 if L is None else L
 
         if N is not None and (not isinstance(N, numbers.Number) or N < 1):
             raise ValueError(
@@ -70,27 +71,32 @@ class WakamatsuModel(object):
                 )
             )
             N = int(N)
+        self.N = 10 if N is None else N
 
-        if aPhi is not None and (not isinstance(aPhi, np.ndarray) or aPhi.size != N):
+        if aPhi is not None and (
+            not isinstance(aPhi, np.ndarray) or aPhi.size != self.N
+        ):
             raise ValueError(
                 "Expected aPhi to be a numpy array of {} weights. Instead got: {} with {} weithgs".format(
-                    N, aPhi, aPhi.size
+                    self.N, aPhi, aPhi.size
                 )
             )
 
         if aTheta is not None and (
-            not isinstance(aTheta, np.ndarray) or aTheta.size != N
+            not isinstance(aTheta, np.ndarray) or aTheta.size != self.N
         ):
             raise ValueError(
                 "Expected aPhi to be a numpy array of {} weights. Instead got: {} with {} weithgs".format(
-                    N, aTheta, aTheta.size
+                    self.N, aTheta, aTheta.size
                 )
             )
 
-        if aPsi is not None and (not isinstance(aPsi, np.ndarray) or aPsi.size != N):
+        if aPsi is not None and (
+            not isinstance(aPsi, np.ndarray) or aPsi.size != self.N
+        ):
             raise ValueError(
                 "Expected aPhi to be a numpy array of {} weights. Instead got: {} with {} weithgs".format(
-                    N, aPsi, aPsi.size
+                    self.N, aPsi, aPsi.size
                 )
             )
 
@@ -122,8 +128,6 @@ class WakamatsuModel(object):
                 )
             )
 
-        self.L = 1 if L is None else L
-        self.N = 10 if N is None else N
         self.aPhi = 0 * np.ones(self.N) if aPhi is None else aPhi
         self.aTheta = 0 * np.ones(self.N) if aTheta is None else aTheta
         self.aPsi = 0 * np.ones(self.N) if aPsi is None else aPsi
@@ -371,7 +375,7 @@ class WakamatsuModel(object):
             * self.evalAnsatzFunDerivs(S)
         )
 
-    def evalPosition(self, s, numEvaluationPoints):
+    def evalPosition(self, s, numEvaluationPoints=100):
         """returns the position of a point on the DLO evaluated at the local coodinate s.
         Args:
             s (float): local coordinate in [0,L]
@@ -383,7 +387,7 @@ class WakamatsuModel(object):
         x = self.x0 + np.trapz(self.evalZeta(sEval), sEval)
         return x
 
-    def evalPositions(self, S, numEvaluationPoints):
+    def evalPositions(self, S, numEvaluationPoints=None):
         """returns the positions of points on the DLO evaluated at the local coodinates S.
         Args:
             S (np.array): local coordinates in [0,L]
@@ -393,7 +397,10 @@ class WakamatsuModel(object):
         """
         X = np.zeros((S.size, 3))
         for i, s in enumerate(S):
-            X[i, :] = self.evalPosition(s, numEvaluationPoints[i])
+            if numEvaluationPoints is None:
+                X[i, :] = self.evalPosition(s)
+            else:
+                X[i, :] = self.evalPosition(s, numEvaluationPoints[i])
         return X
 
     def evalUflex(self, s, numEvaluationPoints):

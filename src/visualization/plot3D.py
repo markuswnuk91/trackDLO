@@ -2,6 +2,44 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def plotPointSet(
+    X,
+    ax,
+    color=[0, 0, 1],
+    alpha=1,
+    label: str = None,
+    axisLimX=[0, 1],
+    axisLimY=[0, 1],
+    axisLimZ=[0, 1],
+    waitTime=0.001,
+):
+    if label is None:
+        ax.scatter(X[:, 0], X[:, 1], X[:, 2], color=color, alpha=alpha)
+    else:
+        ax.scatter(
+            X[:, 0],
+            X[:, 1],
+            X[:, 2],
+            color=color,
+            label=label,
+            alpha=alpha,
+            edgecolor=None,
+        )
+    ax.set_xlim(axisLimX[0], axisLimX[1])
+    ax.set_ylim(axisLimY[0], axisLimY[1])
+    ax.set_zlim(axisLimZ[0], axisLimZ[1])
+    ax.set_xlabel("$x$")
+    ax.set_ylabel("$y$")
+    ax.set_zlabel("$z$")
+    if waitTime is not None or waitTime == -1:
+        plt.draw()
+        plt.pause(waitTime)
+    elif waitTime is None:
+        plt.show(block=False)
+    elif waitTime == -1:
+        plt.show(block=True)
+
+
 def plotPointSets(
     X,
     Y,
@@ -43,15 +81,16 @@ def plotPointSetAsLine(
     X: np.array,
     label: str = None,
     color=[0, 0, 1],
+    alpha=1,
     axisLimX=[0, 1],
     axisLimY=[0, 1],
     axisLimZ=[0, 1],
     waitTime=None,
 ):
     if label is None:
-        ax.plot3D(X[:, 0], X[:, 1], X[:, 2], color=color)
+        ax.plot3D(X[:, 0], X[:, 1], X[:, 2], color=color, alpha=alpha)
     else:
-        ax.plot3D(X[:, 0], X[:, 1], X[:, 2], color=color, label=label)
+        ax.plot3D(X[:, 0], X[:, 1], X[:, 2], color=color, label=label, alpha=alpha)
     # plt.text(
     #     0.7,
     #     0.92,

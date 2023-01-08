@@ -47,3 +47,46 @@ def gaussianShape(s, mu=0.5, width=1.0, height=1.0, offset=np.array([0, 0, 0])):
         ]
     )
     return curveVecs.T
+
+
+def parabelShape(s, vertex=0.5, width=1.0, exponent=2.0, offset=np.array([0, 0, 0])):
+    """funcion that returns a set of vectors describing the shape of a parabel
+
+    Args:
+        s (np.array): Nx1 array of local coordinates in [0,1] for which the position vectors should be returned
+        vertex (float, optional): Vertex of the parabola. Defaults to 0.5.
+        width (float, optional): parameter to control the width of the parabola. Use negative values to flip direction of the parabola. Defaults to 1.0.
+        offset (_type_, optional): Offset vector. Defaults to np.array[0, 0, 0].
+
+    Returns:
+        np.array: NxD array of position vectors describing the points on the object corresponding to s
+    """
+    curveVecs = np.array(
+        [
+            s + offset[0],
+            width * (s - vertex) ** exponent + offset[1],
+            np.zeros(s.size) + offset[2],
+        ]
+    )
+    return curveVecs.T
+
+
+def lineShape(s, angle=np.pi / 4, offset=np.array([0, 0, 0])):
+    """funcion that returns a set of vectors describing the shape of a line
+
+    Args:
+        s (np.array): Nx1 array of local coordinates in [0,1] for which the position vectors should be returned
+        angle (float, optional): Angle to control the angle of the line. Defaults to 0.0.
+        offset (_type_, optional): Offset vector. Defaults to np.array[0, 0, 0].
+
+    Returns:
+        np.array: NxD array of position vectors describing the points on the object corresponding to s
+    """
+    curveVecs = np.array(
+        [
+            s * np.cos(angle) + offset[0],
+            s * np.sin(angle) + offset[1],
+            np.zeros(s.size) + offset[2],
+        ]
+    )
+    return curveVecs.T

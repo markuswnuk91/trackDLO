@@ -12,7 +12,12 @@ try:
         calcArcLengthFromCurveFun,
         calcArcLengthFromPolygonization,
     )
-    from src.visualization.curveShapes3D import helixShape, gaussianShape
+    from src.visualization.curveShapes3D import (
+        helixShape,
+        gaussianShape,
+        parabelShape,
+        lineShape,
+    )
 except:
     print("Imports for 3D Curve Shape Tests failed.")
     raise
@@ -48,6 +53,36 @@ def testGaussianShape():
         )
 
 
+def testParabelShape():
+    s = np.linspace(0, 1, 100)
+    testParabel = lambda s: parabelShape(
+        s, vertex=0.5, width=2, exponent=2, offset=np.array([0.0, 0, 0])
+    )
+    if vis:
+        plot3DCurve(
+            testParabel(s),
+            axisLimX=[0, 1],
+            axisLimY=[0, 1],
+            axisLimZ=[0, 1],
+            block=True,
+        )
+
+
+def testLineShape():
+    s = np.linspace(0, 1, 100)
+    testLine = lambda s: lineShape(s, angle=np.pi / 4, offset=np.array([0.0, 0, 0]))
+    if vis:
+        plot3DCurve(
+            testLine(s),
+            axisLimX=[0, 1],
+            axisLimY=[0, 1],
+            axisLimZ=[0, 1],
+            block=True,
+        )
+
+
 if __name__ == "__main__":
-    # testHelixShape()
+    testHelixShape()
     testGaussianShape()
+    testParabelShape()
+    testLineShape()

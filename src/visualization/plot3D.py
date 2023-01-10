@@ -82,15 +82,26 @@ def plotPointSetAsLine(
     label: str = None,
     color=[0, 0, 1],
     alpha=1,
+    linewidth=1.5,
     axisLimX=[0, 1],
     axisLimY=[0, 1],
     axisLimZ=[0, 1],
     waitTime=None,
 ):
     if label is None:
-        ax.plot3D(X[:, 0], X[:, 1], X[:, 2], color=color, alpha=alpha)
+        ax.plot3D(
+            X[:, 0], X[:, 1], X[:, 2], color=color, alpha=alpha, linewidth=linewidth
+        )
     else:
-        ax.plot3D(X[:, 0], X[:, 1], X[:, 2], color=color, label=label, alpha=alpha)
+        ax.plot3D(
+            X[:, 0],
+            X[:, 1],
+            X[:, 2],
+            color=color,
+            label=label,
+            alpha=alpha,
+            linewidth=linewidth,
+        )
     # plt.text(
     #     0.7,
     #     0.92,
@@ -100,7 +111,8 @@ def plotPointSetAsLine(
     #     transform=ax.transAxes,
     #     fontsize="x-large",
     # )
-    ax.legend(loc="upper left", fontsize="x-large")
+    if label is not None:
+        ax.legend(loc="upper left", label=label)
     ax.set_xlim(axisLimX[0], axisLimX[1])
     ax.set_ylim(axisLimY[0], axisLimY[1])
     ax.set_zlim(axisLimZ[0], axisLimZ[1])

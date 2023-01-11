@@ -6,24 +6,29 @@ from functools import partial
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import tikzplotlib
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
     from src.modelling.wakamatsuModel import (
         WakamatsuModel,
     )
-    from src.visualization.plot3D import plotPointSet, plotPointSetAsLine
+    from src.visualization.plot3D import (
+        setupLatexPlot3D,
+        plotPointSet,
+        plotPointSetAsLine,
+        plotPointSetAsColorGradedLine,
+    )
 except:
     print("Imports for plotting continuous model failed.")
     raise
 
 # plot control
-saveFigs = True
+saveFigs = False
 savePath = "/mnt/c/Users/ac129490/Documents/Dissertation/Thesis/62bebc3388a16f7dcc7f9153/figures/"
 
+colorMap = matplotlib.colormaps["viridis"]
 textwidth_in_pt = 483.6969
-figureScaling = 1
+figureScaling = 0.45
 latexFontSize_in_pt = 14
 
 desiredFigureWidth = figureScaling * textwidth_in_pt
@@ -38,8 +43,8 @@ tex_fonts = {
     "font.size": latexFontSize_in_pt,
     # Make the legend/label fonts a little smaller
     "legend.fontsize": 8,
-    "xtick.labelsize": 8,
-    "ytick.labelsize": 8,
+    "xtick.labelsize": 10,
+    "ytick.labelsize": 10,
 }
 
 if saveFigs:
@@ -53,48 +58,6 @@ if saveFigs:
         }
     )
     matplotlib.rcParams.update(tex_fonts)
-
-
-def set_size(width, height=None, fraction=1, subplots=(1, 1)):
-    """Set figure dimensions to avoid scaling in LaTeX.
-
-    Parameters
-    ----------
-    width: float or string
-            Document width in points, or string of predined document type
-    fraction: float, optional
-            Fraction of the width which you wish the figure to occupy
-    subplots: array-like, optional
-            The number of rows and columns of subplots.
-    Returns
-    -------
-    fig_dim: tuple
-            Dimensions of figure in inches
-    """
-    if width == "thesis":
-        width_pt = 426.79135
-    elif width == "beamer":
-        width_pt = 307.28987
-    else:
-        width_pt = width
-
-    # Width of figure (in pts)
-    fig_width_pt = width_pt * fraction
-    # Convert from pt to inches
-    inches_per_pt = 1 / 72.27
-
-    # Golden ratio to set aesthetic figure height
-    # https://disq.us/p/2940ij3
-    golden_ratio = (5**0.5 - 1) / 2
-
-    # Figure width in inches
-    fig_width_in = fig_width_pt * inches_per_pt
-    # Figure height in inches
-    if height is None:
-        fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
-    else:
-        fig_height_in = height * inches_per_pt
-    return (fig_width_in, fig_height_in)
 
 
 def plotConfig(
@@ -134,9 +97,39 @@ def plotConfig(
         color=color,
         alpha=alpha,
         linewidth=3.0,
-        axisLimX=[0, 1],
-        axisLimY=[0, 1],
-        axisLimZ=[0, 1],
+        waitTime=None,
+    )
+
+
+def plotConfigWithColorGradedCurvature(
+    ax,
+    x0,
+    aPhi,
+    aTheta,
+    aPsi,
+    numEvalPoints,
+    alpha,
+):
+    continuousModel = WakamatsuModel(
+        **{
+            "L": 1,
+            "aPhi": aPhi,
+            "aTheta": aTheta,
+            "aPsi": aPsi,
+            "x0": x0,
+        }
+    )
+    s = np.linspace(0, 1, numEvalPoints)
+    kappa = np.sqrt(continuousModel.evalKappaSquared(s))
+    # normalize kappa to range from 255 to 1
+    kappaColor = kappa / np.max(kappa)
+    plotPointSetAsColorGradedLine(
+        ax=ax,
+        X=continuousModel.evalPositions(s),
+        colorMap=colorMap,
+        colorGrad=kappaColor,
+        alpha=alpha,
+        linewidth=3.0,
         waitTime=None,
     )
 
@@ -222,10 +215,7 @@ def plotIncreasingCurvatureConfigurations():
     aTheta = np.zeros(N)
     aPsi = np.zeros(N)
 
-    fig = plt.figure(
-        figsize=set_size(width=desiredFigureWidth, height=desiredFigureHeight)
-    )
-    ax = fig.add_subplot(projection="3d")
+    fig, ax = setupLatexPlot3D()
     labels = []
     for i in range(0, steps):
         x0 = np.array([0, 1 - (i * 1 / (steps + 1)), 0])
@@ -233,25 +223,24 @@ def plotIncreasingCurvatureConfigurations():
         aTheta[1] = i * upperLim1 / steps
         aTheta[3] = i * upperLim2 / steps
         labels.append("$\kappa_{{max}} = {}$".format(str(i)))
-        plotConfig(
+        plotConfigWithColorGradedCurvature(
             ax,
             x0,
             aPhi,
             aTheta,
             aPsi,
             numEvalPoints,
-            color=np.array([0, 0, 0]),
             alpha=1 - (i * 0.7 / steps),
         )
-    # adjust viewing settings
-    ax.xaxis.pane.fill = False
-    ax.yaxis.pane.fill = False
-    ax.zaxis.pane.fill = False
-    plt.legend(labels, loc="right", bbox_to_anchor=(1.1, 0.55))
+
+    plt.legend(labels, loc="right", bbox_to_anchor=(1.05, 0.55))
     ax.view_init(15, -115)
     plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
     if saveFigs:
-        plt.savefig(savePath + "matplotLibTest.pgf", bbox_inches="tight")
+        plt.savefig(
+            savePath + "ContinuousModelConfigurations_increasingCurvature.pgf",
+            bbox_inches="tight",
+        )
     plt.show(block=True)
 
 
@@ -269,8 +258,8 @@ def plotIncresingTorsionConfigurations():
     aPhi = np.zeros(N)
     aTheta = np.zeros(N)
     aPsi = np.zeros(N)
-    fig = plt.figure(figsize=set_size(textwidth_in_pt))
-    ax = fig.add_subplot(projection="3d")
+    fix, ax = setupLatexPlot3D()
+    labels = []
     for i in range(0, steps):
         x0 = np.array([0, 1 - (i * 1 / (steps + 1)), 0])
         # aTheta[0] = -0.2 + upperLim0
@@ -294,11 +283,19 @@ def plotIncresingTorsionConfigurations():
             aTheta,
             aPsi,
             numEvalPoints,
-            color=np.array([0, 0, 1]),
+            color=matplotlib.colormaps["viridis"](i / steps)[:3],
             alpha=1 - (i * 0.7 / steps),
         )
-    # adjust viewing settings
+        labels.append("$\omega_{{max}}= {}$".format(str(i), str(i)))
+    plt.legend(labels, loc="right", bbox_to_anchor=(1.05, 0.55))
     ax.view_init(15, -115)
+    plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+    if saveFigs:
+        plt.savefig(
+            savePath + "ContinuousModelConfigurations_increasingTorsion.pgf",
+            bbox_inches="tight",
+        )
+    plt.show(block=True)
     plt.show(block=True)
 
 

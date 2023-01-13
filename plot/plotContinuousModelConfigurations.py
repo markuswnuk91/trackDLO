@@ -5,6 +5,7 @@ import sys
 from functools import partial
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.ticker as tick
 import numpy as np
 
 try:
@@ -23,14 +24,14 @@ except:
     raise
 
 # plot control
-saveFigs = False
+saveFigs = True
 savePath = "/mnt/c/Users/ac129490/Documents/Dissertation/Thesis/62bebc3388a16f7dcc7f9153/figures/"
 
 colorMap = matplotlib.colormaps["viridis"]
 textwidth_in_pt = 483.6969
-figureScaling = 0.45
+figureScaling = 0.49
 latexFontSize_in_pt = 14
-
+latexFootNoteFontSize_in_pt = 
 desiredFigureWidth = figureScaling * textwidth_in_pt
 desiredFigureHeight = figureScaling * textwidth_in_pt
 tex_fonts = {
@@ -103,29 +104,18 @@ def plotConfig(
 
 def plotConfigWithColorGradedCurvature(
     ax,
-    x0,
-    aPhi,
-    aTheta,
-    aPsi,
+    model,
+    kappaUpperLimit,
     numEvalPoints,
     alpha,
 ):
-    continuousModel = WakamatsuModel(
-        **{
-            "L": 1,
-            "aPhi": aPhi,
-            "aTheta": aTheta,
-            "aPsi": aPsi,
-            "x0": x0,
-        }
-    )
     s = np.linspace(0, 1, numEvalPoints)
-    kappa = np.sqrt(continuousModel.evalKappaSquared(s))
+    kappa = np.sqrt(model.evalKappaSquared(s))
     # normalize kappa to range from 255 to 1
-    kappaColor = kappa / np.max(kappa)
+    kappaColor = kappa / kappaUpperLimit
     plotPointSetAsColorGradedLine(
         ax=ax,
-        X=continuousModel.evalPositions(s),
+        X=model.evalPositions(s),
         colorMap=colorMap,
         colorGrad=kappaColor,
         alpha=alpha,
@@ -215,25 +205,63 @@ def plotIncreasingCurvatureConfigurations():
     aTheta = np.zeros(N)
     aPsi = np.zeros(N)
 
-    fig, ax = setupLatexPlot3D()
+    fig, ax = setupLatexPlot3D(
+        figureWidth=desiredFigureWidth, figureHeight=desiredFigureHeight
+    )
     labels = []
+    models = []
+    kappaUpperLimit = 0
     for i in range(0, steps):
         x0 = np.array([0, 1 - (i * 1 / (steps + 1)), 0])
         aTheta[0] = i * upperLim0 / steps
         aTheta[1] = i * upperLim1 / steps
         aTheta[3] = i * upperLim2 / steps
-        labels.append("$\kappa_{{max}} = {}$".format(str(i)))
+        models.append(
+            WakamatsuModel(
+                **{
+                    "L": 1,
+                    "aPhi": aPhi.copy(),
+                    "aTheta": aTheta.copy(),
+                    "aPsi": aPsi.copy(),
+                    "x0": x0.copy(),
+                }
+            )
+        )
+    for model in models:
+        kappaMax = np.max(np.sqrt(model.evalKappaSquared(np.linspace(0, 1, 1000))))
+        if kappaMax > kappaUpperLimit:
+            kappaUpperLimit = kappaMax
+    for model in models:
         plotConfigWithColorGradedCurvature(
-            ax,
-            x0,
-            aPhi,
-            aTheta,
-            aPsi,
-            numEvalPoints,
+            ax=ax,
+            model=model,
+            numEvalPoints=100,
+            kappaUpperLimit=kappaUpperLimit,
             alpha=1 - (i * 0.7 / steps),
         )
 
-    plt.legend(labels, loc="right", bbox_to_anchor=(1.05, 0.55))
+    # plt.legend(labels, loc="right", bbox_to_anchor=(1.05, 0.55))
+
+    # colormap
+    lowerLim = 0
+    upperLim = np.round(kappaUpperLimit)
+    norm = matplotlib.colors.Normalize(vmin=lowerLim, vmax=upperLim)  # Normalizer
+    sm = plt.cm.ScalarMappable(cmap=colorMap, norm=norm)  # creating ScalarMappable
+    # sm.set_array([])
+    cbar = plt.colorbar(
+        sm,
+        ticks=np.linspace(0, upperLim, 5),
+        location="right",
+        anchor=(-0.3, 0.5),
+        shrink=0.5,
+    )
+    cbar.ax.yaxis.set_major_formatter(tick.FormatStrFormatter("%.1f"))
+    cbar.ax.set_ylabel("curvature $\kappa$", rotation=270, labelpad=12, fontsize=8)
+
+    ax.set_xticks(np.arange(0, 1.1, step=0.5))
+    ax.set_yticks(np.arange(0, 1.1, step=0.5))
+    ax.set_zticks(np.arange(0, 1.1, step=0.5))
+
     ax.view_init(15, -115)
     plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
     if saveFigs:
@@ -304,4 +332,4 @@ if __name__ == "__main__":
     # plotConfigsVariation_aPhi()
 
     plotIncreasingCurvatureConfigurations()
-    plotIncresingTorsionConfigurations()
+    # plotIncresingTorsionConfigurations()

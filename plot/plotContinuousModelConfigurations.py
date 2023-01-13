@@ -29,9 +29,9 @@ savePath = "/mnt/c/Users/ac129490/Documents/Dissertation/Thesis/62bebc3388a16f7d
 
 colorMap = matplotlib.colormaps["viridis"]
 textwidth_in_pt = 483.6969
-figureScaling = 0.49
+figureScaling = 0.45
 latexFontSize_in_pt = 14
-latexFootNoteFontSize_in_pt = 
+latexFootNoteFontSize_in_pt = 10
 desiredFigureWidth = figureScaling * textwidth_in_pt
 desiredFigureHeight = figureScaling * textwidth_in_pt
 tex_fonts = {
@@ -43,9 +43,9 @@ tex_fonts = {
     "axes.labelsize": latexFontSize_in_pt,
     "font.size": latexFontSize_in_pt,
     # Make the legend/label fonts a little smaller
-    "legend.fontsize": 8,
-    "xtick.labelsize": 10,
-    "ytick.labelsize": 10,
+    "legend.fontsize": latexFootNoteFontSize_in_pt,
+    "xtick.labelsize": latexFootNoteFontSize_in_pt,
+    "ytick.labelsize": latexFootNoteFontSize_in_pt,
 }
 
 if saveFigs:
@@ -118,6 +118,28 @@ def plotConfigWithColorGradedCurvature(
         X=model.evalPositions(s),
         colorMap=colorMap,
         colorGrad=kappaColor,
+        alpha=alpha,
+        linewidth=3.0,
+        waitTime=None,
+    )
+
+
+def plotConfigWithColorGradedTorsion(
+    ax,
+    model,
+    omegaUpperLimit,
+    numEvalPoints,
+    alpha,
+):
+    s = np.linspace(0, 1, numEvalPoints)
+    omega = np.sqrt(model.evalOmegaSquared(s))
+    # normalize kappa to range from 255 to 1
+    omegaColor = omega / omegaUpperLimit
+    plotPointSetAsColorGradedLine(
+        ax=ax,
+        X=model.evalPositions(s),
+        colorMap=colorMap,
+        colorGrad=omegaColor,
         alpha=alpha,
         linewidth=3.0,
         waitTime=None,
@@ -250,13 +272,19 @@ def plotIncreasingCurvatureConfigurations():
     # sm.set_array([])
     cbar = plt.colorbar(
         sm,
-        ticks=np.linspace(0, upperLim, 5),
+        ticks=np.linspace(0, upperLim, 2),
         location="right",
         anchor=(-0.3, 0.5),
         shrink=0.5,
     )
-    cbar.ax.yaxis.set_major_formatter(tick.FormatStrFormatter("%.1f"))
-    cbar.ax.set_ylabel("curvature $\kappa$", rotation=270, labelpad=12, fontsize=8)
+    cbar.ax.set_ylabel(
+        "curvature",
+        rotation=270,
+        labelpad=0,
+        fontsize=latexFootNoteFontSize_in_pt,
+    )
+    cbar.ax.set_yticklabels(["low", "high"], fontsize=latexFootNoteFontSize_in_pt)
+    # cbar.ax.yaxis.set_major_formatter(tick.FormatStrFormatter("%.1f"))
 
     ax.set_xticks(np.arange(0, 1.1, step=0.5))
     ax.set_yticks(np.arange(0, 1.1, step=0.5))
@@ -286,8 +314,12 @@ def plotIncresingTorsionConfigurations():
     aPhi = np.zeros(N)
     aTheta = np.zeros(N)
     aPsi = np.zeros(N)
-    fix, ax = setupLatexPlot3D()
+    fig, ax = setupLatexPlot3D(
+        figureWidth=desiredFigureWidth, figureHeight=desiredFigureHeight
+    )
     labels = []
+    models = []
+    omegaUpperLimit = 0
     for i in range(0, steps):
         x0 = np.array([0, 1 - (i * 1 / (steps + 1)), 0])
         # aTheta[0] = -0.2 + upperLim0
@@ -304,19 +336,58 @@ def plotIncresingTorsionConfigurations():
         aPhi[1] = i * -1.5 / steps
         aPhi[2] = i * -1.5 / steps
         aPhi[3] = i * 0.1 / steps
-        plotConfig(
-            ax,
-            x0,
-            aPhi,
-            aTheta,
-            aPsi,
-            numEvalPoints,
-            color=matplotlib.colormaps["viridis"](i / steps)[:3],
+        models.append(
+            WakamatsuModel(
+                **{
+                    "L": 1,
+                    "aPhi": aPhi.copy(),
+                    "aTheta": aTheta.copy(),
+                    "aPsi": aPsi.copy(),
+                    "x0": x0.copy(),
+                }
+            )
+        )
+
+    for model in models:
+        omegaMax = np.max(np.sqrt(model.evalOmegaSquared(np.linspace(0, 1, 1000))))
+        if omegaMax > omegaUpperLimit:
+            omegaUpperLimit = omegaMax
+    for model in models:
+        plotConfigWithColorGradedTorsion(
+            ax=ax,
+            model=model,
+            numEvalPoints=100,
+            omegaUpperLimit=omegaUpperLimit,
             alpha=1 - (i * 0.7 / steps),
         )
-        labels.append("$\omega_{{max}}= {}$".format(str(i), str(i)))
-    plt.legend(labels, loc="right", bbox_to_anchor=(1.05, 0.55))
+
+    # colormap
+    lowerLim = 0
+    upperLim = np.round(omegaUpperLimit)
+    norm = matplotlib.colors.Normalize(vmin=lowerLim, vmax=upperLim)  # Normalizer
+    sm = plt.cm.ScalarMappable(cmap=colorMap, norm=norm)  # creating ScalarMappable
+    # sm.set_array([])
+    cbar = plt.colorbar(
+        sm,
+        ticks=np.linspace(0, upperLim, 2),
+        location="right",
+        anchor=(-0.3, 0.5),
+        shrink=0.5,
+    )
+    cbar.ax.yaxis.set_major_formatter(tick.FormatStrFormatter("%.1f"))
+    cbar.ax.set_ylabel(
+        "torsion",
+        rotation=270,
+        labelpad=0,
+        fontsize=latexFootNoteFontSize_in_pt,
+    )
+    cbar.ax.set_yticklabels(["low", "high"], fontsize=latexFootNoteFontSize_in_pt)
+    ax.set_xticks(np.arange(0, 1.1, step=0.5))
+    ax.set_yticks(np.arange(0, 1.1, step=0.5))
+    ax.set_zticks(np.arange(0, 1.1, step=0.5))
+
     ax.view_init(15, -115)
+
     plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
     if saveFigs:
         plt.savefig(
@@ -332,4 +403,4 @@ if __name__ == "__main__":
     # plotConfigsVariation_aPhi()
 
     plotIncreasingCurvatureConfigurations()
-    # plotIncresingTorsionConfigurations()
+    plotIncresingTorsionConfigurations()

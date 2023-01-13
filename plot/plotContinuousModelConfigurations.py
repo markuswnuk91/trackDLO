@@ -286,9 +286,17 @@ def plotIncreasingCurvatureConfigurations():
     cbar.ax.set_yticklabels(["low", "high"], fontsize=latexFootNoteFontSize_in_pt)
     # cbar.ax.yaxis.set_major_formatter(tick.FormatStrFormatter("%.1f"))
 
-    ax.set_xticks(np.arange(0, 1.1, step=0.5))
-    ax.set_yticks(np.arange(0, 1.1, step=0.5))
-    ax.set_zticks(np.arange(0, 1.1, step=0.5))
+    # ax.set_xticks(np.arange(0, 1.1, step=0.5))
+    # ax.set_yticks(np.arange(0, 1.1, step=0.5))
+    # ax.set_zticks(np.arange(0, 1.1, step=0.5))
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_zticklabels([])
+
+    # reduce label padding
+    ax.xaxis.labelpad = -10
+    ax.yaxis.labelpad = -10
+    ax.zaxis.labelpad = -10
 
     ax.view_init(15, -115)
     plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
@@ -382,9 +390,18 @@ def plotIncresingTorsionConfigurations():
         fontsize=latexFootNoteFontSize_in_pt,
     )
     cbar.ax.set_yticklabels(["low", "high"], fontsize=latexFootNoteFontSize_in_pt)
-    ax.set_xticks(np.arange(0, 1.1, step=0.5))
-    ax.set_yticks(np.arange(0, 1.1, step=0.5))
-    ax.set_zticks(np.arange(0, 1.1, step=0.5))
+
+    # ax.set_xticks(np.arange(0, 1.1, step=0.5))
+    # ax.set_yticks(np.arange(0, 1.1, step=0.5))
+    # ax.set_zticks(np.arange(0, 1.1, step=0.5))
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_zticklabels([])
+
+    # reduce label padding
+    ax.xaxis.labelpad = -10
+    ax.yaxis.labelpad = -10
+    ax.zaxis.labelpad = -10
 
     ax.view_init(15, -115)
 

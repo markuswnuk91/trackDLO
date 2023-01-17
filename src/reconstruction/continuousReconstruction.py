@@ -300,7 +300,8 @@ class ContinuousReconstruction(ShapeReconstruction, WakamatsuModel):
         paramDict["Rtor"] = self.Rtor
         paramDict["Rflex"] = self.Rflex
         paramDict["Roh"] = self.Roh
-        paramDict["numAnsatzFuns"] = self.N
+        paramDict["N"] = self.N
+        paramDict["x0"] = self.x0.tolist()
 
         with open(savePath + fileName + ".json", "w") as fp:
             json.dump(paramDict, fp)

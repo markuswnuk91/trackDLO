@@ -99,13 +99,13 @@ def plotPointSet(
             alpha=alpha,
             edgecolor=None,
         )
-    if waitTime is not None or waitTime == -1:
+    if waitTime is not None and waitTime != -1:
         plt.draw()
         plt.pause(waitTime)
     elif waitTime is None:
-        plt.show(block=False)
-    elif waitTime == -1:
         plt.show(block=True)
+    elif waitTime == -1:
+        plt.show(block=False)
 
 
 def plotPointSets(
@@ -128,13 +128,13 @@ def plotPointSets(
     else:
         ax.scatter(Y[:, 0], Y[:, 1], Y[:, 2], color=yColor)
 
-    if waitTime is not None or waitTime == -1:
+    if waitTime is not None and waitTime != -1:
         plt.draw()
         plt.pause(waitTime)
     elif waitTime is None:
-        plt.show(block=False)
-    elif waitTime == -1:
         plt.show(block=True)
+    elif waitTime == -1:
+        plt.show(block=False)
 
 
 def plotPointSetAsLine(
@@ -161,13 +161,13 @@ def plotPointSetAsLine(
             linewidth=linewidth,
         )
 
-    if waitTime is not None or waitTime == -1:
+    if waitTime is not None and waitTime != -1:
         plt.draw()
         plt.pause(waitTime)
     elif waitTime == None:
-        plt.show(block=False)
-    elif waitTime == -1:
         plt.show(block=True)
+    elif waitTime == -1:
+        plt.show(block=False)
 
 
 def plotPointSetsAsLine(
@@ -190,13 +190,13 @@ def plotPointSetsAsLine(
     else:
         ax.plot3D(Y[:, 0], Y[:, 1], Y[:, 2], color=colorY, label=labelY)
 
-    if waitTime is not None or waitTime == -1:
+    if waitTime is not None and waitTime != -1:
         plt.draw()
         plt.pause(waitTime)
     elif waitTime == None:
-        plt.show(block=False)
-    elif waitTime == -1:
         plt.show(block=True)
+    elif waitTime == -1:
+        plt.show(block=False)
 
 
 def plotPointSetAsColorGradedLine(
@@ -221,10 +221,10 @@ def plotPointSetAsColorGradedLine(
             linewidth=linewidth,
         )
 
-    if waitTime is not None or waitTime == -1:
+    if waitTime is not None and waitTime != -1:
         plt.draw()
         plt.pause(waitTime)
     elif waitTime == None:
-        plt.show(block=False)
-    elif waitTime == -1:
         plt.show(block=True)
+    elif waitTime == -1:
+        plt.show(block=False)

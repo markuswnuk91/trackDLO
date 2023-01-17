@@ -20,12 +20,12 @@ except:
     print("Imports for DifferentialGeometryReconstruction failed.")
     raise
 
-saveParams = False
+saveParams = True
 plotSteps = True
 plotFinal = True
 
 # continuous reconstruction
-reconstructConinuous = True
+reconstructContinuous = True
 numIterContinuous = None
 
 # discrete reconsruction
@@ -72,10 +72,12 @@ def visualizationCallback(
         X=reconstructedModel.X,
         Y=reconstructedModel.Y,
         ax=ax,
-        axisLimX=axisLimX,
-        axisLimY=axisLimY,
-        axisLimZ=axisLimZ,
     )
+    # set axis limits
+    ax.set_xlim(axisLimX[0], axisLimX[1])
+    ax.set_ylim(axisLimY[0], axisLimY[1])
+    ax.set_zlim(axisLimZ[0], axisLimZ[1])
+
     if savePath is not None:
         fig.savefig(savePath + fileName + "_" + str(reconstructedModel.iter) + ".png")
 
@@ -118,7 +120,7 @@ if __name__ == "__main__":
     )
 
     # run reconstructions
-    if reconstructConinuous:
+    if reconstructContinuous:
         if plotSteps:
             # continuous
             visCallbackContinuousModel = setupVisualizationCallback(
@@ -136,12 +138,12 @@ if __name__ == "__main__":
             discreteReconstruction.registerCallback(visCallbackDiscreteModel)
         discreteReconstruction.reconstructShape(numIter=numIterDiscrete)
 
-    if reconstructConinuous and saveParams:
+    if reconstructContinuous and saveParams:
         continousReconstruction.writeParametersToJson(
             savePath=savePath, fileName=fileName_continuousParams
         )
 
-    if reconstructConinuous and plotFinal:
+    if reconstructContinuous and plotFinal:
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
 

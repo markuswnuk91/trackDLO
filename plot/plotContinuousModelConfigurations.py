@@ -1,4 +1,5 @@
 # plots different configruations using the wakamatsu model
+# figure in chapter 4 modelling, continuous shape representation
 
 import os
 import sys
@@ -20,7 +21,7 @@ try:
         plotPointSetAsColorGradedLine,
     )
 except:
-    print("Imports for plotting continuous model failed.")
+    print("Imports for plotting continuous model co0nfigurations failed.")
     raise
 
 # plot control

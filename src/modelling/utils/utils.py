@@ -16,21 +16,26 @@ def loadWakamatsuModelFromJson(filePath=None):
     if filePath is None:
         raise ValueError("Expected file path, insted got None")
     else:
+        model = WakamatsuModel(**loadWakamatsuModelParametersFromJson(filePath))
+        return model
+
+
+def loadWakamatsuModelParametersFromJson(filePath=None):
+    if filePath is None:
+        raise ValueError("Expected file path, insted got None")
+    else:
         f = open(filePath)
         data = json.load(f)
         f.close()
-        continuousModelParams = {}
-        model = WakamatsuModel(
-            **{
-                "aPhi": np.array(data["aPhi"]),
-                "aTheta": np.array(data["aTheta"]),
-                "aPsi": np.array(data["aPsi"]),
-                "L": data["L"],
-                "Rtor": data["Rtor"],
-                "Rflex": data["Rflex"],
-                "Roh": data["Roh"],
-                "N": data["N"],
-                "x0": np.array(data["x0"]),
-            }
-        )
-        return model
+        modelParams = {
+            "aPhi": np.array(data["aPhi"]),
+            "aTheta": np.array(data["aTheta"]),
+            "aPsi": np.array(data["aPsi"]),
+            "L": data["L"],
+            "Rtor": data["Rtor"],
+            "Rflex": data["Rflex"],
+            "Roh": data["Roh"],
+            "N": data["N"],
+            "x0": np.array(data["x0"]),
+        }
+        return modelParams

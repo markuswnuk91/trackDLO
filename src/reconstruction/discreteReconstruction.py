@@ -85,7 +85,12 @@ class DiscreteReconstruction(ShapeReconstruction, FiniteSegmentModel):
             # + self.annealingTor**self.iter * self.evalUtor(self.L, self.numSc)
             # + self.evalUgrav(self.L, self.numSc)
             +self.wPosDiff
-            * np.square(np.linalg.norm(self.Y - self.X))
+            * np.square(np.linalg.norm((self.Y - self.X)))
+            # * np.square(
+            #     np.sum(
+            #         np.linspace(1, 0.5, self.Y.shape[0])
+            #         * np.linalg.norm((self.Y - self.X), axis=1)
+            #     )
             # + self.wPosDiff * (1 - np.exp(-np.linalg.norm(self.Y - self.X) / 1000))
             # + np.sum(self.aPsi)
         )

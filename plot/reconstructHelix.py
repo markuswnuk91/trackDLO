@@ -15,26 +15,45 @@ try:
     )
     from src.reconstruction.continuousReconstruction import ContinuousReconstruction
     from src.reconstruction.discreteReconstruction import DiscreteReconstruction
+    from src.modelling.utils.utils import (
+        loadWakamatsuModelParametersFromJson,
+    )
 
 except:
     print("Imports for DifferentialGeometryReconstruction failed.")
     raise
 
-saveParams = True
+saveParams = False
 plotSteps = True
 plotFinal = True
 
 # continuous reconstruction
-reconstructContinuous = True
+reconstructContinuous = False
 numIterContinuous = None
+reconstructFromScratch = False
+loadPathInitialParameters = "/mnt/c/Users/ac129490/Documents/Dissertation/Software/trackdlo/plot/plotdata/helixReconstruction/helix_continuousModel.json"
 
 # discrete reconsruction
-reconstructDiscrete = False
-numIterDiscrete = 10
-numSegments = 4
+reconstructDiscrete = True
+numIterDiscrete = 30
+numSegments = 10
 
 savePath = "plot/plotdata/helixReconstruction/"
 fileName_continuousParams = "helix_continuousModel"
+
+
+def reconstructParams():
+    return {
+        "numSc": 30,
+        "Rtor": 10,  # use 1000
+        "Rflex": 10,  # use 1000
+        "Roh": 0,
+        "wPosDiff": 10,  # use 10
+        #            "aPhi": aPhi,
+        #            "aTheta": aTheta,
+        "annealingFlex": 1,  # use 0.995
+        "annealingTor": 1,  # use 0.8
+    }
 
 
 def setupVisualizationCallback(shapeReconstruction):
@@ -68,18 +87,33 @@ def visualizationCallback(
     if fileName is not None and type(fileName) is not str:
         raise ValueError("Error saving 3D plot. The given filename should be a string.")
     plt.cla()
+    # set axis limits
+    ax.set_xlim(axisLimX[0], axisLimX[1])
+    ax.set_ylim(axisLimY[0], axisLimY[1])
+    ax.set_zlim(axisLimZ[0], axisLimZ[1])
     plotPointSets(
         X=reconstructedModel.X,
         Y=reconstructedModel.Y,
         ax=ax,
     )
-    # set axis limits
-    ax.set_xlim(axisLimX[0], axisLimX[1])
-    ax.set_ylim(axisLimY[0], axisLimY[1])
-    ax.set_zlim(axisLimZ[0], axisLimZ[1])
 
     if savePath is not None:
         fig.savefig(savePath + fileName + "_" + str(reconstructedModel.iter) + ".png")
+
+
+def reconstructFromScratchParams():
+    # do not change
+    return {
+        "numSc": 30,
+        "Rtor": 1000,  # use 1000
+        "Rflex": 1000,  # use 1000
+        "Roh": 0,
+        "wPosDiff": 10,  # use 10
+        #            "aPhi": aPhi,
+        #            "aTheta": aTheta,
+        "annealingFlex": 0.995,  # use 0.995
+        "annealingTor": 0.8,  # use 0.8
+    }
 
 
 if __name__ == "__main__":
@@ -91,23 +125,44 @@ if __name__ == "__main__":
     Y = helixCurve(s)
 
     # reconstruct with contiuous model
-    continousReconstruction = ContinuousReconstruction(
-        **{
-            "Y": Y,
-            "SY": s,
-            "x0": Y[0, :],
-            "L": arcLength,
-            "numSc": 30,
-            "Rtor": 1000,  # use 1000
-            "Rflex": 1000,  # use 1000
-            "Roh": 0,
-            "wPosDiff": 10,  # use 10
-            #            "aPhi": aPhi,
-            #            "aTheta": aTheta,
-            "annealingFlex": 0.995,  # use 0.99
-            "annealingTor": 0.8,  # use 0.8
-        }
-    )
+    if reconstructFromScratch:
+        reconstructionParams = reconstructFromScratchParams()
+        continousReconstruction = ContinuousReconstruction(
+            **{
+                "Y": Y,
+                "SY": s,
+                "x0": Y[0, :],
+                "L": arcLength,
+                "numSc": reconstructionParams["numSc"],
+                "Rtor": reconstructionParams["Rtor"],
+                "Rflex": reconstructionParams["Rflex"],
+                "Roh": reconstructionParams["Roh"],
+                "wPosDiff": reconstructionParams["wPosDiff"],
+                "annealingFlex": reconstructionParams["annealingFlex"],
+                "annealingTor": reconstructionParams["annealingTor"],
+            }
+        )
+    else:
+        reconstructionParams = reconstructParams()
+        modelParams = loadWakamatsuModelParametersFromJson(loadPathInitialParameters)
+        continousReconstruction = ContinuousReconstruction(
+            **{
+                "Y": Y,
+                "SY": s,
+                "x0": Y[0, :],
+                "L": arcLength,
+                "aPhi": modelParams["aPhi"],
+                "aTheta": modelParams["aTheta"],
+                "aPsi": modelParams["aPsi"],
+                "numSc": reconstructionParams["numSc"],
+                "Rtor": reconstructionParams["Rtor"],
+                "Rflex": reconstructionParams["Rflex"],
+                "Roh": reconstructionParams["Roh"],
+                "wPosDiff": reconstructionParams["wPosDiff"],
+                "annealingFlex": reconstructionParams["annealingFlex"],
+                "annealingTor": reconstructionParams["annealingTor"],
+            }
+        )
 
     discreteReconstruction = DiscreteReconstruction(
         **{
@@ -118,6 +173,10 @@ if __name__ == "__main__":
             "N": numSegments,
         }
     )
+
+    # sJoint = discreteReconstruction.getJointLocalCoordinates()
+    # discreteReconstruction.SY = sJoint
+    # discreteReconstruction.Y = helixCurve(sJoint)
 
     # run reconstructions
     if reconstructContinuous:
@@ -146,21 +205,23 @@ if __name__ == "__main__":
     if reconstructContinuous and plotFinal:
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
-
+        # set axis limits
+        ax.set_xlim(-3, 3)
+        ax.set_ylim(-3, 3)
+        ax.set_zlim(-0, 6)
         plotPointSets(
             X=continousReconstruction.X,
             Y=continousReconstruction.Y,
             ax=ax,
-            axisLimX=[-3, 3],
-            axisLimY=[-3, 3],
-            axisLimZ=[-0, 6],
-            waitTime=-1,
         )
 
     if reconstructDiscrete and plotFinal:
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
-
+        # set axis limits
+        ax.set_xlim(-3, 3)
+        ax.set_ylim(-3, 3)
+        ax.set_zlim(-0, 6)
         sJoint = discreteReconstruction.getJointLocalCoordinates()
         XJoint = discreteReconstruction.getCaresianPositionsFromLocalCoordinates(sJoint)
         YStartEnd = Y[[0, -1], :]
@@ -168,17 +229,9 @@ if __name__ == "__main__":
             X=XJoint,
             Y=YStartEnd,
             ax=ax,
-            axisLimX=[-3, 3],
-            axisLimY=[-3, 3],
-            axisLimZ=[-0, 6],
-            waitTime=None,
         )
         plotPointSetsAsLine(
             ax=ax,
-            X=discreteReconstruction.X,
+            X=discreteReconstruction.getCaresianPositionsFromLocalCoordinates(sJoint),
             Y=discreteReconstruction.Y,
-            axisLimX=[-3, 3],
-            axisLimY=[-3, 3],
-            axisLimZ=[-0, 6],
-            waitTime=-1,
         )

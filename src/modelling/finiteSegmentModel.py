@@ -172,9 +172,9 @@ class FiniteSegmentModel(DeformableLinearObject):
         Returns:
             int: bodyNode index of the body the local coordinate corresponds to.
         """
-        if s >= 1:
+        if 1 - s <= np.finfo(float).eps:
             return self.skel.getNumBodyNodes() - 1
-        elif s <= 0:
+        elif s <= np.finfo(float).eps:
             return 0
         else:
             jointLocalCoordinates = self.getJointLocalCoordinates()

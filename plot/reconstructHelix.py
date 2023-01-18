@@ -35,8 +35,8 @@ loadPathInitialParameters = "/mnt/c/Users/ac129490/Documents/Dissertation/Softwa
 
 # discrete reconsruction
 reconstructDiscrete = True
-numIterDiscrete = 30
-numSegments = 10
+numIterDiscrete = 300
+numSegments = 6
 
 savePath = "plot/plotdata/helixReconstruction/"
 fileName_continuousParams = "helix_continuousModel"
@@ -121,8 +121,12 @@ if __name__ == "__main__":
     # helix definition & reconstuction
     helixCurve = lambda s: helixShape(s, heightScaling=2.0, frequency=2)
     arcLength = calcArcLengthFromCurveFun(helixCurve, 0, 1)
+
     s = np.linspace(0, 1, 30)
     Y = helixCurve(s)
+
+    sDiscrete = np.linspace(0, 1, numSegments)
+    discreteY = helixCurve(sDiscrete)
 
     # reconstruct with contiuous model
     if reconstructFromScratch:
@@ -164,19 +168,19 @@ if __name__ == "__main__":
             }
         )
 
+    correspondanceWeightingFactor = np.ones(numSegments)
+    # correspondanceWeightingFactor[:4] = 5
+    # correspondanceWeightingFactor[-1] = 5
     discreteReconstruction = DiscreteReconstruction(
         **{
-            "Y": Y,
-            "SY": s,
+            "Y": discreteY,
+            "SY": sDiscrete,
             "x0": Y[0, :],
             "L": arcLength,
             "N": numSegments,
+            "correspondanceWeightingFactor": correspondanceWeightingFactor,
         }
     )
-
-    # sJoint = discreteReconstruction.getJointLocalCoordinates()
-    # discreteReconstruction.SY = sJoint
-    # discreteReconstruction.Y = helixCurve(sJoint)
 
     # run reconstructions
     if reconstructContinuous:

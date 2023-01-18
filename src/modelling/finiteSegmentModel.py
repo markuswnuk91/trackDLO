@@ -102,6 +102,7 @@ class FiniteSegmentModel(DeformableLinearObject):
 
         self.L = 1 if L is None else L
         self.N = 10 if N is None else N
+        self.numDofs = 3 * self.N + 3
         self.Rflex = 1 if Rflex is None else Rflex
         self.Rtor = 1 if Rtor is None else Rtor
         self.Roh = 0.1 if Roh is None else Roh
@@ -111,8 +112,9 @@ class FiniteSegmentModel(DeformableLinearObject):
         self.betas = np.zeros(self.N - 1) if betas is None else betas
         self.gammas = np.zeros(self.N - 1) if gammas is None else gammas
         self.gravity = np.array([0, 0, 9.81]) if gravity is None else gravity
-
-        self.numDofs = 3 * self.N + 3
+        self.q = self.mapAnglesToDartPositions(
+            self.x0, self.rot0, self.alphas, self.betas, self.gammas
+        )
         # self.phis = np.zeros(self.N - 1) if phis is None else phis
         # self.thetas = np.zeros(self.N - 1) if thetas is None else thetas
 
@@ -130,9 +132,9 @@ class FiniteSegmentModel(DeformableLinearObject):
     def mapDartPositionsToAngles(self, q):
         x0 = q[3:6]
         rot0 = q[:3]
-        alphas = q[7::3]
-        betas = q[8::3]
-        gammas = q[9::3]
+        alphas = q[6::3]
+        betas = q[7::3]
+        gammas = q[8::3]
         return x0, rot0, alphas, betas, gammas
 
     def mapAnglesToDartPositions(self, x0, rot0, alphas, betas, gammas):
@@ -187,20 +189,34 @@ class FiniteSegmentModel(DeformableLinearObject):
                 - 1
             )
 
+    def getOffsetInBodyNodeCoordinatesFromLocalCoordiate(self, bodyNodeIndex, s: float):
+        """returns the offset from a center of a bodyNode to the location corresponding to a local coordinate.
+        The offset is expressed in the cooresponding local bodyNode frame
+
+        Args:
+            s (float): local coordinate in [0,1]
+
+        Returns:
+            np.array: 3x1 offset vector fom the body node center to the position corresponding to the given local coordinate.
+        """
+        bodyNodeIndex = self.getBodyNodeIndexFromLocalCoodinate(s)
+        localCoordsJoints = self.getJointLocalCoordinates()
+        sLower = localCoordsJoints[bodyNodeIndex]
+        sUpper = localCoordsJoints[bodyNodeIndex + 1]
+        sCenter = sLower + (sUpper - sLower) / 2
+        sOffset = (s - sCenter) / (sUpper - sLower)
+        offset = np.array([0, 0, sOffset * self.segmentLengths[bodyNodeIndex]])
+        return offset
+
     def getCartesianPositionFromLocalCoordinate(self, s: float):
-        if s <= 0:
+        if s <= np.finfo(float).eps:
             return self.getCartesianPositionSegmentStart(0)
-        elif s >= 1:
+        elif 1 - s <= np.finfo(float).eps:
             return self.getCartesianPositionSegmentEnd(-1)
         else:
             correspondBodyNodeIdx = self.getBodyNodeIndexFromLocalCoodinate(s)
-            localCoordsJoints = self.getJointLocalCoordinates()
-            sLower = localCoordsJoints[correspondBodyNodeIdx]
-            sUpper = localCoordsJoints[correspondBodyNodeIdx + 1]
-            sCenter = sLower + (sUpper - sLower) / 2
-            sOffset = (s - sCenter) / (sUpper - sLower)
-            offset = np.array(
-                [0, 0, sOffset * self.segmentLengths[correspondBodyNodeIdx]]
+            offset = self.getOffsetInBodyNodeCoordinatesFromLocalCoordiate(
+                correspondBodyNodeIdx, s
             )
             return self.getCartesianPositionSegmentWithOffset(
                 correspondBodyNodeIdx, offset
@@ -292,6 +308,31 @@ class FiniteSegmentModel(DeformableLinearObject):
         # reverse direction to go to end of segment
         relativeTransformToParentJoint[:3, 3] = -relativeTransformToParentJoint[:3, 3]
         return (bodyNodeTransform @ relativeTransformToParentJoint)[:3, 3]
+
+    def getJacobianFromLocalCoordinate(self, s: float):
+        correspondingBodyNode = self.getBodyNodeIndexFromLocalCoodinate(s)
+        offset = self.getOffsetInBodyNodeCoordinatesFromLocalCoordiate(
+            correspondingBodyNode, s
+        )
+        return (
+            self.skel.getBodyNode(correspondingBodyNode).getWorldJacobian(offset).copy()
+        )
+
+    def getJacobianFromLocalCoordinates(self, S: np.array):
+        """returns jacobians for all local coordinates in S
+
+
+        Args:
+            S (np.array): Nx1 array of local coordinates in [0,1]
+
+        Return:
+            jacobianList (list of np.arrays): list of jacobians corresponding to the local coordinates
+        """
+        jacobianList = []
+        for s in S:
+            J = self.getJacobianFromLocalCoordinate(s)
+            jacobianList.append(J)
+        return jacobianList
 
     def getCartesianPositionRootJoint(self):
         return self.getCartesianPositionSegmentStart(0)

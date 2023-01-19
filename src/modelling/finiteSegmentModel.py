@@ -17,9 +17,9 @@ except:
 class FiniteSegmentModel(DeformableLinearObject):
     """Implementation of a finite segment representation of a DLO.
     The implementation is based on the theoretic principles of Discrete Kirchoff Rods from the paper:
-    "Miklos Bergou et al., Discrete Elastic Rods, ACM Transactions on Graphics (SIGGRAPH), 2008"
-    and uses the Dynamics Animation and Robotics Toolkit (DART) to model the underlying kinematics.
-    The class contains the functionality to map between different representations and allows to convert from the continous space (local coordinate s) to the discrete space (indices of segments i).
+    "Miklos Bergou et al., Discrete Elastic Rods, ACM Transactions on Graphics (SIGGRAPH), 2008".
+    It uses the Dynamics Animation and Robotics Toolkit (DART) to model the underlying kinematics.
+    The class contains the functionality to map between the different representations and allows to convert from the continous space (local coordinate s) to the discrete space (segments i).
 
     Attributes
         ----------
@@ -53,13 +53,11 @@ class FiniteSegmentModel(DeformableLinearObject):
         q: np.array
             Degrees of freedom of the dart representation
 
+        x0: np.array
+            1x3 position of the beginning of the first segment
+
         rot0: np.array
             1x3 angles to transform from the reference coordinate system to the first segment
-
-        jointAngles: np.array
-            Nx3 angles of the Dart balljoints degrees of freedom. Rotations (alpha, beta, gamma) around the segment coordinate axes
-    Args:
-        object (_type_): _description_
     """
 
     def __init__(
@@ -125,9 +123,6 @@ class FiniteSegmentModel(DeformableLinearObject):
             *args,
             **kwargs,
         )
-        # for i, jointAngles in enumerate(self.angles):
-        #     for jointAngle in jointAngles:
-        #         self.setPosition(i, jointAngle)
 
     def mapDartPositionsToAngles(self, q):
         x0 = q[3:6]

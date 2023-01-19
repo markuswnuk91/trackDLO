@@ -24,7 +24,7 @@ except:
     raise
 
 saveParams = False
-plotSteps = True
+plotSteps = False
 plotFinal = True
 
 # continuous reconstruction
@@ -36,7 +36,7 @@ loadPathInitialParameters = "/mnt/c/Users/ac129490/Documents/Dissertation/Softwa
 # discrete reconsruction
 reconstructDiscrete = True
 numIterDiscrete = 300
-numSegments = 6
+numSegments = 5
 
 savePath = "plot/plotdata/helixReconstruction/"
 fileName_continuousParams = "helix_continuousModel"
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     s = np.linspace(0, 1, 30)
     Y = helixCurve(s)
 
-    sDiscrete = np.linspace(0, 1, numSegments)
+    sDiscrete = np.linspace(0, 1, numSegments + 1)
     discreteY = helixCurve(sDiscrete)
 
     # reconstruct with contiuous model
@@ -168,9 +168,10 @@ if __name__ == "__main__":
             }
         )
 
-    correspondanceWeightingFactor = np.ones(numSegments)
-    # correspondanceWeightingFactor[:4] = 5
-    # correspondanceWeightingFactor[-1] = 5
+    correspondanceWeightingFactor = np.ones(numSegments + 1)
+    correspondanceWeightingFactor[2] = 100
+
+    # correspondanceWeightingFactor[-1] = 1
     discreteReconstruction = DiscreteReconstruction(
         **{
             "Y": discreteY,

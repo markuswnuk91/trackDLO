@@ -147,12 +147,10 @@ class DiscreteReconstruction(ShapeReconstruction, FiniteSegmentModel):
             # self.annealingFlex**self.iter * self.evalUflex(self.L, self.numSc)
             # + self.annealingTor**self.iter * self.evalUtor(self.L, self.numSc)
             # + self.evalUgrav(self.L, self.numSc)
-            +self.wPosDiff
-            * np.square(
-                np.sum(
-                    self.correspondanceWeightingFactor
-                    * np.linalg.norm((self.Y - self.X), axis=1)
-                )
+            self.wPosDiff
+            * np.sum(
+                self.correspondanceWeightingFactor
+                * np.square(np.linalg.norm(self.Y - self.X, axis=1))
             )
             # + self.wPosDiff * (1 - np.exp(-np.linalg.norm(self.Y - self.X) / 1000))
             # + np.sum(self.aPsi)
@@ -176,17 +174,18 @@ class DiscreteReconstruction(ShapeReconstruction, FiniteSegmentModel):
             for jacobian in jacobians:
                 # fill dart jacobians with zeros
                 paddedJacobian = np.pad(
-                    jacobian.copy(),
+                    jacobian,
                     ((0, 0), (0, len(self.q) - jacobian.shape[1] % len(self.q))),
                     "constant",
                 )
                 jacobianRows.append(paddedJacobian[3:6, correspondingDartIndex])
             jacobianMultiplikatorMatrix = np.vstack(jacobianRows)
             # calcualte cost function derivative
-            J[i] = (
+            J[i] = np.sum(
                 -2
                 * self.wPosDiff
-                * np.sum((self.Y - self.X) * jacobianMultiplikatorMatrix)
+                * self.correspondanceWeightingFactor
+                * np.sum((self.Y - self.X) * jacobianMultiplikatorMatrix, axis=1)
             )
 
         return J

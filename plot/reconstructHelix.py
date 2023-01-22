@@ -36,7 +36,7 @@ loadPathInitialParameters = "/mnt/c/Users/ac129490/Documents/Dissertation/Softwa
 # discrete reconsruction
 reconstructDiscrete = True
 numIterDiscrete = 300
-numSegments = 5
+numSegments = 4
 
 savePath = "plot/plotdata/helixReconstruction/"
 fileName_continuousParams = "helix_continuousModel"
@@ -169,9 +169,8 @@ if __name__ == "__main__":
         )
 
     correspondanceWeightingFactor = np.ones(numSegments + 1)
-    correspondanceWeightingFactor[2] = 100
-
-    # correspondanceWeightingFactor[-1] = 1
+    # correspondanceWeightingFactor[:3] = 10
+    # correspondanceWeightingFactor[-1] = 0.3
     discreteReconstruction = DiscreteReconstruction(
         **{
             "Y": discreteY,

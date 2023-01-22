@@ -54,12 +54,18 @@ def setupLatexPlot3D(
     ylabel="$y$",
     zlabel="$z$",
     viewAngle=(0, 0),
+    xTickStep=None,
+    yTickStep=None,
+    zTickStep=None,
 ):
     if figureHeight is not None:
         fig = plt.figure(figsize=set_size(width=figureWidth, height=figureHeight))
     else:
         fig = plt.figure(figsize=set_size(width=figureWidth))
     ax = fig.add_subplot(projection="3d")
+
+    # set view angle
+    ax.view_init(viewAngle[0], viewAngle[1])
 
     # set axis limits
     ax.set_xlim(axisLimX[0], axisLimX[1])
@@ -76,6 +82,13 @@ def setupLatexPlot3D(
     ax.yaxis.pane.fill = False
     ax.zaxis.pane.fill = False
 
+    # set x ticks
+    if xTickStep is not None:
+        ax.set_xticks(np.arange(axisLimX[0], axisLimX[1] + xTickStep, step=xTickStep))
+    if yTickStep is not None:
+        ax.set_yticks(np.arange(axisLimY[0], axisLimY[1] + yTickStep, step=yTickStep))
+    if zTickStep is not None:
+        ax.set_zticks(np.arange(axisLimZ[0], axisLimZ[1] + zTickStep, step=zTickStep))
     return fig, ax
 
 
@@ -85,10 +98,11 @@ def plotPointSet(
     color=[0, 0, 1],
     alpha=1,
     label: str = None,
+    size=20,
     waitTime=0.001,
 ):
     if label is None:
-        ax.scatter(X[:, 0], X[:, 1], X[:, 2], color=color, alpha=alpha)
+        ax.scatter(X[:, 0], X[:, 1], X[:, 2], color=color, alpha=alpha, s=size)
     else:
         ax.scatter(
             X[:, 0],
@@ -97,6 +111,7 @@ def plotPointSet(
             color=color,
             label=label,
             alpha=alpha,
+            s=size,
             edgecolor=None,
         )
     if waitTime is not None and waitTime != -1:
@@ -178,17 +193,41 @@ def plotPointSetsAsLine(
     labelY: str = None,
     colorX=[0, 0, 1],
     colorY=[1, 0, 0],
+    linewidthX=1.5,
+    linewidthY=1.5,
+    alphaX=1,
+    alphaY=1,
     waitTime=None,
 ):
     if labelX is None:
-        ax.plot3D(X[:, 0], X[:, 1], X[:, 2], color=colorX)
+        ax.plot3D(
+            X[:, 0], X[:, 1], X[:, 2], color=colorX, linewidth=linewidthX, alpha=alphaX
+        )
     else:
-        ax.plot3D(X[:, 0], X[:, 1], X[:, 2], color=colorX, label=labelX)
+        ax.plot3D(
+            X[:, 0],
+            X[:, 1],
+            X[:, 2],
+            color=colorX,
+            label=labelX,
+            linewidth=linewidthX,
+            alpha=alphaX,
+        )
 
     if labelY is None:
-        ax.plot3D(Y[:, 0], Y[:, 1], Y[:, 2], color=colorY)
+        ax.plot3D(
+            Y[:, 0], Y[:, 1], Y[:, 2], color=colorY, linewidth=linewidthY, alpha=alphaY
+        )
     else:
-        ax.plot3D(Y[:, 0], Y[:, 1], Y[:, 2], color=colorY, label=labelY)
+        ax.plot3D(
+            Y[:, 0],
+            Y[:, 1],
+            Y[:, 2],
+            color=colorY,
+            label=labelY,
+            linewidth=linewidthY,
+            alpha=alphaY,
+        )
 
     if waitTime is not None and waitTime != -1:
         plt.draw()

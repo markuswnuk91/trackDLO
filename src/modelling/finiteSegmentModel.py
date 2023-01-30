@@ -19,14 +19,18 @@ class FiniteSegmentModel(DeformableLinearObject):
     The implementation is based on the theoretic principles of Discrete Kirchoff Rods from the paper:
     "Miklos Bergou et al., Discrete Elastic Rods, ACM Transactions on Graphics (SIGGRAPH), 2008".
     It uses the Dynamics Animation and Robotics Toolkit (DART) to model the underlying kinematics.
-    The class contains the functionality to map between the different representations and allows to convert from the continous space (local coordinate s) to the discrete space (segments i).
+    For human-readability the user interface uses extrinsic euler angles to represent the rotations inbetween individual segments (Kinematic Chain Representation), instead of DART's logMap representation.
+
+    This class contains the functionality to map between the different representations.
+    KinematicChain <--> DART <--> Discrete Kirchoff Rod
+    Furthermore it provides functionality to map from the continous space (local coordinate s) to the discrete space (segments i).
 
     Attributes
         ----------
         N: int
             Number of segments
 
-        Minimal coordinate representaion as described in Bergou et al.:
+        Discrete Kirchhoff Rod (Minimal coordinate representaion as described in Bergou et al.):
 
             phis: np.array
                 Bending angles around the curvature binormal for each segment as described in Bergou et al.
@@ -40,24 +44,25 @@ class FiniteSegmentModel(DeformableLinearObject):
             curvatureBinormals: np.array
                 curvature binormals as described in Bergou et al.
 
-        Dart Representation
+        Kinematic Chain Representation (extrinsic Euler Angles)
         alphas: np.array
-            Rotation angles around the local x-coordinates for each bodyNode coordinate system
+            Rotation angles around the local x-coordinates for each bodyNode coordinate system in extrinsic euler angle representation (rotation around fixed parent coordinate system)
 
         betas: np.array
-            Rotation angles around the local y-coordinates for each bodyNode coordinate system
+            Rotation angles around the local y-coordinates for each bodyNode coordinate system in extrinsic euler angle representation (rotation around fixed parent coordinate system)
 
         gammas: np.array
-            Rotation angles around the local z-coordinates for each bodyNode coordinate system
-
-        q: np.array
-            Degrees of freedom of the dart representation
+            Rotation angles around the local z-coordinates for each bodyNode coordinate system in extrinsic euler angle representation (rotation around fixed parent coordinate system)
 
         x0: np.array
             1x3 position of the beginning of the first segment
 
         rot0: np.array
-            1x3 angles to transform from the reference coordinate system to the first segment
+            1x3 Rotation angles to transform from the reference coordinate system to the first segment in extrinsic euler angle representation (rotation around fixed parent coordinate system)
+
+        Dart Representation
+        q: np.array
+            Degrees of freedom of the dart representation where q[0:3] are the rotations of the first dart.dynamics.FreeJoint, q[3:6] are the x,y,z translations of the first dart.dynamicsFreeJoint, q[6:] are the degrees of freedom of the remaining dart.dynamics.BallJoint. DART requires the angles to be represented in logMap (rotVec) representation.
     """
 
     def __init__(
@@ -126,20 +131,30 @@ class FiniteSegmentModel(DeformableLinearObject):
 
     def mapDartPositionsToAngles(self, q):
         x0 = q[3:6]
-        rot0 = q[:3]
-        alphas = q[6::3]
-        betas = q[7::3]
-        gammas = q[8::3]
+        # q[:3]
+        rot0 = R.from_rotvec([q[0], q[1], q[2]]).as_euler("xyz")
+        # alphas = q[6::3]
+        # betas = q[7::3]
+        # gammas = q[8::3]
+        angles = R.from_rotvec(np.reshape(q[6:], (-1, 3))).as_euler("xyz")
+        alphas = angles[:, 0]
+        betas = angles[:, 1]
+        gammas = angles[:, 2]
         return x0, rot0, alphas, betas, gammas
 
     def mapAnglesToDartPositions(self, x0, rot0, alphas, betas, gammas):
         q = np.zeros(self.numDofs)
         q[3:6] = x0
-        q[:3] = rot0
+        # q[:3] = rot0
+        q[:3] = R.from_euler("xyz", rot0).as_rotvec()
         if self.N > 1:
-            q[6::3] = alphas
-            q[7::3] = betas
-            q[8::3] = gammas
+            rotVecs = R.from_euler(
+                "xyz", np.column_stack((alphas, betas, gammas))
+            ).as_rotvec()
+            q[6:] = rotVecs.flatten()
+            # q[6::3] = alphas
+            # q[7::3] = betas
+            # q[8::3] = gammas
         return q
 
     def convertPhiToBallJointPositions(self, phi: float, axis: np.array):
@@ -315,8 +330,6 @@ class FiniteSegmentModel(DeformableLinearObject):
 
     def getJacobianFromLocalCoordinates(self, S: np.array):
         """returns jacobians for all local coordinates in S
-
-
         Args:
             S (np.array): Nx1 array of local coordinates in [0,1]
 

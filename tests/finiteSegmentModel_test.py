@@ -29,6 +29,48 @@ def test_FiniteSegmentModel():
 
     testDLO.convertPhiToBallJointPositions(0.1, np.array([0, 0, 1]))
 
+    # testing angle conversion
+    qReference = np.zeros(testDLO.skel.getNumDofs())
+    qReference[0] = np.pi / 4
+    qReference[1] = np.pi / 3
+    qReference[2] = np.pi / 2
+    qReference[4] = 1
+    testDLO.skel.setPositions(qReference)
+    testDLO.mapDartPositionsToAngles(qReference)
+    (
+        x0_test,
+        rot0_test,
+        alphas_test,
+        betas_test,
+        gammas_test,
+    ) = testDLO.mapDartPositionsToAngles(qReference)
+    qTest = testDLO.mapAnglesToDartPositions(
+        x0_test,
+        rot0_test,
+        alphas_test,
+        betas_test,
+        gammas_test,
+    )
+    assert np.sum(qTest - qReference) == approx(0)
+
+    # testing angle conversion
+    alphas_test = np.zeros(int((testDLO.skel.getNumDofs() - 6) / 3))
+    betas_test = np.zeros(int((testDLO.skel.getNumDofs() - 6) / 3))
+    gammas_test = np.zeros(int((testDLO.skel.getNumDofs() - 6) / 3))
+    x0_test = np.zeros(3)
+    rot0_test = np.zeros(3)
+
+    alphas_test[0] = np.pi / 2
+    betas_test[0] = np.pi / 2
+
+    qTest = testDLO.mapAnglesToDartPositions(
+        x0_test,
+        rot0_test,
+        alphas_test,
+        betas_test,
+        gammas_test,
+    )
+
 
 if __name__ == "__main__":
     test_FiniteSegmentModel()

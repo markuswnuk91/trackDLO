@@ -30,6 +30,9 @@ def testCameraModel():
     aPhi = 0 * np.ones(N)
     aTheta = 0 * np.ones(N)
     aPsi = 0 * np.ones(N)
+    # aPhi[0] = np.pi / 2
+    aTheta[0] = np.pi / 2
+    # aTheta[1] = np.pi
     dloModel = WakamatsuModel(
         **{
             "L": 1,
@@ -41,7 +44,7 @@ def testCameraModel():
     )
     camTransform = np.eye(4)
     camTransform[:3, :3] = R.from_euler("ZYZ", [180, 0, 0], degrees=True).as_matrix()
-    camTransform[:3, 3] = np.array([1, 0, 1])
+    camTransform[:3, 3] = np.array([1, 1, 1])
     sEval = np.linspace(0, dloModel.L, 100)
 
     camModel = CameraModel(
@@ -78,7 +81,7 @@ def testCameraModel():
         )
 
         plotPointSet(
-            camModel.calcualteSurfacePoints(),
+            camModel.calculateSurfacePoints(),
             ax,
             color=[1, 0, 0],
             alpha=1,

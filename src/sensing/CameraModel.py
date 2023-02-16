@@ -157,16 +157,12 @@ class CameraModel(object):
         Thetas = self.calculateTiltAngle(X, localTangents)
         C = self.calculateCameraVectors(X)
         for i, psi in enumerate(PsiMax):
-            if (np.linalg.norm(C[i, :]) * np.cos(Thetas[i])) <= self.radius:
-                psi = 0
-            else:
-                psi = np.arccos(
-                    self.radius / (np.linalg.norm(C[i, :]) * np.cos(Thetas[i]))
-                )
-        PsiMax[i] = psi
+            PsiMax[i] = np.arccos(self.radius / np.linalg.norm(C[i, :])) * np.cos(
+                Thetas[i]
+            )
         return PsiMax
 
-    def calcualteSurfacePoints(self, numPointsPerSection=10):
+    def calculateSurfacePoints(self, numPointsPerSection=10):
         surfacePointList = []
         X = self.X
         localTangents = self.localTangents

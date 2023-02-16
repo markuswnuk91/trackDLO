@@ -246,6 +246,7 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
         self.adjacentBodyCheck = adjacentBodyCheck
         self.enableSelfCollisionCheck = enableSelfCollisionCheck
         self.frames = {}
+        self.segmentLengths = []
 
         if gravity is None:
             self.gravity = True

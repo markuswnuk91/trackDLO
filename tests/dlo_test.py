@@ -13,7 +13,7 @@ except:
     print("Imports for DLO failed.")
     raise
 
-visualize = False
+visualize = True
 
 
 def test_initDLO():

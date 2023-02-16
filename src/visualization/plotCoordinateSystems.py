@@ -18,7 +18,7 @@ class Arrow3D(FancyArrowPatch):
         return np.min(zs)
 
 
-def visualizeCoordinateSystem(
+def plotCoordinateSystem(
     ax,
     T,
     scale=1,

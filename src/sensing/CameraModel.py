@@ -4,10 +4,9 @@ import numbers
 from warnings import warn
 
 try:
-    sys.path.append(os.getcwd().replace("/src/modelling", ""))
-    from src.simulation.dlo import DeformableLinearObject
+    sys.path.append(os.getcwd().replace("/src/sensing", ""))
 except:
-    print("Imports for discrete Model failed.")
+    print("Imports for CameraModel failed.")
     raise
 
 
@@ -44,9 +43,9 @@ class CameraModel(object):
             raise ValueError("The cam transform must be a 2D numpy array.")
         elif camTransform.shape != (4, 4):
             raise ValueError("The cam transform must be a 4x4 homogenous matrix.")
-        elif np.sum(
-            np.linalg.inv(camTransform) @ camTransform - np.eye(4)
-        ) >= 10e-5 or np.linalg.det(camTransform):
+        elif (
+            np.sum(np.linalg.inv(camTransform) @ camTransform - np.eye(4)) >= 10e-5
+        ) or (np.linalg.det(camTransform) - 1 >= 10e-5):
             raise ValueError(
                 "The cam transform must be a homogenous matrix. Obtained a error of {} between forward and inverse and a determinant of {}.".format(
                     np.sum(np.linalg.inv(camTransform) @ camTransform - np.eye(4)),
@@ -95,6 +94,7 @@ class CameraModel(object):
             radius = float(radius)
 
         self.camTransform = np.identity(4) if camTransform is None else camTransform
+        self.radius = 0.1 if radius is None else radius
         self.camPosition = camTransform[:3, 3]
         self.X = X
         self.localTangents = localTangents
@@ -125,8 +125,12 @@ class CameraModel(object):
         Nc = np.zeros(X.shape)
         C = self.calculateCameraVectors(X)
         for i, x in enumerate(X):
-            Nc = C[i, :] - np.dot(localTangents[i, :], C[i, :])
+            Nc[i, :] = (
+                C[i, :] - np.dot(localTangents[i, :], C[i, :]) * localTangents[i, :]
+            )
             Nc[i, :] = Nc[i, :] / np.linalg.norm(Nc[i, :])
+            if np.dot(C[i, :], Nc[i, :]) < 0:
+                Nc[i, :] = -Nc[i, :]
         return Nc
 
     def calculateTiltAngle(self, X, localTangents):
@@ -145,12 +149,12 @@ class CameraModel(object):
             cNormalized = C[i, :] / np.linalg.norm(C[i, :])
             nc = Nc[i, :]
             theta = np.arccos(np.dot(cNormalized, nc))
-            Thetas[i, :] = theta
+            Thetas[i] = theta
         return Thetas
 
     def calculateMaxViewAngle(self, X, localTangents):
         PsiMax = np.pi / 2 * np.ones(X.shape[0])
-        Thetas = self.calcualteTiltAngle(X, localTangents)
+        Thetas = self.calculateTiltAngle(X, localTangents)
         C = self.calculateCameraVectors(X)
         for i, psi in enumerate(PsiMax):
             if (np.linalg.norm(C[i, :]) * np.cos(Thetas[i])) <= self.radius:
@@ -162,14 +166,16 @@ class CameraModel(object):
         PsiMax[i] = psi
         return PsiMax
 
-    def calcualteSurfacePoints(self, X, localTangents, numPoints=10):
+    def calcualteSurfacePoints(self, numPointsPerSection=10):
         surfacePointList = []
+        X = self.X
+        localTangents = self.localTangents
         PsiMax = self.calculateMaxViewAngle(X, localTangents)
         cameraNormals = self.calculateCameraNormals(X, localTangents)
         for i, x in enumerate(X):
-            psiSteps = np.linspace(-PsiMax[i], PsiMax[i], numPoints)
-            cameraNormal = cameraNormals[i]
-            localTangent = localTangent[i]
+            psiSteps = np.linspace(-PsiMax[i], PsiMax[i], numPointsPerSection)
+            cameraNormal = cameraNormals[i, :]
+            localTangent = localTangents[i, :]
             for psi in psiSteps:
                 surfacePointList.append(
                     x

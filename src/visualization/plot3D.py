@@ -92,6 +92,37 @@ def setupLatexPlot3D(
     return fig, ax
 
 
+def plotPoint(
+    x,
+    ax,
+    color=[0, 0, 1],
+    alpha=1,
+    label: str = None,
+    size=20,
+    waitTime=0.001,
+):
+    if label is None:
+        ax.scatter(x[0], x[1], x[2], color=color, alpha=alpha, s=size)
+    else:
+        ax.scatter(
+            x[0],
+            x[1],
+            x[2],
+            color=color,
+            label=label,
+            alpha=alpha,
+            s=size,
+            edgecolor=None,
+        )
+    if waitTime is not None and waitTime != -1:
+        plt.draw()
+        plt.pause(waitTime)
+    elif waitTime is None:
+        plt.show(block=True)
+    elif waitTime == -1:
+        plt.show(block=False)
+
+
 def plotPointSet(
     X,
     ax,

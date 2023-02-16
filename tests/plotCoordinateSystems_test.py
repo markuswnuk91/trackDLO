@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
     from src.visualization.plotCoordinateSystems import (
-        visualizeCoordinateSystem,
+        plotCoordinateSystem,
     )
 except:
     print("Imports for plot Test failed.")
@@ -16,7 +16,7 @@ except:
 def test_plotCoordinateSystem():
     fig = plt.figure()
     ax = fig.add_subplot(projection="3d")
-    visualizeCoordinateSystem(
+    plotCoordinateSystem(
         ax=ax,
         T=np.eye(4),
         scale=0.1,

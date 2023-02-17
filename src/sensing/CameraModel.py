@@ -1,6 +1,7 @@
 import sys, os
 import numpy as np
 import numbers
+import random
 from warnings import warn
 
 try:
@@ -12,6 +13,9 @@ except:
 
 class CameraModel(object):
     """Camera model, to create point cloud data from a DLO Model.
+    The model is based on geometric approximations to determine the surface points of the DLO visible to the camera.
+    For each observed point we assume sensor noise, based on the noise model from the paper
+    Nguyen et al., Modeling Kinect Sensor Noise for Improved 3D Reconstruction and Tracking, 2012 Second Joint 3DIM/3DPVT Conference: 3D Imaging, Modeling, Processing, Visualization & Transmission, 2012
 
     Attributes
         ----------
@@ -35,6 +39,10 @@ class CameraModel(object):
         X=None,
         localTangents=None,
         radius=None,
+        laterNoiseGradient=None,
+        axialNoiseOffset=None,
+        axialNoiseGradient=None,
+        axialNoiseShiftFactor=None,
         *args,
         **kwargs
     ):
@@ -99,6 +107,17 @@ class CameraModel(object):
         self.X = X
         self.localTangents = localTangents
 
+        self.laterNoiseGradient = (
+            0.815 / 585 if laterNoiseGradient is None else laterNoiseGradient
+        )
+        self.axialNoiseOffset = 0.0012 if axialNoiseOffset is None else axialNoiseOffset
+        self.axialNoiseGradient = (
+            (0.0019,) if axialNoiseGradient is None else axialNoiseGradient
+        )
+        self.axialNoiseShiftFactor = (
+            (0.4,) if axialNoiseShiftFactor is None else axialNoiseShiftFactor
+        )
+
     def calculateCameraVectors(self, X):
         """Calculates the vector c between a point on the skeleton line and the position of the camera
 
@@ -162,6 +181,28 @@ class CameraModel(object):
             )
         return PsiMax
 
+    def calculateCameraNoise(self, P):
+        """calculates the lateral and axial noise component for points observed by the camera according to the noise model descirbed in the paper
+        Nguyen et al., Modeling Kinect Sensor Noise for Improved 3D Reconstruction and Tracking, 2012 Second Joint 3DIM/3DPVT Conference: 3D Imaging, Modeling, Processing, Visualization & Transmission, 2012
+
+        Args:
+            P (np.array): Mx3 array of points for which the sensor noise should be computed, werhe M is the number of points.
+
+        Returns:
+            sigmaLateral(np.array): Mx1 array of lateral noise values, descibing the lateral uncertainy (x,y component in camera coordinate system)
+            sigmaAxial(np.array): Mx1 array of axial noise values, descibing the axial uncertainy (z component in camera coordinate system)
+        """
+        PInCamCoordinates = (
+            self.camTransform @ np.hstack((P, np.ones((P.shape[0], 1)))).T
+        ).T[:, :3]
+        sigmaLateral = self.laterNoiseGradient * PInCamCoordinates[:, 2]
+        sigmaAxial = (
+            self.axialNoiseOffset
+            + self.axialNoiseGradient
+            * (PInCamCoordinates[:, 2] - self.axialNoiseShiftFactor) ** 2
+        )
+        return sigmaLateral, sigmaAxial
+
     def calculateSurfacePoints(self, numPointsPerSection=10):
         surfacePointList = []
         X = self.X
@@ -182,3 +223,21 @@ class CameraModel(object):
                     )
                 )
         return np.array(surfacePointList)
+
+    def calculatePointCloud(self, numPointsPerSection=10):
+        surfacePoints = self.calculateSurfacePoints(numPointsPerSection)
+        SigmaLateral, SigmaAxial = self.calculateCameraNoise(surfacePoints)
+        M = SigmaLateral.shape[0]
+        noisySurfacePoints = (
+            surfacePoints
+            + SigmaLateral[:, np.newaxis]
+            * self.camTransform[:3, 0]
+            * np.random.uniform(-1, 1, size=M)[:, np.newaxis]
+            + SigmaLateral[:, np.newaxis]
+            * self.camTransform[:3, 1]
+            * np.random.uniform(-1, 1, size=M)[:, np.newaxis]
+            + SigmaAxial[:, np.newaxis]
+            * self.camTransform[:3, 2]
+            * np.random.uniform(-1, 1, size=M)[:, np.newaxis]
+        )
+        return noisySurfacePoints

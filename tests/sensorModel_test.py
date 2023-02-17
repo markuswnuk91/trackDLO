@@ -81,7 +81,7 @@ def testCameraModel():
         )
 
         plotPointSet(
-            camModel.calculateSurfacePoints(),
+            camModel.calculatePointCloud(),
             ax,
             color=[1, 0, 0],
             alpha=1,

@@ -14,7 +14,7 @@ try:
     from src.modelling.wakamatsuModel import (
         WakamatsuModel,
     )
-    from src.sensing.CameraModel import CameraModel
+    from src.sensing.cameraModel import CameraModel
     from src.visualization.plot3D import *
     from src.visualization.plotCoordinateSystems import plotCoordinateSystem
 except:
@@ -30,7 +30,7 @@ def testCameraModel():
     aPhi = 0 * np.ones(N)
     aTheta = 0 * np.ones(N)
     aPsi = 0 * np.ones(N)
-    # aPhi[0] = np.pi / 2
+    aPhi[2] = 2
     aTheta[0] = np.pi / 2
     # aTheta[1] = np.pi
     dloModel = WakamatsuModel(
@@ -43,7 +43,7 @@ def testCameraModel():
         }
     )
     camTransform = np.eye(4)
-    camTransform[:3, :3] = R.from_euler("ZYZ", [180, 0, 0], degrees=True).as_matrix()
+    camTransform[:3, :3] = R.from_euler("ZYX", [180, 0, 235], degrees=True).as_matrix()
     camTransform[:3, 3] = np.array([1, 1, 1])
     sEval = np.linspace(0, dloModel.L, 100)
 

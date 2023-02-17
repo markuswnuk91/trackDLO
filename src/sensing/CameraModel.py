@@ -107,6 +107,7 @@ class CameraModel(object):
         self.X = X
         self.localTangents = localTangents
 
+        # values from Nguyen et al., see Figure 6
         self.laterNoiseGradient = (
             0.815 / 585 if laterNoiseGradient is None else laterNoiseGradient
         )

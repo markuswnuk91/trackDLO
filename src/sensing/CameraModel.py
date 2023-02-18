@@ -226,19 +226,29 @@ class CameraModel(object):
         return np.array(surfacePointList)
 
     def calculatePointCloud(self, numPointsPerSection=10):
+        noisySurfacePoints = []
         surfacePoints = self.calculateSurfacePoints(numPointsPerSection)
         SigmaLateral, SigmaAxial = self.calculateCameraNoise(surfacePoints)
         M = SigmaLateral.shape[0]
-        noisySurfacePoints = (
-            surfacePoints
-            + SigmaLateral[:, np.newaxis]
-            * self.camTransform[:3, 0]
-            * np.random.uniform(-1, 1, size=M)[:, np.newaxis]
-            + SigmaLateral[:, np.newaxis]
-            * self.camTransform[:3, 1]
-            * np.random.uniform(-1, 1, size=M)[:, np.newaxis]
-            + SigmaAxial[:, np.newaxis]
-            * self.camTransform[:3, 2]
-            * np.random.uniform(-1, 1, size=M)[:, np.newaxis]
-        )
-        return noisySurfacePoints
+        for i, point in enumerate(surfacePoints):
+            cov = (
+                np.diag(
+                    [SigmaLateral[i] ** 2, SigmaLateral[i] ** 2, SigmaAxial[i] ** 2]
+                )
+                @ self.camTransform[:3, :3]
+            )
+            noisySurfacePoints.append(np.random.multivariate_normal(point, cov, 1).T)
+
+        # noisySurfacePoints = (
+        #     surfacePoints
+        #     + SigmaLateral[:, np.newaxis]
+        #     * self.camTransform[:3, 0]
+        #     * np.random.uniform(-1, 1, size=M)[:, np.newaxis]
+        #     + SigmaLateral[:, np.newaxis]
+        #     * self.camTransform[:3, 1]
+        #     * np.random.uniform(-1, 1, size=M)[:, np.newaxis]
+        #     + SigmaAxial[:, np.newaxis]
+        #     * self.camTransform[:3, 2]
+        #     * np.random.uniform(-1, 1, size=M)[:, np.newaxis]
+        # )
+        return np.array(noisySurfacePoints)

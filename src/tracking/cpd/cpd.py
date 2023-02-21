@@ -242,7 +242,7 @@ class CoherentPointDrift(NonRigidRegistration):
 
         """
         if X is not None:
-            G = gaussian_kernel(X=X, beta=self.beta, Y=self.Y)
+            G = gaussian_kernel(X=X, beta=self.beta, Y=self.X)
             return X + np.dot(G, self.W)
         else:
             if self.low_rank is False:

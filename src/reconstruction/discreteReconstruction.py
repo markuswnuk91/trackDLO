@@ -173,11 +173,16 @@ class DiscreteReconstruction(ShapeReconstruction, FiniteSegmentModel):
             jacobianRows = []
             for jacobian in jacobians:
                 # fill dart jacobians with zeros
-                paddedJacobian = np.pad(
-                    jacobian,
-                    ((0, 0), (0, len(self.q) - jacobian.shape[1] % len(self.q))),
-                    "constant",
-                )
+                if jacobian.shape[1] < len(self.q):
+                    paddedJacobian = np.pad(
+                        jacobian,
+                        ((0, 0), (0, len(self.q) - jacobian.shape[1] % len(self.q))),
+                        "constant",
+                    )
+                elif jacobian.shape[1] == len(self.q):
+                    paddedJacobian = jacobian
+                else:
+                    raise ValueError("Jacobina seems to have wrong dimension.")
                 jacobianRows.append(paddedJacobian[3:6, correspondingDartIndex])
             jacobianMultiplikatorMatrix = np.vstack(jacobianRows)
             # calcualte cost function derivative

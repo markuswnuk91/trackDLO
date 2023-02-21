@@ -194,7 +194,8 @@ class CameraModel(object):
             sigmaAxial(np.array): Mx1 array of axial noise values, descibing the axial uncertainy (z component in camera coordinate system)
         """
         PInCamCoordinates = (
-            self.camTransform @ np.hstack((P, np.ones((P.shape[0], 1)))).T
+            np.linalg.inv(self.camTransform)
+            @ np.hstack((P, np.ones((P.shape[0], 1)))).T
         ).T[:, :3]
         sigmaLateral = self.laterNoiseGradient * PInCamCoordinates[:, 2]
         sigmaAxial = (
@@ -231,11 +232,8 @@ class CameraModel(object):
         SigmaLateral, SigmaAxial = self.calculateCameraNoise(surfacePoints)
         M = SigmaLateral.shape[0]
         for i, point in enumerate(surfacePoints):
-            cov = (
-                np.diag(
-                    [SigmaLateral[i] ** 2, SigmaLateral[i] ** 2, SigmaAxial[i] ** 2]
-                )
-                @ self.camTransform[:3, :3]
+            cov = self.camTransform[:3, :3].T @ np.diag(
+                [SigmaLateral[i] ** 2, SigmaLateral[i] ** 2, SigmaAxial[i] ** 2]
             )
             noisySurfacePoints.append(np.random.multivariate_normal(point, cov, 1).T)
 

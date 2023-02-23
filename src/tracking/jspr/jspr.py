@@ -35,6 +35,21 @@ class KinematicsModelDart(object):
         """
         self.skel.setPositions(q)
         J = np.zeros((3, self.Dof))
+        # if n == 0:
+        #     dartJacobian = (
+        #         np.linalg.inv(self.skel.getJoint(0).getRelativeTransform().rotation())
+        #         @ self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[3:6, :]
+        #     )
+        # else:
+        #     dartJacobian = self.skel.getBodyNode(n).getWorldJacobian(
+        #         np.array([0, 0, 0])
+        #     )[3:6, :]
+
+        # dartJacobian = (
+        #     np.linalg.inv(self.skel.getJoint(n).getRelativeTransform().rotation())
+        #     @ self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[3:6, :]
+        # )
+
         dartJacobian = self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[
             3:6, :
         ]
@@ -255,11 +270,11 @@ class JacobianBasedStructurePreservingRegistration(object):
         self.P1 = np.zeros((self.N,))
         self.Np = 0
         self.PY = np.zeros((self.N, self.D))
-        self.w = np.zeros((self.Dof, 1))
-        # self.G = gaussian_kernel(self.q, self.beta)
-        self.G = np.eye(self.Dof)
+        self.W = np.zeros((self.Dof, self.D))
+        self.G = gaussian_kernel(self.T, self.beta)
+        # self.G = np.eye(self.Dof)
 
-    def register(self, callback=lambda **kwargs: None):
+    def register(self, callback):
         """
         Peform the registration
 
@@ -281,13 +296,7 @@ class JacobianBasedStructurePreservingRegistration(object):
         while self.iteration < self.max_iterations and not self.isConverged():
             self.iterate()
             if callable(callback):
-                kwargs = {
-                    "iteration": self.iteration,
-                    "error": self.diff,
-                    "X": self.T,
-                    "Y": self.Y,
-                }
-                callback(**kwargs)
+                callback()
 
         return self.T, self.getParameters()
 
@@ -330,7 +339,7 @@ class JacobianBasedStructurePreservingRegistration(object):
         self.PY = np.matmul(self.P, self.Y)
 
     def updateDegreesOfFreedom(self):
-        self.q = self.qInit + np.dot(self.G, self.w)
+        self.q += self.dq
 
     def computeTargets(self, q=None):
         """
@@ -349,7 +358,7 @@ class JacobianBasedStructurePreservingRegistration(object):
 
         """
         if q is not None:
-            T = np.zeros(self.N, self.D)
+            T = np.zeros((self.N, self.D))
             for n in range(0, self.N):
                 T[n, :] = self.model.getPositions(q)[n, :]
             return T
@@ -357,6 +366,13 @@ class JacobianBasedStructurePreservingRegistration(object):
             for n in range(0, self.N):
                 self.T[n, :] = self.model.getPositions(self.q)[n, :]
             return
+
+    def dampedPseudoInverse(self, J, dampingFactor):
+        dim = J.shape[0]
+        dampedPseudoInverse = J.T @ np.linalg.inv(
+            J @ J.T + dampingFactor**2 * np.eye(dim)
+        )
+        return dampedPseudoInverse
 
     def updateParameters(self):
         """
@@ -366,22 +382,38 @@ class JacobianBasedStructurePreservingRegistration(object):
         lambdaFactor = (self.lambdaAnnealing) ** (self.iteration) * self.lambdaFactor
 
         dP1 = np.diag(self.P1)
-        # A = np.dot(dP1, self.G) + lambdaFactor * self.sigma2 * np.eye(self.N)
-        # B = self.PY - np.dot(dP1, self.T)
-        A = np.zeros((self.Dof, self.Dof))
-        B = np.zeros(self.Dof)
-        self.G = np.eye(self.Dof)
-        for m in range(0, self.M):
-            for n in range(0, self.N):
-                J = self.model.getJacobian(self.q, n)
-                A += self.P[n, m] * (self.G.T @ J.T @ J @ self.G)
-                B += self.P[n, m] * (self.G.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
-        self.w = np.linalg.pinv(A) @ B
-        # self.w = np.linalg.solve(A, B)
+        A = np.dot(dP1, self.G) + lambdaFactor * self.sigma2 * np.eye(self.N)
+        B = self.PY - np.dot(dP1, self.computeTargets(self.q))
+        self.W = np.linalg.solve(A, B)
+        # A = np.zeros((self.Dof, self.Dof))
+        # B = np.zeros(self.Dof)
+        # self.G = np.eye(self.Dof) + 0.0 * (
+        #     np.ones((self.Dof, self.Dof)) - np.eye(self.Dof)
+        # )
+        # for m in range(0, self.M):
+        #     for n in range(0, self.N):
+        #         J = self.model.getJacobian(self.q, n)
+        #         A += self.P[n, m] * (self.G.T @ J.T @ J @ self.G)
+        #         B += self.P[n, m] * (self.G.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
+        # self.W = np.linalg.pinv(A) @ B
+        # self.W = np.linalg.solve(A, B)
 
         # set the new degrees of freedom
-        self.updateDegreesOfFreedom()
+        # self.updateDegreesOfFreedom()
+        J = np.zeros((self.D * self.N, self.Dof))
+        WGT = np.zeros(self.D * self.N)
+        for n in range(0, self.N):
+            tempJ = self.model.getJacobian(self.q, n)
+            for d in range(0, self.D):
+                J[n * self.D + d, :] = tempJ[d, :]
+                WGT[n * self.D + d] = self.W.T[d, :] @ self.G[n, :].T
+        # self.q = np.linalg.solve(J, WGT)
+        # self.q = np.linalg.pinv(J) @ WGT
+        # self.dq = np.linalg.lstsq(Jdamped, WGT)[0]
+        Jdamped = self.dampedPseudoInverse(J, 0.1)
+        self.dq = Jdamped @ WGT
 
+        self.updateDegreesOfFreedom()
         # set the new targets
         self.computeTargets()
 
@@ -390,7 +422,7 @@ class JacobianBasedStructurePreservingRegistration(object):
         self.L = (
             np.sum(np.log(self.Pden))
             + self.D * self.M * np.log(self.sigma2) / 2
-            - lambdaFactor / 2 * self.w @ self.G @ self.w.T
+            - lambdaFactor / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
         )
 
         self.diff = np.abs((self.L - Lold) / self.L)
@@ -413,7 +445,7 @@ class JacobianBasedStructurePreservingRegistration(object):
         -------
         self.G: numpy array
             Gaussian kernel matrix.
-        self.w: numpy array
+        self.W: numpy array
             weight matrix matrix.
         """
-        return self.G, self.w
+        return self.G, self.W

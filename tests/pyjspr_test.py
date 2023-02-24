@@ -51,7 +51,7 @@ def visualizationCallback(
     ax.set_xlim(-0.5, 1)
     ax.set_ylim(-0.5, 1)
     ax.set_zlim(-0.5, 1)
-    plotPointSets(ax=ax, X=registration.T, Y=registration.Y, waitTime=0.1)
+    plotPointSets(ax=ax, X=registration.T, Y=registration.Y, waitTime=0.5)
     if savePath is not None:
         fig.savefig(savePath + fileName + "_" + str(registration.iteration) + ".png")
 
@@ -78,10 +78,10 @@ def testJSPR():
     testDLO = DeformableLinearObject(13)
     kinematicModel = KinematicsModelDart(testDLO.skel.clone())
     qInit = kinematicModel.skel.getPositions()
-    print(kinematicModel.getPositions(qInit))
-    print(kinematicModel.getJacobian(qInit, 1))
+    # print(kinematicModel.getPositions(qInit))
+    # print(kinematicModel.getJacobian(qInit, 1))
     Y = kinematicModel.getPositions(0.3 * np.random.rand(qInit.shape[0]))
-
+    Y = np.delete(Y, slice(0, 3), axis=0)
     reg = JacobianBasedStructurePreservingRegistration(
         **{
             "qInit": qInit,
@@ -90,6 +90,9 @@ def testJSPR():
             "lambdaFactor": 10,
             "beta": 2,
             "lambdaAnnealing": 0.9,
+            "max_iterations": 100,
+            "jacobianDampingFactor": 0.3,
+            "dampingAnnealing": 0.99,
         }
     )
     if vis:

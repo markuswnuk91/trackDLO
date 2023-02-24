@@ -158,6 +158,8 @@ class JacobianBasedStructurePreservingRegistration(object):
         beta=None,
         mu=None,
         lambdaAnnealing=None,
+        jacobianDampingFactor=None,
+        dampingAnnealing=None,
         *args,
         **kwargs
     ):
@@ -244,7 +246,8 @@ class JacobianBasedStructurePreservingRegistration(object):
             )
 
         self.qInit = qInit
-        self.q = self.qInit.copy()
+        self.q = qInit
+        self.dq = np.zeros(self.q.shape[0])
         self.model = model
 
         self.Y = Y
@@ -255,12 +258,15 @@ class JacobianBasedStructurePreservingRegistration(object):
         self.tolerance = 10e-5 if tolerance is None else tolerance
         self.max_iterations = 100 if max_iterations is None else max_iterations
         self.iteration = 0
-
+        self.jacobianDampingFactor = (
+            0.3 if jacobianDampingFactor is None else jacobianDampingFactor
+        )
         self.lambdaFactor = 2 if lambdaFactor is None else lambdaFactor
         self.beta = 2 if beta is None else beta
         self.sigma2 = initialize_sigma2(self.T, self.Y) if sigma2 is None else sigma2
         self.mu = 0.0 if mu is None else mu
         self.lambdaAnnealing = 0.97 if lambdaAnnealing is None else lambdaAnnealing
+        self.dampingAnnealing = 0.97 if dampingAnnealing is None else dampingAnnealing
         self.diff = np.inf
         self.L = -np.inf
 
@@ -272,7 +278,16 @@ class JacobianBasedStructurePreservingRegistration(object):
         self.PY = np.zeros((self.N, self.D))
         self.W = np.zeros((self.Dof, self.D))
         self.G = gaussian_kernel(self.T, self.beta)
-        # self.G = np.eye(self.Dof)
+        self.Gq = np.eye(self.Dof)
+        # self.Gq = np.eye(self.Dof) - 0.3 * (
+        #     np.ones((self.Dof, self.Dof)) - np.eye(self.Dof)
+        # )
+
+        # # decoupling the translational and rotational degrees of freedom
+        # self.Gq[3:6, :] = np.zeros((3, self.Dof))
+        # self.Gq[:, 3:6] = np.zeros((self.Dof, 3))
+        # self.Gq[3:6, 3:6] = np.eye(3)
+        # # decoupling the translational and rotational degrees of freedom
 
     def register(self, callback):
         """
@@ -380,40 +395,49 @@ class JacobianBasedStructurePreservingRegistration(object):
         """
 
         lambdaFactor = (self.lambdaAnnealing) ** (self.iteration) * self.lambdaFactor
+        jacobianDamping = (self.dampingAnnealing) ** (
+            self.iteration
+        ) * self.jacobianDampingFactor
+        if (
+            jacobianDamping < 1e-3
+        ):  # lower limit of regularization to ensure stability of matrix inversion
+            jacobianDamping = 1e-3
 
         dP1 = np.diag(self.P1)
-        A = np.dot(dP1, self.G) + lambdaFactor * self.sigma2 * np.eye(self.N)
-        B = self.PY - np.dot(dP1, self.computeTargets(self.q))
-        self.W = np.linalg.solve(A, B)
-        # A = np.zeros((self.Dof, self.Dof))
-        # B = np.zeros(self.Dof)
-        # self.G = np.eye(self.Dof) + 0.0 * (
-        #     np.ones((self.Dof, self.Dof)) - np.eye(self.Dof)
-        # )
-        # for m in range(0, self.M):
-        #     for n in range(0, self.N):
-        #         J = self.model.getJacobian(self.q, n)
-        #         A += self.P[n, m] * (self.G.T @ J.T @ J @ self.G)
-        #         B += self.P[n, m] * (self.G.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
+
+        # method 1: determine joint change from CPD velocities
+        # A = np.dot(dP1, self.G) + lambdaFactor * self.sigma2 * np.eye(self.N)
+        # B = self.PY - np.dot(dP1, self.computeTargets(self.q))
+        # self.W = np.linalg.solve(A, B)
+        # J = np.zeros((self.D * self.N, self.Dof))
+        # WGT = np.zeros(self.D * self.N)
+        # for n in range(0, self.N):
+        #     tempJ = self.model.getJacobian(self.q, n)
+        #     for d in range(0, self.D):
+        #         J[n * self.D + d, :] = tempJ[d, :]
+        #         WGT[n * self.D + d] = self.W.T[d, :] @ self.G[n, :].T
+        # Jdamped = self.dampedPseudoInverse(J, self.jacobianDampingFactor)
+        # self.dq = Jdamped @ WGT
+        # self.updateDegreesOfFreedom()
+
+        # method 2: determine joint change from solving system of equations
+        A = np.zeros((self.Dof, self.Dof))
+        B = np.zeros(self.Dof)
+        for m in range(0, self.M):
+            for n in range(0, self.N):
+                J = self.model.getJacobian(self.q, n)
+                # A += self.P[n, m] * (self.Gq.T @ J.T @ J @ self.Gq)
+                # B += self.P[n, m] * (self.Gq.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
+                A += self.P[n, m] * (J.T @ J)
+                B += self.P[n, m] * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
+        AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
+        self.dq = AInvDamped @ B
+        self.updateDegreesOfFreedom()
+
         # self.W = np.linalg.pinv(A) @ B
         # self.W = np.linalg.solve(A, B)
-
-        # set the new degrees of freedom
-        # self.updateDegreesOfFreedom()
-        J = np.zeros((self.D * self.N, self.Dof))
-        WGT = np.zeros(self.D * self.N)
-        for n in range(0, self.N):
-            tempJ = self.model.getJacobian(self.q, n)
-            for d in range(0, self.D):
-                J[n * self.D + d, :] = tempJ[d, :]
-                WGT[n * self.D + d] = self.W.T[d, :] @ self.G[n, :].T
-        # self.q = np.linalg.solve(J, WGT)
-        # self.q = np.linalg.pinv(J) @ WGT
         # self.dq = np.linalg.lstsq(Jdamped, WGT)[0]
-        Jdamped = self.dampedPseudoInverse(J, 0.1)
-        self.dq = Jdamped @ WGT
 
-        self.updateDegreesOfFreedom()
         # set the new targets
         self.computeTargets()
 
@@ -422,7 +446,7 @@ class JacobianBasedStructurePreservingRegistration(object):
         self.L = (
             np.sum(np.log(self.Pden))
             + self.D * self.M * np.log(self.sigma2) / 2
-            - lambdaFactor / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
+            # - lambdaFactor / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
         )
 
         self.diff = np.abs((self.L - Lold) / self.L)

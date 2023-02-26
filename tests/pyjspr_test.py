@@ -81,23 +81,25 @@ def testJSPR():
     # print(kinematicModel.getPositions(qInit))
     # print(kinematicModel.getJacobian(qInit, 1))
     Y = kinematicModel.getPositions(0.3 * np.random.rand(qInit.shape[0]))
-    Y = np.delete(Y, slice(0, 3), axis=0)
+    Y = np.delete(Y, slice(3, 11), axis=0)
     reg = JacobianBasedStructurePreservingRegistration(
         **{
             "qInit": qInit,
             "Y": Y,
             "model": kinematicModel,
-            "lambdaFactor": 10,
             "beta": 2,
             "lambdaAnnealing": 0.9,
             "max_iterations": 100,
-            "jacobianDampingFactor": 0.3,
-            "dampingAnnealing": 0.99,
+            "damping": 3,
+            "minDampingFactor": 0.1,
+            "dampingAnnealing": 0.7,
+            "stiffness": 10,
+            "q0": np.zeros(qInit.shape[0]),
+            "gravity": np.array([0, 0, -0.1]),
+            "alpha": 10,
         }
     )
     if vis:
-        fig = plt.figure()
-        fig.add_axes([0, 0, 1, 1])
         callback = setupVisualizationCallback(reg)
         reg.register(callback)
         # plt.show()

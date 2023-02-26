@@ -151,15 +151,21 @@ class JacobianBasedStructurePreservingRegistration(object):
         qInit,
         model,
         Y,
+        q0=None,
         max_iterations=None,
         tolerance=None,
         lambdaFactor=None,
+        damping=None,
+        stiffness=None,
+        gravity=None,
         sigma2=None,
         beta=None,
         mu=None,
-        lambdaAnnealing=None,
-        jacobianDampingFactor=None,
+        alpha=None,
+        minDampingFactor=None,
         dampingAnnealing=None,
+        stiffnessAnnealing=None,
+        gravitationalAnnealing=None,
         *args,
         **kwargs
     ):
@@ -234,19 +240,9 @@ class JacobianBasedStructurePreservingRegistration(object):
                 )
             )
 
-        if lambdaAnnealing is not None and (
-            not isinstance(lambdaAnnealing, numbers.Number)
-            or lambdaAnnealing <= 0
-            or lambdaAnnealing > 1
-        ):
-            raise ValueError(
-                "Expected a value between 0 and 1 for lambdaAnnealing instead got: {}".format(
-                    lambdaAnnealing
-                )
-            )
-
         self.qInit = qInit
-        self.q = qInit
+        self.q0 = qInit.copy() if q0 is None else q0
+        self.q = qInit.copy()
         self.dq = np.zeros(self.q.shape[0])
         self.model = model
 
@@ -258,15 +254,21 @@ class JacobianBasedStructurePreservingRegistration(object):
         self.tolerance = 10e-5 if tolerance is None else tolerance
         self.max_iterations = 100 if max_iterations is None else max_iterations
         self.iteration = 0
-        self.jacobianDampingFactor = (
-            0.3 if jacobianDampingFactor is None else jacobianDampingFactor
-        )
-        self.lambdaFactor = 2 if lambdaFactor is None else lambdaFactor
+        self.damping = 1 if damping is None else damping
+        self.stiffness = 1 if stiffness is None else stiffness
+        self.gravity = np.array([0, 0, 0]) if gravity is None else gravity
         self.beta = 2 if beta is None else beta
         self.sigma2 = initialize_sigma2(self.T, self.Y) if sigma2 is None else sigma2
         self.mu = 0.0 if mu is None else mu
-        self.lambdaAnnealing = 0.97 if lambdaAnnealing is None else lambdaAnnealing
+        self.alpha = 1 if alpha is None else alpha
+        self.minDampingFactor = 1 if minDampingFactor is None else minDampingFactor
         self.dampingAnnealing = 0.97 if dampingAnnealing is None else dampingAnnealing
+        self.stiffnessAnnelealing = (
+            0.97 if stiffnessAnnealing is None else stiffnessAnnealing
+        )
+        self.gravitationalAnnealing = (
+            0.97 if gravitationalAnnealing is None else gravitationalAnnealing
+        )
         self.diff = np.inf
         self.L = -np.inf
 
@@ -394,14 +396,11 @@ class JacobianBasedStructurePreservingRegistration(object):
         M-step: Calculate a new parameters of the registration.
         """
 
-        lambdaFactor = (self.lambdaAnnealing) ** (self.iteration) * self.lambdaFactor
-        jacobianDamping = (self.dampingAnnealing) ** (
-            self.iteration
-        ) * self.jacobianDampingFactor
+        jacobianDamping = (self.dampingAnnealing) ** (self.iteration) * self.damping
         if (
-            jacobianDamping < 1e-3
+            jacobianDamping < self.minDampingFactor
         ):  # lower limit of regularization to ensure stability of matrix inversion
-            jacobianDamping = 1e-3
+            jacobianDamping = self.minDampingFactor
 
         dP1 = np.diag(self.P1)
 
@@ -416,20 +415,28 @@ class JacobianBasedStructurePreservingRegistration(object):
         #     for d in range(0, self.D):
         #         J[n * self.D + d, :] = tempJ[d, :]
         #         WGT[n * self.D + d] = self.W.T[d, :] @ self.G[n, :].T
-        # Jdamped = self.dampedPseudoInverse(J, self.jacobianDampingFactor)
+        # Jdamped = self.dampedPseudoInverse(J, jacobianDamping)
         # self.dq = Jdamped @ WGT
         # self.updateDegreesOfFreedom()
 
         # method 2: determine joint change from solving system of equations
         A = np.zeros((self.Dof, self.Dof))
         B = np.zeros(self.Dof)
-        for m in range(0, self.M):
-            for n in range(0, self.N):
-                J = self.model.getJacobian(self.q, n)
+        dEGrav_dq = np.zeros(self.Dof)
+
+        for n in range(0, self.N):
+            J = self.model.getJacobian(self.q, n)
+            dEGrav_dq += self.gravity @ J
+            for m in range(0, self.M):
                 # A += self.P[n, m] * (self.Gq.T @ J.T @ J @ self.Gq)
                 # B += self.P[n, m] * (self.Gq.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
-                A += self.P[n, m] * (J.T @ J)
-                B += self.P[n, m] * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
+                A += self.alpha * self.P[n, m] * (J.T @ J)
+                B += self.alpha * self.P[n, m] * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
+        A -= (
+            self.stiffness * np.eye(self.Dof) * (self.q0 - self.q)
+        )  # add stiffness term
+        B += dEGrav_dq
+
         AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
         self.dq = AInvDamped @ B
         self.updateDegreesOfFreedom()

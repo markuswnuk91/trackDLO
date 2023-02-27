@@ -432,11 +432,11 @@ class JacobianBasedStructurePreservingRegistration(object):
                 # B += self.P[n, m] * (self.Gq.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
                 A += self.alpha * self.P[n, m] * (J.T @ J)
                 B += self.alpha * self.P[n, m] * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
-        A -= (
-            self.stiffness * np.eye(self.Dof) * (self.q0 - self.q)
-        )  # add stiffness term
-        B += dEGrav_dq
-
+        A += self.stiffness * np.eye(self.Dof)  # add stiffness term for left side
+        B -= (
+            self.stiffness * np.eye(self.Dof) @ (self.q - self.q0)
+        )  # add stiffness term for right side
+        B += dEGrav_dq  # add gravitational term
         AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
         self.dq = AInvDamped @ B
         self.updateDegreesOfFreedom()

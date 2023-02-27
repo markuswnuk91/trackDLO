@@ -90,13 +90,13 @@ def testJSPR():
             "beta": 2,
             "lambdaAnnealing": 0.9,
             "max_iterations": 100,
-            "damping": 3,
+            "damping": 0.1,
             "minDampingFactor": 0.1,
             "dampingAnnealing": 0.7,
-            "stiffness": 10,
+            "stiffness": 100,
             "q0": np.zeros(qInit.shape[0]),
-            "gravity": np.array([0, 0, -0.1]),
-            "alpha": 10,
+            "gravity": np.array([0, 0, -0.2]),
+            "alpha": 30,
         }
     )
     if vis:

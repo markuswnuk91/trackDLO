@@ -40,6 +40,7 @@ class bdloSpecification(topologyTree):
         branchSpecs: list = None,
         specInfo: dict = None,
         name: str = None,
+        defaultNumBodyNodes=100,
         defaultRadius=0.01,
         defaultDensity=1000,
         defaultColor=[0, 0, 1],
@@ -99,7 +100,7 @@ class bdloSpecification(topologyTree):
                     math.ceil(
                         self.branches[i].getBranchInfo()["length"]
                         / self.getSummedLength()
-                        * 100
+                        * defaultNumBodyNodes
                     )
                 )
                 self.branchSpecs[i] = newSpec
@@ -580,3 +581,22 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
             )
         else:
             return int(np.ceil(s * branchLength / segmentLength))
+
+    def getNumBranches(self):
+        """Returns the number of branches of this BDLO model"""
+        return self.topology.getNumBranches()
+
+    def getBranchDofIndexInSkel(self, branchPointBodyNodeIndex: int, dof: int):
+        return (
+            self.skel.getBodyNode(branchPointBodyNodeIndex)
+            .getParentJoint()
+            .getIndexInSkeleton(dof)
+        )
+
+    def setBranchDof(self, branchPointIndex: int, dof: int, value: float):
+        branchPointBodyNodeIndex = self.getBranchPointBodyNodeIndices()[
+            branchPointIndex
+        ]
+        dofIdx = self.getBranchDofIndexInSkel(branchPointBodyNodeIndex, dof)
+        self.skel.setPosition(dofIdx, value)
+        return

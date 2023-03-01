@@ -28,7 +28,7 @@ plotSteps = False
 plotFinal = True
 
 # continuous reconstruction
-reconstructContinuous = False
+reconstructContinuous = True
 numIterContinuous = None
 reconstructFromScratch = False
 loadPathInitialParameters = "/mnt/c/Users/ac129490/Documents/Dissertation/Software/trackdlo/plot/plotdata/helixReconstruction/helix_continuousModel.json"

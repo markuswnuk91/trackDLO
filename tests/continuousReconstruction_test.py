@@ -8,8 +8,11 @@ from pytest import approx
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from reconstruction.continuousReconstruction import (
+    from src.reconstruction.continuousReconstruction import (
         ContinuousReconstruction,
+    )
+    from src.visualization.plot3D import (
+        plotPointSets,
     )
 except:
     print("Imports for ContinuousReconstruction failed.")
@@ -17,25 +20,45 @@ except:
 vis = True  # enable for visualization
 
 
-def visualize(X, Y, ax):
+def setupVisualizationCallback(reconstruction):
+    fig = plt.figure()
+    ax = fig.add_subplot(projection="3d")
+    return partial(
+        visualizationCallback,
+        fig,
+        ax,
+        reconstruction,
+        # savePath="/mnt/c/Users/ac129490/Documents/Dissertation/Software/trackdlo/imgs/continuousShapeReconstuction/helix_fail3/",
+    )
+
+
+def visualizationCallback(
+    fig,
+    ax,
+    model,
+    savePath=None,
+    fileName="img",
+):
+    if savePath is not None and type(savePath) is not str:
+        raise ValueError("Error saving 3D plot. The given path should be a string.")
+
+    if fileName is not None and type(fileName) is not str:
+        raise ValueError("Error saving 3D plot. The given filename should be a string.")
     plt.cla()
-    ax.scatter(X[:, 0], X[:, 1], X[:, 2], color="blue", label="Source")
-    ax.scatter(Y[:, 0], Y[:, 1], Y[:, 2], color="red", label="Target")
-    # plt.text(
-    #     0.7,
-    #     0.92,
-    #     s="Wakamatsu Model Reconstruction",
-    #     horizontalalignment="center",
-    #     verticalalignment="center",
-    #     transform=ax.transAxes,
-    #     fontsize="x-large",
-    # )
-    ax.legend(loc="upper left", fontsize="x-large")
-    ax.set_xlim(0, 100)
-    ax.set_ylim(0, 100)
-    ax.set_zlim(0, 100)
-    plt.draw()
-    plt.pause(0.001)
+
+    # set axis limits
+    ax.set_xlim(-10, 100)
+    ax.set_ylim(-10, 100)
+    ax.set_zlim(-10, 100)
+
+    plotPointSets(
+        X=model.X,
+        Y=model.Y,
+        ax=ax,
+    )
+
+    if savePath is not None:
+        fig.savefig(savePath + fileName + "_" + str(model.iter) + ".png")
 
 
 def runReconstruction():
@@ -45,9 +68,6 @@ def runReconstruction():
     # X[5, 2] = 55
     SY = np.linspace(0, 100, 10) / 100
     if vis:
-        fig = plt.figure()
-        ax = fig.add_subplot(projection="3d")
-        callback = partial(visualize, ax=ax)
         testReconstruction = ContinuousReconstruction(
             **{
                 "Y": Y,
@@ -57,9 +77,10 @@ def runReconstruction():
                 "Rflex": 1,
                 "Rtor": 1,
                 "Roh": 0,
-                "callback": callback,
             }
         )
+        visCallback = setupVisualizationCallback(testReconstruction)
+        testReconstruction.registerCallback(visCallback)
     else:
         testReconstruction = ContinuousReconstruction(
             **{"Y": Y, "SY": SY, "L": 100, "numSc": 100}

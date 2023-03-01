@@ -5,20 +5,20 @@ from functools import partial
 import matplotlib.pyplot as plt
 import numpy as np
 from pytest import approx
+from scipy.spatial.transform import Rotation as R
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
     from src.simulation.dlo import DeformableLinearObject
-    from src.tracking.jspr.jspr import (
-        JacobianBasedStructurePreservingRegistration,
-        KinematicsModelDart,
-    )
+    from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
+    from src.tracking.kpr.kinematicsModel import KinematicsModelDart
     from src.visualization.plot3D import plotPointSets, setupLatexPlot3D
+    from src.sensing.cameraModel import CameraModel
 
     # from src.tracking.spr.spr import StructurePreservedRegistration
     # from src.tracking.cpd.cpd import CoherentPointDrift
 except:
-    print("Imports for Test JSPR failed.")
+    print("Imports for Test KPR failed.")
     raise
 vis = True  # enable for visualization
 
@@ -56,25 +56,7 @@ def visualizationCallback(
         fig.savefig(savePath + fileName + "_" + str(registration.iteration) + ".png")
 
 
-# def visualize(iteration, error, X, Y, ax):
-#     plt.cla()
-#     ax.scatter(X[:, 0], X[:, 1], color="blue", label="Source")
-#     ax.scatter(Y[:, 0], Y[:, 1], color="red", label="Target")
-#     plt.text(
-#         0.7,
-#         0.92,
-#         "Iteration: {:d}, error{:.4f}".format(iteration, error),
-#         horizontalalignment="center",
-#         verticalalignment="center",
-#         transform=ax.transAxes,
-#         fontsize="x-large",
-#     )
-#     ax.legend(loc="upper left", fontsize="x-large")
-#     plt.draw()
-#     plt.pause(0.001)
-
-
-def testJSPR():
+def testKPR():
     testDLO = DeformableLinearObject(13)
     kinematicModel = KinematicsModelDart(testDLO.skel.clone())
     qInit = kinematicModel.skel.getPositions()
@@ -83,22 +65,38 @@ def testJSPR():
     Y = kinematicModel.getPositions(
         0.3 * np.random.rand(qInit.shape[0]) + 0.1 * np.random.rand(qInit.shape[0])
     )
-    # Y = np.delete(Y, slice(4, 7), axis=0)
-    reg = JacobianBasedStructurePreservingRegistration(
+    Y = np.delete(Y, slice(4, 7), axis=0)
+    camTransform = np.eye(4)
+    camTransform[:3, :3] = R.from_euler("ZYX", [180, 0, 235], degrees=True).as_matrix()
+    camTransform[:3, 3] = np.array([1, 1, 1])
+    camModel = CameraModel(
+        camTransform=camTransform,
+        X=Y,
+        localTangents=np.vstack((np.diff(Y, axis=0), np.diff(Y, axis=0)[-1])),
+        radius=0.05,
+    )
+    YCloud = camModel.calculatePointCloud()
+    Dof = qInit.shape[0]
+    stiffnessMatrix = 1 * np.eye(Dof)
+    stiffnessMatrix[3:6, 3:6] = np.zeros((3, 3))
+    reg = KinematicsPreservingRegistration4BDLO(
         **{
             "qInit": qInit,
-            "Y": Y,
+            "q0": np.zeros(Dof),
+            "Y": YCloud,
             "model": kinematicModel,
-            "beta": 2,
-            "lambdaAnnealing": 0.9,
             "max_iterations": 100,
-            "damping": 0.3,
+            "damping": 1,
+            "stiffnessMatrix": stiffnessMatrix,
+            "gravity": np.array([0, 0, -1]),
+            "mu": 0.0,
+            "wCorrespondance": 1,
+            "wStiffness": 1,
+            "wGravity": 0,
             "minDampingFactor": 0.1,
-            "dampingAnnealing": 0.9,
-            "stiffness": 10,
-            "q0": np.zeros(qInit.shape[0]),
-            "gravity": np.array([0, 0, -0.0]),
-            "alpha": 100,
+            "dampingAnnealing": 0.7,
+            "stiffnessAnnealing": 0.7,
+            "gravitationalAnnealing": 1,
         }
     )
     if vis:
@@ -112,4 +110,4 @@ def testJSPR():
 
 
 if __name__ == "__main__":
-    testJSPR()
+    testKPR()

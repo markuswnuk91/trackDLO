@@ -39,7 +39,7 @@ except:
     raise
 
 # plot control
-saveFigs = True
+saveFigs = False
 savePath = "/mnt/c/Users/ac129490/Documents/Dissertation/Thesis/62bebc3388a16f7dcc7f9153/figures/"
 saveNames = [
     "DiscreteModelConfiguration_Coarse.pgf",

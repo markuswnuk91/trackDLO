@@ -206,8 +206,8 @@ class CameraModel(object):
         return sigmaLateral, sigmaAxial
 
     def calculateSurfacePoints(self, numPointsPerSection=10):
-        surfacePointList = []
         X = self.X
+        surfacePointList = np.zeros((X.shape[0] * numPointsPerSection, X.shape[1]))
         localTangents = self.localTangents
         PsiMax = self.calculateMaxViewAngle(X, localTangents)
         cameraNormals = self.calculateCameraNormals(X, localTangents)
@@ -215,27 +215,31 @@ class CameraModel(object):
             psiSteps = np.linspace(-PsiMax[i], PsiMax[i], numPointsPerSection)
             cameraNormal = cameraNormals[i, :]
             localTangent = localTangents[i, :]
-            for psi in psiSteps:
-                surfacePointList.append(
-                    x
-                    + self.radius
-                    * (
-                        np.cos(psi) * cameraNormal
-                        + np.sin(psi) * (np.cross(cameraNormal, localTangent))
-                    )
+            for j, psi in enumerate(psiSteps):
+                surfacePointList[i * len(psiSteps) + j, :] = x + self.radius * (
+                    np.cos(psi) * cameraNormal
+                    + np.sin(psi) * (np.cross(cameraNormal, localTangent))
                 )
-        return np.array(surfacePointList)
+        return surfacePointList
 
     def calculatePointCloud(self, numPointsPerSection=10):
-        noisySurfacePoints = []
         surfacePoints = self.calculateSurfacePoints(numPointsPerSection)
+        noisySurfacePoints = np.zeros(surfacePoints.shape)
         SigmaLateral, SigmaAxial = self.calculateCameraNoise(surfacePoints)
         M = SigmaLateral.shape[0]
         for i, point in enumerate(surfacePoints):
-            cov = self.camTransform[:3, :3].T @ np.diag(
+            cov = np.diag(
                 [SigmaLateral[i] ** 2, SigmaLateral[i] ** 2, SigmaAxial[i] ** 2]
             )
-            noisySurfacePoints.append(np.random.multivariate_normal(point, cov, 1).T)
+            noisySurfacePoints[i, :] = (
+                point
+                + (
+                    self.camTransform[:3, :3].T
+                    @ np.random.multivariate_normal(
+                        np.zeros(surfacePoints.shape[1]), cov, 1
+                    ).T
+                ).T
+            )
 
         # noisySurfacePoints = (
         #     surfacePoints
@@ -249,4 +253,4 @@ class CameraModel(object):
         #     * self.camTransform[:3, 2]
         #     * np.random.uniform(-1, 1, size=M)[:, np.newaxis]
         # )
-        return np.array(noisySurfacePoints)
+        return noisySurfacePoints

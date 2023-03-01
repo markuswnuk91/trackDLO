@@ -80,7 +80,9 @@ def testJSPR():
     qInit = kinematicModel.skel.getPositions()
     # print(kinematicModel.getPositions(qInit))
     # print(kinematicModel.getJacobian(qInit, 1))
-    Y = kinematicModel.getPositions(0.5 * np.random.rand(qInit.shape[0]))
+    Y = kinematicModel.getPositions(
+        0.3 * np.random.rand(qInit.shape[0]) + 0.1 * np.random.rand(qInit.shape[0])
+    )
     Y = np.delete(Y, slice(4, 7), axis=0)
     reg = JacobianBasedStructurePreservingRegistration(
         **{
@@ -93,9 +95,9 @@ def testJSPR():
             "damping": 0.3,
             "minDampingFactor": 0.01,
             "dampingAnnealing": 0.9,
-            "stiffness": 100,
+            "stiffness": 0.1,
             "q0": np.zeros(qInit.shape[0]),
-            "gravity": np.array([0, 0, -1]),
+            "gravity": np.array([0, 0, -0.1]),
             "alpha": 10,
         }
     )

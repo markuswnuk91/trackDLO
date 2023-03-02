@@ -1,53 +1,41 @@
+import sys
+import os
 import numpy as np
 from scipy.spatial import distance_matrix
 import numbers
 from warnings import warn
 
+try:
+    sys.path.append(os.getcwd().replace("/src/dimreduction/l1median", ""))
+    from src.dimreduction.dimensionalityReduction import DimensionalityReduction
+except:
+    print("Imports for L1-Median failed.")
+    raise
 
-class L1Median(object):
+
+class L1Median(DimensionalityReduction):
     """
     Implementation according to the Paper
     "Huang et al.: L1-Medial Skeleton of Point Cloud, ACM Transactions on Graphics, 32(4):1, 2013"
-    INPUT:
-        Q:      Jx3 np.ndarray, pointCloud the skeleton line should be extracted from
-        X:      Ix3 np.ndarray, seedpoints used to represent the sought centerline
-        h:      real value, support radius h defining the size of the supporting local neighborhood for L1-medial skeleton
-        mu:     real value, weighting parameter for repulsion force between seedpoints
-        iterations:   int, number of iterations to perfrom for aligning seedpoints
+    Attributes:
+    -------------
+    Y: Jx3 np.ndarray
+        pointCloud the skeleton line should be extracted from
+    T: Ix3 np.ndarray
+        seedpoints used to represent the sought centerline
+    h: float
+        support radius h defining the size of the supporting local neighborhood for L1-medial skeleton
+    mu: float
+        weighting parameter for repulsion force between seedpoints
     """
 
-    def __init__(self, Q, X, h=None, mu=None, iterations=None):
-        if type(Q) is not np.ndarray or Q.ndim != 2:
-            raise ValueError("The source point set (Q) must be at a 2D numpy array.")
-        if type(X) is not np.ndarray or X.ndim != 2:
-            raise ValueError("The seed point set (X) must be at a 2D numpy array.")
-        if Q.shape[1] != X.shape[1]:
-            raise ValueError(
-                "Both point sets need to have the same number of dimensions."
-            )
-        if Q.shape[0] < Q.shape[1] or X.shape[0] < X.shape[1]:
-            raise ValueError(
-                "The dimensionality is larger than the number of points. Possibly the wrong orientation of Q and X."
-            )
-        if iterations is not None and (
-            not isinstance(iterations, numbers.Number) or iterations < 0
-        ):
-            raise ValueError(
-                "Expected a positive integer for iterations instead got: {}".format(
-                    iterations
-                )
-            )
-
-        self.X = X
-        self.X0 = X
-        self.Q = Q
+    def __init__(self, h=None, mu=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.h = 0.12 if h is None else h
         self.mu = 0.35 if mu is None else mu
-        self.iterations = 100 if iterations is None else 100
-        self.iter = 0
+        self.iteration = 0
 
     def get_h0(self, points):
-
         x_max = points[:, 0].max()
         x_min = points[:, 0].min()
 
@@ -79,14 +67,14 @@ class L1Median(object):
         # thetas =  np.clip(thetas, 10**-323, None)
         return thetas
 
-    def get_alphas(self, X, Q, h):
+    def get_alphas(self, X, Y, h):
         """
         INPUT:
-            Q:      Jx3 np.ndarray, pointCloud
+            Y:      Jx3 np.ndarray, pointCloud
             X:      Ix3 np.ndarray, seedpoints to represent the sought centerline
             h: support radius h defining the size of the supporting local neighborhood for L1-medial skeleton
         """
-        distances = distance_matrix(X, Q)
+        distances = distance_matrix(X, Y)
         thetas = self.get_thetas(distances, h)
         alphas = np.divide(
             thetas,
@@ -136,31 +124,31 @@ class L1Median(object):
             sigmas[i] = np.amax(lambdas) / np.sum(lambdas)
         return sigmas
 
-    def calculateL1Median(self):
+    def calculateReducedRepresentation(self):
         """
         Function to perform L1 Median estimation.
         """
         # ---------------------------------#
         # begin algorithm
         # ---------------------------------#
-        J = len(self.Q)  # number of input points
-        I = len(self.X)  # number of seedpoints
+        J = len(self.Y)  # number of input points
+        I = len(self.T)  # number of seedpoints
 
         alpha_matrix = np.zeros((I, J))
         beta_matrix = np.zeros((I, I))
 
-        while self.iter < self.iterations:
-            alpha_matrix = self.get_alphas(self.X, self.Q, self.h)
-            beta_matrix = self.get_betas(self.X, self.h)
-            sigmas = self.get_sigmas(self.X, self.h)
+        while self.iteration < self.max_iterations:
+            alpha_matrix = self.get_alphas(self.T, self.Y, self.h)
+            beta_matrix = self.get_betas(self.T, self.h)
+            sigmas = self.get_sigmas(self.T, self.h)
             sum_J_qj_aij = np.column_stack(
                 (
                     # sum over x dimension
-                    np.sum(alpha_matrix * self.Q[:, 0].transpose(), axis=1),
+                    np.sum(alpha_matrix * self.Y[:, 0].transpose(), axis=1),
                     # sum over y dimension
-                    np.sum(alpha_matrix * self.Q[:, 1].transpose(), axis=1),
+                    np.sum(alpha_matrix * self.Y[:, 1].transpose(), axis=1),
                     # sum over z dimension
-                    np.sum(alpha_matrix * self.Q[:, 2].transpose(), axis=1),
+                    np.sum(alpha_matrix * self.Y[:, 2].transpose(), axis=1),
                 )
             )
             sum_J_aij = np.sum(alpha_matrix, axis=1)
@@ -169,8 +157,8 @@ class L1Median(object):
             sum_Id_xixid_betaid = np.sum(
                 (
                     # repeat points along first dimenstion to make cube of I x I x 3 and subtract transposed Ix3xI cube
-                    np.tile(self.X, (I, 1, 1))
-                    - np.transpose(np.tile(self.X, (I, 1, 1)), (1, 0, 2))
+                    np.tile(self.T, (I, 1, 1))
+                    - np.transpose(np.tile(self.T, (I, 1, 1)), (1, 0, 2))
                 )
                 # multiply with beta factor along first dimension
                 * np.transpose(np.tile(beta_matrix, (3, 1, 1)), (2, 1, 0))
@@ -186,13 +174,10 @@ class L1Median(object):
             )  # regularization term
 
             # update positions
-            self.X = term1 + term2
-            self.iter += 1
+            self.T = term1 + term2
+            self.iteration += 1
 
             if callable(self.callback):
                 self.callback()
 
-        return self.X
-
-    def registerCallback(self, callback):
-        self.callback = callback
+        return self.T

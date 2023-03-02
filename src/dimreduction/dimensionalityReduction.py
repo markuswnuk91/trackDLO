@@ -1,18 +1,19 @@
 import numpy as np
+from scipy.spatial import distance_matrix
 import numbers
 from warnings import warn
 
 
-class NonRigidRegistration(object):
-    """Base class for non-rigid registration for DLO
+class DimensionalityReduction(object):
+    """Base class for dimensionality reduction methods
 
     Attributes:
     -------------
     X: numpy array
-        NxD array of source points
+        NxD array of input points
 
     Y: numpy array
-        MxD array of data points (e.g. 3D point cloud)
+        MxD array of source points (e.g. 3D point cloud)
 
     T: numpy array
         NxD array of target points (transformed source points)
@@ -24,18 +25,13 @@ class NonRigidRegistration(object):
         Number of data points
 
     D: int
-        Dimensionality of source and target points
+        Dimensionality of source points
 
     iterations: int
         The current iteration throughout the registration
 
     max_iterations: int
         Maximum number of iterations the registration performs before terminating
-
-    tolerance: float (positive)
-        tolerance for checking convergence.
-        Registration will terminate once the difference between
-        consecutive objective function values falls within this tolerance.
     """
 
     def __init__(self, X, Y, max_iterations=None, tolerance=None, *args, **kwargs):
@@ -89,81 +85,13 @@ class NonRigidRegistration(object):
         self.max_iterations = 100 if max_iterations is None else max_iterations
         self.iteration = 0
 
-    def register(self, callback=lambda **kwargs: None):
-        """
-        Peform the registration
-
-        Attributes
-        ----------
-        callback: function
-            A function that will be called after each iteration.
-            Can be used to visualize the registration process.
-
-        Returns
-        -------
-        self.T: numpy array
-            MxD array of transformed source points.
-
-        registration_parameters:
-            Returned params dependent on registration method used.
-        """
-        self.computeTargets()
-        while self.iteration < self.max_iterations and not self.isConverged():
-            self.iterate()
-            if callable(callback):
-                kwargs = {
-                    "iteration": self.iteration,
-                    "error": self.diff,
-                    "X": self.Y,
-                    "Y": self.T,
-                }
-                callback(**kwargs)
-
-        return self.T, self.getParameters()
-
-    def iterate(self):
-        """
-        Perform one iteration of the registration.
-        """
-        self.estimateCorrespondance()
-        self.updateParameters()
-        self.computeTargets()
-        self.iteration += 1
-
-    def isConverged(self):
+    def calculateReducedRepresentation(self):
         """
         Placeholder for child classes.
         """
         raise NotImplementedError(
-            "Checking for convergence should be defined in child classes."
+            "Method for calculating the reduced representation should be defined in child classes."
         )
 
-    def estimateCorrespondance(self):
-        """Placeholder for child class."""
-        raise NotImplementedError(
-            "Estimating the correspondance should be defined in child classes."
-        )
-
-    def computeTargets(self):
-        """
-        Placeholder for child classes.
-        """
-        raise NotImplementedError(
-            "Updating the source points should be defined in child classes."
-        )
-
-    def updateParameters(self):
-        """
-        Placeholder for child classes.
-        """
-        raise NotImplementedError(
-            "Updates of parameters should be defined in child classes."
-        )
-
-    def getParameters(self):
-        """
-        Placeholder for child classes.
-        """
-        raise NotImplementedError(
-            "Registration parameters should be defined in child classes."
-        )
+    def registerCallback(self, callback):
+        self.callback = callback

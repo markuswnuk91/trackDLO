@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.localization.l1Median import L1Median
+    from src.dimreduction.l1median.l1Median import L1Median
     from src.sensing.loadPointCloud import readPointCloudFromPLY
     from src.visualization.plot3D import plotPointSets
 except:
@@ -17,9 +17,9 @@ dataPath = "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_3D_DLO/p
 
 vis = True  # enable for visualization
 # control parameters
-h = 1
-mu = 0.9
-sampleRatio = 1 / 5
+h = 0.1
+mu = 0.3
+sampleRatio = 1 / 100
 numIterations = 10
 
 
@@ -53,8 +53,8 @@ def visualizationCallback(
     ax.set_zlim(0, 0.6)
     plotPointSets(
         ax=ax,
-        X=classHandle.X,
-        Y=classHandle.Q,
+        X=classHandle.T,
+        Y=classHandle.Y,
         ySize=5,
         xSize=10,
         # yMarkerStyle=".",
@@ -71,12 +71,18 @@ def test_l1Median():
     random_indices = random.sample(range(0, len(testCloud)), numSeedpoints)
     seedpoints = testCloud[random_indices, :]
     testReduction = L1Median(
-        testCloud, seedpoints, h=h, mu=mu, iterations=numIterations
+        **{
+            "Y": testCloud,
+            "X": seedpoints,
+            "h": h,
+            "mu": mu,
+            "iterations": numIterations,
+        }
     )
     if vis:
         visCallback = setupVisualizationCallback(testReduction)
         testReduction.registerCallback(visCallback)
-    l1MedianPoints = testReduction.calculateL1Median()
+    l1MedianPoints = testReduction.calculateReducedRepresentation()
     print(l1MedianPoints)
 
 

@@ -17,7 +17,7 @@ try:
 except:
     print("Imports for DiscreteReconstruction Test failed.")
     raise
-vis = False  # enable for visualization
+vis = True  # enable for visualization
 visAtEnd = True
 
 
@@ -64,7 +64,7 @@ def visualizationCallback(
 
 def runReconstruction():
     length = 100
-    numDisc = 10
+    numDisc = 11
     Y = np.ones((numDisc, 3))
     Y[:, 1] = np.linspace(0, length, numDisc)
     # Y[:, 2] = np.linspace(0, 50, 10)
@@ -77,8 +77,8 @@ def runReconstruction():
             "L": length,
             "x0": Y[0, :],
             "N": 10,
-            "wPosDiff": 100,
-            "Rflex": 0,
+            "wPosDiff": 1,
+            "Rflex": 100,
             "Rtor": 0,
             "Roh": 1,
         }

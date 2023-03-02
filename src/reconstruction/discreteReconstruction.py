@@ -180,7 +180,7 @@ class DiscreteReconstruction(ShapeReconstruction, FiniteSegmentModel):
                         "constant",
                     )
                 elif jacobian.shape[1] == len(self.q):
-                    paddedJacobian = jacobian
+                    paddedJacobian = jacobian.copy()
                 else:
                     raise ValueError("Jacobina seems to have wrong dimension.")
                 jacobianRows.append(paddedJacobian[3:6, correspondingDartIndex])

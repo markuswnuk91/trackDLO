@@ -2,7 +2,6 @@
 import os, sys
 import dartpy as dart
 import numpy as np
-import math
 import time as time
 from pytest import approx
 

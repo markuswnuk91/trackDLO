@@ -160,19 +160,69 @@ def plotPointSets(
     Y,
     xColor=[0, 0, 1],
     yColor=[1, 0, 0],
+    xEdgeColor=None,
+    yEdgeColor=None,
+    xSize=None,
+    ySize=None,
+    xMarkerStyle=None,
+    yMarkerStyle=None,
+    yAlpha=None,
+    xAlpha=None,
     xLabel=None,
     yLabel=None,
     waitTime=0.001,
 ):
+
+    xSize = 20 if xSize is None else xSize
+    ySize = 20 if xSize is None else xSize
+    xMarkerStyle = "o" if xMarkerStyle is None else xMarkerStyle
+    yMarkerStyle = "o" if yMarkerStyle is None else yMarkerStyle
+    xAlpha = 1 if xAlpha is None else xAlpha
+    yAlpha = 1 if yAlpha is None else yAlpha
+
     if xLabel is not None:
-        ax.scatter(X[:, 0], X[:, 1], X[:, 2], color=xColor, label=xLabel)
+        ax.scatter(
+            X[:, 0],
+            X[:, 1],
+            X[:, 2],
+            s=xSize,
+            color=xColor,
+            marker=xMarkerStyle,
+            alpha=xAlpha,
+            label=xLabel,
+        )
     else:
-        ax.scatter(X[:, 0], X[:, 1], X[:, 2], color=xColor)
+        ax.scatter(
+            X[:, 0],
+            X[:, 1],
+            X[:, 2],
+            s=xSize,
+            color=xColor,
+            marker=xMarkerStyle,
+            alpha=xAlpha,
+        )
 
     if yLabel is not None:
-        ax.scatter(Y[:, 0], Y[:, 1], Y[:, 2], color=yColor, label=yLabel)
+        ax.scatter(
+            Y[:, 0],
+            Y[:, 1],
+            Y[:, 2],
+            s=ySize,
+            color=yColor,
+            marker=yMarkerStyle,
+            alpha=yAlpha,
+            label=yLabel,
+        )
     else:
-        ax.scatter(Y[:, 0], Y[:, 1], Y[:, 2], color=yColor)
+        ax.scatter(
+            Y[:, 0],
+            Y[:, 1],
+            Y[:, 2],
+            s=ySize,
+            color=yColor,
+            marker=yMarkerStyle,
+            alpha=yAlpha,
+        )
 
     if waitTime is not None and waitTime != -1:
         plt.draw()

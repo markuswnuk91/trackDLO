@@ -3,13 +3,13 @@
 ## Plotting
 - [x] Setup callback: set assignment of variables to input arguments outside of base class
 - [ ] Make nice looking design for DLO plots for thesis
-- [ ] Make Plot for discretization criteria: Continous DLO and corresponding discrete DLO
+- [x] Make Plot for discretization criteria: Continous DLO and corresponding discrete DLO
 
 ## Modelling
-- [ ] Code discrete DLO class
+- [x] Code discrete DLO class
 
 ## Discrete reconstruction
-- [ ] code reconstruction for discrete DLO class
+- [x] code reconstruction for discrete DLO class
 
 ## Simulation
 - [ ] transfer classes for DART Simulations
@@ -20,4 +20,4 @@
 - [ ] transfer Minimum Spanning-Tree algorithms
 
 ## Validation
-- [ ] determine Validation scenarioss
+- [ ] determine Validation scenarios

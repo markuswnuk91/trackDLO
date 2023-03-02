@@ -16,7 +16,7 @@ class L1Median(object):
         iterations:   int, number of iterations to perfrom for aligning seedpoints
     """
 
-    def __init__(self, Q, X, h=None, mu=0.35, iterations=100):
+    def __init__(self, Q, X, h=None, mu=None, iterations=None):
         if type(Q) is not np.ndarray or Q.ndim != 2:
             raise ValueError("The source point set (Q) must be at a 2D numpy array.")
         if type(X) is not np.ndarray or X.ndim != 2:

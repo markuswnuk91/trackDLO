@@ -22,20 +22,31 @@ except:
 
 class SelfOrganizingMap(DimensionalityReduction):
     """
-    Implementation of the Self-Organizing-Map (SOM) algoritm according to the Paper
-    "Kohonen, T.: Essentials of the self-organizing map, Neural networks : the official journal of the International Neural Network Society, 37, 2023, 52–65"
+    Implementation of the Self-Organizing-Map (SOM) algoritm according to the Papers:
+    1) "Kohonen, T.: The self-organizing map: Proceedings of the IEEE, 37, 1990, 1464–1480" for the numNeighor-based method
+    2) "Kohonen, T.: Essentials of the self-organizing map, Neural networks : the official journal of the International Neural Network Society, 78(9), 2023, 52–65"  for the kernel-based method
 
     Attributes:
     -------------
     Y: Jx3 np.ndarray
-        pointCloud the skeleton line should be extracted from
+        input data points
     T: Ix3 np.ndarray
-        seedpoints used to represent the sought centerline
-
+        neurons of the SOM
+    alpha: float
+        gain for updating the neurons
+    alphaAnnealing: float
+        annealing factor for the gain
     numNearestNeighbors: float
-        support radius h defining the size of the supporting local neighborhood for L1-medial skeleton
-    mu: float
-        weighting parameter for repulsion force between seedpoints
+        number of nearest neighbors used to determine the neighborhood of a neuron
+    numNearestNeighborsAnnealing: float
+        annealing factor for the number of nearest neighbors
+    sigma2: float
+        factor for determining the neighborhood if the kernel method is used.
+    sigma2Annealing : float
+        annealing factor of sigma2
+    kernelMethod: bool
+        if the "original" numNeighbor-based implementation of the
+
     """
 
     def __init__(

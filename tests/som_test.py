@@ -96,7 +96,12 @@ def test_som():
         visCallback = setupVisualizationCallback(testReduction)
         testReduction.registerCallback(visCallback)
     reducedPoints = testReduction.calculateReducedRepresentation()
-    print(reducedPoints)
+
+    save = False
+    savePath = "data/experimental/outlier_filtering/somTestData.txt"
+    if save:
+        np.savetxt(savePath, reducedPoints)
+        print("Saved!")
 
 
 if __name__ == "__main__":

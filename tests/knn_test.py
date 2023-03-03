@@ -6,7 +6,7 @@ from pytest import approx
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.tracking.utils.utils import knn
+    from src.utils.utils import knn
 except:
     print("Imports for CPD failed.")
     raise

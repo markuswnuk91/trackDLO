@@ -127,13 +127,28 @@ def plotPointSet(
     X,
     ax,
     color=[0, 0, 1],
-    alpha=1,
+    edgeColor=None,
+    size=None,
+    markerStyle=None,
+    alpha=None,
     label: str = None,
-    size=20,
     waitTime=0.001,
 ):
+    size = 20 if size is None else size
+    markerStyle = "o" if markerStyle is None else markerStyle
+    alpha = 1 if alpha is None else alpha
+
     if label is None:
-        ax.scatter(X[:, 0], X[:, 1], X[:, 2], color=color, alpha=alpha, s=size)
+        ax.scatter(
+            X[:, 0],
+            X[:, 1],
+            X[:, 2],
+            color=color,
+            alpha=alpha,
+            s=size,
+            marker=markerStyle,
+            edgeColor=edgeColor,
+        )
     else:
         ax.scatter(
             X[:, 0],
@@ -143,6 +158,7 @@ def plotPointSet(
             label=label,
             alpha=alpha,
             s=size,
+            marker=markerStyle,
             edgecolor=None,
         )
     if waitTime is not None and waitTime != -1:

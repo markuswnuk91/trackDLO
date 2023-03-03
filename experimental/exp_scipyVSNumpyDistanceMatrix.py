@@ -7,7 +7,7 @@ import numpy as np
 
 try:
     sys.path.append(os.getcwd().replace("/experimental", ""))
-    from src.tracking.utils.utils import sqdistance_matrix
+    from src.utils.utils import sqdistance_matrix
 except:
     print("Imports for CPD failed.")
     raise

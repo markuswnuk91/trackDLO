@@ -7,7 +7,7 @@ import dartpy as dart
 
 try:
     sys.path.append(os.getcwd().replace("/src/tracking/cpd", ""))
-    from src.tracking.utils.utils import gaussian_kernel, initialize_sigma2
+    from src.utils.utils import gaussian_kernel, initialize_sigma2
 except:
     print("Imports for JSPR failed.")
     raise

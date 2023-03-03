@@ -10,7 +10,7 @@ from warnings import warn
 try:
     sys.path.append(os.getcwd().replace("/src/tracking/spr", ""))
     from src.tracking.registration import NonRigidRegistration
-    from src.tracking.utils.utils import knn
+    from src.utils.utils import knn
 except:
     print("Imports for MLLE failed.")
     raise

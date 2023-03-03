@@ -8,7 +8,7 @@ try:
     sys.path.append(os.getcwd().replace("/src/tracking/spr", ""))
     from src.tracking.registration import NonRigidRegistration
     from src.tracking.spr.mlle import mlle
-    from src.tracking.utils.utils import (
+    from src.utils.utils import (
         gaussian_kernel,
         initialize_sigma2,
     )

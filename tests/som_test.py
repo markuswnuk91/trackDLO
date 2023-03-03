@@ -3,29 +3,37 @@ import numpy as np
 import random
 from functools import partial
 import matplotlib.pyplot as plt
+from sklearn.neighbors import LocalOutlierFactor
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.dimreduction.l1median.l1Median import L1Median
+    from src.dimreduction.som.som import SelfOrganizingMap
     from src.sensing.loadPointCloud import readPointCloudFromPLY
     from src.visualization.plot3D import plotPointSets
 except:
-    print("Imports for L1Median Test failed.")
+    print("Imports for SOM Test failed.")
     raise
 
 dataPath = "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_3D_DLO/pointcloud_1.ply"
-dataPath = "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_2.ply"
+# dataPath = "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_2.ply"
 vis = True  # enable for visualization
 # control parameters
-h = 0.1
-mu = 0.3
-sampleRatio = 1 / 100
+alpha = 1
+numNearestNeighbors = 5
+numNearestNeighborsAnnealing = 0.7
+sigma2 = 0.01
+alphaAnnealing = 0.9
+sigma2Annealing = 0.99
+sampleRatio = 1 / 10
+nthDataPoint = 2
 numIterations = 10
+
+fig = plt.figure()
+ax = fig.add_subplot(projection="3d")
 
 
 def setupVisualizationCallback(classHandle):
-    fig = plt.figure()
-    ax = fig.add_subplot(projection="3d")
+
     return partial(
         visualizationCallback,
         fig,
@@ -61,30 +69,35 @@ def visualizationCallback(
         yAlpha=0.01,
         waitTime=0.5,
     )
+    print(classHandle.iteration)
     if savePath is not None:
         fig.savefig(savePath + fileName + "_" + str(classHandle.iter) + ".png")
 
 
-def test_l1Median():
-    testCloud = readPointCloudFromPLY(dataPath)[:, :3]
+def test_som():
+    testCloud = readPointCloudFromPLY(dataPath)[::nthDataPoint, :3]
     numSeedpoints = int(len(testCloud) * sampleRatio)
     random_indices = random.sample(range(0, len(testCloud)), numSeedpoints)
     seedpoints = testCloud[random_indices, :]
-    testReduction = L1Median(
+    testReduction = SelfOrganizingMap(
         **{
             "Y": testCloud,
             "X": seedpoints,
-            "h": h,
-            "mu": mu,
-            "iterations": numIterations,
+            "alpha": alpha,
+            "numNearestNeighbors": numNearestNeighbors,
+            "numNearestNeighborsAnnealing": numNearestNeighborsAnnealing,
+            "sigma2": sigma2,
+            "alphaAnnealing": alphaAnnealing,
+            "sigma2Annealing": sigma2Annealing,
+            "max_iterations": numIterations,
         }
     )
     if vis:
         visCallback = setupVisualizationCallback(testReduction)
         testReduction.registerCallback(visCallback)
-    l1MedianPoints = testReduction.calculateReducedRepresentation()
-    print(l1MedianPoints)
+    reducedPoints = testReduction.calculateReducedRepresentation()
+    print(reducedPoints)
 
 
 if __name__ == "__main__":
-    test_l1Median()
+    test_som()

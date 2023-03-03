@@ -6,7 +6,7 @@ from warnings import warn
 
 try:
     sys.path.append(os.getcwd().replace("/src/tracking/cpd", ""))
-    from src.tracking.utils.utils import initialize_sigma2
+    from src.utils.utils import initialize_sigma2
     from src.tracking.kpr.kinematicsModel import KinematicsModelDart
 except:
     print("Imports for KPR failed.")

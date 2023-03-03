@@ -19,9 +19,9 @@ class L1Median(DimensionalityReduction):
     "Huang et al.: L1-Medial Skeleton of Point Cloud, ACM Transactions on Graphics, 32(4):1, 2013"
     Attributes:
     -------------
-    Y: Jx3 np.ndarray
+    Y (Q in paper): Jx3 np.ndarray
         pointCloud the skeleton line should be extracted from
-    T: Ix3 np.ndarray
+    T (X in paper): Ix3 np.ndarray
         seedpoints used to represent the sought centerline
     h: float
         support radius h defining the size of the supporting local neighborhood for L1-medial skeleton
@@ -175,6 +175,8 @@ class L1Median(DimensionalityReduction):
 
             # update positions
             self.T = term1 + term2
+
+            # update iteration
             self.iteration += 1
 
             if callable(self.callback):

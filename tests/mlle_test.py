@@ -10,7 +10,7 @@ from numpy.random import RandomState
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.tracking.spr.mlle import mlle
+    from src.dimreduction.mlle.mlle import Mlle
 except:
     print("Imports for Test MLLE failed.")
     raise
@@ -54,7 +54,7 @@ def add_2d_scatter(ax, points, points_color, title=None):
 
 
 def testMLLE():
-    mlleProblem = mlle(X, k, 2)
+    mlleProblem = Mlle(X, k, 2)
     Y = mlleProblem.solve()
     if vis:
         plot_2d(Y, color, "MLLE representation")

@@ -9,14 +9,13 @@ from warnings import warn
 
 try:
     sys.path.append(os.getcwd().replace("/src/tracking/spr", ""))
-    from src.tracking.registration import NonRigidRegistration
     from src.utils.utils import knn
 except:
     print("Imports for MLLE failed.")
     raise
 
 
-class mlle:
+class Mlle:
     """Class for constructing locally linear embeddings to reconstuct it on a lower dimesional manifold.
     Implementation according to:
     Jing Wang and Zhenyue Zhang, Nonlinear Embedding Preserving Multiple Local-linearities, Patten Recognition, Vol.43, pp.1257-1268, 2010

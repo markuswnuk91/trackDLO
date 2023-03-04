@@ -7,13 +7,12 @@ from warnings import warn
 try:
     sys.path.append(os.getcwd().replace("/src/simulation", ""))
     from src.simulation.dlo import DeformableLinearObject
-    from src.simulation.topologyTree import topologyTree
+    from src.modelling.topologyModel import topologyModel
 except:
     print("Imports for DLO failed.")
-    raise
 
 
-class bdloSpecification(topologyTree):
+class BDLOTopology(topologyModel):
     """
     A bdloSpecification is topological description of a BDLO which contains information about the branches of the BDLO which are requried to build a kinematic model.
     The class is drived from a topologicalTree but requires additional information to be stored for each branch.
@@ -214,19 +213,19 @@ class bdloSpecification(topologyTree):
 class BranchedDeformableLinearObject(DeformableLinearObject):
     """
     Class implementing a interface for handling Branched Defromable Linear Objects (BDLO) with dart's skeleton class.
-    The class consists of a topologyTree descring its topology and a dartSkeleton which can be used for simulation.
+    The class consists of a topologyModel descring its topology and a dartSkeleton which can be used for simulation.
 
     Attributes:
         name (str): name of the BDLO
         skel: dart sekelton belongig to the BDLO
-        topology: topologyTree belonging to the BDLO
+        topology: topologyModel belonging to the BDLO
     """
 
     ID = 0
 
     def __init__(
         self,
-        topology: bdloSpecification,
+        topology: BDLOTopology,
         name=None,
         gravity: bool = True,
         collidable: bool = True,

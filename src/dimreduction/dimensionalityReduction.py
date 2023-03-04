@@ -34,7 +34,7 @@ class DimensionalityReduction(object):
         Maximum number of iterations the registration performs before terminating
     """
 
-    def __init__(self, X, Y, max_iterations=None, tolerance=None, *args, **kwargs):
+    def __init__(self, X, Y, max_iterations=None, *args, **kwargs):
         if type(X) is not np.ndarray or X.ndim != 2:
             raise ValueError("The source point cloud (X) must be at a 2D numpy array.")
 
@@ -67,21 +67,11 @@ class DimensionalityReduction(object):
             )
             max_iterations = int(max_iterations)
 
-        if tolerance is not None and (
-            not isinstance(tolerance, numbers.Number) or tolerance < 0
-        ):
-            raise ValueError(
-                "Expected a positive float for tolerance instead got: {}".format(
-                    tolerance
-                )
-            )
-
         self.X = X
         self.Y = Y
         self.T = X
         (self.N, self.D) = self.X.shape
         (self.M, _) = self.Y.shape
-        self.tolerance = 10e-5 if tolerance is None else tolerance
         self.max_iterations = 100 if max_iterations is None else max_iterations
         self.iteration = 0
 

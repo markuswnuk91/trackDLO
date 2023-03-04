@@ -1,3 +1,4 @@
 pyDataverse
 pytest
 numpy
+scipy

@@ -3,7 +3,7 @@ import numpy as np
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.simulation.topologyTree import node, edge, branch, topologyTree
+    from src.modelling.topologyModel import node, edge, branch, topologyModel
 except:
     print("Imports for CPD failed.")
     raise
@@ -88,9 +88,9 @@ def testBranch():
     assert secondBranch.getNumNodes() == 5
 
 
-def testTopologyTree():
+def testtopologyModel():
     testGraph = np.array([[0, 5, 5, 0], [5, 0, 0, 0], [5, 0, 0, 5], [0, 0, 5, 0]])
-    testTopology = topologyTree(testGraph)
+    testTopology = topologyModel(testGraph)
     assert testTopology.getNumNodes() == 4
     assert testTopology.getNodes()[0].getEdgeInfo(1)["length"] == 5
     assert testTopology.getNumBranches() == 2
@@ -111,7 +111,7 @@ def testTopologyTree():
             [0, 0, 0, 3, 0, 0, 0, 0, 0],
         ]
     )
-    testTopologyBranched = topologyTree(testGraphBranched)
+    testTopologyBranched = topologyModel(testGraphBranched)
     assert testTopologyBranched.getNumNodes() == 9
     assert testTopologyBranched.getNumBranchNodes() == 3
     assert testTopologyBranched.getNumLeafNodes() == 5
@@ -137,7 +137,7 @@ def testTopologyTree():
             [0, 3, 0],
         ]
     )
-    singleDLOTopology = topologyTree(testGraphSingleDLO)
+    singleDLOTopology = topologyModel(testGraphSingleDLO)
     assert singleDLOTopology.getNumNodes() == 3
     assert singleDLOTopology.getNumBranches() == 1
     assert singleDLOTopology.getNumBranchNodes() == 0
@@ -154,7 +154,7 @@ def testTopologyTree():
     # test input checking against wrong adjacency matrix
     wrongTopologyGraph = np.array([[1, 0], [0, 1]])
     try:
-        testWrongTopologyTree = topologyTree(wrongTopologyGraph)
+        testWrongtopologyModel = topologyModel(wrongTopologyGraph)
         detectedWrongTopologyInput = False
     except:
         detectedWrongTopologyInput = True
@@ -172,4 +172,4 @@ def testTopologyTree():
 if __name__ == "__main__":
     testNode()
     testBranch()
-    testTopologyTree()
+    testtopologyModel()

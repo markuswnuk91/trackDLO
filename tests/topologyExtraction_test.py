@@ -71,19 +71,44 @@ def test_topologyExtraction():
             "X": testPointSet,
         }
     )
-    testMinSpanTree = testTopologyExtractor.extractTopologyRepresentation()
+    pointPairs = testTopologyExtractor.getAdjacentPointPairs()
+    leafNodeIndices = testTopologyExtractor.getLeafNodeIndices()
+    print("Num Branches: {}".format(testTopologyExtractor.getNumBranches()))
 
+    print(
+        "Branch length: {}".format(
+            testTopologyExtractor.getBranch(3).getBranchInfo()["length"]
+        )
+    )
     # visualization
     if vis:
         # plot initial point set
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
+
+        for pointPair in pointPairs:
+            stackedPair = np.stack(pointPair)
+            ax.plot3D(stackedPair[:, 0], stackedPair[:, 1], stackedPair[:, 2], "blue")
+
         ax.scatter(
             testPointSet[:, 0],
             testPointSet[:, 1],
             testPointSet[:, 2],
         )
+        ax.scatter(
+            testPointSet[0, 0], testPointSet[0, 1], testPointSet[0, 2], "red", s=30
+        )
+        for i, leafPointIdx in enumerate(leafNodeIndices):
+            ax.scatter(
+                testPointSet[leafPointIdx, 0],
+                testPointSet[leafPointIdx, 1],
+                testPointSet[leafPointIdx, 2],
+                "yellow",
+                s=(i + 1) * 100,
+                alpha=0.4,
+            )
         plt.show(block=True)
+        print("Tets")
 
 
 if __name__ == "__main__":

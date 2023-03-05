@@ -16,7 +16,7 @@ except:
     raise
 
 
-class TopologyExtraction(object):
+class TopologyExtraction(topologyModel):
     """
 
     Attributes:
@@ -40,6 +40,8 @@ class TopologyExtraction(object):
             )
         self.X = X
         (self.N, self.D) = self.X.shape
+        adjacencyMatrix = self.findMinimalSpanningTree(self.X)
+        super().__init__(adjacencyMatrix=adjacencyMatrix, *args, **kwargs)
 
     def findMinimalSpanningTree(self, X):
         """Returns the minimal spanning tree betwwen the points given in X
@@ -61,3 +63,11 @@ class TopologyExtraction(object):
         adjacencyMatrix = self.findMinimalSpanningTree(self.X)
         topology = topologyModel(adjacencyMatrix)
         return topology
+
+    def getAdjacentPointPairs(self):
+        pointPairs = []
+        for edge in self.edges:
+            parentNodeIdx = self.getNodeIndex(edge.parentNode)
+            childNodeIdx = self.getNodeIndex(edge.childNode)
+            pointPairs.append((self.X[parentNodeIdx, :], self.X[childNodeIdx, :]))
+        return pointPairs

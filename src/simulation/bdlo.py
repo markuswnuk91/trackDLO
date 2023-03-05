@@ -161,13 +161,23 @@ class BDLOTopology(topologyModel):
                     )
                 )
                 newSpec = self.branchSpecs[i].copy()
-                # branchNode
-                if self.isBranchNode(self.branches[i].getStartNode()):
+
+                if self.branches[i] == self.rootBranch:
+                    # leaf the root at its original position
+                    newSpec["restPosition"] = np.array([0, 0, 0, 0, 0, 0])
+                elif (
+                    self.getBranchNodeFromNode(
+                        self.branches[i].getStartNode()
+                    ).getNumBranches()
+                    == 1
+                ):
+                    newSpec["restPosition"] = np.array([0, 0, 0])
+                else:
                     node = self.getBranchNodeFromNode(self.branches[i].getStartNode())
                     numBranches = node.getNumBranches()
                     siblingBranches = self.getSiblingBranches(self.branches[i])
                     siblingBranchIndices = self.getBranchIndices(siblingBranches)
-                    k = siblingBranchIndices.index(i)
+                    k = np.sum(np.array(siblingBranchIndices))
                     restAngle = (-1) ** k * k * 120 / 180 * math.pi / numBranches
                     # initRestAngle = -60 / 180 * math.pi
                     # deltaAngle = 120 / 180 * math.pi / (numBranches - 1)
@@ -179,11 +189,7 @@ class BDLOTopology(topologyModel):
                         raise ValueError("Given Topology has no branches.")
                     else:
                         newSpec["restPosition"] = np.array([restAngle, 0, 0])
-                else:
-                    if i == 0:
-                        newSpec["restPosition"] = np.array([0, 0, 0, 0, 0, 0])
-                    else:
-                        newSpec["restPosition"] = np.array([0, 0, 0])
+
                 self.branchSpecs[i] = newSpec
 
         # set the branchInfo according to the specification
@@ -304,7 +310,17 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
                 []
             )  # branches for witch bodyNodes were already generated are blacklisted
             nextBranchCandidates = []
-            nextBranchCandidates.append(self.topology.getBranch(0))
+
+            # make sure we start with the rootBranch
+            nextBranchCandidates.append(self.topology.getRootBranch())
+            if nextBranchCandidates[0].getEndNode().getParent() is not None:
+                raise ValueError(
+                    "Expected the first branch to contain the RootNode at its end, but got branch with endode that has parent: ".format(
+                        branch.getStartNode().getParentNode()
+                    )
+                )
+
+            # loop to generate the branches
             while len(unvisitedBranches) > 0:
                 # get necessary information for generating the bodyNodes for the branch
                 if len(nextBranchCandidates) > 0:
@@ -335,19 +351,10 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
                 segmentLength = length / numSegments
                 correspondingBodyNodes = []
 
-                # make sure we start at the rootNode
                 if (
-                    branch == self.topology.getBranch(0)
-                    and branch.getStartNode().getParent() is not None
-                ):
-                    raise ValueError(
-                        "Expected the first branch to start with the RootNode, but got branch with startNode that has parent: ".format(
-                            branch.getStartNode().getParentNode()
-                        )
-                    )
-                elif (
-                    branch == self.topology.getBranch(0)
-                    and branch.getStartNode().getParent() is None
+                    # make sure we start at the rootBranch
+                    branch == topology.rootBranch
+                    and branch.getEndNode().getParent() is None
                 ):
                     # generate the rootBranch
                     self.makeRootBody(
@@ -376,30 +383,30 @@ class BranchedDeformableLinearObject(DeformableLinearObject):
                     branchInfo["bodyNodeIndices"] = correspondingBodyNodes
                     branch.setBranchInfo(branchInfo)
 
-                    # add information of the corresponding bodyNode to the startNode
-                    startNode = branch.getStartNode()
-                    startNode.setNodeInfo({"bodyNodeIndex": correspondingBodyNodes[0]})
-                    if self.topology.isLeafNode(startNode) == True:
-                        leafNode = self.topology.getLeafNodeFromNode(startNode)
+                    # add information of the corresponding bodyNode to the end node (root)
+                    endNode = branch.getEndNode()
+                    endNode.setNodeInfo({"bodyNodeIndex": correspondingBodyNodes[0]})
+                    if self.topology.isLeafNode(endNode) == True:
+                        leafNode = self.topology.getLeafNodeFromNode(endNode)
                         leafNode.setLeafNodeInfo(
                             {"bodyNodeIndex": correspondingBodyNodes[0]}
                         )
-                    elif self.topology.isBranchNode(startNode) == True:
-                        branchNode = self.topology.getBranchNodeFromNode(startNode)
+                    elif self.topology.isBranchNode(endNode) == True:
+                        branchNode = self.topology.getBranchNodeFromNode(endNode)
                         branchNode.setBranchNodeInfo(
                             {"bodyNodeIndex": correspondingBodyNodes[0]}
                         )
 
-                    # add information of the corresponding bodyNode to the endNode
-                    endNode = branch.getEndNode()
-                    endNode.setNodeInfo({"bodyNodeIndex": correspondingBodyNodes[-1]})
-                    if self.topology.isLeafNode(endNode) == True:
-                        leafNode = self.topology.getLeafNodeFromNode(endNode)
+                    # add information of the corresponding bodyNode to the startNode (first branch)
+                    startNode = branch.getStartNode()
+                    startNode.setNodeInfo({"bodyNodeIndex": correspondingBodyNodes[-1]})
+                    if self.topology.isLeafNode(startNode) == True:
+                        leafNode = self.topology.getLeafNodeFromNode(startNode)
                         leafNode.setLeafNodeInfo(
                             {"bodyNodeIndex": correspondingBodyNodes[-1]}
                         )
-                    elif self.topology.isBranchNode(endNode) == True:
-                        branchNode = self.topology.getBranchNodeFromNode(endNode)
+                    elif self.topology.isBranchNode(startNode) == True:
+                        branchNode = self.topology.getBranchNodeFromNode(startNode)
                         branchNode.setBranchNodeInfo(
                             {"bodyNodeIndex": correspondingBodyNodes[-1]}
                         )

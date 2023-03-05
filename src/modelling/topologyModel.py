@@ -267,6 +267,9 @@ class branch:
     def getNumNodes(self):
         return len(self.nodes)
 
+    def getEdge(self, i: int):
+        return self.edges[i]
+
     def getEdges(self):
         return self.edges
 
@@ -317,6 +320,18 @@ class branch:
                     queue.append(adjacentNode)
         return None
 
+    def _commonEdge(self, thisNode: node, oterNode: node):
+        """returns the common edge betwwen thisNode and otherNode
+
+        Args:
+            thisNode (node):
+            oterNode (node):
+
+        Returns:
+            edge: _description_
+        """
+        return list(set(thisNode.getEdges()).intersection(oterNode.getEdges()))[0]
+
     #     while thisNode != searchedNode:
     #         thisNode.
     # def _collectMemberNodes(self):
@@ -338,11 +353,10 @@ class branch:
     #     self.memberNodes.reverse()
 
     def _collectEdges(self):
-        for node in self.memberNodes:
-            edges = node.getEdges()
-            for edge in edges:
-                if edge not in self.edges:
-                    self.edges.append(edge)
+        nodes = self.getNodes()
+        for i, node in enumerate(nodes):
+            if node != self.endNode:
+                self.edges.append(self._commonEdge(node, nodes[i + 1]))
 
     def __str__(self):
         _str = ""
@@ -520,6 +534,8 @@ class topologyModel:
         leafNodes (list(dict)): The nodes at the open ends of the topology.
         leafNodeInfo (list(dict)): The additional information for the leaf nodes at the open ends of the topology.
         leafNodes (list(dict)): The nodes at the open ends of the topology.
+        rootNode: first node of the grahp, with no parent
+        rootBranch: branch containing the rootnode
     """
 
     ID = 0
@@ -631,6 +647,7 @@ class topologyModel:
                     thisBranchNode = self._getBranchNodeFromNode(thisNode)
                     otherBranchNode = self._getBranchNodeFromNode(branchOrLeafNode)
                     if thisNode in otherBranchNode.getAdjacentBranchEnds():
+                        # case if branch already exists
                         pass
                     else:
                         newBranch = branch(
@@ -664,6 +681,12 @@ class topologyModel:
                         branchIndex=len(self.branches) - 1,
                     )
                     self.leafNodes.append(newLeafNode)
+                    # append branch to branchNode
+                    thisBranchNode = self._getBranchNodeFromNode(thisNode)
+                    thisBranchNode.appendBranch(newBranch, len(self.branches) - 1)
+                    # add as rootBranch if branch contains the root Node
+                    if branchOrLeafNode == rootNode:
+                        self.rootBranch = newBranch
 
         # for thisNode in self.nodes:
         #     if thisNode.getNumChilds() >= 2 or thisNode == rootNode:
@@ -774,6 +797,10 @@ class topologyModel:
 
     def getBranch(self, num: int):
         return self.branches[num]
+
+    def getRootBranch(self):
+        """Returns the branch that contains the root node as leaf"""
+        return self.rootBranch
 
     def getLeafNodes(self):
         return self.leafNodes
@@ -945,11 +972,18 @@ class topologyModel:
     def getSiblingBranches(self, branch: branch):
         """
         Returns the siblings to this branch.
-        Sibling branches are branches which start at the same start branch node.
+        Sibling branches are branches which share a start or end node with the given branch.
         """
         siblingBranches = []
-        for siblingCandidate in self.branches:
-            if siblingCandidate.getStartNode() == branch.getStartNode():
+        siblingCandidates = self.branches.copy()
+        siblingCandidates.remove(branch)
+        branchEnds = [branch.getStartNode(), branch.getEndNode()]
+        for siblingCandidate in siblingCandidates:
+            siblingCandidateEnds = [
+                siblingCandidate.getStartNode(),
+                siblingCandidate.getEndNode(),
+            ]
+            if any(branchEnd in branchEnds for branchEnd in siblingCandidateEnds):
                 siblingBranches.append(siblingCandidate)
         return siblingBranches
 
@@ -967,15 +1001,7 @@ class topologyModel:
             else:
                 branchLength = branch.getBranchInfo()["length"]
                 localLength = 0
-                currentNode = node
-                while currentNode is not branch.getStartNode():
-                    if currentNode is not None:
-                        localLength += currentNode.getParentEdge().getEdgeInfo()[
-                            "length"
-                        ]
-                        currentNode = currentNode.getParent()
-                    else:
-                        raise ValueError(
-                            "End node and start node seem to be not connected."
-                        )
+                nodeIdx = branch.getMemberNodes().index(node)
+                for i in range(0, nodeIdx + 1):
+                    localLength += branch.getEdge(i).getEdgeInfo()["length"]
             return localLength / branchLength

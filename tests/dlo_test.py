@@ -15,6 +15,27 @@ except:
 visualize = True
 
 
+def runViewer(dartSkel):
+    world = dart.simulation.World()
+    node = dart.gui.osg.WorldNode(world)
+    # Create world node and add it to viewer
+    viewer = dart.gui.osg.Viewer()
+    viewer.addWorldNode(node)
+
+    # add skeleton
+    world.addSkeleton(dartSkel)
+
+    # Grid settings
+    grid = dart.gui.osg.GridVisual()
+    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.XY)
+    grid.setOffset([0, 0, 0])
+    viewer.addAttachment(grid)
+
+    viewer.setUpViewInWindow(0, 0, 1200, 900)
+    viewer.setCameraHomePosition([8.0, 8.0, 4.0], [0, 0, -2.5], [0, 0, 1])
+    viewer.run()
+
+
 def test_initDLO():
     world = dart.simulation.World()
 
@@ -158,5 +179,49 @@ def test_initDLO():
         assert not visError
 
 
+def test_initDLOFromDict():
+    dloSpec = {
+        "length": 1,
+        "radius": 0.01,
+        "density": 1,
+        "numSegments": 10,
+        "color": np.array([0, 1, 0]),
+        "bendingStiffness": 0.1,
+        "torsionalStiffness": 0.1,
+        "bendingdampingCoeffs": 0.1,
+        "torsionalDampingCoeffs": 0.1,
+    }
+    testDLO = DeformableLinearObject(**dloSpec)
+    runViewer(testDLO.skel)
+
+
+def test_moveTo():
+    dloSpec1 = {
+        "length": 1,
+        "radius": 0.03,
+        "numSegments": 1,
+    }
+    dloSpec2 = {
+        "length": 0.5,
+        "radius": 0.01,
+        "numSegments": 1,
+    }
+    testDLO1 = DeformableLinearObject(**dloSpec1)
+    testDLO2 = DeformableLinearObject(**dloSpec2)
+
+    joinedSkel = testDLO1.skel.clone()
+    testDLO2.skel.setPosition(0, np.pi / 2)
+    testDLO2.skel.getBodyNode(0).moveTo(
+        joinedSkel.getBodyNode(0), dart.dynamics.BallJointProperties()
+    )
+    runViewer(joinedSkel)
+
+    # testSkel = dart.dynamics.Skeleton(name="TestSkeleton")
+    # testDLO2.skel.getBodyNode(0).moveTo(testSkel.getBodyNode(0))
+    # runViewer(testSkel)
+
+
 if __name__ == "__main__":
-    test_initDLO()
+    # test_initDLO()
+    # test_initDLOFromDict()
+    test_moveTo()

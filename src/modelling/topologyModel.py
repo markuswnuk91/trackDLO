@@ -119,9 +119,13 @@ class node:
             )
             return None
 
-    def _addChildNode(self, node):
-        self.childNodes.append(node)
-        self.childEdges.append(node.parentEdge)
+    def _addChildNode(self, childNode):
+        self.childNodes.append(childNode)
+        self.childEdges.append(childNode.parentEdge)
+
+    def _addParentNode(self, parentNode):
+        self.parentNode = parentNode
+        parentNode._addChildNode(self)
 
 
 class edge:
@@ -177,7 +181,7 @@ class branch:
 
     Attributes:
         numNodes: The number of nodes the branch should consist of.
-        startNode (node): The node the branch starts at.
+        startNode (node): The node the branch starts at. In general this is a branch node. The only exception is the rootBranch which starts with the rootNode as a leafNode.
         endNode (node): The node the branch ends at.
         memberNodes (list of nodes): The member nodes of thse branch (exclusively the start and end node).
         edges (list of edges): The edges the branch consists of.
@@ -249,6 +253,49 @@ class branch:
         self.nodes.append(endNode)
         self._collectEdges()
 
+    def _collectMemberNodes(self):
+        self.memberNodes = self._breadthFirstSearch(self.startNode, self.endNode)
+        self.memberNodes.pop(0)  # remove start node
+        self.memberNodes.pop(-1)  # remove end node
+
+    def _breadthFirstSearch(self, startNode: node, endNode: node):
+        visitedNodes = {startNode: [startNode]}
+        queue = []
+        queue.append(startNode)
+        while len(queue) > 0:
+            node = queue.pop()
+            if node == endNode:
+                return visitedNodes[node]
+            adjacentNodes = node.getAdjacentNodes()
+            for adjacentNode in adjacentNodes:
+                if adjacentNode not in visitedNodes[node]:
+                    visitedNodes[adjacentNode] = visitedNodes[node] + [adjacentNode]
+                    queue.append(adjacentNode)
+        return None
+
+    def _commonEdge(self, thisNode: node, oterNode: node):
+        """returns the common edge betwwen thisNode and otherNode
+
+        Args:
+            thisNode (node):
+            oterNode (node):
+
+        Returns:
+            edge: _description_
+        """
+        return list(set(thisNode.getEdges()).intersection(oterNode.getEdges()))[0]
+
+    def _collectEdges(self):
+        nodes = self.getNodes()
+        for i, node in enumerate(nodes):
+            if node != self.endNode:
+                self.edges.append(self._commonEdge(node, nodes[i + 1]))
+
+    def __str__(self):
+        _str = ""
+        _str += "Branch ID: {}".format(self.ID)
+        return _str
+
     def getName(self):
         return self.name
 
@@ -300,37 +347,6 @@ class branch:
     #         adjacentNodes = thisNode.getAdjacentNodes()
     #         for adjacentNode in adjacentNodes:
     #             self.findNode(adjacentNode, searchedNode, visitedNodes)
-    def _collectMemberNodes(self):
-        self.memberNodes = self._breadthFirstSearch(self.startNode, self.endNode)
-        self.memberNodes.pop(0)  # remove start node
-        self.memberNodes.pop(-1)  # remove end node
-
-    def _breadthFirstSearch(self, startNode: node, endNode: node):
-        visitedNodes = {startNode: [startNode]}
-        queue = []
-        queue.append(startNode)
-        while len(queue) > 0:
-            node = queue.pop()
-            if node == endNode:
-                return visitedNodes[node]
-            adjacentNodes = node.getAdjacentNodes()
-            for adjacentNode in adjacentNodes:
-                if adjacentNode not in visitedNodes[node]:
-                    visitedNodes[adjacentNode] = visitedNodes[node] + [adjacentNode]
-                    queue.append(adjacentNode)
-        return None
-
-    def _commonEdge(self, thisNode: node, oterNode: node):
-        """returns the common edge betwwen thisNode and otherNode
-
-        Args:
-            thisNode (node):
-            oterNode (node):
-
-        Returns:
-            edge: _description_
-        """
-        return list(set(thisNode.getEdges()).intersection(oterNode.getEdges()))[0]
 
     #     while thisNode != searchedNode:
     #         thisNode.
@@ -352,17 +368,6 @@ class branch:
     #     self.memberNodes.pop()
     #     self.memberNodes.reverse()
 
-    def _collectEdges(self):
-        nodes = self.getNodes()
-        for i, node in enumerate(nodes):
-            if node != self.endNode:
-                self.edges.append(self._commonEdge(node, nodes[i + 1]))
-
-    def __str__(self):
-        _str = ""
-        _str += "Branch ID: {}".format(self.ID)
-        return _str
-
 
 class leafnode:
     """
@@ -383,23 +388,26 @@ class leafnode:
     def __init__(
         self,
         node: node,
-        nodeIndex: int,
-        branch: branch,
-        branchIndex: int,
+        nodeIndex: int = None,
+        branch: branch = None,
+        branchIndex: int = None,
         leafNodeInfo: dict = None,
         name=None,
     ):
-        if name is None:
-            self.name = "leafnode_" + str(leafnode.ID)
-        else:
-            self.name = name
+
         self.ID = leafnode.ID
         leafnode.ID += 1
 
         self.node = node
-        self.branch = branch
-        self.nodeIndex = nodeIndex
-        self.branchIndex = branchIndex
+        self.branch = None if branch is None else branch
+        self.nodeIndex = None if nodeIndex is None else nodeIndex
+        self.branchIndex = None if branchIndex is None else branchIndex
+
+        if name is None:
+            self.name = "leafnode_" + str(leafnode.ID)
+        else:
+            self.name = name
+
         if leafNodeInfo is None:
             self.leafNodeInfo = {}
         else:
@@ -425,6 +433,15 @@ class leafnode:
 
     def setLeafNodeInfo(self, leafNodeInfo: dict):
         self.leafNodeInfo = leafNodeInfo
+        return
+
+    def appendBranch(self, branch, branchIndex=None):
+        if self.branch is None:
+            self.branch = branch
+            self.branchIndex = branchIndex
+        else:
+            warn("LeafNode had a branch already. Got overridden with new branch")
+        return
 
 
 class branchnode:
@@ -522,7 +539,7 @@ class branchnode:
         return adjacentBranchEnds
 
 
-class topologyModel:
+class topologyModel(object):
     """
     A topologyModel is a collection of branches, where each branch is connected to the other branches by branchnodes. Open ends of the topology tree are called leafnodes.
 
@@ -545,6 +562,8 @@ class topologyModel:
         adjacencyMatrix: np.ndarray = None,
         treeInfo: dict = None,
         name: str = None,
+        *args,
+        **kwargs,
     ):
         """initialization from a adjacencyMatrix
 
@@ -625,15 +644,49 @@ class topologyModel:
                 blacklist = np.append(blacklist, nodeIdx)
             unvisitedNodesIdxs.remove(currentNodeIdx)
 
-        # 2) find branches and identify branch and leaf nodes.
-        for idx, branchCandidate in enumerate(self.nodes):
-            if branchCandidate.getNumEdges() > 2:
-                newBranchNode = branchnode(node=branchCandidate, nodeIndex=idx)
+        # 2) identify branch and leaf nodes.
+        for idx, branchNodeCandidate in enumerate(self.nodes):
+            if branchNodeCandidate.getNumEdges() > 2:
+                newBranchNode = branchnode(node=branchNodeCandidate, nodeIndex=idx)
                 self.branchNodes.append(newBranchNode)
-        for thisNode in self._getBranchNodesAsNodes():
+        for idx, leafNodeCandidate in enumerate(self.nodes):
+            if leafNodeCandidate.getNumEdges() == 1:
+                newLeafNode = leafnode(node=leafNodeCandidate, nodeIndex=idx)
+                self.leafNodes.append(newLeafNode)
+
+        # alternative approach (not working)
+        # rootNode = node(name=str(self.name) + "_Node_0")
+        # self.rootNode = rootNode
+        # self.nodes[0] = rootNode
+        # for i in range(1, self.adjacencyMatrix.shape[0]):
+        #     parentIdx = np.flatnonzero(adjacencyMatrix[i, :])[0]
+        #     parentNode = self.nodes[parentIdx]
+        #     newNode = node(
+        #         parentNode,
+        #         name=str(self.name) + "_Node_" + str(i),
+        #         edgeInfo={"length": adjacencyMatrix[i, parentIdx]},
+        #     )
+        #     self.nodes.append(newNode)
+
+        # 3) reconstuct branches (breadth-first)
+        # add the root branch first
+        nextBranchOrLeafNode = self._findNextBranchOrLeafNodes(self.rootNode)
+        rootBranch = self._addBranch(
+            startNode=self.rootNode,
+            endNode=nextBranchOrLeafNode[0],
+            name=self.name + "_Branch_" + str(len(self.branches)),
+        )
+        self.rootBranch = rootBranch
+        # go throgh the topolgoy and generate the branches for all branch points
+        nextBranchNodes = [rootBranch.endNode]
+        visitedNodes = [rootNode]
+        while len(nextBranchNodes) > 0:
+            thisNode = nextBranchNodes.pop(0)
             nextBranchOrLeafNodes = self._findNextBranchOrLeafNodes(thisNode)
             for branchOrLeafNode in nextBranchOrLeafNodes:
-                if not (
+                if branchOrLeafNode in visitedNodes:
+                    pass
+                elif not (
                     branchOrLeafNode.getNumEdges() == 1
                     or branchOrLeafNode.getNumEdges() > 2
                 ):
@@ -642,137 +695,58 @@ class topologyModel:
                             branchOrLeafNode.getNumEdges()
                         )
                     )
-
-                elif self.isBranchNode(branchOrLeafNode):
-                    thisBranchNode = self._getBranchNodeFromNode(thisNode)
+                elif self.isBranchNode(branchOrLeafNode):  # branchNode
+                    nextBranchNodes.append(branchOrLeafNode)
+                    self._getBranchNodeFromNode(thisNode)
                     otherBranchNode = self._getBranchNodeFromNode(branchOrLeafNode)
                     if thisNode in otherBranchNode.getAdjacentBranchEnds():
                         # case if branch already exists
                         pass
                     else:
-                        newBranch = branch(
+                        newBranch = self._addBranch(
                             startNode=thisNode,
                             endNode=branchOrLeafNode,
                             name=self.name + "_Branch_" + str(len(self.branches)),
                         )
-                        branchLength = 0
-                        for edges in newBranch.getEdges():
-                            branchLength += edges.getEdgeInfo()["length"]
-                        newBranch.setBranchInfo({"length": branchLength})
-                        self.branches.append(newBranch)
-                        thisBranchNode.appendBranch(newBranch, len(self.branches) - 1)
-                        otherBranchNode.appendBranch(newBranch, len(self.branches) - 1)
-                else:
-                    newBranch = branch(
+                else:  # leafNode
+                    self._addBranch(
                         startNode=thisNode,
                         endNode=branchOrLeafNode,
                         name=self.name + "_Branch_" + str(len(self.branches)),
                     )
-                    # set branch length
-                    branchLength = 0
-                    for edges in newBranch.getEdges():
-                        branchLength += edges.getEdgeInfo()["length"]
-                    newBranch.setBranchInfo({"length": branchLength})
-                    self.branches.append(newBranch)
-                    newLeafNode = leafnode(
-                        node=branchOrLeafNode,
-                        nodeIndex=self.getNodeIndex(branchOrLeafNode),
-                        branch=newBranch,
-                        branchIndex=len(self.branches) - 1,
-                    )
-                    self.leafNodes.append(newLeafNode)
-                    # append branch to branchNode
-                    thisBranchNode = self._getBranchNodeFromNode(thisNode)
-                    thisBranchNode.appendBranch(newBranch, len(self.branches) - 1)
-                    # add as rootBranch if branch contains the root Node
-                    if branchOrLeafNode == rootNode:
-                        self.rootBranch = newBranch
 
-        # for thisNode in self.nodes:
-        #     if thisNode.getNumChilds() >= 2 or thisNode == rootNode:
-        #         nextBranchOrLeafNodes = self._findNextBranchOrLeafNodes(thisNode)
-        #         for branchOrLeafNode in nextBranchOrLeafNodes:
-        #             if not (
-        #                 branchOrLeafNode.getNumChilds() == 0
-        #                 or branchOrLeafNode.getNumChilds() >= 2
-        #             ):
-        #                 raise ValueError(
-        #                     "Got a node with {} childs but expected branch or leafnode with 0 or >2 childs.".format(
-        #                         branchOrLeafNode.getNumChilds()
-        #                     )
-        #                 )
-        #             else:
-        #                 newBranch = branch(
-        #                     startNode=thisNode,
-        #                     endNode=branchOrLeafNode,
-        #                     name=self.name + "_Branch_" + str(len(self.branches)),
-        #                 )
-        #                 # set branch length
-        #                 branchLength = 0
-        #                 for edges in newBranch.getEdges():
-        #                     branchLength += edges.getEdgeInfo()["length"]
-        #                 newBranch.setBranchInfo({"length": branchLength})
-        #                 self.branches.append(newBranch)
-
-        #                 # determine the node type of the beginning of the branch
-        #                 if (
-        #                     thisNode == rootNode
-        #                     and rootNode.getNumChilds() > 2
-        #                     and len(self.branchNodes) == 0
-        #                 ):
-        #                     #  case if rootnode is also a branch node
-        #                     self.branchNodes.append(
-        #                         branchnode(
-        #                             node=rootNode,
-        #                             nodeIndex=self.getNodeIndex(rootNode),
-        #                             branch=newBranch,
-        #                             branchIndex=len(self.branches) - 1,
-        #                         )
-        #                     )
-        #                 elif (
-        #                     thisNode == rootNode
-        #                     and rootNode.getNumChilds() == 1
-        #                     and len(self.leafNodes) == 0
-        #                 ):
-        #                     #  case if rootnode is a leafnode
-        #                     self.leafNodes.append(
-        #                         leafnode(
-        #                             node=rootNode,
-        #                             nodeIndex=self.getNodeIndex(rootNode),
-        #                             branch=newBranch,
-        #                             branchIndex=len(self.branches) - 1,
-        #                         )
-        #                     )
-        #                 elif thisNode.getNumChilds() > 2:
-        #                     thisBranchNode = self._getBranchNodeFromNode(thisNode)
-        #                     thisBranchNode.appendBranch(
-        #                         newBranch, len(self.branches) - 1
-        #                     )
-        #                 else:
-        #                     pass
-
-        #                 # determine the node type of the end of the branch
-        #                 if branchOrLeafNode.getNumChilds() == 0:  # leaf node
-        #                     newLeafNode = leafnode(
-        #                         node=branchOrLeafNode,
-        #                         nodeIndex=self.getNodeIndex(branchOrLeafNode),
-        #                         branch=newBranch,
-        #                         branchIndex=len(self.branches) - 1,
-        #                     )
-        #                     self.leafNodes.append(newLeafNode)
-        #                 else:  # branch node
-        #                     newBranchNode = branchnode(
-        #                         node=branchOrLeafNode,
-        #                         nodeIndex=self.getNodeIndex(branchOrLeafNode),
-        #                         branch=newBranch,
-        #                         branchIndex=len(self.branches) - 1,
-        #                     )
-        #                     self.branchNodes.append(newBranchNode)
-        #     else:
-        #         pass
+            visitedNodes.append(thisNode)
 
     def __getitem__(self, num):
         return self.nodes[num]
+
+    def _addBranch(self, startNode, endNode, name):
+        newBranch = branch(
+            startNode=startNode,
+            endNode=endNode,
+            name=self.name + "_Branch_" + str(len(self.branches)),
+        )
+        # set branch length
+        branchLength = 0
+        for edges in newBranch.getEdges():
+            branchLength += edges.getEdgeInfo()["length"]
+        newBranch.setBranchInfo({"length": branchLength})
+        self.branches.append(newBranch)
+
+        if self.isLeafNode(startNode):
+            thisLeafNode = self.getLeafNodeFromNode(startNode)
+            thisLeafNode.appendBranch(newBranch, len(self.branches) - 1)
+        else:
+            thisBranchNode = self.getBranchNodeFromNode(startNode)
+            thisBranchNode.appendBranch(newBranch, len(self.branches) - 1)
+
+        if self.isLeafNode(endNode):
+            thisLeafNode = self.getLeafNodeFromNode(endNode)
+            thisLeafNode.appendBranch(newBranch, len(self.branches) - 1)
+        else:
+            thisBranchNode = self.getBranchNodeFromNode(endNode)
+            thisBranchNode.appendBranch(newBranch, len(self.branches) - 1)
+        return newBranch
 
     def getRootNode(self):
         return self.rootNode
@@ -1005,3 +979,16 @@ class topologyModel:
                 for i in range(0, nodeIdx + 1):
                     localLength += branch.getEdge(i).getEdgeInfo()["length"]
             return localLength / branchLength
+
+    def getChildBranches(self, branch: branch):
+        childBranches = []
+        for childBranchCandidate in self.branches:
+            if childBranchCandidate.getStartNode() == branch.getEndNode():
+                childBranches.append(childBranchCandidate)
+        return childBranches
+
+    def getParentBranch(self, branch: branch):
+        for parentBranchCandidate in self.branches:
+            if parentBranchCandidate.getEndNode() == branch.getStartNode():
+                parentBranch = parentBranchCandidate
+        return parentBranch

@@ -73,13 +73,8 @@ def test_topologyExtraction():
     )
     pointPairs = testTopologyExtractor.getAdjacentPointPairs()
     leafNodeIndices = testTopologyExtractor.getLeafNodeIndices()
-    print("Num Branches: {}".format(testTopologyExtractor.getNumBranches()))
+    assert testTopologyExtractor.getNumBranches() == 5
 
-    print(
-        "Branch length: {}".format(
-            testTopologyExtractor.getBranch(3).getBranchInfo()["length"]
-        )
-    )
     # visualization
     if vis:
         # plot initial point set
@@ -104,11 +99,10 @@ def test_topologyExtraction():
                 testPointSet[leafPointIdx, 1],
                 testPointSet[leafPointIdx, 2],
                 "yellow",
-                s=(i + 1) * 100,
+                s=(i + 1) * 300,
                 alpha=0.4,
             )
         plt.show(block=True)
-        print("Tets")
 
 
 if __name__ == "__main__":

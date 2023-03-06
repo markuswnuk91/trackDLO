@@ -17,18 +17,52 @@ except:
 
 visualize = True
 
+
+def runViewer(dartSkel):
+    world = dart.simulation.World()
+    node = dart.gui.osg.WorldNode(world)
+    # Create world node and add it to viewer
+    viewer = dart.gui.osg.Viewer()
+    viewer.addWorldNode(node)
+
+    # add skeleton
+    world.addSkeleton(dartSkel)
+
+    # Grid settings
+    grid = dart.gui.osg.GridVisual()
+    grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.XY)
+    grid.setOffset([0, 0, 0])
+    viewer.addAttachment(grid)
+
+    viewer.setUpViewInWindow(0, 0, 1200, 900)
+    viewer.setCameraHomePosition([8.0, 8.0, 4.0], [0, 0, -2.5], [0, 0, 1])
+    viewer.run()
+
+
 testTopologyModel_1 = np.array([[0, 1, 1, 0], [1, 0, 0, 0], [1, 0, 0, 1], [0, 0, 1, 0]])
 testTopologyModel_2 = 0.1 * np.array(
+    # [
+    #     [0, 3, 3, 3, 0, 0, 0, 0, 0],
+    #     [3, 0, 0, 0, 3, 3, 0, 0, 0],
+    #     [3, 0, 0, 0, 0, 0, 3, 3, 0],
+    #     [3, 0, 0, 0, 0, 0, 0, 0, 3],
+    #     [0, 3, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 3, 0, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 3, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 3, 0, 0, 0, 0, 0, 0],
+    #     [0, 0, 0, 3, 0, 0, 0, 0, 0],
+    # ]
     [
-        [0, 3, 3, 3, 0, 0, 0, 0, 0],
-        [3, 0, 0, 0, 3, 3, 0, 0, 0],
-        [3, 0, 0, 0, 0, 0, 3, 3, 0],
-        [3, 0, 0, 0, 0, 0, 0, 0, 3],
-        [0, 3, 0, 0, 0, 0, 0, 0, 0],
-        [0, 3, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 3, 0, 0, 0, 0, 0, 0],
-        [0, 0, 3, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 3, 0, 0, 0, 0, 0],
+        [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 1, 0, 1, 0, 0, 1, 0, 0, 0],
+        [0, 0, 1, 0, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+        [0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 1, 0, 1, 1],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
     ]
 )
 testTopologyModel_3 = np.array([[0, 1], [1, 0]])
@@ -58,33 +92,48 @@ testTolologyModel_ICRA = np.array(
 )
 
 
-# def test_bdloTopology_1():
+def test_bdloTopology_1():
 
-#     testBdloSpec = BDLOTopology(testTopologyModel_1)
-#     assert testBdloSpec.getNumNodes() == 4
-#     assert testBdloSpec.getNodes()[0].getEdgeInfo(1)["length"] == 1
-#     assert testBdloSpec.getNumBranches() == 1
-#     assert testBdloSpec.getBranches()[0].getBranchInfo()["length"] == 1
-#     assert testBdloSpec.getBranches()[1].getBranchInfo()["length"] == 2
-
-#     for i, branch in enumerate(testBdloSpec.getBranches()):
-#         assert (
-#             testBdloSpec.getBranchSpec(i)
-#             == testBdloSpec.getBranches()[i].getBranchInfo()
-#         )
+    testBdloSpec = BDLOTopology(**{"adjacencyMatrix": testTopologyModel_1})
+    assert testBdloSpec.getNumNodes() == 4
+    assert testBdloSpec.getNodes()[0].getEdgeInfo(1)["length"] == 1
+    assert testBdloSpec.getNumBranches() == 1
+    assert testBdloSpec.getBranches()[0].getBranchInfo()["length"] == 3
+    for i, branch in enumerate(testBdloSpec.getBranches()):
+        assert (
+            testBdloSpec.getBranchSpec(i)
+            == testBdloSpec.getBranches()[i].getBranchInfo()
+        )
 
 
-def test_branchedDeformableLinearObject():
-    # testSpec_1 = BDLOTopology(testTopologyModel_1)
-    # testBDLO_1 = BranchedDeformableLinearObject(testSpec_1, name="Test_BDLO_1")
+def test_ModelGeneration_SimpleTopology():
+    testSpec_1 = BDLOTopology(**{"adjacencyMatrix": testTopologyModel_1})
+    testBDLO_1 = BranchedDeformableLinearObject(
+        **{"adjacencyMatrix": testTopologyModel_1, "name": "Test_BDLO_1"}
+    )
 
+    # test number of segmets is as specified
+    testBDLO_1.topology.branchSpecs[0]["numSegments"] == testBDLO_1.getNumSegments()
+    runViewer(testBDLO_1.skel)
+
+
+def test_ModelGeneration_BranchedTopology():
     # testSpec_2 = BDLOTopology(testTopologyModel_2)
-    # testBDLO_2 = BranchedDeformableLinearObject(testSpec_2, name="Test_BDLO_2")
-    # testBDLO_2.skel.setPosition(3, 0.2)
+    testBDLO_2 = BranchedDeformableLinearObject(
+        **{
+            "adjacencyMatrix": testTopologyModel_2,
+            "name": "Test_BDLO_2",
+        }
+    )
 
-    # testSpec_3 = BDLOTopology(testTopologyModel_3)
-    # testBDLO_3 = BranchedDeformableLinearObject(testSpec_3)
-    # testBDLO_3.skel.setPosition(3, 0.4)
+    runViewer(testBDLO_2.skel)
+
+
+def test_ICRA_TopologyGeneration():
+
+    testSpec_3 = BDLOTopology(testTopologyModel_3)
+    testBDLO_3 = BranchedDeformableLinearObject(testSpec_3)
+    testBDLO_3.skel.setPosition(3, 0.4)
 
     testSpec_ICRA = BDLOTopology(testTolologyModel_ICRA)
     testBDLO_ICRA = BranchedDeformableLinearObject(testSpec_ICRA, name="Test_BDLO_ICRA")
@@ -143,9 +192,7 @@ def test_branchedDeformableLinearObject():
         viewer.addWorldNode(node)
 
         # add skeleton
-        # world.addSkeleton(testBDLO_1.skel)
-        # world.addSkeleton(testBDLO_2.skel)
-        # world.addSkeleton(testBDLO_3.skel)
+        world.addSkeleton(testBDLO_3.skel)
         world.addSkeleton(testBDLO_ICRA.skel)
 
         # Grid settings
@@ -160,5 +207,10 @@ def test_branchedDeformableLinearObject():
 
 
 if __name__ == "__main__":
-    # test_bdloTopology_1()
-    test_branchedDeformableLinearObject()
+    # test modelSpecificaion
+    test_bdloTopology_1()
+
+    # test modelGeneration
+    # test_ModelGeneration_SimpleTopology()
+    test_ModelGeneration_BranchedTopology()
+    # test_branchedDeformableLinearObject()

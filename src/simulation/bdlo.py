@@ -30,15 +30,13 @@ class BDLOTopology(topologyModel):
         - torsionalStiffness (float): torsional stiffness of the branch [N/rad]
         - bendingDampingCoeffs (float): bending damping coefficients of the branch [Ns/rad]
         - torsionalDampingCoeffs (float): torsional damping coefficients of the branch[Ns/rad]
-        - restPosition (np.array): rest position of the branch in [Rx, Ry, Rz] as angles of the ballJoint in bodyNode coodinates at the branch point [rad]
+        - rootJointRestPositions (np.array): rest position of the branch in [Rx, Ry, Rz] as angles of the ballJoint in bodyNode coodinates at the branch point [rad]
     """
 
     def __init__(
         self,
-        csgraph: np.array,
         branchSpecs: list = None,
         specInfo: dict = None,
-        name: str = None,
         defaultNumBodyNodes=100,
         defaultRadius=0.01,
         defaultDensity=1000,
@@ -47,8 +45,10 @@ class BDLOTopology(topologyModel):
         defaultTorsionalStiffness=1,
         defaultBendingDampingCoeff=0.1,
         defaultTorsionalDampingCoeff=0.1,
+        *args,
+        **kwargs,
     ):
-        super().__init__(csgraph, specInfo, name)
+        super().__init__(*args, **kwargs)
 
         if branchSpecs is None:
             warn("No branch specifications provided. Using default values.")
@@ -154,9 +154,9 @@ class BDLOTopology(topologyModel):
                 newSpec["torsionalDampingCoeffs"] = defaultTorsionalDampingCoeff
                 self.branchSpecs[i] = newSpec
 
-            if "restPosition" not in branchSpec:
+            if "rootJointRestPositions" not in branchSpec:
                 warn(
-                    "No restPosition information given for branch {} using default rest position.".format(
+                    "No rootJointRestPositions information given for branch {} using default rest position.".format(
                         i
                     )
                 )
@@ -164,31 +164,34 @@ class BDLOTopology(topologyModel):
 
                 if self.branches[i] == self.rootBranch:
                     # leaf the root at its original position
-                    newSpec["restPosition"] = np.array([0, 0, 0, 0, 0, 0])
+                    newSpec["rootJointRestPositions"] = np.array([0, 0, 0, 0, 0, 0])
                 elif (
                     self.getBranchNodeFromNode(
                         self.branches[i].getStartNode()
                     ).getNumBranches()
                     == 1
                 ):
-                    newSpec["restPosition"] = np.array([0, 0, 0])
+                    newSpec["rootJointRestPositions"] = np.array([0, 0, 0])
                 else:
-                    node = self.getBranchNodeFromNode(self.branches[i].getStartNode())
-                    numBranches = node.getNumBranches()
-                    siblingBranches = self.getSiblingBranches(self.branches[i])
-                    siblingBranchIndices = self.getBranchIndices(siblingBranches)
-                    k = np.sum(np.array(siblingBranchIndices))
+                    thisbranch = self.branches[i]
+                    siblingBranches = self.getChildBranches(
+                        self.getParentBranch(thisbranch)
+                    )
+                    numBranches = len(siblingBranches)
+                    k = siblingBranches.index(thisbranch)
                     restAngle = (-1) ** k * k * 120 / 180 * math.pi / numBranches
                     # initRestAngle = -60 / 180 * math.pi
                     # deltaAngle = 120 / 180 * math.pi / (numBranches - 1)
                     # restAngle = initRestAngle + k * deltaAngle
 
                     if i == 0 and self.getNumBranches() > 1:
-                        newSpec["restPosition"] = np.array([restAngle, 0, 0, 0, 0, 0])
+                        newSpec["rootJointRestPositions"] = np.array(
+                            [restAngle, 0, 0, 0, 0, 0]
+                        )
                     elif self.getNumBranches() < 1:
                         raise ValueError("Given Topology has no branches.")
                     else:
-                        newSpec["restPosition"] = np.array([restAngle, 0, 0])
+                        newSpec["rootJointRestPositions"] = np.array([restAngle, 0, 0])
 
                 self.branchSpecs[i] = newSpec
 
@@ -216,393 +219,490 @@ class BDLOTopology(topologyModel):
         return self.branchSpecs[num]
 
 
-class BranchedDeformableLinearObject(DeformableLinearObject):
+class BranchedDeformableLinearObject(BDLOTopology):
     """
     Class implementing a interface for handling Branched Defromable Linear Objects (BDLO) with dart's skeleton class.
     The class consists of a topologyModel descring its topology and a dartSkeleton which can be used for simulation.
-
-    Attributes:
-        name (str): name of the BDLO
-        skel: dart sekelton belongig to the BDLO
-        topology: topologyModel belonging to the BDLO
     """
 
     ID = 0
 
     def __init__(
         self,
-        topology: BDLOTopology,
         name=None,
-        gravity: bool = True,
-        collidable: bool = True,
+        gravity: bool = None,
+        collidable: bool = None,
         adjacentBodyCheck: bool = False,
         enableSelfCollisionCheck: bool = True,
+        *args,
+        **kwargs,
     ):
-
+        super().__init__(*args, **kwargs)
         self.ID = BranchedDeformableLinearObject.ID
         BranchedDeformableLinearObject.ID += 1
-
         if name is None:
             self.name = "BDLO_" + str(self.ID)
         else:
             self.name = name
 
-        self.topology = topology
+        self.gravity = True if gravity is None else gravity
+        self.collidable = True if collidable is None else collidable
+        self.adjacentBodyCheck = (
+            False if adjacentBodyCheck is None else adjacentBodyCheck
+        )
+        self.enableSelfCollisionCheck = (
+            True if enableSelfCollisionCheck else enableSelfCollisionCheck
+        )
 
-        self.adjacentBodyCheck = adjacentBodyCheck
-        self.enableSelfCollisionCheck = enableSelfCollisionCheck
         self.frames = {}
         self.segmentLengths = []
 
-        if gravity is None:
-            self.gravity = True
-        else:
-            self.gravity = gravity
+        # create dartSkeleton and add branches
+        visitedBranches = set()
+        queuedBranches = []
+        queuedBranches.append(self.rootBranch)
 
-        if collidable is None:
-            self.collidable = True
-        else:
-            self.collidable = collidable
+        while len(queuedBranches) > 0:
+            branch = queuedBranches.pop(0)
+            if branch not in visitedBranches:
+                # load branch spec
+                branchSpec = self.getBranchSpec(branch)
 
-        # create dartSkeleton
-        if self.topology.getNumBranches() == 1:
-            branchInfo = self.topology.getBranch(0).getBranchInfo()
-            length = branchInfo["length"]
-            radius = branchInfo["radius"]
-            density = branchInfo["density"]
-            numSegments = branchInfo["numSegments"]
-            color = branchInfo["color"]
-            stiffness = np.array(
-                [
-                    branchInfo["bendingStiffness"],
-                    branchInfo["bendingStiffness"],
-                    branchInfo["torsionalStiffness"],
-                ]
-            )
-            damping = np.array(
-                [
-                    branchInfo["bendingDampingCoeffs"],
-                    branchInfo["bendingDampingCoeffs"],
-                    branchInfo["torsionalDampingCoeffs"],
-                ]
-            )
-            restPositions = branchInfo["restPosition"]
-            segmentLength = length / numSegments
-            super().__init__(
-                numSegments=numSegments,
-                length=length,
-                radius=radius,
-                density=density,
-                name=name,
-                stiffness=stiffness,
-                damping=damping,
-                color=color,
-                gravity=self.gravity,
-                collidable=self.collidable,
-                adjacentBodyCheck=self.adjacentBodyCheck,
-                enableSelfCollisionCheck=self.enableSelfCollisionCheck,
-            )
-
-        else:
-            self.skel = dart.dynamics.Skeleton(name=self.name)
-            unvisitedBranches = self.topology.getBranches().copy()
-            blacklist = (
-                []
-            )  # branches for witch bodyNodes were already generated are blacklisted
-            nextBranchCandidates = []
-
-            # make sure we start with the rootBranch
-            nextBranchCandidates.append(self.topology.getRootBranch())
-            if nextBranchCandidates[0].getEndNode().getParent() is not None:
-                raise ValueError(
-                    "Expected the first branch to contain the RootNode at its end, but got branch with endode that has parent: ".format(
-                        branch.getStartNode().getParentNode()
+                # generate model
+                if branch == self.rootBranch:
+                    self.skel = DeformableLinearObject(**branchSpec).skel.clone()
+                    correspondingBodyNodeIndices = list(
+                        range(0, self.skel.getNumBodyNodes())
                     )
-                )
-
-            # loop to generate the branches
-            while len(unvisitedBranches) > 0:
-                # get necessary information for generating the bodyNodes for the branch
-                if len(nextBranchCandidates) > 0:
-                    branch = nextBranchCandidates.pop(0)
                 else:
-                    branch = unvisitedBranches[0]
-                branchInfo = branch.getBranchInfo()
-                length = branchInfo["length"]
-                radius = branchInfo["radius"]
-                density = branchInfo["density"]
-                numSegments = branchInfo["numSegments"]
-                color = branchInfo["color"]
-                stiffness = np.array(
-                    [
-                        branchInfo["bendingStiffness"],
-                        branchInfo["bendingStiffness"],
-                        branchInfo["torsionalStiffness"],
-                    ]
-                )
-                damping = np.array(
-                    [
-                        branchInfo["bendingDampingCoeffs"],
-                        branchInfo["bendingDampingCoeffs"],
-                        branchInfo["torsionalDampingCoeffs"],
-                    ]
-                )
-                restPositions = branchInfo["restPosition"]
-                segmentLength = length / numSegments
-                correspondingBodyNodes = []
-
-                if (
-                    # make sure we start at the rootBranch
-                    branch == topology.rootBranch
-                    and branch.getEndNode().getParent() is None
-                ):
-                    # generate the rootBranch
-                    self.makeRootBody(
-                        segmentLength=segmentLength,
-                        radius=radius,
-                        density=density,
-                        restPositions=restPositions,
-                        color=color,
+                    newBranchSkel = DeformableLinearObject(**branchSpec).skel.clone()
+                    newBranchSkel.setPositions(
+                        [0, 1, 2], branchSpec["rootJointRestPositions"]
                     )
-                    correspondingBodyNodes.append(self.skel.getNumBodyNodes() - 1)
-                    for i in range(numSegments - 1):
-                        self.addBody(
-                            parentNode=self.skel.getBodyNodes()[-1],
-                            segmentLength=segmentLength,
-                            radius=radius,
-                            density=density,
-                            stiffnesses=np.ones(3) * stiffness,
-                            dampingCoeffs=np.ones(3) * damping,
-                            restPositions=np.zeros(3),
-                            color=color,
+                    currentNumBodyNodes = self.skel.getNumBodyNodes()
+                    newNumBodyNodes = newBranchSkel.getNumBodyNodes()
+                    correspondingBodyNodeIndices = list(
+                        range(
+                            currentNumBodyNodes, currentNumBodyNodes + newNumBodyNodes
                         )
-                        correspondingBodyNodes.append(self.skel.getNumBodyNodes() - 1)
-                        i += 1
-
-                    # add information of the corresponding bodyNodes to the branch
-                    branchInfo["bodyNodeIndices"] = correspondingBodyNodes
-                    branch.setBranchInfo(branchInfo)
-
-                    # add information of the corresponding bodyNode to the end node (root)
-                    endNode = branch.getEndNode()
-                    endNode.setNodeInfo({"bodyNodeIndex": correspondingBodyNodes[0]})
-                    if self.topology.isLeafNode(endNode) == True:
-                        leafNode = self.topology.getLeafNodeFromNode(endNode)
-                        leafNode.setLeafNodeInfo(
-                            {"bodyNodeIndex": correspondingBodyNodes[0]}
-                        )
-                    elif self.topology.isBranchNode(endNode) == True:
-                        branchNode = self.topology.getBranchNodeFromNode(endNode)
-                        branchNode.setBranchNodeInfo(
-                            {"bodyNodeIndex": correspondingBodyNodes[0]}
-                        )
-
-                    # add information of the corresponding bodyNode to the startNode (first branch)
-                    startNode = branch.getStartNode()
-                    startNode.setNodeInfo({"bodyNodeIndex": correspondingBodyNodes[-1]})
-                    if self.topology.isLeafNode(startNode) == True:
-                        leafNode = self.topology.getLeafNodeFromNode(startNode)
-                        leafNode.setLeafNodeInfo(
-                            {"bodyNodeIndex": correspondingBodyNodes[-1]}
-                        )
-                    elif self.topology.isBranchNode(startNode) == True:
-                        branchNode = self.topology.getBranchNodeFromNode(startNode)
-                        branchNode.setBranchNodeInfo(
-                            {"bodyNodeIndex": correspondingBodyNodes[-1]}
-                        )
-
-                    # add information of the corresponding bodyNodes to the memberNodes
-                    for node in branch.getMemberNodes():
-                        localCoord = self.topology.getLocalCoordinateFromBranchNode(
-                            branch, node
-                        )
-                        bodyNodeIndex = self.getBodyNodeFromLocalBranchCoordinate(
-                            branch, localCoord
-                        )
-                        node.setNodeInfo(
-                            {"bodyNodeIndex": correspondingBodyNodes[bodyNodeIndex]}
-                        )
-
-                else:
-                    # generate bodyNodes for remaining branches
-                    parentBodyNodeIdx = branch.getStartNode().getNodeInfo()[
-                        "bodyNodeIndex"
+                    )
+                    parentBranch = self.getParentBranch(branch)
+                    parentBodyNodeIdx = parentBranch.getBranchInfo()["bodyNodeIndices"][
+                        -1
                     ]
-                    parentBodyNode = self.skel.getBodyNode(parentBodyNodeIdx)
-                    for i in range(numSegments):
-                        if i == 0:
-                            self.addBody(
-                                parentNode=parentBodyNode,
-                                segmentLength=segmentLength,
-                                radius=radius,
-                                density=density,
-                                stiffnesses=np.ones(3) * stiffness,
-                                dampingCoeffs=np.ones(3) * damping,
-                                restPositions=restPositions,
-                                color=color,
-                                offset=-segmentLength,
-                            )
-                        else:
-                            self.addBody(
-                                parentNode=self.skel.getBodyNodes()[-1],
-                                segmentLength=segmentLength,
-                                radius=radius,
-                                density=density,
-                                stiffnesses=np.ones(3) * stiffness,
-                                dampingCoeffs=np.ones(3) * damping,
-                                restPositions=np.zeros(3),
-                                color=color,
-                            )
+                    newBranchSkel.getBodyNode(0).moveTo(
+                        self.skel.getBodyNode(parentBodyNodeIdx)
+                    )
+                branch.addBranchInfo("bodyNodeIndices", correspondingBodyNodeIndices)
+                for adjacentBranch in self.getChildBranches(branch):
+                    queuedBranches.append(adjacentBranch)
+            visitedBranches.add(branch)
 
-                        correspondingBodyNodes.append(self.skel.getNumBodyNodes() - 1)
-                        i += 1
+    def getBranchSpec(self, branch):
+        branchInfo = branch.getBranchInfo()
+        branchSpec = {
+            "numSegments": branchInfo["numSegments"],
+            "length": branchInfo["length"],
+            "radius": branchInfo["radius"],
+            "density": branchInfo["density"],
+            "color": branchInfo["color"],
+            "bendingStiffness": branchInfo["bendingStiffness"],
+            "torsionalStiffness": branchInfo["torsionalStiffness"],
+            "bendingDampingCoeffs": branchInfo["bendingDampingCoeffs"],
+            "torsionalDampingCoeffs": branchInfo["bendingDampingCoeffs"],
+            "rootJointRestPositions": branchInfo["rootJointRestPositions"],
+        }
+        return branchSpec
 
-                    # add information of the corresponding bodyNodes to the branch
-                    branchInfo["bodyNodeIndices"] = correspondingBodyNodes
-                    branch.setBranchInfo(branchInfo)
 
-                    # add information of the corresponding bodyNode to the endNode
-                    endNode = branch.getEndNode()
-                    endNode.setNodeInfo({"bodyNodeIndex": correspondingBodyNodes[-1]})
-                    if self.topology.isLeafNode(endNode) == True:
-                        leafNode = self.topology.getLeafNodeFromNode(endNode)
-                        leafNode.setLeafNodeInfo(
-                            {"bodyNodeIndex": correspondingBodyNodes[-1]}
-                        )
-                    elif self.topology.isBranchNode(endNode) == True:
-                        branchNode = self.topology.getBranchNodeFromNode(endNode)
-                        branchNode.setBranchNodeInfo(
-                            {"bodyNodeIndex": correspondingBodyNodes[-1]}
-                        )
+# class BranchedDeformableLinearObject(DeformableLinearObject):
+#     """
+#     Class implementing a interface for handling Branched Defromable Linear Objects (BDLO) with dart's skeleton class.
+#     The class consists of a topologyModel descring its topology and a dartSkeleton which can be used for simulation.
 
-                    # add information of the corresponding bodyNodes to the memberNodes
-                    for node in branch.getMemberNodes():
-                        localCoord = self.topology.getLocalCoordinateFromBranchNode(
-                            branch, node
-                        )
-                        bodyNodeIndex = self.getBodyNodeFromLocalBranchCoordinate(
-                            branch, localCoord
-                        )
-                        node.setNodeInfo(
-                            {"bodyNodeIndex": correspondingBodyNodes[bodyNodeIndex]}
-                        )
+#     Attributes:
+#         name (str): name of the BDLO
+#         skel: dart sekelton belongig to the BDLO
+#         topology: topologyModel belonging to the BDLO
+#     """
 
-                # get next branch candidates for which bodyNodes are generated
-                siblingBranches = self.topology.getSiblingBranches(branch)
-                for siblingBranch in siblingBranches:
-                    if (
-                        siblingBranch not in blacklist
-                        and siblingBranch is not branch
-                        and siblingBranch not in nextBranchCandidates
-                    ):
-                        nextBranchCandidates.append(siblingBranch)
-                unvisitedBranches.remove(branch)
-                blacklist.append(branch)
+#     ID = 0
 
-    def getBranchBodyNodes(self, branchNumber):
-        """
-        Returns the dart bodyNodes corresponding to a branch
-        """
-        bodyNodeList = []
-        for bodyNodeIndex in self.topology.getBranch(branchNumber).getBranchInfo()[
-            "bodyNodeIndices"
-        ]:
-            bodyNodeList.append(self.skel.getBodyNode(bodyNodeIndex))
-        return bodyNodeList
+#     def __init__(
+#         self,
+#         topology: BDLOTopology,
+#         name=None,
+#         gravity: bool = True,
+#         collidable: bool = True,
+#         adjacentBodyCheck: bool = False,
+#         enableSelfCollisionCheck: bool = True,
+#     ):
 
-    def getBranchBodyNodeIndices(self, branchNumber):
-        """
-        Returns the dart bodyNodes indices corresponding to a branch
-        """
-        bodyNodeIndices = self.topology.getBranch(branchNumber).getBranchInfo()[
-            "bodyNodeIndices"
-        ]
-        return bodyNodeIndices
+#         self.ID = BranchedDeformableLinearObject.ID
+#         BranchedDeformableLinearObject.ID += 1
 
-    def getLeafBodyNodes(self):
-        """
-        Returns the DART bodyNodes corresponding to the leafNodes in the topology of the BDLO
-        """
-        leafBodyNodes = []
-        for leafNode in self.topology.getLeafNodes():
-            leafBodyNodes.append(
-                self.skel.getBodyNode(leafNode.getLeafNodeInfo()["bodyNodeIndex"])
-            )
-        return leafBodyNodes
+#         if name is None:
+#             self.name = "BDLO_" + str(self.ID)
+#         else:
+#             self.name = name
 
-    def getLeafBodyNodeIndices(self):
-        bodyNodeIndices = []
-        for leafNode in self.topology.getLeafNodes():
-            bodyNodeIndices.append(leafNode.getLeafNodeInfo()["bodyNodeIndex"])
-        return bodyNodeIndices
+#         self.topology = topology
 
-    def getBranchPointBodyNodes(self):
-        """
-        Returns the DART bodyNodes corresponding to the branchNodes in the topology of the BDLO
-        """
-        branchBodyNodes = []
-        for branchNode in self.topology.getBranchNodes():
-            branchBodyNodes.append(
-                self.skel.getBodyNode(branchNode.getBranchNodeInfo()["bodyNodeIndex"])
-            )
-        return branchBodyNodes
+#         self.adjacentBodyCheck = adjacentBodyCheck
+#         self.enableSelfCollisionCheck = enableSelfCollisionCheck
+#         self.frames = {}
+#         self.segmentLengths = []
 
-    def getBranchPointBodyNodeIndices(self):
-        branchBodyNodeIndices = []
-        for branchNode in self.topology.getBranchNodes():
-            branchBodyNodeIndices.append(
-                branchNode.getBranchNodeInfo()["bodyNodeIndex"]
-            )
-        return branchBodyNodeIndices
+#         if gravity is None:
+#             self.gravity = True
+#         else:
+#             self.gravity = gravity
 
-    def getBranchIndexFromBodyNodeIndex(self, bodyNodeIndex):
-        """
-        Returns the branch corresponding to a dart bodyNode index.
-        """
-        branchIndex = -1
-        for i, branch in enumerate(self.topology.getBranches()):
-            if bodyNodeIndex in branch.getBranchInfo()["bodyNodeIndices"]:
-                return i
-            else:
-                pass
-        if branchIndex == -1:
-            warn("Given bodyNodeIndex is not in skeleton.")
-            return None
+#         if collidable is None:
+#             self.collidable = True
+#         else:
+#             self.collidable = collidable
 
-    def getSegmentLengthFromBranch(self, branchNumber: int):
-        return (
-            self.topology.getBranch(branchNumber).getBranchInfo()["length"]
-            / self.topology.getBranch(branchNumber).getBranchInfo()["numSegments"]
-        )
 
-    def getBodyNodeFromLocalBranchCoordinate(self, branch, s: float):
-        branchLength = branch.getBranchInfo()["length"]
-        numSegments = branch.getBranchInfo()["numSegments"]
-        segmentLength = branchLength / numSegments
-        if s > 1 or s < 0:
-            raise ValueError(
-                "Obtained {} as value of the local coordinate. The expected value is from [0, 1]".format(
-                    s
-                )
-            )
-        else:
-            return int(np.ceil(s * branchLength / segmentLength))
+#         # create dartSkeleton
+#         if self.topology.getNumBranches() == 1:
+#             branchInfo = self.topology.getBranch(0).getBranchInfo()
+#             length = branchInfo["length"]
+#             radius = branchInfo["radius"]
+#             density = branchInfo["density"]
+#             numSegments = branchInfo["numSegments"]
+#             color = branchInfo["color"]
+#             stiffness = np.array(
+#                 [
+#                     branchInfo["bendingStiffness"],
+#                     branchInfo["bendingStiffness"],
+#                     branchInfo["torsionalStiffness"],
+#                 ]
+#             )
+#             damping = np.array(
+#                 [
+#                     branchInfo["bendingDampingCoeffs"],
+#                     branchInfo["bendingDampingCoeffs"],
+#                     branchInfo["torsionalDampingCoeffs"],
+#                 ]
+#             )
+#             restPositions = branchInfo["restPosition"]
+#             segmentLength = length / numSegments
+#             super().__init__(
+#                 numSegments=numSegments,
+#                 length=length,
+#                 radius=radius,
+#                 density=density,
+#                 name=name,
+#                 stiffness=stiffness,
+#                 damping=damping,
+#                 color=color,
+#                 gravity=self.gravity,
+#                 collidable=self.collidable,
+#                 adjacentBodyCheck=self.adjacentBodyCheck,
+#                 enableSelfCollisionCheck=self.enableSelfCollisionCheck,
+#             )
 
-    def getNumBranches(self):
-        """Returns the number of branches of this BDLO model"""
-        return self.topology.getNumBranches()
+#         else:
+#             self.skel = dart.dynamics.Skeleton(name=self.name)
+#             unvisitedBranches = self.topology.getBranches().copy()
+#             blacklist = (
+#                 []
+#             )  # branches for witch bodyNodes were already generated are blacklisted
+#             nextBranchCandidates = []
 
-    def getBranchDofIndexInSkel(self, branchPointBodyNodeIndex: int, dof: int):
-        return (
-            self.skel.getBodyNode(branchPointBodyNodeIndex)
-            .getParentJoint()
-            .getIndexInSkeleton(dof)
-        )
+#             # make sure we start with the rootBranch
+#             nextBranchCandidates.append(self.topology.getRootBranch())
+#             if nextBranchCandidates[0].getStartNode().getParent() is not None:
+#                 raise ValueError(
+#                     "Expected the first branch to contain the RootNode at its end, but got branch with endode that has parent: ".format(
+#                         branch.getStartNode().getParentNode()
+#                     )
+#                 )
 
-    def setBranchDof(self, branchPointIndex: int, dof: int, value: float):
-        branchPointBodyNodeIndex = self.getBranchPointBodyNodeIndices()[
-            branchPointIndex
-        ]
-        dofIdx = self.getBranchDofIndexInSkel(branchPointBodyNodeIndex, dof)
-        self.skel.setPosition(dofIdx, value)
-        return
+#             # loop to generate the branches
+#             while len(unvisitedBranches) > 0:
+#                 # get necessary information for generating the bodyNodes for the branch
+#                 if len(nextBranchCandidates) > 0:
+#                     branch = nextBranchCandidates.pop(0)
+#                 else:
+#                     branch = unvisitedBranches[0]
+#                 branchInfo = branch.getBranchInfo()
+#                 length = branchInfo["length"]
+#                 radius = branchInfo["radius"]
+#                 density = branchInfo["density"]
+#                 numSegments = branchInfo["numSegments"]
+#                 color = branchInfo["color"]
+#                 stiffness = np.array(
+#                     [
+#                         branchInfo["bendingStiffness"],
+#                         branchInfo["bendingStiffness"],
+#                         branchInfo["torsionalStiffness"],
+#                     ]
+#                 )
+#                 damping = np.array(
+#                     [
+#                         branchInfo["bendingDampingCoeffs"],
+#                         branchInfo["bendingDampingCoeffs"],
+#                         branchInfo["torsionalDampingCoeffs"],
+#                     ]
+#                 )
+#                 restPositions = branchInfo["restPosition"]
+#                 segmentLength = length / numSegments
+#                 correspondingBodyNodes = []
+
+#                 if (
+#                     # make sure we start at the rootBranch
+#                     branch == topology.rootBranch
+#                     and branch.getStartNode().getParent() is None
+#                 ):
+#                     # generate the rootBranch
+#                     self.makeRootBody(
+#                         segmentLength=segmentLength,
+#                         radius=radius,
+#                         density=density,
+#                         restPositions=restPositions,
+#                         color=color,
+#                     )
+#                     correspondingBodyNodes.append(self.skel.getNumBodyNodes() - 1)
+#                     for i in range(numSegments - 1):
+#                         self.addBody(
+#                             parentNode=self.skel.getBodyNodes()[-1],
+#                             segmentLength=segmentLength,
+#                             radius=radius,
+#                             density=density,
+#                             stiffnesses=np.ones(3) * stiffness,
+#                             dampingCoeffs=np.ones(3) * damping,
+#                             restPositions=np.zeros(3),
+#                             color=color,
+#                         )
+#                         correspondingBodyNodes.append(self.skel.getNumBodyNodes() - 1)
+#                         i += 1
+
+#                     # add information of the corresponding bodyNodes to the branch
+#                     branchInfo["bodyNodeIndices"] = correspondingBodyNodes
+#                     branch.setBranchInfo(branchInfo)
+
+#                     # add information of the corresponding bodyNode to the start node (root)
+#                     startNode = branch.getStartNode()
+#                     startNode.setNodeInfo({"bodyNodeIndex": correspondingBodyNodes[0]})
+#                     if self.topology.isLeafNode(startNode) == True:
+#                         leafNode = self.topology.getLeafNodeFromNode(startNode)
+#                         leafNode.setLeafNodeInfo(
+#                             {"bodyNodeIndex": correspondingBodyNodes[0]}
+#                         )
+#                     elif self.topology.isBranchNode(startNode) == True:
+#                         branchNode = self.topology.getBranchNodeFromNode(startNode)
+#                         branchNode.setBranchNodeInfo(
+#                             {"bodyNodeIndex": correspondingBodyNodes[0]}
+#                         )
+
+#                     # add information of the corresponding bodyNode to the end node (root branch)
+#                     endNode = branch.getEndNode()
+#                     endNode.setNodeInfo({"bodyNodeIndex": correspondingBodyNodes[-1]})
+#                     if self.topology.isLeafNode(endNode) == True:
+#                         leafNode = self.topology.getLeafNodeFromNode(endNode)
+#                         leafNode.setLeafNodeInfo(
+#                             {"bodyNodeIndex": correspondingBodyNodes[-1]}
+#                         )
+#                     elif self.topology.isBranchNode(endNode) == True:
+#                         branchNode = self.topology.getBranchNodeFromNode(endNode)
+#                         branchNode.setBranchNodeInfo(
+#                             {"bodyNodeIndex": correspondingBodyNodes[-1]}
+#                         )
+
+#                     # add information of the corresponding bodyNodes to the memberNodes
+#                     for node in branch.getMemberNodes():
+#                         localCoord = self.topology.getLocalCoordinateFromBranchNode(
+#                             branch, node
+#                         )
+#                         bodyNodeIndex = self.getBodyNodeFromLocalBranchCoordinate(
+#                             branch, localCoord
+#                         )
+#                         node.setNodeInfo(
+#                             {"bodyNodeIndex": correspondingBodyNodes[bodyNodeIndex]}
+#                         )
+
+#                 else:
+#                     # generate bodyNodes for remaining branches
+#                     parentBodyNodeIdx = branch.getStartNode().getNodeInfo()[
+#                         "bodyNodeIndex"
+#                     ]
+#                     parentBodyNode = self.skel.getBodyNode(parentBodyNodeIdx)
+#                     for i in range(numSegments):
+#                         if i == 0:
+#                             self.addBody(
+#                                 parentNode=parentBodyNode,
+#                                 segmentLength=segmentLength,
+#                                 radius=radius,
+#                                 density=density,
+#                                 stiffnesses=np.ones(3) * stiffness,
+#                                 dampingCoeffs=np.ones(3) * damping,
+#                                 restPositions=restPositions,
+#                                 color=color,
+#                                 offset=-segmentLength,
+#                             )
+#                         else:
+#                             self.addBody(
+#                                 parentNode=self.skel.getBodyNodes()[-1],
+#                                 segmentLength=segmentLength,
+#                                 radius=radius,
+#                                 density=density,
+#                                 stiffnesses=np.ones(3) * stiffness,
+#                                 dampingCoeffs=np.ones(3) * damping,
+#                                 restPositions=np.zeros(3),
+#                                 color=color,
+#                             )
+
+#                         correspondingBodyNodes.append(self.skel.getNumBodyNodes() - 1)
+#                         i += 1
+
+#                     # add information of the corresponding bodyNodes to the branch
+#                     branchInfo["bodyNodeIndices"] = correspondingBodyNodes
+#                     branch.setBranchInfo(branchInfo)
+
+#                     # add information of the corresponding bodyNode to the endNode
+#                     endNode = branch.getEndNode()
+#                     endNode.setNodeInfo({"bodyNodeIndex": correspondingBodyNodes[-1]})
+#                     if self.topology.isLeafNode(endNode) == True:
+#                         leafNode = self.topology.getLeafNodeFromNode(endNode)
+#                         leafNode.setLeafNodeInfo(
+#                             {"bodyNodeIndex": correspondingBodyNodes[-1]}
+#                         )
+#                     elif self.topology.isBranchNode(endNode) == True:
+#                         branchNode = self.topology.getBranchNodeFromNode(endNode)
+#                         branchNode.setBranchNodeInfo(
+#                             {"bodyNodeIndex": correspondingBodyNodes[-1]}
+#                         )
+
+#                     # add information of the corresponding bodyNodes to the memberNodes
+#                     for node in branch.getMemberNodes():
+#                         localCoord = self.topology.getLocalCoordinateFromBranchNode(
+#                             branch, node
+#                         )
+#                         bodyNodeIndex = self.getBodyNodeFromLocalBranchCoordinate(
+#                             branch, localCoord
+#                         )
+#                         node.setNodeInfo(
+#                             {"bodyNodeIndex": correspondingBodyNodes[bodyNodeIndex]}
+#                         )
+
+#                 # get next branch candidates for which bodyNodes are generated
+#                 siblingBranches = self.topology.getSiblingBranches(branch)
+#                 for siblingBranch in siblingBranches:
+#                     if (
+#                         siblingBranch not in blacklist
+#                         and siblingBranch is not branch
+#                         and siblingBranch not in nextBranchCandidates
+#                     ):
+#                         nextBranchCandidates.append(siblingBranch)
+#                 unvisitedBranches.remove(branch)
+#                 blacklist.append(branch)
+
+#     def getBranchBodyNodes(self, branchNumber):
+#         """
+#         Returns the dart bodyNodes corresponding to a branch
+#         """
+#         bodyNodeList = []
+#         for bodyNodeIndex in self.topology.getBranch(branchNumber).getBranchInfo()[
+#             "bodyNodeIndices"
+#         ]:
+#             bodyNodeList.append(self.skel.getBodyNode(bodyNodeIndex))
+#         return bodyNodeList
+
+#     def getBranchBodyNodeIndices(self, branchNumber):
+#         """
+#         Returns the dart bodyNodes indices corresponding to a branch
+#         """
+#         bodyNodeIndices = self.topology.getBranch(branchNumber).getBranchInfo()[
+#             "bodyNodeIndices"
+#         ]
+#         return bodyNodeIndices
+
+#     def getLeafBodyNodes(self):
+#         """
+#         Returns the DART bodyNodes corresponding to the leafNodes in the topology of the BDLO
+#         """
+#         leafBodyNodes = []
+#         for leafNode in self.topology.getLeafNodes():
+#             leafBodyNodes.append(
+#                 self.skel.getBodyNode(leafNode.getLeafNodeInfo()["bodyNodeIndex"])
+#             )
+#         return leafBodyNodes
+
+#     def getLeafBodyNodeIndices(self):
+#         bodyNodeIndices = []
+#         for leafNode in self.topology.getLeafNodes():
+#             bodyNodeIndices.append(leafNode.getLeafNodeInfo()["bodyNodeIndex"])
+#         return bodyNodeIndices
+
+#     def getBranchPointBodyNodes(self):
+#         """
+#         Returns the DART bodyNodes corresponding to the branchNodes in the topology of the BDLO
+#         """
+#         branchBodyNodes = []
+#         for branchNode in self.topology.getBranchNodes():
+#             branchBodyNodes.append(
+#                 self.skel.getBodyNode(branchNode.getBranchNodeInfo()["bodyNodeIndex"])
+#             )
+#         return branchBodyNodes
+
+#     def getBranchPointBodyNodeIndices(self):
+#         branchBodyNodeIndices = []
+#         for branchNode in self.topology.getBranchNodes():
+#             branchBodyNodeIndices.append(
+#                 branchNode.getBranchNodeInfo()["bodyNodeIndex"]
+#             )
+#         return branchBodyNodeIndices
+
+#     def getBranchIndexFromBodyNodeIndex(self, bodyNodeIndex):
+#         """
+#         Returns the branch corresponding to a dart bodyNode index.
+#         """
+#         branchIndex = -1
+#         for i, branch in enumerate(self.topology.getBranches()):
+#             if bodyNodeIndex in branch.getBranchInfo()["bodyNodeIndices"]:
+#                 return i
+#             else:
+#                 pass
+#         if branchIndex == -1:
+#             warn("Given bodyNodeIndex is not in skeleton.")
+#             return None
+
+#     def getSegmentLengthFromBranch(self, branchNumber: int):
+#         return (
+#             self.topology.getBranch(branchNumber).getBranchInfo()["length"]
+#             / self.topology.getBranch(branchNumber).getBranchInfo()["numSegments"]
+#         )
+
+#     def getBodyNodeFromLocalBranchCoordinate(self, branch, s: float):
+#         branchLength = branch.getBranchInfo()["length"]
+#         numSegments = branch.getBranchInfo()["numSegments"]
+#         segmentLength = branchLength / numSegments
+#         if s > 1 or s < 0:
+#             raise ValueError(
+#                 "Obtained {} as value of the local coordinate. The expected value is from [0, 1]".format(
+#                     s
+#                 )
+#             )
+#         else:
+#             return int(np.ceil(s * branchLength / segmentLength))
+
+#     def getNumBranches(self):
+#         """Returns the number of branches of this BDLO model"""
+#         return self.topology.getNumBranches()
+
+#     def getBranchDofIndexInSkel(self, branchPointBodyNodeIndex: int, dof: int):
+#         return (
+#             self.skel.getBodyNode(branchPointBodyNodeIndex)
+#             .getParentJoint()
+#             .getIndexInSkeleton(dof)
+#         )
+
+#     def setBranchDof(self, branchPointIndex: int, dof: int, value: float):
+#         branchPointBodyNodeIndex = self.getBranchPointBodyNodeIndices()[
+#             branchPointIndex
+#         ]
+#         dofIdx = self.getBranchDofIndexInSkel(branchPointBodyNodeIndex, dof)
+#         self.skel.setPosition(dofIdx, value)
+#         return

@@ -4,7 +4,7 @@ import math
 import dartpy as dart
 
 
-class DeformableLinearObject:
+class DeformableLinearObject(object):
     """
     Class for representing a Deformable Linear Object (DLO) in Dynamics and Animation Robotics Toolbox (DART).
 
@@ -15,8 +15,10 @@ class DeformableLinearObject:
     radius (float): Radius of the DLO
     density (float): Density of the DLO
     name (str): Name of the skeleton. If None name is generated automatically.
-    stiffness(float): stiffness of the DLO.
-    dampint(float): daming of the DLO.
+    bendingStiffness(float): bendingStiffness of the DLO.
+    torsinalStiffness(float): bendingStiffness of the DLO.
+    bendingDampingCoeffs(float): bendingDampingCoeffs of the DLO.
+    torsionalDampingCoeffs(float): torsionalDampingCoeffs of the DLO.
     color (np.array): Color of the DLO in RGB values, e.g. [0,0,1] for blue.
     gravity (bool): If the DLO should be affected by gravity. If None defaults to true.
     collidable (bool): If the DLO is collidable. If None defaults to true.
@@ -33,13 +35,18 @@ class DeformableLinearObject:
         radius: float = 0.01,
         density: float = 1000,
         name: str = None,
-        stiffness: float = 1,
-        damping: float = 0.1,
+        bendingStiffness: float = 1,
+        torsionalStiffness: float = 1,
+        bendingDampingCoeffs: float = 0.1,
+        torsionalDampingCoeffs: float = 0.1,
         color: np.array = np.array([0, 0, 1]),
+        rootJointRestPosition: np.array = np.zeros(6),
         gravity: bool = True,
         collidable: bool = True,
         adjacentBodyCheck: bool = False,
         enableSelfCollisionCheck: bool = True,
+        *args,
+        **kwargs,
     ):
 
         self.ID = DeformableLinearObject.ID
@@ -55,9 +62,13 @@ class DeformableLinearObject:
         self.length = length
         self.radius = radius
         self.density = density
-        self.stiffness = stiffness
-        self.damping = damping
+        self.bendingStiffness = bendingStiffness
+        self.torsionalStiffness = torsionalStiffness
+        self.bendingDampingCoeffs = bendingDampingCoeffs
+        self.torsionalDampingCoeffs = torsionalDampingCoeffs
         self.color = color
+        self.rootJointRestPosition = rootJointRestPosition
+
         self.segmentLength = self.length / self.numSegments
         self.adjacentBodyCheck = adjacentBodyCheck
         self.enableSelfCollisionCheck = enableSelfCollisionCheck
@@ -79,6 +90,7 @@ class DeformableLinearObject:
             radius=self.radius,
             density=self.density,
             color=self.color,
+            restPositions=self.rootJointRestPosition,
         )
 
         for i in range(self.numSegments - 1):
@@ -87,10 +99,22 @@ class DeformableLinearObject:
                 segmentLength=self.segmentLength,
                 radius=self.radius,
                 density=self.density,
-                stiffnesses=np.ones(3) * self.stiffness,
-                dampingCoeffs=np.ones(3) * self.damping,
+                stiffnesses=np.array(
+                    [
+                        self.bendingStiffness,
+                        self.bendingStiffness,
+                        self.torsionalStiffness,
+                    ]
+                ),
+                dampingCoeffs=np.array(
+                    [
+                        self.bendingDampingCoeffs,
+                        self.bendingDampingCoeffs,
+                        self.torsionalDampingCoeffs,
+                    ]
+                ),
                 restPositions=np.zeros(3),
-                color=np.array([0, 0, 1]),
+                color=self.color,
             )
             i += 1
 
@@ -118,7 +142,17 @@ class DeformableLinearObject:
     ):
 
         # rootJoint properties
-        rootjoint_prop = dart.dynamics.FreeJointProperties()
+        if len(restPositions) == 6:
+            rootjoint_prop = dart.dynamics.FreeJointProperties()
+        elif len(restPositions) == 3:
+            rootjoint_prop = dart.dynamics.BallJointProperties()
+        else:
+            raise ValueError(
+                "Only free- (6DoF) and ball (3Dof) joint types are currently supported. Got {} Dofs for the rest positions".format(
+                    len(restPositions)
+                )
+            )
+
         if name is None:
             rootjoint_prop.mName = self.name + "_root" + "_joint"
         else:
@@ -139,9 +173,15 @@ class DeformableLinearObject:
         rootbody_prop = dart.dynamics.BodyNodeProperties(rootbody_aspect_prop)
 
         # create joint&bodyNode pair
-        [rootjoint, rootbody] = self.skel.createFreeJointAndBodyNodePair(
-            None, rootjoint_prop, rootbody_prop
-        )
+        if len(rootjoint_prop.mInitialPositions) == 6:
+            [rootjoint, rootbody] = self.skel.createFreeJointAndBodyNodePair(
+                None, rootjoint_prop, rootbody_prop
+            )
+        elif len(rootjoint_prop.mInitialPositions) == 3:
+            [rootjoint, rootbody] = self.skel.createBallJointAndBodyNodePair(
+                None, rootjoint_prop, rootbody_prop
+            )
+
         rootbody.setGravityMode(self.gravity)
         rootbody.setCollidable(self.collidable)
         self.segmentLengths.append(segmentLength)

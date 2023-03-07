@@ -66,8 +66,9 @@ class TopologyExtraction(topologyModel):
 
     def getAdjacentPointPairs(self):
         pointPairs = []
-        for edge in self.edges:
-            parentNodeIdx = self.getNodeIndex(edge.parentNode)
-            childNodeIdx = self.getNodeIndex(edge.childNode)
-            pointPairs.append((self.X[parentNodeIdx, :], self.X[childNodeIdx, :]))
+        for edge in self.getEdges():
+            nodePair = edge.getNodes()
+            thisNodeIdx = self.getNodeIndex(nodePair[0])
+            otherNodeIdx = self.getNodeIndex(nodePair[1])
+            pointPairs.append((self.X[thisNodeIdx, :], self.X[otherNodeIdx, :]))
         return pointPairs

@@ -15,7 +15,7 @@ except:
     print("Imports for BDLO testing failed.")
     raise
 
-vis = True
+vis = False
 
 
 def runViewer(dartSkel):
@@ -96,7 +96,6 @@ def test_bdloTopology_1():
 
     testBdloSpec = BDLOTopology(**{"adjacencyMatrix": testTopologyModel_1})
     assert testBdloSpec.getNumNodes() == 4
-    assert testBdloSpec.getNodes()[0].getEdgeInfo(1)["length"] == 1
     assert testBdloSpec.getNumBranches() == 1
     assert testBdloSpec.getBranches()[0].getBranchInfo()["length"] == 3
     for i, branch in enumerate(testBdloSpec.getBranches()):
@@ -107,14 +106,14 @@ def test_bdloTopology_1():
 
 
 def test_ModelGeneration_SimpleTopology():
-    testSpec_1 = BDLOTopology(**{"adjacencyMatrix": testTopologyModel_1})
     testBDLO_1 = BranchedDeformableLinearObject(
         **{"adjacencyMatrix": testTopologyModel_1, "name": "Test_BDLO_1"}
     )
 
     # test number of segmets is as specified
-    testBDLO_1.topology.branchSpecs[0]["numSegments"] == testBDLO_1.getNumSegments()
-    runViewer(testBDLO_1.skel)
+    testBDLO_1.branchSpecs[0]["numSegments"] == testBDLO_1.getNumSegments()
+    if vis:
+        runViewer(testBDLO_1.skel)
 
 
 def test_ModelGeneration_BranchedTopology():
@@ -217,7 +216,7 @@ if __name__ == "__main__":
     test_bdloTopology_1()
 
     # test modelGeneration
-    # test_ModelGeneration_SimpleTopology()
-    # test_ModelGeneration_BranchedTopology()
-    # test_ModelGeneration_ElementaryGraph()
+    test_ModelGeneration_SimpleTopology()
+    test_ModelGeneration_BranchedTopology()
+    test_ModelGeneration_ElementaryGraph()
     test_ModelGeneration_ICRATopology()

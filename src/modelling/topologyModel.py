@@ -3,7 +3,7 @@ from warnings import warn
 from scipy.sparse import csgraph
 
 
-class node:
+class Node:
     """
     Nodes are the basic elements of a graph.
     Each node contains the information to which parent it is connected.
@@ -18,36 +18,25 @@ class node:
 
     ID = 0
 
-    def __init__(
-        self, parentNode=None, edgeInfo: dict = None, nodeInfo: dict = None, name=None
-    ):
-        if parentNode is not None and (not isinstance(parentNode, node)):
+    def __init__(self, otherNode=None, nodeInfo: dict = None, name=None):
+        if otherNode is not None and (not isinstance(otherNode, Node)):
             raise ValueError(
                 "Expected the parentNode to be of type node. Instead got {}".format(
-                    type(parentNode)
+                    type(otherNode)
                 )
             )
 
         if name is None:
-            self.name = "Node_" + str(node.ID)
+            self.name = "Node_" + str(Node.ID)
         else:
             self.name = name
-        self.ID = node.ID
-        node.ID += 1
+        self.ID = Node.ID
+        Node.ID += 1
+        self.edges = []
 
-        self.parentNode = parentNode
+        if otherNode is not None:
+            newEdge = Edge([otherNode, self])
 
-        self.childNodes = []
-        self.childEdges = []
-        if parentNode is not None:
-            self.parentEdge = edge(self.parentNode, self, edgeInfo)
-            self.parentNode._addChildNode(self)
-        else:
-            self.parentEdge = None
-            if edgeInfo is not None:
-                warn(
-                    "Edge info was given but no parent node was specified. Edge info is discarded."
-                )
         if nodeInfo is None:
             self.nodeInfo = {}
         else:
@@ -56,19 +45,14 @@ class node:
     def getName(self):
         return self.name
 
-    def getParent(self):
-        return self.parentNode
+    def getEdges(self):
+        return self.edges
 
-    def getChilds(self):
-        return self.childNodes
+    def getNumEdges(self):
+        return len(self.edges)
 
-    def getAdjacentNodes(self):
-        adjacentNodes = []
-        if self.parentNode is not None:
-            adjacentNodes.append(self.parentNode)
-        for node in self.childNodes:
-            adjacentNodes.append(node)
-        return adjacentNodes
+    def addEdge(self, edge):
+        self.edges.append(edge)
 
     def getNodeInfo(self):
         return self.nodeInfo
@@ -76,97 +60,69 @@ class node:
     def setNodeInfo(self, nodeInfo):
         self.nodeInfo = nodeInfo
 
-    def getParentEdge(self):
-        return self.parentEdge
-
-    def getChildEdges(self):
-        return self.childEdges
-
-    def getEdges(self):
-        if self.parentEdge is not None:
-            return [self.parentEdge] + self.childEdges
+    def getAdjacentNode(self, edge):
+        edgeNodes = edge.getNodes()
+        thisNodeIdx = edgeNodes.index(self)
+        if thisNodeIdx == 0:
+            return edgeNodes[1]
         else:
-            return self.childEdges
+            return edgeNodes[0]
 
-    def hasParentNode(self):
-        return self.parentNode is not None
+    def getAdjacentNodes(self):
+        adjacentNodes = []
+        for edge in self.edges:
+            edgeNodes = edge.getNodes()
+            for node in edgeNodes:
+                if node is not self:
+                    adjacentNodes.append(node)
+        return adjacentNodes
 
-    def getNumChilds(self):
-        return len(self.childNodes)
-
-    def getNumEdges(self):
-        if self.parentNode is None:
-            return len(self.childNodes)
-        else:
-            return len(self.childNodes) + 1
-
-    def getEdgeInfo(self, num: int):
-        """
-        get the info of corresponding edges
-        0 refers to the parent edge. 1 refers to the first child edge
-        """
-        if self.parentNode is None and num == 0:
-            return {}
-        elif self.parentNode is not None and num == 0:
-            return self.getParentEdge().getEdgeInfo()
-        elif len(self.getChildEdges()) > 0:
-            return self.getChildEdges()[num - 1].getEdgeInfo()
-        else:
-            warn(
-                "Node has only {} edges, but edge {} was requested".format(
-                    self.getNumEdges(), num
-                )
-            )
-            return None
-
-    def _addChildNode(self, childNode):
-        self.childNodes.append(childNode)
-        self.childEdges.append(childNode.parentEdge)
-
-    def _addParentNode(self, parentNode):
-        self.parentNode = parentNode
-        parentNode._addChildNode(self)
+    def hasEdgeWith(self, otherNode):
+        hasEdge = False
+        for edge in self.edges:
+            if otherNode == self.getAdjacentNode(edge):
+                hasEdge = True
+        return hasEdge
 
 
-class edge:
+class Edge:
     """
     Edges are the basic elements of a graph.
     Each edge connects two nodes.
     It holds additional information such as weigts.
 
     Attributes:
-        parentNode (node): The parent node of this edge
-        childNode (node): The child node of this edge.
+        connectedNodes (list(node)): List of nodes the edge connects
         edgeInfo (dict): Information to be stored in this edge.
     """
 
     ID = 0
 
-    def __init__(
-        self, parentNode: node, childNode: node, edgeInfo: dict = None, name: str = None
-    ):
+    def __init__(self, nodes: tuple, edgeInfo: dict = None, name: str = None):
 
+        if len(nodes) != 2:
+            raise ValueError(
+                "Edges connect two nodes. Indest got {} nodes.".format(len(nodes))
+            )
+        self.ID = Edge.ID
+        Edge.ID += 1
         if name is None:
-            self.name = "Edge_" + str(parentNode.ID) + "_to_" + str(childNode.ID)
+            self.name = "Edge_Node" + str(nodes[0].ID) + "_Node" + str(nodes[1].ID)
         else:
             self.name = name
-        self.ID = edge.ID
-        edge.ID += 1
-
-        self.parentNode = parentNode
-        self.childNode = childNode
+        self.nodes = nodes
         self.edgeInfo = edgeInfo
         if edgeInfo is not None:
             self.edgeInfo = edgeInfo
 
+        nodes[0].addEdge(self)
+        nodes[1].addEdge(self)
+
     def getName(self):
         return self.name
 
-    def getParentNode(self):
-        return self.parentNode
-
-    def getChildNode(self):
-        return self.childNode
+    def getNodes(self):
+        return self.nodes
 
     def getEdgeInfo(self):
         return self.edgeInfo
@@ -192,8 +148,8 @@ class branch:
     def __init__(
         self,
         numNodes: int = None,
-        startNode: node = None,
-        endNode: node = None,
+        startNode: Node = None,
+        endNode: Node = None,
         branchInfo: dict = None,
         name: str = None,
     ):
@@ -215,7 +171,7 @@ class branch:
         self.edges = []
 
         if startNode is None:
-            self.startNode = node()
+            self.startNode = Node()
         else:
             self.startNode = startNode
 
@@ -227,14 +183,14 @@ class branch:
                     )
                 )
             else:
-                newNode = node(self.startNode)
+                newNode = Node(self.startNode)
                 for i in range(numNodes - 2):
                     i += 1
                     self.memberNodes.append(newNode)
-                    newNode = node(newNode)
+                    newNode = Node(newNode)
                 self.endNode = newNode
         elif endNode is None and numNodes is None:
-            self.endNode = node(self.startNode)
+            self.endNode = Node(self.startNode)
         elif endNode is not None and numNodes is not None:
             self.endNode = endNode
             self._collectMemberNodes()
@@ -258,7 +214,7 @@ class branch:
         self.memberNodes.pop(0)  # remove start node
         self.memberNodes.pop(-1)  # remove end node
 
-    def _breadthFirstSearch(self, startNode: node, endNode: node):
+    def _breadthFirstSearch(self, startNode: Node, endNode: Node):
         visitedNodes = {startNode: [startNode]}
         queue = []
         queue.append(startNode)
@@ -273,7 +229,7 @@ class branch:
                     queue.append(adjacentNode)
         return None
 
-    def _commonEdge(self, thisNode: node, oterNode: node):
+    def _commonEdge(self, thisNode: Node, oterNode: Node):
         """returns the common edge betwwen thisNode and otherNode
 
         Args:
@@ -339,35 +295,6 @@ class branch:
         self.endNode = node
         self.nodes.append(node)
 
-    # def _findNode(self, thisNode, searchedNode, visitedNodes):
-    #     visitedNodes.append[thisNode]
-    #     if thisNode == searchedNode:
-    #         return visitedNodes
-    #     else:
-    #         adjacentNodes = thisNode.getAdjacentNodes()
-    #         for adjacentNode in adjacentNodes:
-    #             self.findNode(adjacentNode, searchedNode, visitedNodes)
-
-    #     while thisNode != searchedNode:
-    #         thisNode.
-    # def _collectMemberNodes(self):
-
-    #     self.startNode.getAdjacentNodes()
-    #     for adjacentNode in adjacentNodes:
-    #         find(endNode)
-    #     self.endNode = thisNode
-    #     node = self.endNode
-    #     while node is not self.startNode:
-    #         if self.startNode.ID > self.endNode.ID:
-    #             node = self.
-    #         if node is not None:
-    #             node = node.getAdjacentNodes()
-    #             self.memberNodes.append(node)
-    #         else:
-    #             raise ValueError("End node and start node seem to be not connected.")
-    #     self.memberNodes.pop()
-    #     self.memberNodes.reverse()
-
 
 class leafnode:
     """
@@ -387,7 +314,7 @@ class leafnode:
 
     def __init__(
         self,
-        node: node,
+        node: Node,
         nodeIndex: int = None,
         branch: branch = None,
         branchIndex: int = None,
@@ -462,7 +389,7 @@ class branchnode:
 
     def __init__(
         self,
-        node: node,
+        node: Node,
         nodeIndex: int = None,
         branch: branch = None,
         branchIndex: int = None,
@@ -585,12 +512,15 @@ class topologyModel(object):
         self.ID = topologyModel.ID
         topologyModel.ID += 1
         self.nodes = []
-        self.edges = set()
+        self.edges = []
         self.branches = []
         self.leafNodes = []
         self.branchNodes = []
         self.leafNodeInfo = []
         self.branchNodeInfo = []
+        self.rootNode = None
+        self.rootBranch = None
+
         if name is None:
             self.name = "topologyModel_" + str(topologyModel.ID)
         else:
@@ -601,48 +531,25 @@ class topologyModel(object):
             self.treeInfo = treeInfo
         self.adjacencyMatrix = adjacencyMatrix
 
-        unvisitedNodesIdxs = list(range(len(adjacencyMatrix)))
-        blacklist = np.array(
-            []
-        )  # elements for which nodes were already generated are blacklisted
-        # make sure we start with a node that is a end node
-        for i in range(adjacencyMatrix.shape[0]):
-            if len(np.where(adjacencyMatrix[i, :] != 0)[0]) == 1:
-                break
-        nextNodeCandidateIdxs = [i]
-
-        self.nodes = [None] * len(adjacencyMatrix)
-        # self.nodes[0] = rootNode
-        # blacklist = np.append(blacklist, 0)
-
         # 1) build nodes from adjacency matrix
-        while len(unvisitedNodesIdxs) > 0:
-            currentNodeIdx = nextNodeCandidateIdxs.pop(0)
-            if all(elem is None for elem in self.nodes):
-                rootNode = node(name=str(self.name) + "_Node_0")
-                self.rootNode = rootNode
-                self.nodes[currentNodeIdx] = rootNode
-                blacklist = np.append(blacklist, currentNodeIdx)
-                currentNode = rootNode
-            else:
-                currentNode = self.nodes[currentNodeIdx]
-            adjacentNodeIdxs = np.flatnonzero(adjacencyMatrix[currentNodeIdx, :])
-            newNodeCandidateIdxs = np.setdiff1d(adjacentNodeIdxs, blacklist)
-            # parentNodeIdx = np.intersect1d(adjacentNodeIdxs, blacklist)
-            # self.nodes(parentNodeIdx)
-            # currentNode = self.nodes[currentNodeIdx]
-            # np.setdiff1d(adjacentNodeIdxs, blacklist)
-            for nodeIdx in newNodeCandidateIdxs:
-                newNode = node(
-                    currentNode,
-                    name=str(self.name) + "_Node_" + str(nodeIdx),
-                    edgeInfo={"length": adjacencyMatrix[currentNodeIdx, nodeIdx]},
-                )
-                self.nodes[nodeIdx] = newNode
-                self.edges.add(newNode.parentEdge)
-                nextNodeCandidateIdxs.append(nodeIdx)
-                blacklist = np.append(blacklist, nodeIdx)
-            unvisitedNodesIdxs.remove(currentNodeIdx)
+        # generate nodes
+        for i in range(0, adjacencyMatrix.shape[0]):
+            newNode = Node(name=str(self.name) + "_Node_" + str(i))
+            self.nodes.append(newNode)
+        # generate edges
+        for i, node in enumerate(self.nodes):
+            adjacentNodeIdxs = np.flatnonzero(adjacencyMatrix[i, :])
+            if self.rootNode is None and len(adjacentNodeIdxs) == 1:
+                self.rootNode = node
+            for adjacentNodeIdx in adjacentNodeIdxs:
+                if node.hasEdgeWith(self.nodes[adjacentNodeIdx]):
+                    pass
+                else:
+                    newEdge = Edge(
+                        nodes=(node, self.nodes[adjacentNodeIdx]),
+                        edgeInfo={"length": adjacencyMatrix[i, adjacentNodeIdx]},
+                    )
+                    self.edges.append(newEdge)
 
         # 2) identify branch and leaf nodes.
         for idx, branchNodeCandidate in enumerate(self.nodes):
@@ -653,20 +560,6 @@ class topologyModel(object):
             if leafNodeCandidate.getNumEdges() == 1:
                 newLeafNode = leafnode(node=leafNodeCandidate, nodeIndex=idx)
                 self.leafNodes.append(newLeafNode)
-
-        # alternative approach (not working)
-        # rootNode = node(name=str(self.name) + "_Node_0")
-        # self.rootNode = rootNode
-        # self.nodes[0] = rootNode
-        # for i in range(1, self.adjacencyMatrix.shape[0]):
-        #     parentIdx = np.flatnonzero(adjacencyMatrix[i, :])[0]
-        #     parentNode = self.nodes[parentIdx]
-        #     newNode = node(
-        #         parentNode,
-        #         name=str(self.name) + "_Node_" + str(i),
-        #         edgeInfo={"length": adjacencyMatrix[i, parentIdx]},
-        #     )
-        #     self.nodes.append(newNode)
 
         # 3) reconstuct branches (breadth-first)
         # add the root branch first
@@ -679,7 +572,7 @@ class topologyModel(object):
         self.rootBranch = rootBranch
         # go throgh the topolgoy and generate the branches for all branch points
         nextBranchNodes = [rootBranch.endNode]
-        visitedNodes = [rootNode]
+        visitedNodes = [self.rootNode]
         while len(nextBranchNodes) > 0:
             thisNode = nextBranchNodes.pop(0)
             nextBranchOrLeafNodes = self._findNextBranchOrLeafNodes(thisNode)
@@ -788,13 +681,13 @@ class topologyModel(object):
     def getNumLeafNodes(self):
         return len(self.leafNodes)
 
-    def _getBranchNodeFromNode(self, node: node):
+    def _getBranchNodeFromNode(self, node: Node):
         """
         Internal Method, which is not recommended for external use.
         Returns the BranchNode corresponding to a given node from the
         list of branchNodes.
         Args:
-            node (node): node for which the branchNode should be determined
+            node (node): Node for which the branchNode should be determined
 
         Returns:
             branchNode (branchNode): branchNode
@@ -835,41 +728,13 @@ class topologyModel(object):
 
         return nextBranchOrLeafNodes
 
-        #     adjacentNodes = thisNode.getAdjacentNodes()
-        # else:
-        #     if thisNode.getNumEdges() == 1 or thisNode.getNumEdges() > 2:
-        #         nextBranchOrLeafNodes.append(thisNode)
-        #     else:
-
-        # for
-        #         nextBranchOrLeafNodes.append(
-        #             self._findNextBranchOrLeafNodes(adjacentNode, thisNode)[0]
-        #         )
-
-        # if previousNode is None:
-        #     previousNode = thisNode
-        # nextBranchOrLeafNodes = []
-        # if thisNode.getNumEdges() == 0:
-        #     return nextBranchOrLeafNodes
-        # else:
-        #     for adjacentNode in thisNode.getAdjacentNodes().remove(previousNode):
-        #         if adjacentNode is not previousNode and (
-        #             adjacentNode.getNumEdges() == 1 or adjacentNode.getNumEdges() > 2
-        #         ):
-        #             nextBranchOrLeafNodes.append(adjacentNode)
-        #         else:  # member node
-        #             nextBranchOrLeafNodes.append(
-        #                 self._findNextBranchOrLeafNodes(adjacentNode, thisNode)[0]
-        #             )
-        #     return nextBranchOrLeafNodes
-
-    def getLeafNodeFromNode(self, node: node):
+    def getLeafNodeFromNode(self, node: Node):
         if node in self._getLeafNodesAsNodes():
             return self.leafNodes[self._getLeafNodesAsNodes().index(node)]
         else:
             return None
 
-    def getBranchNodeFromNode(self, node: node):
+    def getBranchNodeFromNode(self, node: Node):
         if node in self._getBranchNodesAsNodes():
             return self.branchNodes[self._getBranchNodesAsNodes().index(node)]
         else:
@@ -889,23 +754,23 @@ class topologyModel(object):
             branchNodeIndices.append(branchNodeIndex)
         return branchNodeIndices
 
-    def getNodeIndex(self, node: node):
+    def getNodeIndex(self, node: Node):
         return self.nodes.index(node)
 
-    def getBranchesFromNode(self, node: node):
+    def getBranchesFromNode(self, node: Node):
         branchList = []
         for branch in self.branches:
             if node in branch.getNodes():
                 branchList.append(branch)
         return branchList
 
-    def isLeafNode(self, node: node):
+    def isLeafNode(self, node: Node):
         if node in self._getLeafNodesAsNodes():
             return True
         else:
             return False
 
-    def isBranchNode(self, node: node):
+    def isBranchNode(self, node: Node):
         if node in self._getBranchNodesAsNodes():
             return True
         else:
@@ -964,7 +829,7 @@ class topologyModel(object):
     def getBranchLength(self, branchNumber: int):
         return self.getBranch(branchNumber).getBranchInfo()["length"]
 
-    def getLocalCoordinateFromBranchNode(self, branch: branch, node: node):
+    def getLocalCoordinateFromBranchNode(self, branch: branch, node: Node):
         if node not in branch.getNodes():
             raise ValueError("The given node is not in the given branch")
         else:

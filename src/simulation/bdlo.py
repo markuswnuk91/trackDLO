@@ -335,6 +335,9 @@ class BranchedDeformableLinearObject(BDLOTopology):
     def getBodyNodeIndicesFromBranch(self, branch):
         return branch.getBranchInfo()["correspondingBodyNodeIndices"]
 
+    def getNumSegments(self):
+        return self.skel.getNumBodyNodes()
+
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):
 #     """

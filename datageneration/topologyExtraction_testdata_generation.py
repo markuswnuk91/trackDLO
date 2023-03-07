@@ -11,7 +11,7 @@ try:
     from src.sensing.loadPointCloud import readPointCloudFromPLY
     from src.visualization.plot3D import plotPointSets
 except:
-    print("Imports for SOM Test failed.")
+    print("Imports for Data Generation for Topology Extraction failed.")
     raise
 
 # script control parameters

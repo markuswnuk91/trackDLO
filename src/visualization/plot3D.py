@@ -137,6 +137,7 @@ def plotPointSet(
     size = 20 if size is None else size
     markerStyle = "o" if markerStyle is None else markerStyle
     alpha = 1 if alpha is None else alpha
+    edgeColor = color if edgeColor is None else edgeColor
 
     if label is None:
         ax.scatter(
@@ -147,7 +148,7 @@ def plotPointSet(
             alpha=alpha,
             s=size,
             marker=markerStyle,
-            edgeColor=edgeColor,
+            edgecolors=edgeColor,
         )
     else:
         ax.scatter(

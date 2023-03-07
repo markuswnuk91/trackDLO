@@ -287,13 +287,15 @@ class BranchedDeformableLinearObject(BDLOTopology):
                         )
                     )
                     parentBranch = self.getParentBranch(branch)
-                    parentBodyNodeIdx = parentBranch.getBranchInfo()["bodyNodeIndices"][
-                        -1
-                    ]
+                    parentBodyNodeIdx = parentBranch.getBranchInfo()[
+                        "correspondingBodyNodeIndices"
+                    ][-1]
                     newBranchSkel.getBodyNode(0).moveTo(
                         self.skel.getBodyNode(parentBodyNodeIdx)
                     )
-                branch.addBranchInfo("bodyNodeIndices", correspondingBodyNodeIndices)
+                branch.addBranchInfo(
+                    "correspondingBodyNodeIndices", correspondingBodyNodeIndices
+                )
                 for adjacentBranch in self.getChildBranches(branch):
                     queuedBranches.append(adjacentBranch)
             visitedBranches.add(branch)
@@ -313,6 +315,25 @@ class BranchedDeformableLinearObject(BDLOTopology):
             "rootJointRestPositions": branchInfo["rootJointRestPositions"],
         }
         return branchSpec
+
+    # general functions
+    def getNumBodyNodes(self):
+        return self.skel.getNumBodyNodes()
+
+    # branch Functions
+    def getBranchBodyNodes(self, branchNumber):
+        """
+        Returns the dart bodyNodes corresponding to a branch
+        """
+        bodyNodeList = []
+        for bodyNodeIndex in self.getBranch(branchNumber).getBranchInfo()[
+            "correspondingBodyNodeIndices"
+        ]:
+            bodyNodeList.append(self.skel.getBodyNode(bodyNodeIndex))
+        return bodyNodeList
+
+    def getBodyNodeIndicesFromBranch(self, branch):
+        return branch.getBranchInfo()["correspondingBodyNodeIndices"]
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):
@@ -480,7 +501,7 @@ class BranchedDeformableLinearObject(BDLOTopology):
 #                         i += 1
 
 #                     # add information of the corresponding bodyNodes to the branch
-#                     branchInfo["bodyNodeIndices"] = correspondingBodyNodes
+#                     branchInfo["correspondingBodyNodeIndices"] = correspondingBodyNodes
 #                     branch.setBranchInfo(branchInfo)
 
 #                     # add information of the corresponding bodyNode to the start node (root)
@@ -558,7 +579,7 @@ class BranchedDeformableLinearObject(BDLOTopology):
 #                         i += 1
 
 #                     # add information of the corresponding bodyNodes to the branch
-#                     branchInfo["bodyNodeIndices"] = correspondingBodyNodes
+#                     branchInfo["correspondingBodyNodeIndices"] = correspondingBodyNodes
 #                     branch.setBranchInfo(branchInfo)
 
 #                     # add information of the corresponding bodyNode to the endNode
@@ -605,7 +626,7 @@ class BranchedDeformableLinearObject(BDLOTopology):
 #         """
 #         bodyNodeList = []
 #         for bodyNodeIndex in self.topology.getBranch(branchNumber).getBranchInfo()[
-#             "bodyNodeIndices"
+#             "correspondingBodyNodeIndices"
 #         ]:
 #             bodyNodeList.append(self.skel.getBodyNode(bodyNodeIndex))
 #         return bodyNodeList
@@ -614,10 +635,10 @@ class BranchedDeformableLinearObject(BDLOTopology):
 #         """
 #         Returns the dart bodyNodes indices corresponding to a branch
 #         """
-#         bodyNodeIndices = self.topology.getBranch(branchNumber).getBranchInfo()[
-#             "bodyNodeIndices"
+#         correspondingBodyNodeIndices = self.topology.getBranch(branchNumber).getBranchInfo()[
+#             "correspondingBodyNodeIndices"
 #         ]
-#         return bodyNodeIndices
+#         return correspondingBodyNodeIndices
 
 #     def getLeafBodyNodes(self):
 #         """
@@ -631,10 +652,10 @@ class BranchedDeformableLinearObject(BDLOTopology):
 #         return leafBodyNodes
 
 #     def getLeafBodyNodeIndices(self):
-#         bodyNodeIndices = []
+#         correspondingBodyNodeIndices = []
 #         for leafNode in self.topology.getLeafNodes():
-#             bodyNodeIndices.append(leafNode.getLeafNodeInfo()["bodyNodeIndex"])
-#         return bodyNodeIndices
+#             correspondingBodyNodeIndices.append(leafNode.getLeafNodeInfo()["bodyNodeIndex"])
+#         return correspondingBodyNodeIndices
 
 #     def getBranchPointBodyNodes(self):
 #         """
@@ -661,7 +682,7 @@ class BranchedDeformableLinearObject(BDLOTopology):
 #         """
 #         branchIndex = -1
 #         for i, branch in enumerate(self.topology.getBranches()):
-#             if bodyNodeIndex in branch.getBranchInfo()["bodyNodeIndices"]:
+#             if bodyNodeIndex in branch.getBranchInfo()["correspondingBodyNodeIndices"]:
 #                 return i
 #             else:
 #                 pass

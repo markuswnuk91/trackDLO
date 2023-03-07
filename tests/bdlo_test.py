@@ -15,7 +15,7 @@ except:
     print("Imports for BDLO testing failed.")
     raise
 
-visualize = True
+vis = True
 
 
 def runViewer(dartSkel):
@@ -125,16 +125,28 @@ def test_ModelGeneration_BranchedTopology():
             "name": "Test_BDLO_2",
         }
     )
+    if vis:
+        runViewer(testBDLO_2.skel)
 
-    runViewer(testBDLO_2.skel)
+
+def test_ModelGeneration_ElementaryGraph():
+    testBDLO_3 = BranchedDeformableLinearObject(
+        **{"adjacencyMatrix": testTopologyModel_3}
+    )
+    testBDLO_3.skel.setPosition(3, 0.4)
+    print("Elemetary topology has: {} branches".format(testBDLO_3.getNumBranches()))
+    print("Elemetary topology has: {} segments".format(testBDLO_3.getNumBodyNodes()))
+    for i, branch in enumerate(testBDLO_3.getBranches()):
+        print(
+            "Corresponding bodyNodes for branch {} are: {} segments".format(
+                i, testBDLO_3.getBodyNodeIndicesFromBranch(branch)
+            )
+        )
+    if vis:
+        runViewer(testBDLO_3.skel)
 
 
 def test_ICRA_TopologyGeneration():
-
-    testSpec_3 = BDLOTopology(testTopologyModel_3)
-    testBDLO_3 = BranchedDeformableLinearObject(testSpec_3)
-    testBDLO_3.skel.setPosition(3, 0.4)
-
     testSpec_ICRA = BDLOTopology(testTolologyModel_ICRA)
     testBDLO_ICRA = BranchedDeformableLinearObject(testSpec_ICRA, name="Test_BDLO_ICRA")
     testBDLO_ICRA.skel.setPosition(3, 0.5)
@@ -184,7 +196,7 @@ def test_ICRA_TopologyGeneration():
     # assert testBDLO_ICRA.topology.getBranch(0).getMemberNodes().getNodeInfo()
 
     # test getBranchBodyNodes
-    if visualize:
+    if vis:
         world = dart.simulation.World()
         node = dart.gui.osg.WorldNode(world)
         # Create world node and add it to viewer
@@ -212,5 +224,6 @@ if __name__ == "__main__":
 
     # test modelGeneration
     # test_ModelGeneration_SimpleTopology()
-    test_ModelGeneration_BranchedTopology()
+    # test_ModelGeneration_BranchedTopology()
+    test_ModelGeneration_ElementaryGraph()
     # test_branchedDeformableLinearObject()

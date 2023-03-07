@@ -37,7 +37,7 @@ class BDLOTopology(topologyModel):
         self,
         branchSpecs: list = None,
         specInfo: dict = None,
-        defaultNumBodyNodes=100,
+        defaultNumBodyNodes=30,
         defaultRadius=0.01,
         defaultDensity=1000,
         defaultColor=[0, 0, 1],

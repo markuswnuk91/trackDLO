@@ -30,20 +30,20 @@ class DeformableLinearObject(object):
 
     def __init__(
         self,
-        numSegments: int = 20,
-        length: float = 1,
-        radius: float = 0.01,
-        density: float = 1000,
-        name: str = None,
-        bendingStiffness: float = 1,
-        torsionalStiffness: float = 1,
-        bendingDampingCoeffs: float = 0.1,
-        torsionalDampingCoeffs: float = 0.1,
-        color: np.array = np.array([0, 0, 1]),
-        rootJointRestPosition: np.array = np.zeros(6),
-        gravity: bool = True,
-        collidable: bool = True,
-        adjacentBodyCheck: bool = False,
+        numSegments=None,
+        length=None,
+        radius=None,
+        density=None,
+        name=None,
+        bendingStiffness=None,
+        torsionalStiffness=None,
+        bendingDampingCoeffs=None,
+        torsionalDampingCoeffs=None,
+        color=None,
+        rootJointRestPositions=None,
+        gravity=None,
+        collidable=None,
+        adjacentBodyCheck=None,
         enableSelfCollisionCheck: bool = True,
         *args,
         **kwargs,
@@ -58,39 +58,43 @@ class DeformableLinearObject(object):
             self.name = name
             self.skel = dart.dynamics.Skeleton(name=self.name)
 
-        self.numSegments = numSegments
-        self.length = length
-        self.radius = radius
-        self.density = density
-        self.bendingStiffness = bendingStiffness
-        self.torsionalStiffness = torsionalStiffness
-        self.bendingDampingCoeffs = bendingDampingCoeffs
-        self.torsionalDampingCoeffs = torsionalDampingCoeffs
-        self.color = color
-        self.rootJointRestPosition = rootJointRestPosition
+        self.numSegments = 20 if numSegments is None else numSegments
+        self.length = 1 if length is None else length
+        self.radius = 0.01 if radius is None else radius
+        self.density = 1000 if density is None else density
+        self.bendingStiffness = 1 if bendingStiffness is None else bendingStiffness
+        self.torsionalStiffness = (
+            1 if torsionalStiffness is None else torsionalStiffness
+        )
+        self.bendingDampingCoeffs = (
+            0.1 if bendingDampingCoeffs is None else bendingDampingCoeffs
+        )
+        self.torsionalDampingCoeffs = (
+            0.1 if torsionalDampingCoeffs is None else torsionalDampingCoeffs
+        )
+        self.color = np.array([0, 0, 1]) if color is None else color
+        self.rootJointRestPositions = (
+            np.zeros(6) if rootJointRestPositions is None else rootJointRestPositions
+        )
+        self.gravity = True if gravity is None else gravity
+        self.collidable = True if collidable is None else collidable
+        self.adjacentBodyCheck = (
+            False if adjacentBodyCheck is None else adjacentBodyCheck
+        )
+        self.enableSelfCollisionCheck = (
+            True if enableSelfCollisionCheck is None else enableSelfCollisionCheck
+        )
 
         self.segmentLength = self.length / self.numSegments
-        self.adjacentBodyCheck = adjacentBodyCheck
-        self.enableSelfCollisionCheck = enableSelfCollisionCheck
         self.segmentLengths = []
         self.frames = {}
-
-        if gravity is None:
-            self.gravity = True
-        else:
-            self.gravity = gravity
-
-        if collidable is None:
-            self.collidable = True
-        else:
-            self.collidable = collidable
 
         self.makeRootBody(
             segmentLength=self.segmentLength,
             radius=self.radius,
             density=self.density,
             color=self.color,
-            restPositions=self.rootJointRestPosition,
+            restPositions=self.rootJointRestPositions,
         )
 
         for i in range(self.numSegments - 1):
@@ -134,12 +138,20 @@ class DeformableLinearObject(object):
         segmentLength: float,
         radius: float,
         density: float,
-        stiffnesses: np.array = np.zeros(6),
-        dampingCoeffs: np.array = np.zeros(6),
-        restPositions: np.array = np.zeros(6),
-        color: np.array = np.array([0, 0, 1]),
-        name: str = None,
+        stiffnesses=None,
+        dampingCoeffs=None,
+        restPositions=None,
+        color=None,
+        name=None,
     ):
+        restPositions = np.zeros(6) if restPositions is None else restPositions
+        stiffnesses = (
+            np.zeros(len(restPositions)) if stiffnesses is None else stiffnesses
+        )
+        dampingCoeffs = (
+            np.zeros(len(restPositions)) if dampingCoeffs is None else dampingCoeffs
+        )
+        color = np.array([0, 0, 1]) if color is None else color
 
         # rootJoint properties
         if len(restPositions) == 6:

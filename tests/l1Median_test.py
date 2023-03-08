@@ -76,7 +76,7 @@ def test_l1Median():
             "X": seedpoints,
             "h": h,
             "mu": mu,
-            "iterations": numIterations,
+            "max_iterations": numIterations,
         }
     )
     if vis:

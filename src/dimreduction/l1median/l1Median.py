@@ -27,30 +27,38 @@ class L1Median(DimensionalityReduction):
         support radius h defining the size of the supporting local neighborhood for L1-medial skeleton
     mu: float
         weighting parameter for repulsion force between seedpoints
+    hAnnealing (float):
+        annealing for support radius h
+    muAnnealing:
+        annealing for regularization parameter mu
     """
 
-    def __init__(self, h=None, mu=None, *args, **kwargs):
+    def __init__(
+        self,
+        h=None,
+        mu=None,
+        hReductionFactor=None,
+        hAnnealing=None,
+        muAnnealing=None,
+        *args,
+        **kwargs
+    ):
         super().__init__(*args, **kwargs)
-        self.h = 0.12 if h is None else h
+        self.h = self.get_h0(self.Y) if h is None else h
         self.mu = 0.35 if mu is None else mu
+        self.hReductionFactor = 0 if hReductionFactor is None else hReductionFactor
+        self.hAnnealing = 1 if hAnnealing is None else hAnnealing
+        self.muAnnealing = 1 if muAnnealing is None else muAnnealing
         self.iteration = 0
 
     def get_h0(self, points):
-        x_max = points[:, 0].max()
-        x_min = points[:, 0].min()
-
-        y_max = points[:, 1].max()
-        y_min = points[:, 1].min()
-
-        z_max = points[:, 2].max()
-        z_min = points[:, 2].min()
-
-        diagonal = (
-            (x_max - x_min) ** 2 + (y_max - y_min) ** 2 + (z_max - z_min) ** 2
-        ) ** 0.5
-
+        diagonal = 0
+        for d in range(0, self.D):
+            x_max = points[:, d].max()
+            x_min = points[:, d].min()
+            diagonal += (x_max - x_min) ** 2
+        diagonal **= 0.5
         Npoints = len(points)
-
         return 2 * diagonal / (Npoints ** (1.0 / 3))
 
     def get_thetas(self, r, h):
@@ -113,7 +121,7 @@ class L1Median(DimensionalityReduction):
         thetas = self.get_thetas(distance_matrix(X, X), h)
         sigmas = np.zeros(len(X))
         for i, x in enumerate(X):
-            C_i = np.zeros((3, 3))
+            C_i = np.zeros((self.D, self.D))
             for i_dash, x_dash in enumerate(np.delete(X, i, 0)):
                 C_i += thetas[i, i_dash] * np.outer(x, x_dash)
             lambdas, eigVecs = np.linalg.eig(C_i)
@@ -134,23 +142,21 @@ class L1Median(DimensionalityReduction):
         J = len(self.Y)  # number of input points
         I = len(self.T)  # number of seedpoints
 
+        h = self.hReductionFactor * self.h * self.hAnnealing**self.iteration
         alpha_matrix = np.zeros((I, J))
         beta_matrix = np.zeros((I, I))
 
         while self.iteration < self.max_iterations:
-            alpha_matrix = self.get_alphas(self.T, self.Y, self.h)
-            beta_matrix = self.get_betas(self.T, self.h)
-            sigmas = self.get_sigmas(self.T, self.h)
-            sum_J_qj_aij = np.column_stack(
-                (
-                    # sum over x dimension
-                    np.sum(alpha_matrix * self.Y[:, 0].transpose(), axis=1),
-                    # sum over y dimension
-                    np.sum(alpha_matrix * self.Y[:, 1].transpose(), axis=1),
-                    # sum over z dimension
-                    np.sum(alpha_matrix * self.Y[:, 2].transpose(), axis=1),
+
+            alpha_matrix = self.get_alphas(self.T, self.Y, h)
+            beta_matrix = self.get_betas(self.T, h)
+            sigmas = self.get_sigmas(self.T, h)
+
+            sum_J_qj_aij = np.ndarray((self.N, self.D))
+            for d in range(0, self.D):
+                sum_J_qj_aij[:, d] = np.sum(
+                    alpha_matrix * self.Y[:, d].transpose(), axis=1
                 )
-            )
             sum_J_aij = np.sum(alpha_matrix, axis=1)
             term1 = sum_J_qj_aij / sum_J_aij[:, None]  # mean shift term
 
@@ -161,7 +167,7 @@ class L1Median(DimensionalityReduction):
                     - np.transpose(np.tile(self.T, (I, 1, 1)), (1, 0, 2))
                 )
                 # multiply with beta factor along first dimension
-                * np.transpose(np.tile(beta_matrix, (3, 1, 1)), (2, 1, 0))
+                * np.transpose(np.tile(beta_matrix, (self.D, 1, 1)), (2, 1, 0))
                 # sum over first dimension to obtain agian Ix3 array
                 ,
                 axis=0,

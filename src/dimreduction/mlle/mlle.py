@@ -38,7 +38,7 @@ class Mlle:
         solve: returns Points in reduced coordinates Y
     """
 
-    def __init__(self, X, k=None, d=None):
+    def __init__(self, X, k=None, d=None, tol=None, solverType=None, *args, **kwargs):
         if type(X) is not np.ndarray or X.ndim != 2:
             raise ValueError("The target point cloud (X) must be at a 2D numpy array.")
         if X.shape[0] < X.shape[1]:
@@ -82,7 +82,8 @@ class Mlle:
         self.k = k
         self.k = 5 if k is None else k
         self.d = 2 if d is None else d
-        self.tol = 1e-3  # regularization parameter
+        self.tol = 1e-3 if tol is None else tol  # regularization parameter
+        self.solverType = "dense" if solverType is None else solverType
 
     def _computePhi(self):
         (N, D) = self.X.shape
@@ -171,12 +172,7 @@ class Mlle:
     def solve(self):
         # step 4
         Phi_ = self._computePhi()
-        if self.Phi.shape[0] > 200 and self.d + 1 < 10:
-            solver = "sparse"
-        else:
-            solver = "dense"
-
-        if solver == "sparse":
+        if self.solverType == "sparse":
             try:
                 tol = 1e-6
                 max_iter = 100
@@ -191,12 +187,12 @@ class Mlle:
                     "Error in determining null-space with sparse solver. Error message: "
                     "'%s'. Note that solving the eigenvalue problem can fail when the "
                     "weight matrix is singular or otherwise ill-behaved. In that "
-                    "case, solver='dense' is recommended."
+                    "case, solverType='dense' is recommended."
                 ) from e
             # index = np.argsort(np.abs(eiVals))
             # Y = eiVecs[:, index[1:]]
             Y = eiVecs[:, 1:]
-        elif solver == "dense":
+        elif self.solverType == "dense":
             try:
                 eiVals, eiVecs = eigh(
                     Phi_, subset_by_index=[1, self.d], overwrite_a=True
@@ -207,6 +203,6 @@ class Mlle:
                 ) from e
             Y = eiVecs
         else:
-            raise ValueError("Unrecognized solver '%s'" % solver)
+            raise ValueError("Unrecognized solver '%s'" % self.solverType)
 
         return Y

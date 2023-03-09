@@ -3,7 +3,6 @@ import os
 import numpy as np
 import numbers
 from warnings import warn
-
 from scipy.sparse.csgraph import minimum_spanning_tree, shortest_path
 from scipy.spatial import distance_matrix
 
@@ -21,48 +20,63 @@ class TopologyExtraction(topologyModel):
 
     Attributes:
     X: numpy array
-        NxD array of source points
+        NxD array of source points for the graph reconstruction. Should be a reduced point set where points are unordered but well aligned
+
+    Y: numpy array
+        MxD array of unordered, unstructured data points from which the data points X have been extracted
 
     N: int
         Number of source points
 
+    M: int
+        Number of data points
+
     D: int
-        Dimensionality of source and target points
+        Dimensionality of source and data points
     """
 
-    def __init__(self, X, *args, **kwargs):
+    def __init__(self, X, featureMatrix=None, *args, **kwargs):
+
         if type(X) is not np.ndarray or X.ndim != 2:
-            raise ValueError("The source point cloud (X) must be at a 2D numpy array.")
+            raise ValueError("X must be at a 2D numpy array.")
         if X.shape[0] < X.shape[1]:
+            raise ValueError("C must be a  mus be square.")
 
-            raise ValueError(
-                "The dimensionality is larger than the number of points. Possibly the wrong orientation of X and Y."
-            )
+        if featureMatrix is not None:
+            if type(featureMatrix) is not np.ndarray or featureMatrix.ndim != 2:
+                raise ValueError("feature matrix must be at a 2D numpy array.")
+            if (
+                featureMatrix.shape[0] != featureMatrix.shape[1]
+                or featureMatrix.shape[0] != X.shape[0]
+            ):
+                raise ValueError(
+                    "The feature matrix must be square and same have the same length as X. Instead got {}".format(
+                        featureMatrix.shape[0]
+                    )
+                )
+
         self.X = X
-        (self.N, self.D) = self.X.shape
-        adjacencyMatrix = self.findMinimalSpanningTree(self.X)
-        super().__init__(adjacencyMatrix=adjacencyMatrix, *args, **kwargs)
+        self.featureMatrix = (
+            distance_matrix(X, X) if featureMatrix is None else featureMatrix
+        )
+        adjacencyMatrix = self.findMinimalSpanningTree(self.featureMatrix)
+        super().__init__(adjacenyMatrix=adjacencyMatrix, *args, **kwargs)
 
-    def findMinimalSpanningTree(self, X):
+    def findMinimalSpanningTree(self, featureMatrix):
         """Returns the minimal spanning tree betwwen the points given in X
 
         Args:
-            X (np.array): Points over which the minimum spanning tree shoud be found.
+            featureMatrix(np.array): feature Matrix containing the cost between all nodes
 
         Returns:
             symmetricAdjacencyMatrix(csgraph): symmetric adjacencyMatrix
         """
-        adjacencyMatrix = minimum_spanning_tree(distance_matrix(X, X))
+        adjacencyMatrix = minimum_spanning_tree(featureMatrix)
         symmetricAdjacencyMatrix = (
             adjacencyMatrix.toarray().astype(float)
             + adjacencyMatrix.toarray().astype(float).T
         )
         return symmetricAdjacencyMatrix
-
-    def extractTopologyRepresentation(self):
-        adjacencyMatrix = self.findMinimalSpanningTree(self.X)
-        topology = topologyModel(adjacencyMatrix)
-        return topology
 
     def getAdjacentPointPairs(self):
         pointPairs = []

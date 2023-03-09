@@ -5,13 +5,14 @@ from functools import partial
 import matplotlib.pyplot as plt
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn import manifold
-
+from scipy.spatial import distance_matrix
 
 try:
     sys.path.append(os.getcwd().replace("/app", ""))
     from src.dimreduction.som.som import SelfOrganizingMap
     from src.dimreduction.l1median.l1Median import L1Median
     from src.dimreduction.mlle.mlle import Mlle
+    from src.dimreduction.mlle.lle import Lle
     from src.localization.topologyExtraction.topologyExtraction import (
         TopologyExtraction,
     )
@@ -32,6 +33,7 @@ except:
 # visualization
 visControl = {
     "visualizeInput": True,
+    "visualizeRandomSample": True,
     "visualizeDimReducedPointSet": True,
     "visualizeReducedPointSet": True,
     "visualizeFilteredPointSet": True,
@@ -53,7 +55,7 @@ dataPath = dataSrc[sourceSample]
 
 # downsampling
 downsamplingInputRatio = 1 / 3  # downsampling of input point set
-numSeedPoints = 60  # downsampling for obtaining seedpoints
+numSeedPoints = 100  # downsampling for obtaining seedpoints
 
 # outlier filtering
 numNeighbors = 15
@@ -62,36 +64,41 @@ contamination = 0.1
 # downsampling algorithm parameters
 somParameters = {
     "alpha": 1,
-    "numNearestNeighbors": 10,
-    "numNearestNeighborsAnnealing": 0.7,
-    "sigma2": 0.05,
+    "numNearestNeighbors": 30,
+    "numNearestNeighborsAnnealing": 0.8,
+    "sigma2": 0.03,
     "alphaAnnealing": 0.9,
-    "sigma2Annealing": 0.9,
-    "kernelMethod": True,
-    "max_iterations": 30,
+    "sigma2Annealing": 0.8,
+    "kernelMethod": False,
+    "max_iterations": 3,
 }
 
 l1Parameters = {
-    #    "h": 0.001,
-    "hReductionFactor": 0.9,
-    "mu": 0.3,
-    "max_iterations": 30,
+    "h": 0.12,
+    "hAnnealing": 0.8,
+    "hReductionFactor": 1,
+    "mu": 0.35,
+    "max_iterations": 3,
 }
 
 # mlle parameters,
-numSeedPoints_MLLE = 1500
-# mlleParameters = {
-#     "k": 35,
-#     "d": 2,
-#     "tol": 1e-2,
-# }
+numSeedPoints_MLLE = numSeedPoints
 mlleParameters = {
-    "method": "modified",
-    "n_neighbors": 100,
-    "n_components": 3,
-    "eigen_solver": "auto",
-    "random_state": 0,
+    "k": 30,
+    "d": 2,
+    "tol": 1e-3,
+    "solverType": "dense",
+    "mapping": "power",
+    "sigma": 0.1,
+    "exponent": 2,
 }
+# mlleParameters = {
+#     "method": "modified",
+#     "n_neighbors": int(0.9 * numSeedPoints),
+#     "n_components": 2,
+#     "eigen_solver": "auto",
+#     "random_state": 0,
+# }
 
 # algorithm order
 reductionOrder = {
@@ -168,24 +175,34 @@ def readData(path):
 def samplePointsRandom(pointSet, numSeedPoints):
     random_indices = random.sample(range(0, len(pointSet)), numSeedPoints)
     seedPoints = pointSet[random_indices, :]
+    if visControl["visualizeRandomSample"]:
+        fig, ax = setupVisualization(seedPoints.shape[1])
+        plotPointSet(ax=ax, X=seedPoints)
+        set_axes_equal(ax)
+        plt.show(block=False)
     return seedPoints
 
 
 def reduceDimension(pointSet, dimReductionPrameters: dict):
-    # dimReductionPrameters["X"] = pointSet
-    # mlle = Mlle(**dimReductionPrameters)
+    dimReductionPrameters["X"] = pointSet
+    mlle = Mlle(**dimReductionPrameters)
+    reconstructedPointSet = mlle.solve()
+    # mlle = Lle(**dimReductionPrameters)
     # reconstructedPointSet = mlle.solve()
-    mlle = manifold.LocallyLinearEmbedding(**mlleParameters)
-    reconstructedPointSet = mlle.fit_transform(pointSet)
+    # mlle = manifold.LocallyLinearEmbedding(**mlleParameters)
+    # reconstructedPointSet = mlle.fit_transform(pointSet)
 
-    if visControl["visualizeDimReducedPointSet"]:
+    if (
+        visControl["visualizeDimReducedPointSet"]
+        and reconstructedPointSet.shape[1] <= 3
+    ):
         fig, ax = setupVisualization(reconstructedPointSet.shape[1])
         plotPointSet(ax=ax, X=reconstructedPointSet)
         set_axes_equal(ax)
         plt.show(block=False)
     else:
         pass
-    return reconstructedPointSet
+    return (reconstructedPointSet, mlle)
 
 
 def reducePointSet(
@@ -207,7 +224,7 @@ def reducePointSet(
         myReduction.registerCallback(visCallback)
 
     reducedPoints = myReduction.calculateReducedRepresentation()
-    return reducedPoints
+    return reducedPoints, myReduction
 
 
 def filterOutliers(pointSet):
@@ -234,10 +251,11 @@ def filterOutliers(pointSet):
     return filteredPointSet
 
 
-def extractTopology(pointSet):
+def extractTopology(pointSet, featureMatrix=None):
     topology = TopologyExtraction(
         **{
             "X": pointSet,
+            "featureMatrix": featureMatrix,
         }
     )
     if visControl["visualizeTopology"]:
@@ -279,6 +297,16 @@ def eval_MLLE():
     plt.show(block=True)
 
 
+def eval_MLLE_4D_2D():
+    inputPointSet = readData(dataPath)
+    samplePoints = samplePointsRandom(inputPointSet, numSeedPoints_MLLE)
+    mlleParameters["d"] = 5
+    reconstrucedPointSet = reduceDimension(samplePoints, mlleParameters)
+    mlleParameters["d"] = 3
+    reconstrucedPointSet = reduceDimension(reconstrucedPointSet, mlleParameters)
+    plt.show(block=True)
+
+
 def eval_SOM_L1():
     inputPointSet = readData(dataPath)
     seedPoints = samplePointsRandom(inputPointSet, numSeedPoints)
@@ -293,8 +321,7 @@ def eval_SOM_L1_MLLE():
     seedPoints = samplePointsRandom(inputPointSet, numSeedPoints)
     reducedPointSet = reducePointSet(inputPointSet, seedPoints, "som", somParameters)
     reducedPointSet = reducePointSet(inputPointSet, reducedPointSet, "l1", l1Parameters)
-    filteredPointSet = filterOutliers(reducedPointSet)
-    reconstructedPointSet = reduceDimension(filteredPointSet, mlleParameters)
+    reconstructedPointSet = reduceDimension(reducedPointSet, mlleParameters)
     extractTopology(reconstructedPointSet)
 
 
@@ -313,10 +340,36 @@ def eval_MLLE_SOM_L1():
     extractTopology(filteredPointSet)
 
 
+def eval_SOM_L1_MLLEWeightedFeatureMatrix():
+    inputPointSet = readData(dataPath)
+    dimreducedPointSet, mlle = reduceDimension(inputPointSet, mlleParameters)
+    seedPoints = samplePointsRandom(inputPointSet, numSeedPoints)
+    reducedPointSet, som = reducePointSet(
+        inputPointSet, seedPoints, "som", somParameters
+    )
+    # filteredPointSet = filterOutliers(reducedPointSet)
+    reducedPointSet, l1Median = reducePointSet(
+        inputPointSet, reducedPointSet, "l1", l1Parameters
+    )
+
+    # build feature matrix
+    distanceMatrix = distance_matrix(reducedPointSet, reducedPointSet)
+    C = l1Median.getCorrespondences()
+    mlleDistances = np.zeros((reducedPointSet.shape[0], reducedPointSet.shape[0]))
+    Phi = mlle.Phi
+    for i, x1 in enumerate(reducedPointSet):
+        for j, x2 in enumerate(reducedPointSet):
+            mlleDistances[i, j] = np.sum(distance_matrix(Phi[C[i], :], Phi[C[j], :]))
+    featureMatrix = distanceMatrix * mlleDistances
+    extractTopology(reducedPointSet, featureMatrix)
+
+
 if __name__ == "__main__":
     # eval_SOM()
     # eval_L1()
     # eval_MLLE()
     # eval_SOM_L1()
     # eval_SOM_L1_MLLE()  # seems not useful
-    eval_MLLE_SOM_L1()
+    # eval_MLLE_SOM_L1()
+    # eval_MLLE_4D_2D()
+    eval_SOM_L1_MLLEWeightedFeatureMatrix()

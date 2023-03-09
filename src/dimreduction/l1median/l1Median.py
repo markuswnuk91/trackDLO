@@ -40,15 +40,23 @@ class L1Median(DimensionalityReduction):
         hReductionFactor=None,
         hAnnealing=None,
         muAnnealing=None,
+        densityCompensation=None,
+        h_d=None,
         *args,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
         self.h = self.get_h0(self.Y) if h is None else h
         self.mu = 0.35 if mu is None else mu
-        self.hReductionFactor = 0 if hReductionFactor is None else hReductionFactor
+        self.hReductionFactor = 1 if hReductionFactor is None else hReductionFactor
         self.hAnnealing = 1 if hAnnealing is None else hAnnealing
         self.muAnnealing = 1 if muAnnealing is None else muAnnealing
+        self.densityCompensation = (
+            False if densityCompensation is None else densityCompensation
+        )
+        self.h_d = self.h / 2 if h_d is None else h_d
+        self.localDensity_matrix = self.get_weightedLocalDensitiy()
+        self.h_min = 1e-2
         self.iteration = 0
 
     def get_h0(self, points):
@@ -60,6 +68,12 @@ class L1Median(DimensionalityReduction):
         diagonal **= 0.5
         Npoints = len(points)
         return 2 * diagonal / (Npoints ** (1.0 / 3))
+
+    def get_weightedLocalDensitiy(self):
+        distances = distance_matrix(self.Y, self.Y)
+        theta_pipj = np.exp((-(distances**2)) / ((self.h_d / 2) ** 2))
+        localDensity_matrix = np.sum(theta_pipj, axis=1)
+        return localDensity_matrix
 
     def get_thetas(self, r, h):
         """
@@ -143,6 +157,9 @@ class L1Median(DimensionalityReduction):
         I = len(self.T)  # number of seedpoints
 
         h = self.hReductionFactor * self.h * self.hAnnealing**self.iteration
+        if h <= self.h_min:
+            h = self.h_min
+
         alpha_matrix = np.zeros((I, J))
         beta_matrix = np.zeros((I, I))
 
@@ -153,11 +170,14 @@ class L1Median(DimensionalityReduction):
             sigmas = self.get_sigmas(self.T, h)
 
             sum_J_qj_aij = np.ndarray((self.N, self.D))
+            if self.densityCompensation:
+                alpha_matrix *= self.localDensity_matrix
             for d in range(0, self.D):
                 sum_J_qj_aij[:, d] = np.sum(
                     alpha_matrix * self.Y[:, d].transpose(), axis=1
                 )
             sum_J_aij = np.sum(alpha_matrix, axis=1)
+
             term1 = sum_J_qj_aij / sum_J_aij[:, None]  # mean shift term
 
             sum_Id_xixid_betaid = np.sum(

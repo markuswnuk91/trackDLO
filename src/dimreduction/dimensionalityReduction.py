@@ -83,5 +83,30 @@ class DimensionalityReduction(object):
             "Method for calculating the reduced representation should be defined in child classes."
         )
 
+    def getCorrespondences(self):
+        """Returns the correspondences of the reduced point set T to the source points Y
+
+        Returns:
+        C (list(np.array)): array of correspondances such that Y[C[0],:] are the points corresponding to T[0,:]
+        """
+        C = []
+        distances = distance_matrix(self.T, self.Y)
+        correspondingIndices = np.argmin(distances, axis=0)
+        for i in range(0, self.N):
+            C.append(np.where(correspondingIndices == i)[0])
+        return C
+
+    def getCorrespondingPoints(self, i):
+        """Returns the corresponding source points in Y for a target point in T.
+
+        Input
+            i (int):
+                index of the reduced point T for which the corresponding points should be returned.
+        Returns
+            YCorresponding: re
+        """
+        C = self.getCorrespondences()
+        return self.Y[C[i]]
+
     def registerCallback(self, callback):
         self.callback = callback

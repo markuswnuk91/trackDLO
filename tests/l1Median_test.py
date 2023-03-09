@@ -2,13 +2,14 @@ import os, sys
 import numpy as np
 import random
 from functools import partial
+import matplotlib
 import matplotlib.pyplot as plt
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
     from src.dimreduction.l1median.l1Median import L1Median
     from src.sensing.loadPointCloud import readPointCloudFromPLY
-    from src.visualization.plot3D import plotPointSets
+    from src.visualization.plot3D import *
 except:
     print("Imports for L1Median Test failed.")
     raise
@@ -59,8 +60,9 @@ def visualizationCallback(
         xSize=10,
         # yMarkerStyle=".",
         yAlpha=0.01,
-        waitTime=0.5,
     )
+    plt.draw()
+    plt.pause(0.1)
     if savePath is not None:
         fig.savefig(savePath + fileName + "_" + str(classHandle.iter) + ".png")
 
@@ -86,5 +88,57 @@ def test_l1Median():
     print(l1MedianPoints)
 
 
+def test_correspondanceEstimation():
+    testCloud = readPointCloudFromPLY(dataPath)[:, :3]
+    numSeedpoints = int(len(testCloud) * sampleRatio)
+    random_indices = random.sample(range(0, len(testCloud)), numSeedpoints)
+    seedpoints = testCloud[random_indices, :]
+    testReduction = L1Median(
+        **{
+            "Y": testCloud,
+            "X": seedpoints,
+            "h": h,
+            "mu": mu,
+            "max_iterations": 20,
+        }
+    )
+    testCorrespondances = testReduction.getCorrespondences()
+
+    if vis:
+        visCallback = setupVisualizationCallback(testReduction)
+        testReduction.registerCallback(visCallback)
+    l1MedianPoints = testReduction.calculateReducedRepresentation()
+
+    if vis:
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        # colormap
+        colorMap = matplotlib.colormaps["viridis"]
+        lowerLim = 0
+        upperLim = np.round(testReduction.N)
+        norm = matplotlib.colors.Normalize(vmin=lowerLim, vmax=upperLim)  # Normalizer
+        sm = plt.cm.ScalarMappable(cmap=colorMap, norm=norm)  # creating ScalarMappable
+        for i, T in enumerate(testReduction.T):
+            Yc = testReduction.getCorrespondingPoints(i)
+            setColor = [sm.to_rgba(i)[0], sm.to_rgba(i)[1], sm.to_rgba(i)[2]]
+            plotPointSet(
+                ax=ax,
+                X=Yc,
+                color=setColor,
+                alpha=0.05,
+                size=5,
+            )
+            plotPoint(
+                ax=ax,
+                x=T,
+                color=setColor,
+                edgeColor=setColor,
+                size=10,
+            )
+        set_axes_equal(ax)
+        plt.show(block=True)
+
+
 if __name__ == "__main__":
-    test_l1Median()
+    # test_l1Median()
+    test_correspondanceEstimation()

@@ -132,13 +132,23 @@ def plotPoint(
     ax,
     x,
     color=[0, 0, 1],
+    edgeColor=None,
     alpha=1,
     label: str = None,
     size=20,
 ):
+    edgeColor = color if edgeColor is None else edgeColor
     if len(x) == 3:
         if label is None:
-            ax.scatter(x[0], x[1], x[2], color=color, alpha=alpha, s=size)
+            ax.scatter(
+                x[0],
+                x[1],
+                x[2],
+                color=color,
+                alpha=alpha,
+                s=size,
+                edgecolors=edgeColor,
+            )
         else:
             ax.scatter(
                 x[0],
@@ -148,11 +158,13 @@ def plotPoint(
                 label=label,
                 alpha=alpha,
                 s=size,
-                edgecolor=None,
+                edgecolors=edgeColor,
             )
     elif len(x) == 2:
         if label is None:
-            ax.scatter(x[0], x[1], color=color, alpha=alpha, s=size)
+            ax.scatter(
+                x[0], x[1], color=color, alpha=alpha, s=size, edgecolors=edgeColor
+            )
         else:
             ax.scatter(
                 x[0],
@@ -161,7 +173,7 @@ def plotPoint(
                 label=label,
                 alpha=alpha,
                 s=size,
-                edgecolor=None,
+                edgecolors=edgeColor,
             )
 
 

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn import manifold
 from scipy.spatial import distance_matrix
+from sklearn import preprocessing
 
 try:
     sys.path.append(os.getcwd().replace("/app", ""))
@@ -24,6 +25,7 @@ try:
         plotLine,
         set_axes_equal,
     )
+    from src.utils.utils import knn
 except:
     print("Imports for application topologyReconstructionFromPointCloud failed.")
     raise
@@ -55,7 +57,7 @@ dataPath = dataSrc[sourceSample]
 
 # downsampling
 downsamplingInputRatio = 1 / 3  # downsampling of input point set
-numSeedPoints = 100  # downsampling for obtaining seedpoints
+numSeedPoints = 30  # downsampling for obtaining seedpoints
 
 # outlier filtering
 numNeighbors = 15
@@ -70,7 +72,7 @@ somParameters = {
     "alphaAnnealing": 0.9,
     "sigma2Annealing": 0.8,
     "kernelMethod": False,
-    "max_iterations": 3,
+    "max_iterations": 30,
 }
 
 l1Parameters = {
@@ -78,7 +80,7 @@ l1Parameters = {
     "hAnnealing": 0.8,
     "hReductionFactor": 1,
     "mu": 0.35,
-    "max_iterations": 3,
+    "max_iterations": 30,
 }
 
 # mlle parameters,
@@ -111,7 +113,7 @@ def setupVisualization(dim):
     if dim == 3:
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
-    elif dim == 2:
+    elif dim <= 2:
         fig = plt.figure()
         ax = fig.add_subplot()
     # set axis limits
@@ -194,10 +196,26 @@ def reduceDimension(pointSet, dimReductionPrameters: dict):
 
     if (
         visControl["visualizeDimReducedPointSet"]
-        and reconstructedPointSet.shape[1] <= 3
+        and reconstructedPointSet.shape[1] == 3
     ):
         fig, ax = setupVisualization(reconstructedPointSet.shape[1])
         plotPointSet(ax=ax, X=reconstructedPointSet)
+        set_axes_equal(ax)
+        plt.show(block=False)
+    elif (
+        visControl["visualizeDimReducedPointSet"]
+        and reconstructedPointSet.shape[1] == 2
+    ):
+        fig, ax = setupVisualization(reconstructedPointSet.shape[1])
+        plotPointSet(ax=ax, X=reconstructedPointSet)
+        set_axes_equal(ax)
+        plt.show(block=False)
+    elif (
+        visControl["visualizeDimReducedPointSet"]
+        and reconstructedPointSet.shape[1] == 1
+    ):
+        fig, ax = setupVisualization(reconstructedPointSet.shape[1])
+        plotPointSet(ax=ax, X=np.hstack((reconstructedPointSet, reconstructedPointSet)))
         set_axes_equal(ax)
         plt.show(block=False)
     else:
@@ -310,8 +328,10 @@ def eval_MLLE_4D_2D():
 def eval_SOM_L1():
     inputPointSet = readData(dataPath)
     seedPoints = samplePointsRandom(inputPointSet, numSeedPoints)
-    reducedPointSet = reducePointSet(inputPointSet, seedPoints, "som", somParameters)
-    reducedPointSet = reducePointSet(inputPointSet, reducedPointSet, "l1", l1Parameters)
+    reducedPointSet, _ = reducePointSet(inputPointSet, seedPoints, "som", somParameters)
+    reducedPointSet, _ = reducePointSet(
+        inputPointSet, reducedPointSet, "l1", l1Parameters
+    )
     filteredPointSet = filterOutliers(reducedPointSet)
     extractTopology(filteredPointSet)
 
@@ -342,7 +362,7 @@ def eval_MLLE_SOM_L1():
 
 def eval_SOM_L1_MLLEWeightedFeatureMatrix():
     inputPointSet = readData(dataPath)
-    dimreducedPointSet, mlle = reduceDimension(inputPointSet, mlleParameters)
+    # dimreducedPointSet, mlle = reduceDimension(inputPointSet, mlleParameters)
     seedPoints = samplePointsRandom(inputPointSet, numSeedPoints)
     reducedPointSet, som = reducePointSet(
         inputPointSet, seedPoints, "som", somParameters
@@ -353,15 +373,113 @@ def eval_SOM_L1_MLLEWeightedFeatureMatrix():
     )
 
     # build feature matrix
-    distanceMatrix = distance_matrix(reducedPointSet, reducedPointSet)
+    # approach over Alignment Matrix
+    # distanceMatrix = distance_matrix(reducedPointSet, reducedPointSet)
+    # C = l1Median.getCorrespondences()
+    # mlleDistances = np.zeros((reducedPointSet.shape[0], reducedPointSet.shape[0]))
+    # Phi = mlle.Phi
+    # for i, x1 in enumerate(reducedPointSet):
+    #     for j, x2 in enumerate(reducedPointSet):
+    #         mlleDistances[i, j] = np.sum(distance_matrix(Phi[C[i], :], Phi[C[j], :]))
+    # featureMatrix = distanceMatrix * mlleDistances
+
     C = l1Median.getCorrespondences()
-    mlleDistances = np.zeros((reducedPointSet.shape[0], reducedPointSet.shape[0]))
-    Phi = mlle.Phi
-    for i, x1 in enumerate(reducedPointSet):
-        for j, x2 in enumerate(reducedPointSet):
-            mlleDistances[i, j] = np.sum(distance_matrix(Phi[C[i], :], Phi[C[j], :]))
-    featureMatrix = distanceMatrix * mlleDistances
+
+    # # find knn
+    # (J, _) = knn(
+    #     reducedPointSet, reducedPointSet, 12
+    # )  # one more because knn includes each point itself.
+    # mlleTransformParameters = {
+    #     "k": 13 ,
+    #     "d": 1,
+    #     "tol": 1e-3,
+    #     "solverType": "dense",
+    # }
+    # # approach over local MLLE
+    # distanceMatrix = np.ones((reducedPointSet.shape[0], reducedPointSet.shape[0]))
+    # mlleDistances = np.ones((reducedPointSet.shape[0], reducedPointSet.shape[0]))
+    # for i, indices in enumerate(J):
+    #     mlleIndices = {}
+    #     knnCorrespondingPointList = [reducedPointSet[indices, :]]
+    #     for j, idx in enumerate(indices):
+    #         knnCorrespondingPointList.append(inputPointSet[C[idx], :])
+    #         startIdx = len(mlleIndices)
+    #         endIdx = startIdx + len(C[idx])
+    #         mlleIndices[str(idx)] = list(range(startIdx, endIdx))
+
+    #     (mlleTransformedCorrespondingPoints, _) = reduceDimension(
+    #         np.vstack(knnCorrespondingPointList), mlleTransformParameters
+    #     )
+    #     sumMlleDistances = 0
+    #     sumSpatialDistances = 0
+    #     for j, idx in enumerate(indices):
+    #         mlleDistances[i, idx] = np.linalg.norm(
+    #             mlleTransformedCorrespondingPoints[0, :]
+    #             - mlleTransformedCorrespondingPoints[j, :]
+    #         )
+    #         sumMlleDistances += mlleDistances[i, idx]
+    #         distanceMatrix[i, idx] = np.linalg.norm(
+    #             reducedPointSet[i, :] - reducedPointSet[idx, :]
+    #         )
+    #         sumSpatialDistances += distanceMatrix[i, idx]
+
+    #     for j, idx in enumerate(indices):
+    #         mlleDistances[i, idx] = mlleDistances[i, idx] / sumMlleDistances
+    #         distanceMatrix[i, idx] = distanceMatrix[i, idx] / sumSpatialDistances
+
+    # mlleCenter_i = (
+    #     1
+    #     / len(mlleIndices[str(i)])
+    #     * np.sum(mlleTransformedCorrespondingPoints[mlleIndices[str(i)]])
+    # )
+    # sumMlleDistances = 0
+    # for j, idx in enumerate(indices):
+    #     mlleCenter_idx = (
+    #         1
+    #         / len(mlleIndices[str(idx)])
+    #         * np.sum(mlleTransformedCorrespondingPoints[mlleIndices[str(idx)]])
+    #     )
+    #     mlleDistances[i, idx] = np.linalg.norm(mlleCenter_idx - mlleCenter_i)
+    #     sumMlleDistances += mlleDistances[i, idx]
+
+    # for j, idx in enumerate(indices):
+    #     mlleDistances[i, idx] = mlleDistances[i, idx] / sumMlleDistances
+
+    # approach: adding alignment matrix as a feature
+    # create combined point set
+    mlleTestParams = {
+        "k": 300,
+        "d": 3,
+        "tol": 1e-3,
+        "solverType": "dense",
+    }
+    combinedPointSet = np.vstack((reducedPointSet, inputPointSet))
+    dimreducedPointSet, mlle = reduceDimension(combinedPointSet, mlleTestParams)
+    min_max_scaler = preprocessing.MinMaxScaler()
+    reducedPointSetNormalized = min_max_scaler.fit_transform(reducedPointSet)
+    dimreducedPointSetNormalized = min_max_scaler.fit_transform(dimreducedPointSet)
+    mlleAlignmentMatrixNormalized = preprocessing.normalize(
+        mlle.Phi[0 : len(reducedPointSet), :]
+    )
+    mlleAlignmentFeature = (
+        np.ones(mlleAlignmentMatrixNormalized.shape) - mlleAlignmentMatrixNormalized
+    )
+    # featureVector = np.hstack(
+    #     (
+    #         reducedPointSetNormalized,
+    #         dimreducedPointSetNormalized[0 : len(reducedPointSet), :],
+    #     )
+    # )
+    featureVector = np.hstack(
+        (
+            reducedPointSetNormalized,
+            mlleAlignmentFeature,
+        )
+    )
+    featureMatrix = distance_matrix(featureVector, featureVector)
+
     extractTopology(reducedPointSet, featureMatrix)
+    print("End")
 
 
 if __name__ == "__main__":

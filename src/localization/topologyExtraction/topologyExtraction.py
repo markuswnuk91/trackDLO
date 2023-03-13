@@ -60,7 +60,7 @@ class TopologyExtraction(topologyModel):
             distance_matrix(X, X) if featureMatrix is None else featureMatrix
         )
         adjacencyMatrix = self.findMinimalSpanningTree(self.featureMatrix)
-        super().__init__(adjacenyMatrix=adjacencyMatrix, *args, **kwargs)
+        super().__init__(adjacencyMatrix=adjacencyMatrix, *args, **kwargs)
 
     def findMinimalSpanningTree(self, featureMatrix):
         """Returns the minimal spanning tree betwwen the points given in X

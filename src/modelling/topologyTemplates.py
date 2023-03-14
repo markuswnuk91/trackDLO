@@ -1,7 +1,7 @@
 import numpy as np
 
 
-topologyICRA = np.array(
+topologyGraph_ICRA = np.array(
     [
         [0, 0.175, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0.175, 0, 0.08, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -24,3 +24,5 @@ topologyICRA = np.array(
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.19, 0],
     ]
 )
+
+topologyGraph_IILS = np.array([])

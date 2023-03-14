@@ -26,6 +26,7 @@ try:
         set_axes_equal,
     )
     from src.utils.utils import knn
+    from src.utils.utils import sqdistance_matrix
 except:
     print("Imports for application topologyReconstructionFromPointCloud failed.")
     raise
@@ -47,7 +48,7 @@ save = False  # if data  should be saved under the given savepath
 savePath = "tests/testdata/topologyExtraction/topologyExtractionTestSet.txt"
 
 # source data
-sourceSample = 2
+sourceSample = 1
 dataSrc = [
     "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_3D_DLO/pointcloud_1.ply",
     "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_2.ply",
@@ -57,7 +58,7 @@ dataPath = dataSrc[sourceSample]
 
 # downsampling
 downsamplingInputRatio = 1 / 3  # downsampling of input point set
-numSeedPoints = 30  # downsampling for obtaining seedpoints
+numSeedPoints = 70  # downsampling for obtaining seedpoints
 
 # outlier filtering
 numNeighbors = 15
@@ -360,6 +361,52 @@ def eval_MLLE_SOM_L1():
     extractTopology(filteredPointSet)
 
 
+def eval_LocalDensityBasedFeatureMatrix():
+    inputPointSet = readData(dataPath)
+    # dimreducedPointSet, mlle = reduceDimension(inputPointSet, mlleParameters)
+    seedPoints = samplePointsRandom(inputPointSet, numSeedPoints)
+    reducedPointSet, som = reducePointSet(
+        inputPointSet, seedPoints, "som", somParameters
+    )
+    # filteredPointSet = filterOutliers(reducedPointSet)
+    reducedPointSet, l1Median = reducePointSet(
+        inputPointSet, reducedPointSet, "l1", l1Parameters
+    )
+
+    distances = distance_matrix(reducedPointSet, reducedPointSet)
+
+    h_d = 0.001
+    localDensities = np.ones((reducedPointSet.shape[0], reducedPointSet.shape[0]))
+    for i, xi in enumerate(reducedPointSet):
+        for j, xj in enumerate(reducedPointSet):
+            densityCheckPoint = xi + 0.5 * (xj - xi)
+            localDensity = 1 + np.sum(
+                np.exp(
+                    (
+                        -(
+                            distance_matrix(
+                                np.reshape(
+                                    densityCheckPoint, (-1, reducedPointSet.shape[1])
+                                ),
+                                inputPointSet,
+                            )
+                            ** 2
+                        )
+                    )
+                    / ((h_d / 2) ** 2)
+                )
+            )
+            localDensities[i, j] = localDensity
+
+    # build feature matrix
+    C = l1Median.getCorrespondences()
+
+    featureMatrix = distances * localDensities
+
+    extractTopology(reducedPointSet, featureMatrix)
+    print("End")
+
+
 def eval_SOM_L1_MLLEWeightedFeatureMatrix():
     inputPointSet = readData(dataPath)
     # dimreducedPointSet, mlle = reduceDimension(inputPointSet, mlleParameters)
@@ -486,8 +533,9 @@ if __name__ == "__main__":
     # eval_SOM()
     # eval_L1()
     # eval_MLLE()
-    # eval_SOM_L1()
+    eval_SOM_L1()
     # eval_SOM_L1_MLLE()  # seems not useful
     # eval_MLLE_SOM_L1()
     # eval_MLLE_4D_2D()
-    eval_SOM_L1_MLLEWeightedFeatureMatrix()
+    # eval_SOM_L1_MLLEWeightedFeatureMatrix()
+    # eval_LocalDensityBasedFeatureMatrix()

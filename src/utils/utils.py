@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.sparse.csgraph import minimum_spanning_tree
 
 
 def sqdistance_matrix(X, Y=None):
@@ -104,3 +105,30 @@ def knn(X, Y, k):
         distances <= np.finfo(float).eps
     ] = 0  # makes sure we do not calculate negative values
     return indices[:, 0:k], distances
+
+
+def minimalSpanningTree(featureMatrix):
+    """Returns the minimal spanning tree betwwen the nodes spanning the feature matrix
+    Args:
+        featureMatrix(np.array):
+            feature Matrix containing the cost between all nodes
+
+    Returns:
+        symmetricAdjacencyMatrix(csgraph):
+            symmetric adjacencyMatrix
+    """
+    if type(featureMatrix) is not np.ndarray or featureMatrix.ndim != 2:
+        raise ValueError("feature matrix must be at a 2D numpy array.")
+
+    if featureMatrix.shape[0] != featureMatrix.shape[1]:
+        raise ValueError(
+            "The feature matrix must be square and same have the same length as X. Instead got {}".format(
+                featureMatrix.shape[0]
+            )
+        )
+    adjacencyMatrix = minimum_spanning_tree(featureMatrix)
+    symmetricAdjacencyMatrix = (
+        adjacencyMatrix.toarray().astype(float)
+        + adjacencyMatrix.toarray().astype(float).T
+    )
+    return symmetricAdjacencyMatrix

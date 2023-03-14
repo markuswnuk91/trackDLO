@@ -15,7 +15,7 @@ except:
     raise
 
 
-class TopologyExtraction(topologyModel):
+class TopologyExtraction(object):
     """
 
     Attributes:
@@ -35,54 +35,22 @@ class TopologyExtraction(topologyModel):
         Dimensionality of source and data points
     """
 
-    def __init__(self, X, featureMatrix=None, *args, **kwargs):
+    def __init__(self, Y, *args, **kwargs):
 
-        if type(X) is not np.ndarray or X.ndim != 2:
-            raise ValueError("X must be at a 2D numpy array.")
-        if X.shape[0] < X.shape[1]:
-            raise ValueError("C must be a  mus be square.")
+        if type(Y) is not np.ndarray or Y.ndim != 2:
+            raise ValueError("The source point cloud (Y) must be a 2D numpy array.")
 
-        if featureMatrix is not None:
-            if type(featureMatrix) is not np.ndarray or featureMatrix.ndim != 2:
-                raise ValueError("feature matrix must be at a 2D numpy array.")
-            if (
-                featureMatrix.shape[0] != featureMatrix.shape[1]
-                or featureMatrix.shape[0] != X.shape[0]
-            ):
-                raise ValueError(
-                    "The feature matrix must be square and same have the same length as X. Instead got {}".format(
-                        featureMatrix.shape[0]
-                    )
-                )
+        if Y.shape[0] < Y.shape[1]:
+            raise ValueError(
+                "The dimensionality is larger than the number of points. Possibly the wrong orientation of Y."
+            )
+        self.Y = Y
+        self.topology = None
 
-        self.X = X
-        self.featureMatrix = (
-            distance_matrix(X, X) if featureMatrix is None else featureMatrix
-        )
-        adjacencyMatrix = self.findMinimalSpanningTree(self.featureMatrix)
-        super().__init__(adjacencyMatrix=adjacencyMatrix, *args, **kwargs)
-
-    def findMinimalSpanningTree(self, featureMatrix):
-        """Returns the minimal spanning tree betwwen the points given in X
-
-        Args:
-            featureMatrix(np.array): feature Matrix containing the cost between all nodes
-
-        Returns:
-            symmetricAdjacencyMatrix(csgraph): symmetric adjacencyMatrix
+    def extractTopology():
         """
-        adjacencyMatrix = minimum_spanning_tree(featureMatrix)
-        symmetricAdjacencyMatrix = (
-            adjacencyMatrix.toarray().astype(float)
-            + adjacencyMatrix.toarray().astype(float).T
+        Placeholder for child classes.
+        """
+        raise NotImplementedError(
+            "Method to extract the topology should be defined in child classes."
         )
-        return symmetricAdjacencyMatrix
-
-    def getAdjacentPointPairs(self):
-        pointPairs = []
-        for edge in self.getEdges():
-            nodePair = edge.getNodes()
-            thisNodeIdx = self.getNodeIndex(nodePair[0])
-            otherNodeIdx = self.getNodeIndex(nodePair[1])
-            pointPairs.append((self.X[thisNodeIdx, :], self.X[otherNodeIdx, :]))
-        return pointPairs

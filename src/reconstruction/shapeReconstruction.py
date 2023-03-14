@@ -16,7 +16,7 @@ class ShapeReconstruction(object):
         Number of data points
 
     SY: numpy array
-       Mx1 array of nomrlaized local coodinates in [0,1] the target points in Y correspond to.
+       Mx1 array of normalized local coodinates in [0,1] the target points in Y correspond to.
 
     D: int
         Dimensionality of source points and weights

@@ -17,6 +17,9 @@ try:
     from src.localization.topologyExtraction.topologyExtraction import (
         TopologyExtraction,
     )
+    from src.localization.mst.minimalSpanningTreeTopology import (
+        MinimalSpanningTreeTopology,
+    )
     from src.sensing.loadPointCloud import readPointCloudFromPLY
     from src.visualization.plot3D import (
         plotPointSets,
@@ -73,7 +76,7 @@ somParameters = {
     "alphaAnnealing": 0.9,
     "sigma2Annealing": 0.8,
     "kernelMethod": False,
-    "max_iterations": 30,
+    "max_iterations": 3,
 }
 
 l1Parameters = {
@@ -81,7 +84,7 @@ l1Parameters = {
     "hAnnealing": 0.8,
     "hReductionFactor": 1,
     "mu": 0.35,
-    "max_iterations": 30,
+    "max_iterations": 3,
 }
 
 # mlle parameters,
@@ -271,7 +274,7 @@ def filterOutliers(pointSet):
 
 
 def extractTopology(pointSet, featureMatrix=None):
-    topology = TopologyExtraction(
+    topology = MinimalSpanningTreeTopology(
         **{
             "X": pointSet,
             "featureMatrix": featureMatrix,

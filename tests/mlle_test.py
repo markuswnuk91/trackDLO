@@ -10,7 +10,7 @@ from numpy.random import RandomState
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.dimreduction.mlle.mlle import Mlle
+    from src.localization.downsampling.mlle.mlle import Mlle
 except:
     print("Imports for Test MLLE failed.")
     raise

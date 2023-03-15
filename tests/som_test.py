@@ -7,7 +7,7 @@ from sklearn.neighbors import LocalOutlierFactor
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.dimreduction.som.som import SelfOrganizingMap
+    from src.localization.downsampling.som.som import SelfOrganizingMap
     from src.sensing.loadPointCloud import readPointCloudFromPLY
     from src.visualization.plot3D import plotPointSets
 except:

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.dimreduction.l1median.l1Median import L1Median
+    from src.localization.downsampling.l1median.l1Median import L1Median
     from src.sensing.loadPointCloud import readPointCloudFromPLY
     from src.visualization.plot3D import *
 except:

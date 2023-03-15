@@ -7,20 +7,17 @@ import numbers
 from warnings import warn
 
 try:
-    sys.path.append(os.getcwd().replace("/src/dimreduction/som", ""))
+    sys.path.append(os.getcwd().replace("/src/localization/downsampling/som", ""))
     from src.utils.utils import gaussian_kernel, knn
+    from src.localization.downsampling.datareduction import (
+        DataReduction,
+    )
 except:
     print("Imports for JSPR failed.")
     raise
-try:
-    sys.path.append(os.getcwd().replace("/src/dimreduction/l1median", ""))
-    from src.dimreduction.dimensionalityReduction import DimensionalityReduction
-except:
-    print("Imports for L1-Median failed.")
-    raise
 
 
-class SelfOrganizingMap(DimensionalityReduction):
+class SelfOrganizingMap(DataReduction):
     """
     Implementation of the Self-Organizing-Map (SOM) algoritm according to the Papers:
     1) "Kohonen, T.: The self-organizing map: Proceedings of the IEEE, 37, 1990, 1464–1480" for the numNeighor-based method
@@ -77,10 +74,18 @@ class SelfOrganizingMap(DimensionalityReduction):
         sigma2Annealing = 0.9 if sigma2Annealing is None else sigma2Annealing
         self.kernelMethod = kernelMethod
 
-    def calculateReducedRepresentation(self):
+    def calculateReducedRepresentation(self, Y=None, X=None):
         """
         Function to perform Self Organizing Map training (estimation of weights).
         """
+        if Y is not None:
+            self.Y = Y
+            (self.M, _) = self.Y.shape
+        if X is not None:
+            self.X = X
+            (self.N, self.D) = self.X.shape
+        self.T = self.X
+
         while self.iteration < self.max_iterations:
             # anneling of update parameter
             alpha = (self.alpha) ** (self.iteration) * self.alpha

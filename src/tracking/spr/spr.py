@@ -7,7 +7,7 @@ import numbers
 try:
     sys.path.append(os.getcwd().replace("/src/tracking/spr", ""))
     from src.tracking.registration import NonRigidRegistration
-    from src.dimreduction.mlle.mlle import Mlle
+    from src.localization.downsampling.mlle.mlle import Mlle
     from src.utils.utils import (
         gaussian_kernel,
         initialize_sigma2,

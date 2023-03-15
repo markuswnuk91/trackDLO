@@ -6,14 +6,16 @@ import numbers
 from warnings import warn
 
 try:
-    sys.path.append(os.getcwd().replace("/src/dimreduction/l1median", ""))
-    from src.dimreduction.dimensionalityReduction import DimensionalityReduction
+    sys.path.append(os.getcwd().replace("/src/localization/downsampling/l1median", ""))
+    from src.localization.downsampling.datareduction import (
+        DataReduction,
+    )
 except:
     print("Imports for L1-Median failed.")
     raise
 
 
-class L1Median(DimensionalityReduction):
+class L1Median(DataReduction):
     """
     Implementation according to the Paper
     "Huang et al.: L1-Medial Skeleton of Point Cloud, ACM Transactions on Graphics, 32(4):1, 2013"
@@ -55,7 +57,6 @@ class L1Median(DimensionalityReduction):
             False if densityCompensation is None else densityCompensation
         )
         self.h_d = self.h / 2 if h_d is None else h_d
-        self.localDensity_matrix = self.get_weightedLocalDensitiy()
         self.h_min = 1e-2
         self.iteration = 0
 
@@ -146,17 +147,23 @@ class L1Median(DimensionalityReduction):
             sigmas[i] = np.amax(lambdas) / np.sum(lambdas)
         return sigmas
 
-    def calculateReducedRepresentation(self):
+    def calculateReducedRepresentation(self, Y=None, X=None):
         """
         Function to perform L1 Median estimation.
         """
-        # ---------------------------------#
-        # begin algorithm
-        # ---------------------------------#
+        if Y is not None:
+            self.Y = Y
+            (self.M, _) = self.Y.shape
+        if X is not None:
+            self.X = X
+            (self.N, self.D) = self.X.shape
+
+        self.T = self.X
         J = len(self.Y)  # number of input points
         I = len(self.T)  # number of seedpoints
-
+        self.localDensity_matrix = self.get_weightedLocalDensitiy()
         h = self.hReductionFactor * self.h * self.hAnnealing**self.iteration
+
         if h <= self.h_min:
             h = self.h_min
 

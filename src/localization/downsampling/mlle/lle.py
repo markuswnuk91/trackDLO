@@ -9,14 +9,14 @@ import numbers
 from warnings import warn
 
 try:
-    sys.path.append(os.getcwd().replace("/src/dimreduction/mlle", ""))
+    sys.path.append(os.getcwd().replace("/src/localization/downsampling/mlle", ""))
     from src.utils.utils import knn
 except:
     print("Imports for MLLE failed.")
     raise
 
 
-class Mlle:
+class Lle:
     """Class for constructing locally linear embeddings to reconstuct it on a lower dimesional manifold.
     Implementation according to:
     Jing Wang and Zhenyue Zhang, Nonlinear Embedding Preserving Multiple Local-linearities, Patten Recognition, Vol.43, pp.1257-1268, 2010
@@ -102,10 +102,7 @@ class Mlle:
 
     def _computePhi(self):
         (N, D) = self.X.shape
-        roh = np.zeros((N))
-        eigenValues = []
-        eigenVectors = []
-        WOpti = []
+        W = np.zeros((N, N))
 
         # find Neighborhood
         (J, _) = knn(
@@ -133,72 +130,23 @@ class Mlle:
             #     C = Gi @ Gi.transpose()
             # elif self.mapping == "power":
             #     C = Gi @ Gi.transpose() ** self.exponent * (Gi @ Gi.transpose())
-            # elif self.mapping == "exponential":
+            # elif self.mapping == "exponential":S
             #     Gi_hat = np.expand_dims(kernelMatrix[Ji, i], axis=-1) * Gi
             #     C = Gi_hat @ Gi_hat.transpose()
             C_tilde = C + np.eye(self.k, self.k) * self.tol * np.trace(C)
-            wiOpt = np.linalg.solve(C_tilde, np.ones((self.k, 1)))
-            wiOpt = wiOpt / np.sum(wiOpt)  # regularization as suggested at p.3
-            # if self.mapping == "linear":
-            #     pass
-            # elif self.mapping == "power":
-            #     wiOpt = wiOpt**self.exponent
-            # elif self.mapping == "exponential":
-            #     wiOpt = np.exp((-(wiOpt**2)) / (self.sigma / 2) ** 2)
+            wi = np.linalg.solve(C_tilde, np.ones((self.k, 1)))
+            wi = wi / np.sum(wi)  # regularization as suggested at p.3
+            if self.mapping == "linear":
+                pass
+            if self.mapping == "power":
+                wi = wi * wi ** (self.exponent - 1)
+            elif self.mapping == "exponential":
+                wi = wi * np.exp(-(wi**2) / (2 * self.sigma**2))
+            W[i, Ji] = wi.flatten()
 
-            # step 1.3
-            [S, V] = schur(C, output="real")
-            ei = np.sort(np.diag(S))
-            ei = ei[::-1]
-            ei[ei <= np.finfo(float).eps] = 0
-            JIi = np.argsort(np.diag(S))
-            JIi = JIi[::-1]
-            roh[i] = np.sum(ei[self.d : self.k]) / np.sum(ei[0 : self.d])
+        M = np.eye(W.shape[0], W.shape[1]) - W
+        self.Phi = M.T @ M
 
-            # save eigenvalues and vectors for next steps
-            eigenValues.append(ei)
-            eigenVectors.append(V[:, JIi])
-            WOpti.append(wiOpt)
-
-        # step 2
-        rohSorted = np.sort(roh)
-        eta = rohSorted[int(np.ceil(N / 2))]
-        s = np.zeros(N)
-        for i in range(N):
-            l = self.k - self.d
-            lambdas = eigenValues[i]
-            while (
-                np.sum(lambdas[self.k - l :]) / np.sum(lambdas[: self.k - l]) > eta
-                and l > 1
-            ):
-                l = l - 1
-
-            s[i] = l
-
-        # step 3
-        self.Phi = np.zeros((N, N))
-        for i in range(N):
-            Ji = J[i, 1:]
-            Vi = eigenVectors[i]
-            Vhat = Vi[:, int(self.k - s[i]) :]
-            vi = np.sum(Vhat, 0)  # equivalent to Vhat.transpose() @ np.ones(k, 1)
-            alphai = np.linalg.norm(vi) / np.sqrt(s[i])
-            ui = np.ones((int(s[i]))) * alphai - vi
-            uiNorm = np.linalg.norm(ui)
-            if uiNorm > 1e-5:
-                ui = ui / uiNorm
-            else:
-                ui = np.zeros((int(s[i]), 1))
-            Hi = np.eye(int(s[i])) - 2 * np.outer(ui, ui)
-            Wi = (1 - alphai) ** 2 * WOpti[i] @ np.ones((1, int(s[i]))) + (
-                2 - alphai
-            ) * Vhat @ Hi
-
-            # build Phi
-            self.Phi[i, i] = self.Phi[i, i] + s[i]
-            self.Phi[np.ix_(Ji, Ji)] = self.Phi[np.ix_(Ji, Ji)] + Wi @ Wi.transpose()
-            self.Phi[Ji, i] = self.Phi[Ji, i] - np.sum(Wi, 1)
-            self.Phi[i, Ji] = self.Phi[Ji, i]
         return self.Phi
 
     def getAlignmentMatrix(self):
@@ -243,5 +191,4 @@ class Mlle:
             Y = eiVecs
         else:
             raise ValueError("Unrecognized solver '%s'" % self.solverType)
-
         return Y

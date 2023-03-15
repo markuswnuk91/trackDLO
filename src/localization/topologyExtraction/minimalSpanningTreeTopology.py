@@ -6,8 +6,7 @@ from warnings import warn
 from scipy.spatial import distance_matrix
 
 try:
-    sys.path.append(os.getcwd().replace("/src/localization/mst", ""))
-    from src.localization.topologyExtraction import topologyExtraction
+    sys.path.append(os.getcwd().replace("/src/localization/topologyExtraction", ""))
     from src.modelling.topologyModel import topologyModel
     from src.utils.utils import minimalSpanningTree
 except:
@@ -17,14 +16,14 @@ except:
 
 class MinimalSpanningTreeTopology(topologyModel):
     def __init__(self, X, featureMatrix=None, *args, **kwargs):
-        """Builds a minimimum spanning tree based topology model based on the provided featureMatrix.
+        """Builds a minimimum spanning tree based topology model between the points given in X based on the provided featureMatrix, where the featureMatrix provides the cost of travelling between two adjacent points (e.g. the default feature is euclidean distance between the points given in X)
         The minimum spanning tree searches a minimum cost path through the featureMatrix to connect all its nodes.
 
         Args:
             X (np.array):
                 coordinates cooresponding to the nodes of the feature matrix
-            featureMatrix (np.array):
-                feature matrix of costs between the nodes
+            featureMatrix (np.array, optional):
+                feature matrix of costs between the nodes. Defaults to euclidean distance between the points in X.
         """
         if type(X) is not np.ndarray or X.ndim != 2:
             raise ValueError("The source point cloud (X) must be at a 2D numpy array.")

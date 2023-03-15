@@ -9,21 +9,32 @@ try:
     from src.localization.topologyExtraction.topologyExtraction import (
         TopologyExtraction,
     )
-    from src.visualization.plot3D import plotPointSets
+    from src.visualization.plot3D import *
 except:
     print("Imports for Topology Extraction Test failed.")
     raise
 
-dataPath = "tests/testdata/topologyExtraction/topologyExtractionTestSet.txt"
-
+# control parameters
+dataPath = "tests/testdata/topologyExtraction/wireHarness.txt"
 vis = True  # enable for visualization
 
-# control parameters
+
+def setupVisualization(dim):
+    if dim == 3:
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+    elif dim <= 2:
+        fig = plt.figure()
+        ax = fig.add_subplot()
+    # set axis limits
+    # ax.set_xlim(0.2, 0.8)
+    # ax.set_ylim(-0.3, 0.3)
+    # ax.set_zlim(0, 0.6)
+    return fig, ax
 
 
 def setupVisualizationCallback(classHandle):
-    fig = plt.figure()
-    ax = fig.add_subplot(projection="3d")
+    fig, ax = setupVisualization(classHandle.Y.shape[1])
     return partial(
         visualizationCallback,
         fig,
@@ -46,9 +57,6 @@ def visualizationCallback(
     if fileName is not None and type(fileName) is not str:
         raise ValueError("Error saving 3D plot. The given filename should be a string.")
     plt.cla()
-    ax.set_xlim(0.2, 0.8)
-    ax.set_ylim(-0.3, 0.3)
-    ax.set_zlim(0, 0.6)
     plotPointSets(
         ax=ax,
         X=classHandle.T,
@@ -56,53 +64,62 @@ def visualizationCallback(
         ySize=5,
         xSize=10,
         # yMarkerStyle=".",
-        yAlpha=0.01,
-        waitTime=0.5,
+        yAlpha=0.05,
     )
+    set_axes_equal(ax)
+    plt.draw()
+    plt.pause(0.1)
+    print(classHandle.iteration)
     if savePath is not None:
         fig.savefig(savePath + fileName + "_" + str(classHandle.iter) + ".png")
 
 
 def test_topologyExtraction():
     testPointSet = np.loadtxt(dataPath)
+    somParameters = {
+        "alpha": 1,
+        "numNearestNeighbors": 30,
+        "numNearestNeighborsAnnealing": 0.8,
+        "sigma2": 0.03,
+        "alphaAnnealing": 0.9,
+        "sigma2Annealing": 0.8,
+        "kernelMethod": False,
+        "max_iterations": 3,
+    }
 
+    l1Parameters = {
+        "h": 0.12,
+        "hAnnealing": 0.8,
+        "hReductionFactor": 1,
+        "mu": 0.35,
+        "max_iterations": 3,
+    }
+    lofOutlierFilterParameters = {
+        "numNeighbors": 15,
+        "contamination": 0.1,
+    }
     testTopologyExtractor = TopologyExtraction(
         **{
-            "X": testPointSet,
+            "Y": testPointSet,
+            "somParameters": somParameters,
+            "l1Parameters": l1Parameters,
+            "lofOutlierFilterParameters": lofOutlierFilterParameters,
         }
     )
-    pointPairs = testTopologyExtractor.getAdjacentPointPairs()
-    leafNodeIndices = testTopologyExtractor.getLeafNodeIndices()
-    assert testTopologyExtractor.getNumBranches() == 5
-
-    # visualization
     if vis:
-        # plot initial point set
-        fig = plt.figure()
-        ax = fig.add_subplot(projection="3d")
-
-        for pointPair in pointPairs:
-            stackedPair = np.stack(pointPair)
-            ax.plot3D(stackedPair[:, 0], stackedPair[:, 1], stackedPair[:, 2], "blue")
-
-        ax.scatter(
-            testPointSet[:, 0],
-            testPointSet[:, 1],
-            testPointSet[:, 2],
+        somVisualizationCallback = setupVisualizationCallback(
+            testTopologyExtractor.selfOrganizingMap
         )
-        ax.scatter(
-            testPointSet[0, 0], testPointSet[0, 1], testPointSet[0, 2], "red", s=30
+        testTopologyExtractor.selfOrganizingMap.registerCallback(
+            somVisualizationCallback
         )
-        for i, leafPointIdx in enumerate(leafNodeIndices):
-            ax.scatter(
-                testPointSet[leafPointIdx, 0],
-                testPointSet[leafPointIdx, 1],
-                testPointSet[leafPointIdx, 2],
-                "yellow",
-                s=(i + 1) * 300,
-                alpha=0.4,
-            )
-        plt.show(block=True)
+
+        l1VisualizationCallback = setupVisualizationCallback(
+            testTopologyExtractor.l1Median
+        )
+        testTopologyExtractor.l1Median.registerCallback(l1VisualizationCallback)
+
+    testTopology = testTopologyExtractor.extractTopology(numSeedPoints=70)
 
 
 if __name__ == "__main__":

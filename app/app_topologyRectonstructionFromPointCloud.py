@@ -10,14 +10,14 @@ from sklearn import preprocessing
 
 try:
     sys.path.append(os.getcwd().replace("/app", ""))
-    from src.dimreduction.som.som import SelfOrganizingMap
-    from src.dimreduction.l1median.l1Median import L1Median
-    from src.dimreduction.mlle.mlle import Mlle
-    from src.dimreduction.mlle.lle import Lle
+    from src.localization.downsampling.som.som import SelfOrganizingMap
+    from src.localization.downsampling.l1median.l1Median import L1Median
+    from src.localization.downsampling.mlle.mlle import Mlle
+    from src.localization.downsampling.mlle.lle import Lle
     from src.localization.topologyExtraction.topologyExtraction import (
         TopologyExtraction,
     )
-    from src.localization.mst.minimalSpanningTreeTopology import (
+    from src.localization.topologyExtraction.minimalSpanningTreeTopology import (
         MinimalSpanningTreeTopology,
     )
     from src.sensing.loadPointCloud import readPointCloudFromPLY
@@ -189,11 +189,11 @@ def samplePointsRandom(pointSet, numSeedPoints):
     return seedPoints
 
 
-def reduceDimension(pointSet, dimReductionPrameters: dict):
-    dimReductionPrameters["X"] = pointSet
-    mlle = Mlle(**dimReductionPrameters)
+def reduceDimension(pointSet, downsamplingPrameters: dict):
+    downsamplingPrameters["X"] = pointSet
+    mlle = Mlle(**downsamplingPrameters)
     reconstructedPointSet = mlle.solve()
-    # mlle = Lle(**dimReductionPrameters)
+    # mlle = Lle(**downsamplingPrameters)
     # reconstructedPointSet = mlle.solve()
     # mlle = manifold.LocallyLinearEmbedding(**mlleParameters)
     # reconstructedPointSet = mlle.fit_transform(pointSet)

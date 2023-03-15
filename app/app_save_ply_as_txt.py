@@ -14,7 +14,7 @@ savePath = "tests/testdata/topologyExtraction/wireHarness.txt"
 
 dataPath = "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_2.ply"
 
-downsamplingInputRatio = 1
+downsamplingInputRatio = 1 / 3
 
 if __name__ == "__main__":
     if save:

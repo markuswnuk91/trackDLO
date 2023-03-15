@@ -56,7 +56,7 @@ def visualizationCallback(
 
     if fileName is not None and type(fileName) is not str:
         raise ValueError("Error saving 3D plot. The given filename should be a string.")
-    plt.cla()
+    ax.cla()
     plotPointSets(
         ax=ax,
         X=classHandle.T,
@@ -64,7 +64,7 @@ def visualizationCallback(
         ySize=5,
         xSize=10,
         # yMarkerStyle=".",
-        yAlpha=0.05,
+        yAlpha=0.03,
     )
     set_axes_equal(ax)
     plt.draw()
@@ -84,7 +84,7 @@ def test_topologyExtraction():
         "alphaAnnealing": 0.9,
         "sigma2Annealing": 0.8,
         "kernelMethod": False,
-        "max_iterations": 3,
+        "max_iterations": 30,
     }
 
     l1Parameters = {
@@ -92,7 +92,7 @@ def test_topologyExtraction():
         "hAnnealing": 0.8,
         "hReductionFactor": 1,
         "mu": 0.35,
-        "max_iterations": 3,
+        "max_iterations": 30,
     }
     lofOutlierFilterParameters = {
         "numNeighbors": 15,
@@ -120,6 +120,25 @@ def test_topologyExtraction():
         testTopologyExtractor.l1Median.registerCallback(l1VisualizationCallback)
 
     testTopology = testTopologyExtractor.extractTopology(numSeedPoints=70)
+
+    if vis:
+        fig, ax = setupVisualization(testTopology.X.shape[1])
+        pointPairs = testTopology.getAdjacentPointPairs()
+        leafNodeIndices = testTopology.getLeafNodeIndices()
+        for pointPair in pointPairs:
+            stackedPair = np.stack(pointPair)
+            plotLine(ax, pointPair=stackedPair, color=[0, 0, 1])
+        plotPointSet(ax=ax, X=testTopology.X, color=[1, 0, 0], size=30)
+        plotPointSet(ax=ax, X=testTopology.X, color=[1, 0, 0], size=20)
+        plotPointSet(
+            ax=ax,
+            X=testTopology.X[leafNodeIndices, :],
+            color=[1, 0, 0],
+            size=50,
+            alpha=0.4,
+        )
+        set_axes_equal(ax)
+        plt.show(block=True)
 
 
 if __name__ == "__main__":

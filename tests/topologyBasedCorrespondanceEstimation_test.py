@@ -9,6 +9,8 @@ try:
     from src.localization.correspondanceEstimation.topologyBasedCorrespondanceEstimation import (
         TopologyBasedCorrespondanceEstimation,
     )
+    from src.simulation.bdlo import BranchedDeformableLinearObject
+    from src.modelling.topologyTemplates import topologyGraph_ArenaWireHarness
     from src.visualization.plot3D import *
 except:
     print("Imports for Topology Extraction Test failed.")
@@ -76,6 +78,9 @@ def visualizationCallback(
 
 def test_topologyExtraction():
     testPointSet = np.loadtxt(dataPath)
+    testBDLO = BranchedDeformableLinearObject(
+        **{"adjacencyMatrix": topologyGraph_ArenaWireHarness}
+    )
     somParameters = {
         "alpha": 1,
         "numNearestNeighbors": 30,
@@ -101,7 +106,7 @@ def test_topologyExtraction():
     testCorrespondanceEstimator = TopologyBasedCorrespondanceEstimation(
         **{
             "Y": testPointSet,
-            "templateTopology": ArenaWireHarnessTopology,
+            "templateTopology": testBDLO,
             "somParameters": somParameters,
             "l1Parameters": l1Parameters,
             "lofOutlierFilterParameters": lofOutlierFilterParameters,
@@ -109,18 +114,18 @@ def test_topologyExtraction():
     )
     if vis:
         somVisualizationCallback = setupVisualizationCallback(
-            testTopologyExtractor.selfOrganizingMap
+            testCorrespondanceEstimator.selfOrganizingMap
         )
-        testTopologyExtractor.selfOrganizingMap.registerCallback(
+        testCorrespondanceEstimator.selfOrganizingMap.registerCallback(
             somVisualizationCallback
         )
 
         l1VisualizationCallback = setupVisualizationCallback(
-            testTopologyExtractor.l1Median
+            testCorrespondanceEstimator.l1Median
         )
-        testTopologyExtractor.l1Median.registerCallback(l1VisualizationCallback)
+        testCorrespondanceEstimator.l1Median.registerCallback(l1VisualizationCallback)
 
-    testTopology = testTopologyExtractor.extractTopology(numSeedPoints=70)
+    testTopology = testCorrespondanceEstimator.getExtractedTopolgy()
 
     if vis:
         fig, ax = setupVisualization(testTopology.X.shape[1])

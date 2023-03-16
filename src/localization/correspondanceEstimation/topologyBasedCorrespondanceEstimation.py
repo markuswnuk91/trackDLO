@@ -5,8 +5,12 @@ import numbers
 from warnings import warn
 
 try:
-    sys.path.append(os.getcwd().replace("/src/localization", ""))
-    from src.localization.topologyExtraction import TopologyExtraction
+    sys.path.append(
+        os.getcwd().replace("/src/localization/correspondanceEstimation", "")
+    )
+    from src.localization.topologyExtraction.topologyExtraction import (
+        TopologyExtraction,
+    )
 except:
     print("Imports for Topology-based Correspondance Estimation failed.")
     raise
@@ -23,7 +27,7 @@ class TopologyBasedCorrespondanceEstimation(TopologyExtraction):
         topology model representing the topology of the BDLO
     """
 
-    def __init__(self, Y, templateTopology, *args, **kwargs):
+    def __init__(self, Y, numSeedPoints, templateTopology, *args, **kwargs):
         if type(Y) is not np.ndarray or Y.ndim != 2:
             raise ValueError("The source point cloud (Y) must be a 2D numpy array.")
 
@@ -34,7 +38,7 @@ class TopologyBasedCorrespondanceEstimation(TopologyExtraction):
 
         self.Y = Y
         self.templateTopology = templateTopology
-        self.extractedTopology = self.extractTopology()
+        self.extractedTopology = self.extractTopology(numSeedPoints)
 
         if (
             self.extractedTopology.getNumBranches()
@@ -56,6 +60,9 @@ class TopologyBasedCorrespondanceEstimation(TopologyExtraction):
                     self.templateTopology.getNumBranches(),
                 )
             )
+
+    def getExtractedTopology(self):
+        return self.extractedTopology
 
     def getBranchFeatures(self, branch):
         """Determines a feature vector used for correspondance estimation between individual branches

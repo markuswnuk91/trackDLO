@@ -49,6 +49,7 @@ class TopologyExtraction(object):
     def __init__(
         self,
         Y,
+        numSeedPoints,
         randomSamplingParameters=None,
         somParameters=None,
         l1Parameters=None,
@@ -64,7 +65,17 @@ class TopologyExtraction(object):
             raise ValueError(
                 "The dimensionality is larger than the number of points. Possibly the wrong orientation of Y."
             )
+        if type(numSeedPoints) is not int:
+            warn("Obtained non integer for number of seed points. Casting to integer.")
+            numseedPoints = int(numSeedPoints)
+        elif numSeedPoints > Y.shape[0]:
+            raise ValueError(
+                "Number of seed points larger than number of source points. Use less seedpoints."
+            )
+        elif numSeedPoints <= 0:
+            raise ValueError("Too few seed points.")
         self.Y = Y
+        self.numSeedPoints = numSeedPoints
         self.topology = None
 
         if randomSamplingParameters is None:
@@ -110,12 +121,13 @@ class TopologyExtraction(object):
             **self.lofOutlierFilterParameters
         )
 
-    def extractTopology(self, numSeedPoints, extractionMethod="random_som_l1_outlier"):
+    def extractTopology(
+        self, numSeedPoints=None, extractionMethod="random_som_l1_outlier"
+    ):
+        if numSeedPoints is None:
+            numSeedPoints = self.numseedPoints
         if extractionMethod == "random_som_l1_outlier":
-            seedPoints = self.samplePointsRandom(
-                self.Y,
-                numSeedPoints,
-            )
+            seedPoints = self.samplePointsRandom(self.Y, numSeedPoints)
             reducedPointSet = self.reducePointSet_SOM(self.Y, seedPoints)
             reducedPointSet = self.reducePointSet_L1(self.Y, reducedPointSet)
             filteredPointSet = self.filterOutliers(reducedPointSet, filterMethod="lof")

@@ -101,6 +101,7 @@ def test_topologyExtraction():
     testTopologyExtractor = TopologyExtraction(
         **{
             "Y": testPointSet,
+            "numSeedPoints": 100,
             "somParameters": somParameters,
             "l1Parameters": l1Parameters,
             "lofOutlierFilterParameters": lofOutlierFilterParameters,

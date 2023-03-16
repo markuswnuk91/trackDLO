@@ -11,11 +11,12 @@ import numbers
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
     from src.simulation.bdlo import BDLOTopology, BranchedDeformableLinearObject
+    from src.modelling.topologyTemplates import topologyGraph_ArenaWireHarness
 except:
     print("Imports for BDLO testing failed.")
     raise
 
-vis = False
+vis = True
 
 
 def runViewer(dartSkel):
@@ -211,12 +212,32 @@ def test_ModelGeneration_ICRATopology():
         runViewer(testBDLO_ICRA.skel)
 
 
+def test_ModelGeneration_ArenaTopology():
+    testBDLO = BranchedDeformableLinearObject(
+        **{"adjacencyMatrix": topologyGraph_ArenaWireHarness}
+    )
+
+    # test BDLO functions
+    testBDLO.getBranchRootBodyNodeIndex(0)
+    testBDLO.getBranchRootDofIndices(0)
+    testBDLO.setBranchRootDof(1, 0, np.pi * 3 / 4)
+    testBDLO.setBranchRootDofs(2, np.array([0, 0, 0]))
+    testBDLO.setBranchRootDofs(3, np.array([-np.pi * 3 / 4, 0, 0]))
+    testBDLO.setBranchRootDofs(4, np.array([0, 0, 0]))
+    testBDLO.setBranchRootDofs(5, np.array([np.pi / 4, 0, 0]))
+    testBDLO.setBranchRootDofs(6, np.array([0, 0, 0]))
+
+    if vis:
+        runViewer(testBDLO.skel)
+
+
 if __name__ == "__main__":
     # test modelSpecificaion
     test_bdloTopology_1()
 
     # test modelGeneration
-    test_ModelGeneration_SimpleTopology()
-    test_ModelGeneration_BranchedTopology()
-    test_ModelGeneration_ElementaryGraph()
-    test_ModelGeneration_ICRATopology()
+    # test_ModelGeneration_SimpleTopology()
+    # test_ModelGeneration_BranchedTopology()
+    # test_ModelGeneration_ElementaryGraph()
+    # test_ModelGeneration_ICRATopology()
+    test_ModelGeneration_ArenaTopology()

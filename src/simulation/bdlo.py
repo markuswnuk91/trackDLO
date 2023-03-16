@@ -321,22 +321,61 @@ class BranchedDeformableLinearObject(BDLOTopology):
         return self.skel.getNumBodyNodes()
 
     # branch Functions
-    def getBranchBodyNodes(self, branchNumber):
+    def getBranchBodyNodeIndices(self, branchIndex):
         """
         Returns the dart bodyNodes corresponding to a branch
         """
         bodyNodeList = []
-        for bodyNodeIndex in self.getBranch(branchNumber).getBranchInfo()[
+        for bodyNodeIndex in self.getBranch(branchIndex).getBranchInfo()[
             "correspondingBodyNodeIndices"
         ]:
             bodyNodeList.append(self.skel.getBodyNode(bodyNodeIndex))
         return bodyNodeList
 
-    def getBodyNodeIndicesFromBranch(self, branch):
-        return branch.getBranchInfo()["correspondingBodyNodeIndices"]
+    def getBranchRootBodyNodeIndex(self, branchIndex):
+        """returns the bodyNode index of the root of branch with the given index
 
-    def getNumSegments(self):
-        return self.skel.getNumBodyNodes()
+        Args:
+            branchIndex (_type_): _description_
+
+        Returns:
+            int: index of the bodyNode in the dart skeleton
+        """
+        return self.getBranch(branchIndex).getBranchInfo()[
+            "correspondingBodyNodeIndices"
+        ][0]
+
+    def getBranchRootDofIndices(self, branchIndex):
+        branchRootDofIndices = []
+        branchRootBodyNodeIndex = self.getBranch(branchIndex).getBranchInfo()[
+            "correspondingBodyNodeIndices"
+        ][0]
+        branchRootBodyNode = self.skel.getBodyNode(branchRootBodyNodeIndex)
+        brachRootJoint = branchRootBodyNode.getParentJoint()
+        numRootJointDofs = brachRootJoint.getNumDofs()
+        for i in range(0, numRootJointDofs):
+            branchRootDofIndices.append(brachRootJoint.getIndexInSkeleton(i))
+        return np.array(branchRootDofIndices)
+
+    def setBranchRootDof(self, branchIndex, dofIndex, dofValue):
+        """sets a root Dof of a branch to the specified value
+
+        Args:
+            branchIndex (int): index of the branch
+            dofIndex (int): index of the dof (for the joint dofs, e.g. 0 for x, 1 for y, 2 for z)
+            dofValue (float): value of the dof
+        """
+        dofIndexInSkeleton = self.getBranchRootDofIndices(branchIndex)[dofIndex]
+        self.skel.setPosition(dofIndexInSkeleton, dofValue)
+        return
+
+    def setBranchRootDofs(self, branchIndex, dofValues):
+        dofIndicesInSkeleton = self.getBranchRootDofIndices(branchIndex)
+        for i, value in enumerate(dofValues):
+            self.skel.setPosition(dofIndicesInSkeleton[i], value)
+
+    def _getBodyNodeIndicesFromBranch(self, branch):
+        return branch.getBranchInfo()["correspondingBodyNodeIndices"]
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

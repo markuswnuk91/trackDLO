@@ -76,7 +76,7 @@ class TopologyExtraction(object):
             raise ValueError("Too few seed points.")
         self.Y = Y
         self.numSeedPoints = numSeedPoints
-        self.topology = None
+        self.extractedTopology = None
 
         if randomSamplingParameters is None:
             self.randomSamplingParameters = {"numSeedPoints": int(len(Y) / 3)}
@@ -125,17 +125,17 @@ class TopologyExtraction(object):
         self, numSeedPoints=None, extractionMethod="random_som_l1_outlier"
     ):
         if numSeedPoints is None:
-            numSeedPoints = self.numseedPoints
+            numSeedPoints = self.numSeedPoints
         if extractionMethod == "random_som_l1_outlier":
             seedPoints = self.samplePointsRandom(self.Y, numSeedPoints)
             reducedPointSet = self.reducePointSet_SOM(self.Y, seedPoints)
             reducedPointSet = self.reducePointSet_L1(self.Y, reducedPointSet)
             filteredPointSet = self.filterOutliers(reducedPointSet, filterMethod="lof")
-            self.topology = MinimalSpanningTreeTopology(filteredPointSet)
+            self.extractedTopology = MinimalSpanningTreeTopology(filteredPointSet)
         else:
             raise NotImplementedError
 
-        return self.topology
+        return self.extractedTopology
 
     def reducePointSet_SOM(
         self,

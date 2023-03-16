@@ -93,8 +93,8 @@ def test_topologyExtraction():
     }
 
     l1Parameters = {
-        "h": 0.12,
-        "hAnnealing": 0.8,
+        "h": 0.1,
+        "hAnnealing": 0.93,
         "hReductionFactor": 1,
         "mu": 0.35,
         "max_iterations": 30,
@@ -106,6 +106,7 @@ def test_topologyExtraction():
     testCorrespondanceEstimator = TopologyBasedCorrespondanceEstimation(
         **{
             "Y": testPointSet,
+            "numSeedPoints": 70,
             "templateTopology": testBDLO,
             "somParameters": somParameters,
             "l1Parameters": l1Parameters,
@@ -124,21 +125,40 @@ def test_topologyExtraction():
             testCorrespondanceEstimator.l1Median
         )
         testCorrespondanceEstimator.l1Median.registerCallback(l1VisualizationCallback)
-
-    testTopology = testCorrespondanceEstimator.getExtractedTopolgy()
+        print(
+            "Corresponding branch indices: {}.".format(
+                testCorrespondanceEstimator.getCorrespondingBranches()
+            )
+        )
 
     if vis:
-        fig, ax = setupVisualization(testTopology.X.shape[1])
-        pointPairs = testTopology.getAdjacentPointPairs()
-        leafNodeIndices = testTopology.getLeafNodeIndices()
+        fig, ax = setupVisualization(
+            testCorrespondanceEstimator.extractedTopology.X.shape[1]
+        )
+        pointPairs = (
+            testCorrespondanceEstimator.extractedTopology.getAdjacentPointPairs()
+        )
+        leafNodeIndices = (
+            testCorrespondanceEstimator.extractedTopology.getLeafNodeIndices()
+        )
         for pointPair in pointPairs:
             stackedPair = np.stack(pointPair)
             plotLine(ax, pointPair=stackedPair, color=[0, 0, 1])
-        plotPointSet(ax=ax, X=testTopology.X, color=[1, 0, 0], size=30)
-        plotPointSet(ax=ax, X=testTopology.X, color=[1, 0, 0], size=20)
         plotPointSet(
             ax=ax,
-            X=testTopology.X[leafNodeIndices, :],
+            X=testCorrespondanceEstimator.extractedTopology.X,
+            color=[1, 0, 0],
+            size=30,
+        )
+        plotPointSet(
+            ax=ax,
+            X=testCorrespondanceEstimator.extractedTopology.X,
+            color=[1, 0, 0],
+            size=20,
+        )
+        plotPointSet(
+            ax=ax,
+            X=testCorrespondanceEstimator.extractedTopology.X[leafNodeIndices, :],
             color=[1, 0, 0],
             size=50,
             alpha=0.4,

@@ -1,8 +1,8 @@
 import sys
 import os
 import numpy as np
-import numbers
-from warnings import warn
+from scipy.spatial import distance_matrix
+from scipy.optimize import linear_sum_assignment
 
 try:
     sys.path.append(
@@ -27,41 +27,36 @@ class TopologyBasedCorrespondanceEstimation(TopologyExtraction):
         topology model representing the topology of the BDLO
     """
 
-    def __init__(self, Y, numSeedPoints, templateTopology, *args, **kwargs):
-        if type(Y) is not np.ndarray or Y.ndim != 2:
-            raise ValueError("The source point cloud (Y) must be a 2D numpy array.")
+    def __init__(self, templateTopology, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        if Y.shape[0] < Y.shape[1]:
-            raise ValueError(
-                "The dimensionality is larger than the number of points. Possibly the wrong orientation of Y."
-            )
-
-        self.Y = Y
         self.templateTopology = templateTopology
-        self.extractedTopology = self.extractTopology(numSeedPoints)
-
-        if (
-            self.extractedTopology.getNumBranches()
-            > self.templateTopology.getNumBranches()
-        ):
-            raise ValueError(
-                "Found more branches than the number of branches in the template topology. Number of extracted branches is: {}, expected number of branches is: {}".format(
-                    self.extractedTopology.getNumBranches(),
-                    self.templateTopology.getNumBranches(),
-                )
-            )
-        elif (
-            self.extractedTopology.getNumBranches()
-            < self.templateTopology.getNumBranches()
-        ):
-            raise ValueError(
-                "Found less branches than the number of branches in the template topology. Number of extracted branches is: {}, expected number of branches is: {}".format(
-                    self.extractedTopology.getNumBranches(),
-                    self.templateTopology.getNumBranches(),
-                )
-            )
 
     def getExtractedTopology(self):
+        if self.extractedTopology is None:
+            self.extractTopology()
+            if (
+                self.extractedTopology.getNumBranches()
+                > self.templateTopology.getNumBranches()
+            ):
+                raise ValueError(
+                    "Found more branches than the number of branches in the template topology. Number of extracted branches is: {}, expected number of branches is: {}".format(
+                        self.extractedTopology.getNumBranches(),
+                        self.templateTopology.getNumBranches(),
+                    )
+                )
+            elif (
+                self.extractedTopology.getNumBranches()
+                < self.templateTopology.getNumBranches()
+            ):
+                raise ValueError(
+                    "Found less branches than the number of branches in the template topology. Number of extracted branches is: {}, expected number of branches is: {}".format(
+                        self.extractedTopology.getNumBranches(),
+                        self.templateTopology.getNumBranches(),
+                    )
+                )
+        else:
+            pass
         return self.extractedTopology
 
     def getBranchFeatures(self, branch):
@@ -74,19 +69,43 @@ class TopologyBasedCorrespondanceEstimation(TopologyExtraction):
             NotImplementedError: _description_
         """
         featureList = []
-        branchLength = branch.getLength()
+        branchLength = branch.getBranchInfo()["length"]
         featureList.append(branchLength)
         branchFeatures = np.array(featureList)
-        raise NotImplementedError
+        return branchFeatures
 
-    def getCorrespondingBranches(self):
-        """Determines the corresponding branches between the template topology and the extracted topology
+    def getCorrespondingBranches(self, templateTopology=None, otherTopology=None):
+        """Determines the corresponding branches between the template topology and an other topology
 
         Returns:
         branchCorrespondances (list of tuples):
             list of tuples with indices of corresponding branches
         """
-        templateTopologyFeatures = self.getTopologyFeatures(self.templateTopology)
-        extractedTopologyFeatures = self.getTopologyFeatures(self.extractedTopology)
+        correspondingBranchIndices = []
+        if templateTopology is None:
+            templateTopology = self.templateTopology
 
-        raise NotImplementedError
+        if otherTopology is None and self.extractedTopology is None:
+            otherTopology = self.getExtractedTopology()
+        elif otherTopology is None and self.extractedTopology is not None:
+            otherTopology = self.extractedTopology
+
+        templateTopologyBranchFeatures = []
+        otherTopologyBranchFeatures = []
+        for branch in templateTopology.getBranches():
+            templateTopologyBranchFeatures.append(self.getBranchFeatures(branch))
+        templateTopologyBranchFeatureVector = np.array(templateTopologyBranchFeatures)
+        for branch in otherTopology.getBranches():
+            otherTopologyBranchFeatures.append(self.getBranchFeatures(branch))
+        otherTopologyBranchFeatureVector = np.array(otherTopologyBranchFeatures)
+
+        correspondenceMatrix = distance_matrix(
+            templateTopologyBranchFeatureVector, otherTopologyBranchFeatureVector
+        )
+        templateBranchIndices, otherBranchIndices = linear_sum_assignment(
+            correspondenceMatrix
+        )
+        for i, index in enumerate(templateBranchIndices):
+            correspondingBranchPair = (index, otherBranchIndices[i])
+            correspondingBranchIndices.append(correspondingBranchPair)
+        return correspondingBranchIndices

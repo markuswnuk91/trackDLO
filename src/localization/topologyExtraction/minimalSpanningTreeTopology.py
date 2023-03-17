@@ -64,3 +64,19 @@ class MinimalSpanningTreeTopology(topologyModel):
             otherNodeIdx = self.getNodeIndex(nodePair[1])
             pointPairs.append((self.X[thisNodeIdx, :], self.X[otherNodeIdx, :]))
         return pointPairs
+
+    def getAdjacentPointPairsAndBranchCorrespondance(self):
+        pointPairs = []
+        for edge in self.getEdges():
+            nodePair = edge.getNodes()
+            thisNodeIdx = self.getNodeIndex(nodePair[0])
+            otherNodeIdx = self.getNodeIndex(nodePair[1])
+            correspondingBranchIdx = self.getBranchIndexFromEdge(edge)
+            pointPairs.append(
+                (
+                    self.X[thisNodeIdx, :],
+                    self.X[otherNodeIdx, :],
+                    correspondingBranchIdx,
+                )
+            )
+        return pointPairs

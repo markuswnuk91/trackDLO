@@ -377,6 +377,88 @@ class BranchedDeformableLinearObject(BDLOTopology):
     def _getBodyNodeIndicesFromBranch(self, branch):
         return branch.getBranchInfo()["correspondingBodyNodeIndices"]
 
+    # position functions
+    def getCartesianJointPositionsForBodyNode(self, bodyNodeIndex):
+        cartesianJointPositions = []
+        bodyNode = self.skel.getBodyNode(bodyNodeIndex)
+        parentJointOffset = (
+            bodyNode.getParentJoint().getTransformFromChildBodyNode().translation()
+        )
+        parentJointPosition = bodyNode.getWorldTransform().multiply(parentJointOffset)
+        cartesianJointPositions.append(parentJointPosition)
+
+        if bodyNode.getNumChildJoints() == 0:
+            childJointOffset = (
+                -1
+            ) * bodyNode.getParentJoint().getTransformFromChildBodyNode().translation()
+            childJointPosition = bodyNode.getWorldTransform().multiply(childJointOffset)
+        else:
+            childJointOffset = (
+                bodyNode.getChildJoint(0).getTransformFromParentBodyNode().translation()
+            )
+            childJointPosition = bodyNode.getWorldTransform().multiply(childJointOffset)
+        cartesianJointPositions.append(childJointPosition)
+        return np.array(cartesianJointPositions)
+
+    def getCartesianJointPositions(self):
+        """returns the cartesian positions of all joints (including start and end joint)"""
+        cartesianJointPositions = []
+        for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
+            bodyNode = self.skel.getBodyNode(bodyNodeIndex)
+            if bodyNodeIndex == 0:
+                parentJointOffset = (
+                    bodyNode.getParentJoint()
+                    .getTransformFromChildBodyNode()
+                    .translation()
+                )
+                parentJointPosition = bodyNode.getWorldTransform().multiply(
+                    parentJointOffset
+                )
+                cartesianJointPositions.append(parentJointPosition)
+
+            if bodyNode.getNumChildJoints() == 0:
+                childJointOffset = (
+                    -1
+                ) * bodyNode.getParentJoint().getTransformFromChildBodyNode().translation()
+                childJointPosition = bodyNode.getWorldTransform().multiply(
+                    childJointOffset
+                )
+            else:
+                childJointOffset = (
+                    bodyNode.getChildJoint(0)
+                    .getTransformFromParentBodyNode()
+                    .translation()
+                )
+                childJointPosition = bodyNode.getWorldTransform().multiply(
+                    childJointOffset
+                )
+            cartesianJointPositions.append(childJointPosition)
+        return np.array(cartesianJointPositions)
+
+    # correspondance functions
+    def getBranchCorrespondanceForBodyNode(self, bodyNodeIndex):
+        correspondingBranches = []
+        for branchIndex, branch in enumerate(self.branches):
+            if bodyNodeIndex in branch.getBranchInfo()["correspondingBodyNodeIndices"]:
+                correspondingBranches.append(branchIndex)
+        if len(correspondingBranches) > 1:
+            raise ValueError(
+                "BodyNode corresponds to more than one branch. Something went wrong in the model generation."
+            )
+        return correspondingBranches[0]
+
+    # custom functions
+    def getAdjacentPointPairsAndBranchCorrespondance(self):
+        pointPairs = []
+        for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
+            jointPositions = self.getCartesianJointPositionsForBodyNode(bodyNodeIndex)
+            correspondingBranchIndex = self.getBranchCorrespondanceForBodyNode(
+                bodyNodeIndex
+            )
+            pointPair = (jointPositions[0], jointPositions[1], correspondingBranchIndex)
+            pointPairs.append(pointPair)
+        return pointPairs
+
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):
 #     """
@@ -651,7 +733,7 @@ class BranchedDeformableLinearObject(BDLOTopology):
 #                         )
 
 #                 # get next branch candidates for which bodyNodes are generated
-#                 siblingBranches = self.topology.getSiblingBranches(branch)
+#                 siblingBranches = self.topology.getAdjacentBranches(branch)
 #                 for siblingBranch in siblingBranches:
 #                     if (
 #                         siblingBranch not in blacklist

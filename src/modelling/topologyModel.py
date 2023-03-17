@@ -237,7 +237,7 @@ class branch:
             oterNode (node):
 
         Returns:
-            edge: _description_
+            edge: edge connecting the two nodes
         """
         return list(set(thisNode.getEdges()).intersection(oterNode.getEdges()))[0]
 
@@ -678,8 +678,31 @@ class topologyModel(object):
     def getNumBranchNodes(self):
         return len(self.branchNodes)
 
+    def getNumBranchNodesFromBranch(self, branch):
+        numBranchNodes = 0
+        startNode = branch.getStartNode()
+        endNode = branch.getEndNode()
+        if self.isBranchNode(startNode):
+            numBranchNodes += 1
+
+        if self.isBranchNode(endNode):
+            numBranchNodes += 1
+
+        return numBranchNodes
+
     def getNumLeafNodes(self):
         return len(self.leafNodes)
+
+    def getNumLeafNodesFromBranch(self, branch):
+        numLeafNodes = 0
+        startNode = branch.getStartNode()
+        endNode = branch.getEndNode()
+        if self.isLeafNode(startNode):
+            numLeafNodes += 1
+
+        if self.isLeafNode(endNode):
+            numLeafNodes += 1
+        return numLeafNodes
 
     def _getBranchNodeFromNode(self, node: Node):
         """
@@ -764,6 +787,44 @@ class topologyModel(object):
                 branchList.append(branch)
         return branchList
 
+    def getBranchFromEdge(self, edge: Edge):
+        """retuns the branch containing a given edge
+
+        Args:
+            edge (Edge): edge in the topologyModel
+
+        Raises:
+            ValueError: If edge corresponds to more than one branch.
+
+        Returns:
+            branch: branch the edge corresponds to.
+        """  #
+        branchList = []
+        for branch in self.branches:
+            if edge in branch.getEdges():
+                branchList.append(branch)
+        if len(branchList) > 1:
+            for branch in branchList:
+                print("Edge ifound in {}".format(branch.getName()))
+            raise ValueError(
+                "Edge found in more than one branch. Something went wrong."
+            )
+        return branchList[0]
+
+    def getBranchIndexFromEdge(self, edge: Edge):
+        """retuns the branch index containing a given edge
+
+        Args:
+            edge (Edge): edge in the topologyModel
+
+        Raises:
+            ValueError: If edge corresponds to more than one branch.
+
+        Returns:
+            branch: branch index the edge corresponds to.
+        """
+        return self.getBranchIndex(self.getBranchFromEdge(edge))
+
     def isLeafNode(self, node: Node):
         if node in self._getLeafNodesAsNodes():
             return True
@@ -808,23 +869,25 @@ class topologyModel(object):
             branchIndices.append(self.getBranchIndex(branch))
         return branchIndices
 
-    def getSiblingBranches(self, branch: branch):
+    def getAdjacentBranches(self, branch: branch):
         """
-        Returns the siblings to this branch.
+        Returns the adjacent branches to this branch.
         Sibling branches are branches which share a start or end node with the given branch.
         """
-        siblingBranches = []
-        siblingCandidates = self.branches.copy()
-        siblingCandidates.remove(branch)
+        adjancentBranches = []
+        adjacentBranchCandidates = self.branches.copy()
+        adjacentBranchCandidates.remove(branch)
         branchEnds = [branch.getStartNode(), branch.getEndNode()]
-        for siblingCandidate in siblingCandidates:
-            siblingCandidateEnds = [
-                siblingCandidate.getStartNode(),
-                siblingCandidate.getEndNode(),
+        for adjacentBranchCandidate in adjacentBranchCandidates:
+            adjacentBranchCandidateEnds = [
+                adjacentBranchCandidate.getStartNode(),
+                adjacentBranchCandidate.getEndNode(),
             ]
-            if any(branchEnd in branchEnds for branchEnd in siblingCandidateEnds):
-                siblingBranches.append(siblingCandidate)
-        return siblingBranches
+            if any(
+                branchEnd in branchEnds for branchEnd in adjacentBranchCandidateEnds
+            ):
+                adjancentBranches.append(adjacentBranchCandidate)
+        return adjancentBranches
 
     def getBranchLength(self, branchNumber: int):
         return self.getBranch(branchNumber).getBranchInfo()["length"]

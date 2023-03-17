@@ -1,7 +1,6 @@
 import os, sys
 import numpy as np
 from functools import partial
-import matplotlib
 import matplotlib.pyplot as plt
 
 try:
@@ -9,18 +8,19 @@ try:
     from src.localization.correspondanceEstimation.topologyBasedCorrespondanceEstimation import (
         TopologyBasedCorrespondanceEstimation,
     )
-    from src.localization.topologyExtraction.minimalSpanningTreeTopology import (
-        MinimalSpanningTreeTopology,
-    )
     from src.simulation.bdlo import BranchedDeformableLinearObject
-    from src.simulation.bdloTemplates import initArenaWireHarness
+    from src.modelling.topologyTemplates import topologyGraph_ArenaWireHarness
     from src.visualization.plot3D import *
 except:
-    print("Imports for Topology Extraction Test failed.")
+    print("Imports for Correspondance Estimation Test Data Generation failed.")
     raise
 
-# control parameters
+# script control parameters
+save = False  # if data  should be saved under the given savepath
 vis = True  # enable for visualization
+savePath = "tests/testdata/topologyExtraction/wireHarnessReduced.txt"
+# source data
+dataPath = "tests/testdata/topologyExtraction/wireHarness.txt"
 
 
 def setupVisualization(dim):
@@ -78,10 +78,11 @@ def visualizationCallback(
         fig.savefig(savePath + fileName + "_" + str(classHandle.iter) + ".png")
 
 
-def test_topologyExtraction():
-    dataPath = "tests/testdata/topologyExtraction/wireHarness.txt"
+def generateTestData():
     testPointSet = np.loadtxt(dataPath)
-    testBDLO = initArenaWireHarness()
+    testBDLO = BranchedDeformableLinearObject(
+        **{"adjacencyMatrix": topologyGraph_ArenaWireHarness}
+    )
     somParameters = {
         "alpha": 1,
         "numNearestNeighbors": 30,
@@ -107,7 +108,7 @@ def test_topologyExtraction():
     testCorrespondanceEstimator = TopologyBasedCorrespondanceEstimation(
         **{
             "Y": testPointSet,
-            "numSeedPoints": 70,
+            "numSeedPoints": 60,
             "templateTopology": testBDLO,
             "somParameters": somParameters,
             "l1Parameters": l1Parameters,
@@ -116,18 +117,16 @@ def test_topologyExtraction():
     )
     if vis:
         somVisualizationCallback = setupVisualizationCallback(
-            testCorrespondanceEstimator.topologyExtractor.selfOrganizingMap
+            testCorrespondanceEstimator.selfOrganizingMap
         )
-        testCorrespondanceEstimator.topologyExtractor.selfOrganizingMap.registerCallback(
+        testCorrespondanceEstimator.selfOrganizingMap.registerCallback(
             somVisualizationCallback
         )
 
         l1VisualizationCallback = setupVisualizationCallback(
-            testCorrespondanceEstimator.topologyExtractor.l1Median
+            testCorrespondanceEstimator.l1Median
         )
-        testCorrespondanceEstimator.topologyExtractor.l1Median.registerCallback(
-            l1VisualizationCallback
-        )
+        testCorrespondanceEstimator.l1Median.registerCallback(l1VisualizationCallback)
         print(
             "Corresponding branch indices: {}.".format(
                 testCorrespondanceEstimator.getCorrespondingBranches()
@@ -169,69 +168,11 @@ def test_topologyExtraction():
         set_axes_equal(ax)
         plt.show(block=True)
 
-
-def test_correspondanceEstimation():
-    dataPath = "tests/testdata/topologyExtraction/wireHarnessReduced.txt"
-    testPointSet = np.loadtxt(dataPath)
-    testBDLO = initArenaWireHarness()
-    testCorrespondanceEstimator = TopologyBasedCorrespondanceEstimation(
-        **{
-            "Y": testPointSet,
-            "extractedTopology": MinimalSpanningTreeTopology(testPointSet),
-            "numSeedPoints": 70,
-            "templateTopology": testBDLO,
-        }
-    )
-    templateTopology = testCorrespondanceEstimator.templateTopology
-    extractedTopology = testCorrespondanceEstimator.extractedTopology
-    branchMapping = testCorrespondanceEstimator.getCorrespondingBranches()
-
-    if vis:
-        # colormap
-        colorMap = matplotlib.colormaps["viridis"]
-        lowerLim = 0
-        upperLim = np.round(templateTopology.getNumBranches() - 1)
-        norm = matplotlib.colors.Normalize(vmin=lowerLim, vmax=upperLim)  # Normalizer
-        sm = plt.cm.ScalarMappable(cmap=colorMap, norm=norm)  # creating ScalarMappable
-
-        templatePointPairs = (
-            templateTopology.getAdjacentPointPairsAndBranchCorrespondance()
-        )
-        extractedPointPairs = (
-            extractedTopology.getAdjacentPointPairsAndBranchCorrespondance()
-        )
-
-        fig, ax = setupVisualization(len(templatePointPairs[0][0]))
-        for pointPair in templatePointPairs:
-            stackedPair = np.stack(pointPair[:2])
-            branchNumber = pointPair[2]
-            plotColor = [
-                sm.to_rgba(branchNumber)[0],
-                sm.to_rgba(branchNumber)[1],
-                sm.to_rgba(branchNumber)[2],
-            ]
-            plotLine(ax, pointPair=stackedPair, color=plotColor)
-            plotPoint(ax=ax, x=stackedPair[0], color=plotColor)
-            plotPoint(ax=ax, x=stackedPair[1], color=plotColor)
-        set_axes_equal(ax)
-        plt.show(block=False)
-
-        fig, ax = setupVisualization(len(extractedPointPairs[0][0]))
-        for pointPair in extractedPointPairs:
-            stackedPair = np.stack(pointPair[:2])
-            branchNumber = np.where(branchMapping == pointPair[2])[0][0]
-            plotColor = [
-                sm.to_rgba(branchNumber)[0],
-                sm.to_rgba(branchNumber)[1],
-                sm.to_rgba(branchNumber)[2],
-            ]
-            plotLine(ax, pointPair=stackedPair, color=plotColor)
-            plotPoint(ax=ax, x=stackedPair[0], color=plotColor)
-            plotPoint(ax=ax, x=stackedPair[1], color=plotColor)
-        set_axes_equal(ax)
-        plt.show(block=True)
+    userInput = input("Ener y to save data: ")
+    if userInput == "y":
+        np.savetxt(savePath, testCorrespondanceEstimator.extractedTopology.X)
+        print("Saved!")
 
 
 if __name__ == "__main__":
-    # test_topologyExtraction()
-    test_correspondanceEstimation()
+    generateTestData()

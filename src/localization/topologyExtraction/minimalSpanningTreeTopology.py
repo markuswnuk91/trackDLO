@@ -46,15 +46,103 @@ class MinimalSpanningTreeTopology(topologyModel):
                 )
 
         self.X = X
+        (self.N, self.D) = self.X.shape
         if featureMatrix is None:
             self.featureMatrix = distance_matrix(self.X, self.X)
         else:
             self.featureMatrix = featureMatrix
         self.adjacencyMatrix = self.findMinimalSpanningTree(self.featureMatrix)
         super().__init__(adjacencyMatrix=self.adjacencyMatrix, *args, **kwargs)
+        for i, node in enumerate(self.nodes):
+            node.addNodeInfo(key="cartesianPosition", info=self.X[i])
 
     def findMinimalSpanningTree(self, featureMatrix):
         return minimalSpanningTree(featureMatrix)
+
+    def getCorrespondingBranchFromNode(self, nodeIndex: int):
+        """returns the corresponding branch index for a node. returns only a single branch index. If the node is a branch node and corresponds to multiple branches, only the correspondance to the first branch in the branchlist is returned.
+        Args:
+            nodeIndex (int): index of the node for which the branch correspondance should be determined
+
+        Returns:
+            corresponingBranchIndex (int): index of the branch the node corresponds to
+        """
+        correspondingBranches = self.getBranchesFromNode(self.getNodes()[nodeIndex])
+        if len(correspondingBranches) <= 0:
+            raise ValueError(
+                "Node does not correspond to any branch. Something went wrong."
+            )
+        return self.getBranchIndex(correspondingBranches[0])
+
+    def calculateCorrespondingNodesForPointSet(self, pointSet):
+        """returns the index of the closest nodes for each point in the given point set.
+        Uses the euclidean distance between the point in the set and the node postions X to calculcate the correspondacen.
+
+        Args:
+            pointSet (np.array): point set of size MxD for which the node with closest cartesian distance should be determined
+
+        Returns:
+            CN: corresponding nodes for each point in the set, such that CN[i] is the nodeIndex corresponding to point i of the point set.
+        """
+        CN = []
+        distances = distance_matrix(pointSet, self.X)
+        correspondingIndices = np.argmin(distances, axis=0)
+        for i in range(0, pointSet.shape[0]):
+            CN.append(np.where(correspondingIndices == i)[0][0])
+        return CN
+
+    def calculateNodeCorrespondanceFromPointSet(self, pointSet):
+        """returns the correspondances between the given point set and the nodes of this topology representation
+
+        Args:
+            pointSet (np.array): point set of size MxD for which the node with closest cartesian distance should be determined
+
+        Returns:
+            NC (list): list of arrays of corresponancees each node, such that pointSet[NC[i],:] gives the points corresponding to node i
+        """
+        NC = []
+        distances = distance_matrix(self.X, pointSet)
+        correspondingIndices = np.argmin(distances, axis=0)
+        for i in range(0, len(self.nodes)):
+            NC.append(np.where(correspondingIndices == i)[0])
+        return NC
+
+    def calculateCorrespondingBranchesForPointSet(self, pointSet):
+        """returns the corresponding branches for each point in the given point set
+
+        Args:
+            pointSet (np.array):
+                point set for which the branch correspondances should be determined
+
+        Returns
+            CB(np.array):
+                array of corresponding branch indices for each point in the set, such that CB[i] is the branchIndex corresponding to point i of the point set.
+        """
+        CB = []
+        correspondingNodeIndices = self.calculateCorrespondingNodesForPointSet(pointSet)
+        for i, point in enumerate(pointSet):
+            correspondingNodeIndex = correspondingNodeIndices[i]
+            correspondingBranchIndex = self.getCorrespondingBranchFromNode(
+                correspondingNodeIndex
+            )
+            CB.append(correspondingBranchIndex)
+        return CB
+
+    def calculateBranchCorrespondanceForPointSet(self, pointSet):
+        """returns the correspondances between the given point set and the branches of this topology representation
+
+        Args:
+            pointSet (np.array):
+                point set for which the branch correspondances should be determined
+
+        Returns
+            BC(list of np.array):
+                list of arrays of correspondences for each branch, such that pointSet[BC[i],:] gives the points corresponding to branch i
+        """
+        BC = []
+        nodeCorrespondances = self.calculateNodeCorrespondanceFromPointSet(pointSet)
+
+        raise notImplementedError
 
     def getAdjacentPointPairs(self):
         pointPairs = []

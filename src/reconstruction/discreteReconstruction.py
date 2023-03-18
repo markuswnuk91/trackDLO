@@ -18,7 +18,8 @@ except:
 
 class DiscreteReconstruction(ShapeReconstruction, FiniteSegmentModel):
     """
-    Implementation of the a shape reconstruction based on the finite segment DLO model
+    Implementation of the a shape reconstruction based on the finite segment DLO model.
+    The parameters to describte the shape are given by joint angles.
 
     Attributes
         ----------

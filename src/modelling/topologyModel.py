@@ -60,6 +60,11 @@ class Node:
     def setNodeInfo(self, nodeInfo):
         self.nodeInfo = nodeInfo
 
+    def addNodeInfo(self, key: str, info):
+        if key in self.nodeInfo:
+            warn("Key is already in dict. The old value is overwritten")
+        self.nodeInfo[key] = info
+
     def getAdjacentNode(self, edge):
         edgeNodes = edge.getNodes()
         thisNodeIdx = edgeNodes.index(self)

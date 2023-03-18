@@ -270,12 +270,15 @@ class BranchedDeformableLinearObject(BDLOTopology):
 
                 # generate model
                 if branch == self.rootBranch:
-                    self.skel = DeformableLinearObject(**branchSpec).skel.clone()
+                    branchDLO = DeformableLinearObject(**branchSpec)
+                    self.skel = branchDLO.skel.clone()
                     correspondingBodyNodeIndices = list(
                         range(0, self.skel.getNumBodyNodes())
                     )
+                    segmentLengths = branchDLO.segmentLengths
                 else:
-                    newBranchSkel = DeformableLinearObject(**branchSpec).skel.clone()
+                    newbranchDLO = DeformableLinearObject(**branchSpec)
+                    newBranchSkel = newbranchDLO.skel.clone()
                     newBranchSkel.setPositions(
                         [0, 1, 2], branchSpec["rootJointRestPositions"]
                     )
@@ -293,9 +296,11 @@ class BranchedDeformableLinearObject(BDLOTopology):
                     newBranchSkel.getBodyNode(0).moveTo(
                         self.skel.getBodyNode(parentBodyNodeIdx)
                     )
+                    segmentLengths = newbranchDLO.segmentLengths
                 branch.addBranchInfo(
                     "correspondingBodyNodeIndices", correspondingBodyNodeIndices
                 )
+                branch.addBranchInfo("segmentLengths", segmentLengths)
                 for adjacentBranch in self.getChildBranches(branch):
                     queuedBranches.append(adjacentBranch)
             visitedBranches.add(branch)
@@ -333,10 +338,10 @@ class BranchedDeformableLinearObject(BDLOTopology):
         return bodyNodeList
 
     def getBranchRootBodyNodeIndex(self, branchIndex):
-        """returns the bodyNode index of the root of branch with the given index
+        """returns the bodyNode index of the first bodyNode of a branch with the given index
 
         Args:
-            branchIndex (_type_): _description_
+            branchIndex (int): index of the branch for which the first bodyNode should be determined
 
         Returns:
             int: index of the bodyNode in the dart skeleton
@@ -344,6 +349,19 @@ class BranchedDeformableLinearObject(BDLOTopology):
         return self.getBranch(branchIndex).getBranchInfo()[
             "correspondingBodyNodeIndices"
         ][0]
+
+    def getBranchLastBodyNodeIndex(self, branchIndex):
+        """returns the bodyNode index of the last bodyNode of a branch with the given index
+
+        Args:
+            branchIndex (int): index of the branch for which the first bodyNode should be determined
+
+        Returns:
+            int: index of the bodyNode in the dart skeleton
+        """
+        return self.getBranch(branchIndex).getBranchInfo()[
+            "correspondingBodyNodeIndices"
+        ][-1]
 
     def getBranchRootDofIndices(self, branchIndex):
         branchRootDofIndices = []
@@ -447,7 +465,7 @@ class BranchedDeformableLinearObject(BDLOTopology):
             )
         return correspondingBranches[0]
 
-    # custom functions
+    # custom functions for plotting
     def getAdjacentPointPairsAndBranchCorrespondance(self):
         pointPairs = []
         for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
@@ -458,6 +476,168 @@ class BranchedDeformableLinearObject(BDLOTopology):
             pointPair = (jointPositions[0], jointPositions[1], correspondingBranchIndex)
             pointPairs.append(pointPair)
         return pointPairs
+
+    # custom functions for pose optimnization
+    def getCartesianPositionSegmentStart(self, bodyNodeIndex: int):
+        """returns the cartesian position of the beginning of a segment
+
+        Args:
+            bodyNodeIndex (int): the index of the bodyNode
+
+        Returns:
+            np.array: cartesian position of the start of the segement
+        """
+        bodyNodeTransform = (
+            self.skel.getBodyNode(bodyNodeIndex).getWorldTransform().matrix()
+        )
+        relativeTransformToParentJoint = (
+            self.skel.getBodyNode(bodyNodeIndex)
+            .getParentJoint()
+            .getTransformFromChildBodyNode()
+            .matrix()
+        )
+        return (bodyNodeTransform @ relativeTransformToParentJoint)[:3, 3]
+
+    def getCartesianPositionSegmentEnd(self, bodyNodeIndex: int):
+        """returns the cartesian position of the beginning of a segment
+
+        Args:
+            bodyNodeIndex (int): the index of the bodyNode
+
+        Returns:
+            np.array: cartesian position of the start of the segement
+        """
+        if bodyNodeIndex == -1:
+            bodyNodeIndex = self.skel.getNumBodyNodes() - 1
+
+        bodyNodeTransform = (
+            self.skel.getBodyNode(bodyNodeIndex).getWorldTransform().matrix()
+        )
+        relativeTransformToParentJoint = (
+            self.skel.getBodyNode(bodyNodeIndex)
+            .getParentJoint()
+            .getTransformFromChildBodyNode()
+            .matrix()
+        )
+        # reverse direction to go to end of segment
+        relativeTransformToParentJoint[:3, 3] = -relativeTransformToParentJoint[:3, 3]
+        return (bodyNodeTransform @ relativeTransformToParentJoint)[:3, 3]
+
+    def getJointLocalCoordinatesFromBranch(self, branchIndex):
+        branchLength = self.branches[branchIndex].getBranchInfo()["length"]
+        segmentLengths = self.branches[branchIndex].getBranchInfo()["segmentLengths"]
+        return np.insert(np.cumsum(np.array(segmentLengths)) / branchLength, 0, 0)
+
+    def getBodyNodeIndexFromLocalCoodinate(self, branchIndex: int, s: float):
+        """returns the bodyNode index corresponding to the local coordinate running along a branch
+
+        Args:
+            s (float): local coordinate of the branch in [0,1]
+
+        Returns:
+            int: bodyNode index of the body the local coordinate corresponds to.
+        """
+        if 1 - s <= np.finfo(float).eps:
+            return self.getBranchLastBodyNodeIndex(branchIndex)
+        elif s <= np.finfo(float).eps:
+            return self.getBranchRootBodyNodeIndex(branchIndex)
+        else:
+            bodyNodeIndicesInBranch = self.branches[branchIndex].getBranchInfo()[
+                "correspondingBodyNodeIndices"
+            ]
+            jointLocalCoordinates = self.getJointLocalCoordinatesFromBranch(branchIndex)
+            indexInBranch = (
+                next(
+                    index[0]
+                    for index in enumerate(jointLocalCoordinates)
+                    if index[1] > s
+                )
+                - 1
+            )
+            return bodyNodeIndicesInBranch[indexInBranch]
+
+    def getOffsetInBodyNodeCoordinatesFromLocalCoordiate(
+        self, branchIndex: int, bodyNodeIndex, s: float
+    ):
+        """returns the offset from a center of a bodyNode to the location corresponding to a local coordinate.
+        The offset is expressed in the cooresponding local bodyNode frame
+
+        Args:
+            branchIndex: index of the corresponding branch
+            bodyNodeIndex: index of the corresponding bodyNode
+            s (float): local coordinate in [0,1]
+
+        Returns:
+            np.array: 3x1 offset vector fom the body node center to the position corresponding to the given local coordinate.
+        """
+        bodyNodeIndicesInBranch = self.branches[branchIndex].getBranchInfo()[
+            "correspondingBodyNodeIndices"
+        ]
+        segmentLengths = self.branches[branchIndex].getBranchInfo()["segmentLengths"]
+        bodyNodeIndex = self.getBodyNodeIndexFromLocalCoodinate(branchIndex, s)
+        localCoordsJoints = self.getJointLocalCoordinatesFromBranch(branchIndex)
+        indexInBranch = np.where(bodyNodeIndicesInBranch == bodyNodeIndex)[0][0]
+        sLower = localCoordsJoints[indexInBranch]
+        sUpper = localCoordsJoints[indexInBranch + 1]
+        sCenter = sLower + (sUpper - sLower) / 2
+        sOffset = (s - sCenter) / (sUpper - sLower)
+        offset = np.array([0, 0, sOffset * segmentLengths[indexInBranch]])
+        return offset
+
+    def getCartesianPositionSegmentWithOffset(
+        self, bodyNodeIndex: int, offset: np.array
+    ):
+        """returns the cartesian position of the center of a segment
+
+        Args:
+            bodyNodeIndex (int): the index of the bodyNode
+
+        Returns:
+            np.array: cartesian position of the center of the segement
+        """
+        return (
+            self.skel.getBodyNode(bodyNodeIndex).getWorldTransform().matrix()
+            @ np.append(offset, 1)
+        )[:3]
+
+    def getCartesianPositionFromLocalCoordinate(self, branchIndex: int, s: float):
+        """returns the cartesian position of a point along a branch of the bdlo specified by a local coordinate running along the branch from the startNode to the endNode
+
+        Args:
+            branchIndex (int): index of the branch
+            s (float): local coordinate for the branch in [0,1] where 0 corresponds to the start of the branch and 1 corresponds to the end of the branch
+
+        Returns:
+            cartesianPosition: cartesian position of the point corresponding to the local coordinate.
+        """
+        if s <= np.finfo(float).eps:
+            correspondingBodyNodeIndex = self.getBranchRootBodyNodeIndex(branchIndex)
+            return self.getCartesianPositionSegmentStart(correspondingBodyNodeIndex)
+        elif 1 - s <= np.finfo(float).eps:
+            correspondingBodyNodeIndex = self.getBranchLastBodyNodeIndex(branchIndex)
+            return self.getCartesianPositionSegmentEnd(correspondingBodyNodeIndex)
+        else:
+            correspondBodyNodeIdx = self.getBodyNodeIndexFromLocalCoodinate(
+                branchIndex, s
+            )
+            offset = self.getOffsetInBodyNodeCoordinatesFromLocalCoordiate(
+                branchIndex, correspondBodyNodeIdx, s
+            )
+            return self.getCartesianPositionSegmentWithOffset(
+                correspondBodyNodeIdx, offset
+            )
+
+    # def getCaresianPositionsFromLocalCoordinates(self, branchIndex: int, S):
+    #     """Returns the cartesian positions for the
+
+    #     Args:
+    #         branchIndex (int): index of the  branch for which the cartesian positions should be retrived
+    #         S (np.array): local coordinates corresponding to the cartesian positions, measured from startNode of the branch to the end node of the branch
+    #     """
+    #     X = np.zeros((S.size, 3))
+    #     for i, s in enumerate(S):
+    #         X[i, :] = self.getCartesianPositionFromLocalCoordinate(branchIndex, s)
+    #     return X
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

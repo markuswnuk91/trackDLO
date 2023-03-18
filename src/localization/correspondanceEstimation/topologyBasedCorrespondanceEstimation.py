@@ -140,7 +140,7 @@ class TopologyBasedCorrespondanceEstimation(object):
 
         Returns:
         branchCorrespondence (np.array):
-            array of correspondances such that branchCorrespondence[0] is the branch index of the otherTopology matching branch 0 of the template topology
+            array of correspondances such that branchCorrespondence[i] is the branch index of the otherTopology matching branch i of the template topology
         """
         correspondingBranchIndices = []
         if templateTopology is None:
@@ -184,3 +184,7 @@ class TopologyBasedCorrespondanceEstimation(object):
         #     correspondingBranchPair = (index, otherBranchIndices[i])
         #     correspondingBranchIndices.append(correspondingBranchPair)
         return branchCorrespondence
+
+    # TODO
+    # def getTemplateBranchCorrespondanceFromPointSet(self, pointSet):
+    #     """returns the branch correspondance for each point of the given point set with respect to the templateTopology."""

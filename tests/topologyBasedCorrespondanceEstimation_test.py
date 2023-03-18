@@ -186,6 +186,21 @@ def test_correspondanceEstimation():
     extractedTopology = testCorrespondanceEstimator.extractedTopology
     branchMapping = testCorrespondanceEstimator.getCorrespondingBranches()
 
+    # test corresponance calculation
+    print(
+        "Node correspondances: {}".format(
+            extractedTopology.calculateCorrespondingNodesForPointSet(
+                testCorrespondanceEstimator.Y
+            )
+        )
+    )
+    print(
+        "Branch correspondances: {}".format(
+            extractedTopology.calculateCorrespondingBranchesForPointSet(
+                testCorrespondanceEstimator.Y
+            )
+        )
+    )
     if vis:
         # colormap
         colorMap = matplotlib.colormaps["viridis"]

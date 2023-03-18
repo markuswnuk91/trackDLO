@@ -33,7 +33,8 @@
 - [x] transfer MLLE algorithm
 - [x] implement filters
 - [x] transfer Minimum Spanning-Tree algorithms
-- [ ] branch wise correspondance estimation
+- [x] branch wise correspondance estimation
+- [x] heuristic for restarting downsampling if less or more branches than expected are foudn (less branches --> double the number of input points, more branches --> half the number of seedPoints)
 - [ ] localization based on reconstruction for BDLO
 
 ## Validation

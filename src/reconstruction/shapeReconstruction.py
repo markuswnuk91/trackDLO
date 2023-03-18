@@ -5,12 +5,13 @@ from warnings import warn
 
 class ShapeReconstruction(object):
     """Base class for reconstructing the shape of DLOs
-    Reconstuction aims to obtain the continous shape of a DLO from a discrete representation (such as a point cloud or registration approach)
+    Reconstuction aims to obtain the parameters describing the shape of a DLO from a (high dimensional) set of points (e.g. a point cloud) in cartesian space corresponding to the current configuration of the DLO.
+    This class  assumes the correspondance problem is solved such that for every point in cartesian space, the corresponding location on the DLO is known.
 
     Attributes:
     -------------
     Y: numpy array
-        MxD array of target points (e.g. from a registration result)
+        MxD array of target points
 
     M: int
         Number of data points

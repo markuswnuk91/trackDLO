@@ -18,7 +18,10 @@ except:
 
 class ContinuousReconstruction(ShapeReconstruction, WakamatsuModel):
     """
-    Implementation of the a shape reconstruction based on the differential geometry DLO model by H. Wakamatsu and S. Hirai from the paper:
+    Implementation of the a shape reconstruction based on a continous model.
+    The parameters to describte the shape are given by weights of ansatz functions.
+
+    The continous model is given from the paper of H. Wakamatsu and S. Hirai:
     Wakamatsu H, Hirai S. Static Modeling of Linear Object Deformation Based on Differential Geometry. The International Journal of Robotics Research. 2004;23(3):293-311
     Note: The paper by Wakamatsu et al uses local coordinates s in [0,L], while this class uses normalized local coordinates s in [0,1].
 

@@ -49,7 +49,7 @@ class Downsampling(object):
         """Returns the correspondences of the reduced point set T to the source points Y
 
         Returns:
-        C (list(np.array)): array of correspondances such that Y[C[0],:] are the points corresponding to T[0,:]
+        C (list(np.array)): array of correspondances such that Y[C[i],:] are the points corresponding to T[i,:]
         """
         C = []
         distances = distance_matrix(self.T, self.Y)

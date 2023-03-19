@@ -8,7 +8,7 @@ from scipy.spatial import distance_matrix
 try:
     sys.path.append(os.getcwd().replace("/src/localization/topologyExtraction", ""))
     from src.modelling.topologyModel import topologyModel
-    from src.utils.utils import minimalSpanningTree
+    from src.utils.utils import minimalSpanningTree, calculateCorrespondance
 except:
     print("Imports for Minimal-Spanning-Tree failed.")
     raise
@@ -59,6 +59,7 @@ class MinimalSpanningTreeTopology(topologyModel):
     def findMinimalSpanningTree(self, featureMatrix):
         return minimalSpanningTree(featureMatrix)
 
+    # correspondance functions
     def getCorrespondingBranchFromNode(self, nodeIndex: int):
         """returns the corresponding branch index for a node. returns only a single branch index. If the node is a branch node and corresponds to multiple branches, only the correspondance to the first branch in the branchlist is returned.
         Args:
@@ -91,7 +92,7 @@ class MinimalSpanningTreeTopology(topologyModel):
             CN.append(np.where(correspondingIndices == i)[0][0])
         return CN
 
-    def calculateNodeCorrespondanceFromPointSet(self, pointSet):
+    def getNodeCorrespondanceFromPointSet(self, pointSet):
         """returns the correspondances between the given point set and the nodes of this topology representation
 
         Args:
@@ -128,7 +129,7 @@ class MinimalSpanningTreeTopology(topologyModel):
             CB.append(correspondingBranchIndex)
         return CB
 
-    def calculateBranchCorrespondanceForPointSet(self, pointSet):
+    def getBranchCorrespondanceFromPointSet(self, pointSet):
         """returns the correspondances between the given point set and the branches of this topology representation
 
         Args:
@@ -140,10 +141,118 @@ class MinimalSpanningTreeTopology(topologyModel):
                 list of arrays of correspondences for each branch, such that pointSet[BC[i],:] gives the points corresponding to branch i
         """
         BC = []
-        nodeCorrespondances = self.calculateNodeCorrespondanceFromPointSet(pointSet)
+        CB = self.calculateCorrespondingBranchesForPointSet(pointSet)
+        for i, branch in enumerate(self.branches):
+            BC.append(np.where(np.array(CB) == i)[0])
+        return BC
 
-        raise notImplementedError
+    def getPointsCorrespondingToBranch(self, branchIndex, pointSet):
+        BC = self.getBranchCorrespondanceFromPointSet(pointSet)
+        return pointSet[BC[branchIndex], :]
 
+    def calculateBranchCorrespondanceAndLocalCoordinatesForPointSet(
+        self, pointSet, discretization=100
+    ):
+        """returns the branch indices and corresponding local coordinats for each point in the given point set.
+
+        Args:
+            pointSet (_type_): point set for whcih the branch correspondance and local coordiantes should be determined
+            discretization (int, optional): determines the sample size along the branch for determineing the local coordiante of a given point. The higher the more accurately the branch will be sampled and the local coordiante will be determined. Defaults to 100.
+        """
+        (M, D) = pointSet.shape
+        S = np.zeros(M)
+        CB = self.calculateCorrespondingBranchesForPointSet(pointSet)
+
+        # calculate interpolations for cartesian branch positions
+        interpolatedCartesianPositions = []
+        SB = []  # interpolated local coordinates for each branch
+        for i, branch in enumerate(self.branches):
+            SBi = np.linspace(0, 1, discretization)
+            interpolatedCartesianBranchPositions = (
+                self.interpolateCartesianPositionsFromBranchLocalCoordinates(i, SBi)
+            )
+            interpolatedCartesianPositions.append(interpolatedCartesianBranchPositions)
+            SB.append(SBi)
+
+        # calculate corresponding local coordinate for each point
+        for i, point in enumerate(pointSet):
+            correspondingBranchIndex = CB[i]
+            SBi = SB[correspondingBranchIndex]
+            interpolatedCartesianBranchPositions = interpolatedCartesianPositions[
+                correspondingBranchIndex
+            ]
+
+            distances = distance_matrix(
+                point[np.newaxis, :], interpolatedCartesianBranchPositions
+            )
+            closestInterpolatedPointIndex = np.argmin(distances, axis=1)
+            S[i] = SBi[closestInterpolatedPointIndex]
+        return CB, S
+
+    # interpolation functions
+    def interpolateCartesianPositionFromBranchLocalCoordinate(self, branchIndex, s):
+        """returns an interpolated cartesian position for the specified branch and local coordinate
+
+        Args:
+            branchIndex (int): branch for wich the position should be interpolated
+            s (float): local coordinate running along the brnach from its start to its end node, corresponding to the desired interolated cartesian position
+
+        Returns:
+            interpolated cartesian position (np.array): interpoltated cartesian position corresponding to the local coordinate s in this branch
+        """
+        # get branch infos
+        correspondingBranch = self.getBranch(branchIndex)
+        correspondingNodes = correspondingBranch.getNodes()
+        correspondingBranchLength = correspondingBranch.getBranchInfo()["length"]
+
+        # get the cartesian positions of nodes in this branch
+        cartesianPositions = np.zeros((len(correspondingNodes), self.D))
+        localCoordinates = np.zeros(len(correspondingNodes))
+        for i, node in enumerate(correspondingNodes):
+            cartesianPositions[i, :] = node.getNodeInfo()["cartesianPosition"]
+
+        # compute local coordinates corresponding to the cartesian positions
+        localCoordinates = (
+            np.cumsum(np.linalg.norm(np.diff(cartesianPositions, axis=0), axis=1))
+            / correspondingBranchLength
+        )
+        localCoordinates = np.insert(localCoordinates, 0, 0)
+
+        # interpolate to obtain new cartesian position
+        if s <= np.finfo(float).eps:
+            interpolatedCartesianPosition = cartesianPositions[0, :]
+        elif 1 - s <= np.finfo(float).eps:
+            interpolatedCartesianPosition = cartesianPositions[-1, :]
+        else:
+            sLowerIdx = np.searchsorted(localCoordinates, s, side="right") - 1
+            sUpperIdx = np.searchsorted(localCoordinates, s, side="left")
+            sLower = localCoordinates[sLowerIdx]
+            sUpper = localCoordinates[sUpperIdx]
+            interpolatedCartesianPosition = cartesianPositions[sLowerIdx, :] + (
+                (s - sLower) / (sUpper - sLower)
+            ) * (cartesianPositions[sUpperIdx, :] - cartesianPositions[sLowerIdx, :])
+        return interpolatedCartesianPosition
+
+    def interpolateCartesianPositionsFromBranchLocalCoordinates(self, branchIndex, S):
+        """returns an interpolated cartesian positions for the specified branch and local coordinates
+
+        Args:
+            branchIndex (int): branch for wich the position should be interpolated
+            S (np.array): Nx1 array of local coordinates running along the brnach from its start to its end node, corresponding to the desired interolated cartesian positions
+
+        Returns:
+            interpolatedCartesianPositions (np.array): NxD array with interpoltated cartesian positions corresponding to the local coordinates in S for this branch
+        """
+        interpolatedCartesianPositions = np.zeros((len(S), self.D))
+        for i, s in enumerate(S):
+            interpolatedCartesianPositions[
+                i, :
+            ] = self.interpolateCartesianPositionFromBranchLocalCoordinate(
+                branchIndex, s
+            )
+        return interpolatedCartesianPositions
+
+    # plotting functions
     def getAdjacentPointPairs(self):
         pointPairs = []
         for edge in self.getEdges():

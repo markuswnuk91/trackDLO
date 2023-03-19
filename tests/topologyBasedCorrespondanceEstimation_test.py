@@ -20,7 +20,7 @@ except:
     raise
 
 # control parameters
-vis = True  # enable for visualization
+vis = False  # enable for visualization
 
 
 def setupVisualization(dim):
@@ -195,12 +195,57 @@ def test_correspondanceEstimation():
         )
     )
     print(
-        "Branch correspondances: {}".format(
+        "Corresponding Brances: {}".format(
             extractedTopology.calculateCorrespondingBranchesForPointSet(
                 testCorrespondanceEstimator.Y
             )
         )
     )
+    print(
+        "Branch correspondance of point set: {}".format(
+            extractedTopology.getBranchCorrespondanceFromPointSet(
+                testCorrespondanceEstimator.Y
+            )
+        )
+    )
+    testPointSet = testCorrespondanceEstimator.Y
+    for i, branch in enumerate(extractedTopology.getBranches()):
+        print(
+            "Points corresponding to branch {}: {}".format(
+                i, extractedTopology.getPointsCorrespondingToBranch(i, testPointSet)
+            )
+        )
+
+    print(
+        "InterpolatedCartesianPosition: {}".format(
+            extractedTopology.interpolateCartesianPositionFromBranchLocalCoordinate(
+                0, 0.1
+            )
+        )
+    )
+    (
+        correspondingBranches,
+        correspondingLocalCoordinates,
+    ) = extractedTopology.calculateBranchCorrespondanceAndLocalCoordinatesForPointSet(
+        testPointSet
+    )
+    print(
+        "Corresponding branches: {}, corresponding local coordiantes {}".format(
+            correspondingBranches, correspondingLocalCoordinates
+        )
+    )
+    (
+        correspondingBranches,
+        correspondingLocalCoordinates,
+    ) = testCorrespondanceEstimator.calculateBranchCorresponanceAndLocalCoordinatsForPointSet(
+        testPointSet
+    )
+    print(
+        "Corresponding branches: {}, corresponding local coordiantes {}".format(
+            correspondingBranches, correspondingLocalCoordinates
+        )
+    )
+
     if vis:
         # colormap
         colorMap = matplotlib.colormaps["viridis"]

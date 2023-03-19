@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.sparse.csgraph import minimum_spanning_tree
+from scipy.spatial import distance_matrix
 
 
 def sqdistance_matrix(X, Y=None):
@@ -132,3 +133,23 @@ def minimalSpanningTree(featureMatrix):
         + adjacencyMatrix.toarray().astype(float).T
     )
     return symmetricAdjacencyMatrix
+
+
+def calculateCorrespondance(X, Y):
+    """calculates the correspondance between two point sets
+
+    Args:
+        X (np.array): point set of size NxD
+        Y (np.array): point set of size MxD
+
+    Returns:
+        C (list of np.array): correspondances between X and Y, such that Y[C[i],:] are the points in Y corresponding to X[i]
+    """
+    C = []
+    (N, D) = X.shape
+    (M, _) = Y.shape
+    distances = distance_matrix(X, Y)
+    correspondingIndices = np.argmin(distances, axis=0)
+    for i in range(0, N):
+        C.append(np.where(correspondingIndices == i)[0])
+    return C

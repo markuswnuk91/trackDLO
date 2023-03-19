@@ -106,7 +106,7 @@ def test_bdloTopology_1():
         )
 
 
-def test_ModelGeneration_SimpleTopology():
+def test_TopologyGeneration_SimpleTopology():
     testBDLO_1 = BranchedDeformableLinearObject(
         **{"adjacencyMatrix": testTopologyModel_1, "name": "Test_BDLO_1"}
     )
@@ -117,7 +117,7 @@ def test_ModelGeneration_SimpleTopology():
         runViewer(testBDLO_1.skel)
 
 
-def test_ModelGeneration_BranchedTopology():
+def test_TopologyGeneration_BranchedTopology():
     # testSpec_2 = BDLOTopology(testTopologyModel_2)
     testBDLO_2 = BranchedDeformableLinearObject(
         **{
@@ -129,7 +129,7 @@ def test_ModelGeneration_BranchedTopology():
         runViewer(testBDLO_2.skel)
 
 
-def test_ModelGeneration_ElementaryGraph():
+def test_TopologyGeneration_ElementaryGraph():
     testBDLO_3 = BranchedDeformableLinearObject(
         **{"adjacencyMatrix": testTopologyModel_3}
     )
@@ -146,7 +146,7 @@ def test_ModelGeneration_ElementaryGraph():
         runViewer(testBDLO_3.skel)
 
 
-def test_ModelGeneration_ICRATopology():
+def test_TopologyGeneration_ICRATopology():
     testBDLO_ICRA = BranchedDeformableLinearObject(
         **{"adjacencyMatrix": testTolologyModel_ICRA}
     )
@@ -212,7 +212,7 @@ def test_ModelGeneration_ICRATopology():
         runViewer(testBDLO_ICRA.skel)
 
 
-def test_ModelGeneration_ArenaTopology():
+def test_TopologyGeneration_ArenaTopology():
     testBDLO = BranchedDeformableLinearObject(
         **{"adjacencyMatrix": topologyGraph_ArenaWireHarness}
     )
@@ -231,13 +231,39 @@ def test_ModelGeneration_ArenaTopology():
         runViewer(testBDLO.skel)
 
 
+def test_CartesianPositionFunctions():
+    testBDLO = BranchedDeformableLinearObject(
+        **{"adjacencyMatrix": topologyGraph_ArenaWireHarness}
+    )
+    testBDLO.setBranchRootDof(1, 0, np.pi * 3 / 4)
+    testBDLO.setBranchRootDofs(2, np.array([0, 0, 0]))
+    testBDLO.setBranchRootDofs(3, np.array([-np.pi * 3 / 4, 0, 0]))
+    testBDLO.setBranchRootDofs(4, np.array([0, 0, 0]))
+    testBDLO.setBranchRootDofs(5, np.array([np.pi / 4, 0, 0]))
+    testBDLO.setBranchRootDofs(6, np.array([0, 0, 0]))
+
+    # testing
+    branchIdx = 0
+    S = np.linspace(0, 1, 11)
+    for branchIdx in range(0, testBDLO.getNumBranches()):
+        Xb_Test = testBDLO.getCaresianPositionsFromLocalCoordinates(branchIdx, S)
+        for i, s in enumerate(S):
+            x_Test = testBDLO.getCartesianPositionFromBranchLocalCoordinate(
+                branchIdx, s
+            )
+            print("Position of branch {} at s={}: {}".format(branchIdx, s, x_Test))
+            print("Difference is {}".format(Xb_Test[i] - x_Test))
+        print(Xb_Test)
+
+
 if __name__ == "__main__":
     # test modelSpecificaion
-    test_bdloTopology_1()
+    # test_bdloTopology_1()
 
-    # test modelGeneration
-    # test_ModelGeneration_SimpleTopology()
-    # test_ModelGeneration_BranchedTopology()
-    # test_ModelGeneration_ElementaryGraph()
-    # test_ModelGeneration_ICRATopology()
-    test_ModelGeneration_ArenaTopology()
+    # test topologyGeneration
+    # test_TopologyGeneration_SimpleTopology()
+    # test_TopologyGeneration_BranchedTopology()
+    # test_TopologyGeneration_ElementaryGraph()
+    # test_TopologyGeneration_ICRATopology()
+    # test_TopologyGeneration_ArenaTopology()
+    test_CartesianPositionFunctions()

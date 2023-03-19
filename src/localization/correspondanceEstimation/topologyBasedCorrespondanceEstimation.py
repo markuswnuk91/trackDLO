@@ -185,6 +185,29 @@ class TopologyBasedCorrespondanceEstimation(object):
         #     correspondingBranchIndices.append(correspondingBranchPair)
         return branchCorrespondence
 
-    # TODO
-    # def getTemplateBranchCorrespondanceFromPointSet(self, pointSet):
-    #     """returns the branch correspondance for each point of the given point set with respect to the templateTopology."""
+    def calculateBranchCorresponanceAndLocalCoordinatsForPointSet(self, pointSet):
+        """returns the branch correspondance and the corresponding local coordinates for each point of the given point set with respect to the templateTopology."""
+        if self.extractedTopology is None:
+            raise ValueError("No extracted topology. First extract a topology.")
+
+        # calculate all necessary correspondances
+        correspondanceMappingFromTemplateToExtractedBranches = (
+            self.getCorrespondingBranches()
+        )
+        (
+            correspondingBranchIndicesInExtractedTopology,
+            localCoordinates,
+        ) = self.extractedTopology.calculateBranchCorrespondanceAndLocalCoordinatesForPointSet(
+            pointSet
+        )
+
+        # map from extracted corresponances to template corresponances
+        correspondingBranchIndicesInTemplateTopology = []
+        for branchIndex in correspondingBranchIndicesInExtractedTopology:
+            correspondingBranchIndexInTemplateTopology = np.where(
+                correspondanceMappingFromTemplateToExtractedBranches == branchIndex
+            )[0][0]
+            correspondingBranchIndicesInTemplateTopology.append(
+                correspondingBranchIndexInTemplateTopology
+            )
+        return correspondingBranchIndicesInTemplateTopology, localCoordinates

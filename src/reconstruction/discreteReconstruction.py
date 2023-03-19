@@ -204,3 +204,4 @@ class DiscreteReconstruction(ShapeReconstruction, FiniteSegmentModel):
             max_nfev=numIter,
             verbose=2,
         )
+        return res

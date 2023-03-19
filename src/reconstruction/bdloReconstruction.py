@@ -14,15 +14,15 @@ except:
     raise
 
 
-class bdloReconstruction(ShapeReconstruction):
+class BDLOReconstruction(ShapeReconstruction):
     """Base class for reconstructing the shape of BDLOs
     Reconstuction aims to obtain the parameters describing the shape of a BDLO from a (high dimensional) set of points (e.g. a point cloud) in cartesian space corresponding to the current configuration of the BDLO.
     This class  assumes the correspondance problem is solved such that for every point in cartesian space, the corresponding location on the BDLO is known.
 
     Attributes:
     -------------
-    BC (list of dict):
-        branch correspondance information as a list of dict. For each branch contains a dict that assigning each point in Y and each local coordinate in SY to a branch, such that Y[BC[0]["Y"],:] are the points in Y corresponding to branch 0 and SY[BC[0]["S"]] are the local coordinates correspoding to these points.
+    CBY (list of dict):
+        branch correspondance information for each point in Y such that CBY[i] is the branch of the DLO the i-th point in Y is corresponding to.
 
     K (int):
         number of branches
@@ -31,7 +31,7 @@ class bdloReconstruction(ShapeReconstruction):
     def __init__(
         self,
         bdlo: BranchedDeformableLinearObject,
-        BC,
+        CBY,
         wPosDiff=None,
         correspondanceWeightingFactor=None,
         annealingFlex=None,
@@ -58,15 +58,16 @@ class bdloReconstruction(ShapeReconstruction):
         self.annealingFlex = 1 if annealingFlex is None else annealingFlex
         self.annealingTor = 1 if annealingTor is None else annealingTor
         self.iter = 0
-        self.optimVars, self.mappingDict = self.initOptimVars(lockedDofs=[3, 4, 5])
         self.bdlo = bdlo
-        self.K = len(BC)
-        self.BC = BC
-        self.X = np.zeros(self.M, self.D)
-        for i in range(0, self.K):
-            self.X[BC[i], :] = self.bdlo.getCaresianPositionsFromLocalCoordinates(
-                branchIndex=i, S=self.SY[BC[i]]
+        self.q = self.bdlo.skel.getPositions()
+        self.K = len(CBY)
+        self.CBY = CBY
+        self.X = np.zeros((self.M, self.D))
+        for i in range(0, self.M):
+            self.X[i] = self.bdlo.getCartesianPositionFromBranchLocalCoordinate(
+                self.CBY[i], self.SY[i]
             )
+        self.optimVars, self.mappingDict = self.initOptimVars(lockedDofs=[3, 4, 5])
 
     def initOptimVars(self, lockedDofs=None):
         """initializes the optimization variables
@@ -76,31 +77,58 @@ class bdloReconstruction(ShapeReconstruction):
         """
         mappingDict = {}
         if lockedDofs is None:
-            optimVars = np.zeros(self.skel.getNumDofs())
-            mappingDict["freeDofs"] = range(0, self.skel.getNumDofs())
+            optimVars = self.q
+            mappingDict["freeDofs"] = range(0, self.bdlo.skel.getNumDofs())
         else:
-            optimVars = np.zeros(self.skel.getNumDofs() - len(lockedDofs))
             mappingDict["lockedDofs"] = lockedDofs
             mappingDict["freeDofs"] = [
                 index
-                for index in range(0, self.skel.getNumDofs())
+                for index in range(0, self.bdlo.skel.getNumDofs())
                 if index not in lockedDofs
             ]
+            optimVars = self.q[mappingDict["freeDofs"]]
         return optimVars, mappingDict
 
     def updateParameters(self, optimVars):
+
         # update skeleton
-        self.setPositions(self.q)
+        self.q[self.mappingDict["freeDofs"]] = optimVars
+        self.bdlo.skel.setPositions(self.q)
 
         # determine Positions
-        for i in range(0, self.K):
-            self.X = self.bdlo.getCaresianPositionsFromLocalCoordinates(self.SY)
+        for i in range(0, self.M):
+            self.X[i] = self.bdlo.getCartesianPositionFromBranchLocalCoordinate(
+                self.CBY[i], self.SY[i]
+            )
 
         # update Iteration Number
         self.iter += 1
 
         if callable(self.callback):
             self.callback()
+
+    def costFun(self, optimVars):
+        self.updateParameters(optimVars)
+        errors = np.zeros(self.M)
+        for i, y in enumerate(self.Y):
+            correspondingBranchIndex = self.CBY[i]
+            correspondingLocalCoordinate = self.SY[i]
+            x = self.bdlo.getCartesianPositionFromBranchLocalCoordinate(
+                correspondingBranchIndex, correspondingLocalCoordinate
+            )
+            errors[i] = np.linalg.norm(y - x)
+            self.X[i] = x
+        error = np.sum(errors)
+        return error
+
+    def reconstructShape(self, numIter: int = None):
+        res = least_squares(
+            self.costFun,
+            self.optimVars,
+            max_nfev=numIter,
+            verbose=2,
+        )
+        return res
 
     def getPosition(self, S):
         """Placeholder for child class."""

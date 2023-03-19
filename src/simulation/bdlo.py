@@ -638,6 +638,15 @@ class BranchedDeformableLinearObject(BDLOTopology):
             X[i, :] = self.getCartesianPositionFromBranchLocalCoordinate(branchIndex, s)
         return X
 
+    def getJacobianFromBranchLocalCoordinate(self, branchIndex: int, s: float):
+        correspondingBodyNode = self.getBodyNodeIndexFromBranchLocalCoodinate(
+            branchIndex, s
+        )
+        offset = self.getOffsetInBodyNodeCoordinatesFromBranchLocalCoordiate(
+            branchIndex, correspondingBodyNode, s
+        )
+        return self.skel.getBodyNode(correspondingBodyNode).getWorldJacobian(offset)
+
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):
 #     """

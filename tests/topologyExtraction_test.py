@@ -74,7 +74,7 @@ def visualizationCallback(
         fig.savefig(savePath + fileName + "_" + str(classHandle.iter) + ".png")
 
 
-def test_topologyExtraction():
+def setupTopologyExtractor():
     testPointSet = np.loadtxt(dataPath)
     somParameters = {
         "alpha": 1,
@@ -107,6 +107,11 @@ def test_topologyExtraction():
             "lofOutlierFilterParameters": lofOutlierFilterParameters,
         }
     )
+    return testTopologyExtractor
+
+
+def test_topologyExtraction():
+    testTopologyExtractor = setupTopologyExtractor()
     if vis:
         somVisualizationCallback = setupVisualizationCallback(
             testTopologyExtractor.selfOrganizingMap

@@ -185,29 +185,87 @@ class TopologyBasedCorrespondanceEstimation(object):
         #     correspondingBranchIndices.append(correspondingBranchPair)
         return branchCorrespondence
 
-    def calculateBranchCorresponanceAndLocalCoordinatsForPointSet(self, pointSet):
-        """returns the branch correspondance and the corresponding local coordinates for each point of the given point set with respect to the templateTopology."""
+    def mapBranchIndexFromExtractedToTemplate(self, branchIndex: int):
+        correspondanceMapping = self.getCorrespondingBranches()
+        correspondingBranchIndexInTemplateTopology = np.where(
+            correspondanceMapping == branchIndex
+        )[0][0]
+        return correspondingBranchIndexInTemplateTopology
+
+    def calculateExtractedBranchCorrespondanceAndLocalCoordinatesFromPointSet(
+        self, pointSet
+    ):
+        """returns the branch correspondance and the corresponding local coordinates for each point of the given point set with respect to the extractedTopology."""
         if self.extractedTopology is None:
             raise ValueError("No extracted topology. First extract a topology.")
-
-        # calculate all necessary correspondances
-        correspondanceMappingFromTemplateToExtractedBranches = (
-            self.getCorrespondingBranches()
-        )
         (
             correspondingBranchIndicesInExtractedTopology,
             localCoordinates,
         ) = self.extractedTopology.calculateBranchCorrespondanceAndLocalCoordinatesForPointSet(
             pointSet
         )
+        return correspondingBranchIndicesInExtractedTopology, localCoordinates
+
+    def calculateTemplateBranchCorrespondanceAndLocalCoordinatsFromPointSet(
+        self, pointSet
+    ):
+        """returns the branch correspondance and the corresponding local coordinates for each point of the given point set with respect to the templateTopology."""
+        if self.extractedTopology is None:
+            raise ValueError("No extracted topology. First extract a topology.")
+        (
+            correspondingBranchIndicesInExtractedTopology,
+            localCoordinates,
+        ) = self.calculateExtractedBranchCorrespondanceAndLocalCoordinatesFromPointSet(
+            pointSet
+        )
 
         # map from extracted corresponances to template corresponances
         correspondingBranchIndicesInTemplateTopology = []
         for branchIndex in correspondingBranchIndicesInExtractedTopology:
-            correspondingBranchIndexInTemplateTopology = np.where(
-                correspondanceMappingFromTemplateToExtractedBranches == branchIndex
-            )[0][0]
+
+            correspondingBranchIndexInTemplateTopology = (
+                self.mapBranchIndexFromExtractedToTemplate(branchIndex)
+            )
             correspondingBranchIndicesInTemplateTopology.append(
                 correspondingBranchIndexInTemplateTopology
             )
         return correspondingBranchIndicesInTemplateTopology, localCoordinates
+
+    def getCorrespondingCartesianPointPairFromBranchLocalCoordinateInExtractedTopology(
+        self, branchIndex: int, s: float
+    ):
+        """returns the corresponding cartesian positions of a point for the templateTopology and the extracted Topology. The location of the point is specified by the branch index and local coordinate in the extractedTopology,
+
+        Args:
+            templateBranchIndex (int): _description_
+            s (float): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        xExtracted = self.extractedTopology.interpolateCartesianPositionFromBranchLocalCoordinate(
+            branchIndex, s
+        )
+        # map the branch index form extracted to template
+        brachIndexTemplate = self.mapBranchIndexFromExtractedToTemplate(branchIndex)
+        xTemplate = self.templateTopology.getCartesianPositionFromBranchLocalCoordinate(
+            brachIndexTemplate, s
+        )
+        pointPair = (xTemplate, xExtracted)
+        return pointPair
+
+    def getCorrespondingCartesianPointPairsFromBranchLocalCoordinatesInExtractedTopology(
+        self, branchIndices: list, S: list
+    ):
+        pointPairs = []
+        if len(branchIndices) != len(S):
+            raise ValueError(
+                "Not the same number of branchIndices and local coordinates. For each point pair a branch index and local coordinate is required"
+            )
+        else:
+            for i, branchIndex in enumerate(branchIndices):
+                pointPair = self.getCorrespondingCartesianPointPairFromBranchLocalCoordinateInExtractedTopology(
+                    branchIndex, S[i]
+                )
+                pointPairs.append(pointPair)
+        return pointPairs

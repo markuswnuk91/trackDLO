@@ -67,17 +67,17 @@ class BDLOReconstruction(ShapeReconstruction):
             self.X[i] = self.bdlo.getCartesianPositionFromBranchLocalCoordinate(
                 self.CBY[i], self.SY[i]
             )
-        # lockedDofs=[3, 4, 5]
-        unlockedDofs = []
-        for i, branch in enumerate(self.bdlo.getBranches()):
-            branchRootDofIndices = self.bdlo.getBranchRootDofIndices(i)
-            for branchRootDofIndex in branchRootDofIndices:
-                unlockedDofs.append(branchRootDofIndex)
-        lockedDofs = list(range(0, self.bdlo.skel.getNumDofs()))
-        for dof in lockedDofs:
-            if dof in unlockedDofs:
-                lockedDofs.remove(dof)
-        self.optimVars, self.mappingDict = self.initOptimVars(lockedDofs)
+        # unlockedDofs = []
+        # for i, branch in enumerate(self.bdlo.getBranches()):
+        #     branchRootDofIndices = self.bdlo.getBranchRootDofIndices(i)
+        #     for branchRootDofIndex in branchRootDofIndices:
+        #         unlockedDofs.append(branchRootDofIndex)
+        # lockedDofs = list(range(0, self.bdlo.skel.getNumDofs()))
+        # for dof in lockedDofs:
+        #     if dof in unlockedDofs:
+        #         lockedDofs.remove(dof)
+        # self.optimVars, self.mappingDict = self.initOptimVars(lockedDofs)
+        self.optimVars, self.mappingDict = self.initOptimVars(None)
 
     def initOptimVars(self, lockedDofs=None):
         """initializes the optimization variables
@@ -176,7 +176,7 @@ class BDLOReconstruction(ShapeReconstruction):
         res = least_squares(
             self.costFun,
             self.optimVars,
-            self.costFunJac,
+            # self.costFunJac,
             max_nfev=numIter,
             verbose=2,
         )

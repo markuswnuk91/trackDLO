@@ -346,9 +346,10 @@ class BranchedDeformableLinearObject(BDLOTopology):
         Returns:
             int: index of the bodyNode in the dart skeleton
         """
-        return self.getBranch(branchIndex).getBranchInfo()[
+        rootBodyNodeIndex = self.getBranch(branchIndex).getBranchInfo()[
             "correspondingBodyNodeIndices"
         ][0]
+        return rootBodyNodeIndex
 
     def getBranchLastBodyNodeIndex(self, branchIndex):
         """returns the bodyNode index of the last bodyNode of a branch with the given index
@@ -359,9 +360,10 @@ class BranchedDeformableLinearObject(BDLOTopology):
         Returns:
             int: index of the bodyNode in the dart skeleton
         """
-        return self.getBranch(branchIndex).getBranchInfo()[
+        lastBodyNodeIndex = self.getBranch(branchIndex).getBranchInfo()[
             "correspondingBodyNodeIndices"
         ][-1]
+        return lastBodyNodeIndex
 
     def getBranchRootDofIndices(self, branchIndex):
         branchRootDofIndices = []
@@ -526,10 +528,15 @@ class BranchedDeformableLinearObject(BDLOTopology):
     def getJointLocalCoordinatesFromBranch(self, branchIndex):
         branchLength = self.branches[branchIndex].getBranchInfo()["length"]
         segmentLengths = self.branches[branchIndex].getBranchInfo()["segmentLengths"]
-        return np.insert(np.cumsum(np.array(segmentLengths)) / branchLength, 0, 0)
+        if self.getBranch(branchIndex) == self.rootBranch:
+            segmentLengths = segmentLengths[::-1]
+        localCoordinates = np.insert(
+            np.cumsum(np.array(segmentLengths)) / branchLength, 0, 0
+        )
+        return localCoordinates
 
     def getBodyNodeIndexFromBranchLocalCoodinate(self, branchIndex: int, s: float):
-        """returns the bodyNode index corresponding to the local coordinate running along a branch
+        """returns the bodyNode index corresponding to the local coordinate running along a branch. Local coordinate runs from branch startNode to branch end node, except for rootBranch where it runs from end node to start node, because rootBranch starts with a leafnode.
 
         Args:
             s (float): local coordinate of the branch in [0,1]
@@ -537,7 +544,16 @@ class BranchedDeformableLinearObject(BDLOTopology):
         Returns:
             int: bodyNode index of the body the local coordinate corresponds to.
         """
-        if 1 - s <= np.finfo(float).eps:
+        if (self.getBranch(branchIndex) == self.rootBranch) and (
+            1 - s <= np.finfo(float).eps
+        ):
+            return self.getBranchRootBodyNodeIndex(branchIndex)
+        elif (self.getBranch(branchIndex) == self.rootBranch) and (
+            s <= np.finfo(float).eps
+        ):
+            return self.getBranchLastBodyNodeIndex(branchIndex)
+
+        elif 1 - s <= np.finfo(float).eps:
             return self.getBranchLastBodyNodeIndex(branchIndex)
         elif s <= np.finfo(float).eps:
             return self.getBranchRootBodyNodeIndex(branchIndex)
@@ -554,6 +570,10 @@ class BranchedDeformableLinearObject(BDLOTopology):
                 )
                 - 1
             )
+            if self.getBranch(branchIndex) == self.rootBranch:
+                bodyNodeIndex = bodyNodeIndicesInBranch[-(indexInBranch + 1)]
+            else:
+                bodyNodeIndex = bodyNodeIndicesInBranch[indexInBranch]
             return bodyNodeIndicesInBranch[indexInBranch]
 
     def getOffsetInBodyNodeCoordinatesFromBranchLocalCoordiate(
@@ -576,11 +596,18 @@ class BranchedDeformableLinearObject(BDLOTopology):
         segmentLengths = self.branches[branchIndex].getBranchInfo()["segmentLengths"]
         localCoordsJoints = self.getJointLocalCoordinatesFromBranch(branchIndex)
         indexInBranch = bodyNodeIndicesInBranch.index(bodyNodeIndex)
-        sLower = localCoordsJoints[indexInBranch]
-        sUpper = localCoordsJoints[indexInBranch + 1]
-        sCenter = sLower + (sUpper - sLower) / 2
-        sOffset = (s - sCenter) / (sUpper - sLower)
-        offset = np.array([0, 0, sOffset * segmentLengths[indexInBranch]])
+        if self.getBranch(branchIndex) == self.rootBranch:
+            sUpper = localCoordsJoints[-(indexInBranch + 1)]
+            sLower = localCoordsJoints[-(indexInBranch + 2)]
+            sCenter = sLower + (sUpper - sLower) / 2
+            sOffset = (s - sCenter) / (sUpper - sLower)
+            offset = np.array([0, 0, -1 * sOffset * segmentLengths[indexInBranch]])
+        else:
+            sLower = localCoordsJoints[indexInBranch]
+            sUpper = localCoordsJoints[indexInBranch + 1]
+            sCenter = sLower + (sUpper - sLower) / 2
+            sOffset = (s - sCenter) / (sUpper - sLower)
+            offset = np.array([0, 0, sOffset * segmentLengths[indexInBranch]])
         return offset
 
     def getCartesianPositionSegmentWithOffset(
@@ -609,7 +636,16 @@ class BranchedDeformableLinearObject(BDLOTopology):
         Returns:
             cartesianPosition: cartesian position of the point corresponding to the local coordinate.
         """
-        if s <= np.finfo(float).eps:
+        if self.getBranch(branchIndex) == self.rootBranch and s <= np.finfo(float).eps:
+            correspondingBodyNodeIndex = self.getBranchLastBodyNodeIndex(branchIndex)
+            return self.getCartesianPositionSegmentEnd(correspondingBodyNodeIndex)
+        elif (
+            self.getBranch(branchIndex) == self.rootBranch
+            and 1 - s <= np.finfo(float).eps
+        ):
+            correspondingBodyNodeIndex = self.getBranchRootBodyNodeIndex(branchIndex)
+            return self.getCartesianPositionSegmentStart(correspondingBodyNodeIndex)
+        elif s <= np.finfo(float).eps:
             correspondingBodyNodeIndex = self.getBranchRootBodyNodeIndex(branchIndex)
             return self.getCartesianPositionSegmentStart(correspondingBodyNodeIndex)
         elif 1 - s <= np.finfo(float).eps:

@@ -20,7 +20,7 @@ except:
     raise
 
 # control parameters
-vis = False  # enable for visualization
+vis = True  # enable for visualization
 
 
 def setupVisualization(dim):
@@ -237,13 +237,25 @@ def test_correspondanceEstimation():
     (
         correspondingBranches,
         correspondingLocalCoordinates,
-    ) = testCorrespondanceEstimator.calculateBranchCorresponanceAndLocalCoordinatsForPointSet(
+    ) = testCorrespondanceEstimator.calculateTemplateBranchCorrespondanceAndLocalCoordinatsFromPointSet(
         testPointSet
     )
     print(
         "Corresponding branches: {}, corresponding local coordiantes {}".format(
             correspondingBranches, correspondingLocalCoordinates
         )
+    )
+
+    samplePoints = testCorrespondanceEstimator.X
+    (
+        samplePointsBranchIndices,
+        samplePointsLocalCoordinates,
+    ) = testCorrespondanceEstimator.calculateExtractedBranchCorrespondanceAndLocalCoordinatesFromPointSet(
+        samplePoints
+    )
+
+    correspondingPointPairs = testCorrespondanceEstimator.getCorrespondingCartesianPointPairsFromBranchLocalCoordinatesInExtractedTopology(
+        samplePointsBranchIndices, samplePointsLocalCoordinates
     )
 
     if vis:
@@ -260,7 +272,7 @@ def test_correspondanceEstimation():
         extractedPointPairs = (
             extractedTopology.getAdjacentPointPairsAndBranchCorrespondance()
         )
-
+        # visualize template topology tree
         fig, ax = setupVisualization(len(templatePointPairs[0][0]))
         for pointPair in templatePointPairs:
             stackedPair = np.stack(pointPair[:2])
@@ -276,6 +288,7 @@ def test_correspondanceEstimation():
         set_axes_equal(ax)
         plt.show(block=False)
 
+        # visualize extracted topology tree
         fig, ax = setupVisualization(len(extractedPointPairs[0][0]))
         for pointPair in extractedPointPairs:
             stackedPair = np.stack(pointPair[:2])
@@ -288,6 +301,16 @@ def test_correspondanceEstimation():
             plotLine(ax, pointPair=stackedPair, color=plotColor)
             plotPoint(ax=ax, x=stackedPair[0], color=plotColor)
             plotPoint(ax=ax, x=stackedPair[1], color=plotColor)
+        set_axes_equal(ax)
+        plt.show(block=False)
+
+        # visualize point correspondances
+        fig, ax = setupVisualization(len(extractedPointPairs[0][0]))
+        for pointPair in correspondingPointPairs:
+            stackedPair = np.stack(pointPair[:2])
+            plotLine(ax, pointPair=stackedPair, color=[1, 0, 0], alpha=0.3)
+            plotPoint(ax=ax, x=stackedPair[0], color=[1, 0, 0])
+            plotPoint(ax=ax, x=stackedPair[1], color=[0, 0, 1])
         set_axes_equal(ax)
         plt.show(block=True)
 

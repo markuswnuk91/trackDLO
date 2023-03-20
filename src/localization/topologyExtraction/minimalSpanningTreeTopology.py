@@ -210,7 +210,9 @@ class MinimalSpanningTreeTopology(topologyModel):
         localCoordinates = np.zeros(len(correspondingNodes))
         for i, node in enumerate(correspondingNodes):
             cartesianPositions[i, :] = node.getNodeInfo()["cartesianPosition"]
-
+        # revert local coordinate for root branch since it starts with an end node
+        if correspondingBranch == self.rootBranch:
+            cartesianPositions = cartesianPositions[::-1, :]
         # compute local coordinates corresponding to the cartesian positions
         localCoordinates = (
             np.cumsum(np.linalg.norm(np.diff(cartesianPositions, axis=0), axis=1))

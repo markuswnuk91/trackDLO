@@ -90,7 +90,7 @@ def runReconstruction():
     (
         CBY,
         SY,
-    ) = testCorrespondanceEstimator.calculateBranchCorresponanceAndLocalCoordinatsForPointSet(
+    ) = testCorrespondanceEstimator.calculateTemplateBranchCorrespondanceAndLocalCoordinatsFromPointSet(
         Y
     )
     testReconstruction = BDLOReconstruction(

@@ -574,7 +574,7 @@ class BranchedDeformableLinearObject(BDLOTopology):
                 bodyNodeIndex = bodyNodeIndicesInBranch[-(indexInBranch + 1)]
             else:
                 bodyNodeIndex = bodyNodeIndicesInBranch[indexInBranch]
-            return bodyNodeIndicesInBranch[indexInBranch]
+            return bodyNodeIndex
 
     def getOffsetInBodyNodeCoordinatesFromBranchLocalCoordiate(
         self, branchIndex: int, bodyNodeIndex, s: float
@@ -681,7 +681,15 @@ class BranchedDeformableLinearObject(BDLOTopology):
         offset = self.getOffsetInBodyNodeCoordinatesFromBranchLocalCoordiate(
             branchIndex, correspondingBodyNode, s
         )
-        return self.skel.getBodyNode(correspondingBodyNode).getWorldJacobian(offset)
+        bodyNode = self.skel.getBodyNode(correspondingBodyNode)
+        jacobian = bodyNode.getWorldJacobian(offset)
+        indexPointer = 0
+        paddedJacobian = np.zeros((6, self.skel.getNumDofs()))
+        for i in range(0, self.skel.getNumDofs()):
+            if bodyNode.dependsOn(i):
+                paddedJacobian[:, i] = jacobian[:, indexPointer]
+                indexPointer += 1
+        return paddedJacobian
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

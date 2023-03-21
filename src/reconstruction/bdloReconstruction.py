@@ -149,18 +149,19 @@ class BDLOReconstruction(ShapeReconstruction):
             correspondingDartIndex = self.mappingDict["freeDofs"][i]
             jacobianRows = []
             for jacobian in jacobians:
-                # fill dart jacobians with zeros
-                if jacobian.shape[1] < len(self.q):
-                    paddedJacobian = np.pad(
-                        jacobian,
-                        ((0, 0), (0, len(self.q) - jacobian.shape[1] % len(self.q))),
-                        "constant",
-                    )
-                elif jacobian.shape[1] == len(self.q):
-                    paddedJacobian = jacobian.copy()
-                else:
-                    raise ValueError("Jacobian seems to have wrong dimension.")
-                jacobianRows.append(paddedJacobian[3:6, correspondingDartIndex])
+                # # fill dart jacobians with zeros
+                # if jacobian.shape[1] < len(self.q):
+                #     paddedJacobian = np.pad(
+                #         jacobian,
+                #         ((0, 0), (0, len(self.q) - jacobian.shape[1] % len(self.q))),
+                #         "constant",
+                #     )
+                # elif jacobian.shape[1] == len(self.q):
+                #     paddedJacobian = jacobian.copy()
+                # else:
+                #     raise ValueError("Jacobian seems to have wrong dimension.")
+                # jacobianRows.append(paddedJacobian[3:6, correspondingDartIndex])
+                jacobianRows.append(jacobian[3:6, correspondingDartIndex])
             jacobianMultiplikatorMatrix = np.vstack(jacobianRows)
             # calcualte cost function derivative
 
@@ -176,7 +177,7 @@ class BDLOReconstruction(ShapeReconstruction):
         res = least_squares(
             self.costFun,
             self.optimVars,
-            # self.costFunJac,
+            self.costFunJac,
             max_nfev=numIter,
             verbose=2,
         )

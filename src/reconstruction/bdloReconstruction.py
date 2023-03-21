@@ -111,12 +111,6 @@ class BDLOReconstruction(ShapeReconstruction):
                 self.CBY[i], self.SY[i]
             )
 
-        # update Iteration Number
-        self.iter += 1
-
-        if callable(self.callback):
-            self.callback()
-
     def costFun(self, optimVars):
         self.updateParameters(optimVars)
         # for i, y in enumerate(self.Y):
@@ -170,7 +164,11 @@ class BDLOReconstruction(ShapeReconstruction):
                 * self.wPosDiff
                 * np.sum((self.Y - self.X) * jacobianMultiplikatorMatrix, axis=1)
             )
+        # update Iteration Number
+        self.iter += 1
 
+        if callable(self.callback):
+            self.callback()
         return J
 
     def reconstructShape(self, numIter: int = None):

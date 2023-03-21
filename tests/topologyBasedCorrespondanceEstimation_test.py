@@ -13,6 +13,8 @@ try:
         MinimalSpanningTreeTopology,
     )
     from src.simulation.bdlo import BranchedDeformableLinearObject
+    from src.localization.downsampling.som.som import SelfOrganizingMap
+    from src.localization.downsampling.l1median.l1Median import L1Median
     from src.simulation.bdloTemplates import initArenaWireHarness
     from src.visualization.plot3D import *
 except:
@@ -20,6 +22,7 @@ except:
     raise
 
 # control parameters
+saveImgs = True
 vis = True  # enable for visualization
 
 
@@ -44,7 +47,7 @@ def setupVisualizationCallback(classHandle):
         fig,
         ax,
         classHandle,
-        # savePath="/mnt/c/Users/ac129490/Documents/Dissertation/Software/trackdlo/imgs/continuousShapeReconstuction/helix_fail3/",
+        savePath="/mnt/c/Users/ac129490/Documents/Dissertation/Software/trackdlo/imgs/topologyExtraction/test",
     )
 
 
@@ -74,8 +77,15 @@ def visualizationCallback(
     plt.draw()
     plt.pause(0.1)
     print(classHandle.iteration)
-    if savePath is not None:
-        fig.savefig(savePath + fileName + "_" + str(classHandle.iter) + ".png")
+    if saveImgs and savePath is not None:
+        if type(classHandle) == SelfOrganizingMap:
+            fig.savefig(
+                savePath + fileName + "_" + "som_" + str(classHandle.iteration) + ".png"
+            )
+        else:
+            fig.savefig(
+                savePath + fileName + "_" + "l1_" + str(classHandle.iteration) + ".png"
+            )
 
 
 def test_topologyExtraction():

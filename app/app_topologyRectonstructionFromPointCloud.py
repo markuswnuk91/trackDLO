@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn import manifold
 from scipy.spatial import distance_matrix
+from scipy.sparse.csgraph import shortest_path
 from sklearn import preprocessing
 
 try:
@@ -20,6 +21,7 @@ try:
     from src.localization.topologyExtraction.minimalSpanningTreeTopology import (
         MinimalSpanningTreeTopology,
     )
+    from src.utils.utils import minimalSpanningTree
     from src.sensing.loadPointCloud import readPointCloudFromPLY
     from src.visualization.plot3D import (
         plotPointSets,
@@ -56,12 +58,13 @@ dataSrc = [
     "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_3D_DLO/pointcloud_1.ply",
     "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_2.ply",
     "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_7.ply",
+    "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_4.ply",
 ]
 dataPath = dataSrc[sourceSample]
 
 # downsampling
 downsamplingInputRatio = 1 / 3  # downsampling of input point set
-numSeedPoints = 70  # downsampling for obtaining seedpoints
+numSeedPoints = 50  # downsampling for obtaining seedpoints
 
 # outlier filtering
 numNeighbors = 15
@@ -76,15 +79,15 @@ somParameters = {
     "alphaAnnealing": 0.9,
     "sigma2Annealing": 0.8,
     "kernelMethod": False,
-    "max_iterations": 3,
+    "max_iterations": 30,
 }
 
 l1Parameters = {
-    "h": 0.12,
-    "hAnnealing": 0.8,
+    "h": 0.1,
+    "hAnnealing": 1,
     "hReductionFactor": 1,
     "mu": 0.35,
-    "max_iterations": 3,
+    "max_iterations": 30,
 }
 
 # mlle parameters,
@@ -293,7 +296,7 @@ def extractTopology(pointSet, featureMatrix=None):
             ax=ax, X=pointSet[leafNodeIndices, :], color=[1, 0, 0], size=50, alpha=0.4
         )
         set_axes_equal(ax)
-        plt.show(block=True)
+        plt.show(block=False)
 
 
 def eval_SOM():
@@ -532,13 +535,54 @@ def eval_SOM_L1_MLLEWeightedFeatureMatrix():
     print("End")
 
 
+def eval_EMSTBasedFeatureMatrix():
+    inputPointSet = readData(dataPath)
+    seedPoints = samplePointsRandom(inputPointSet, numSeedPoints)
+    reducedPointSet, som = reducePointSet(
+        inputPointSet, seedPoints, "som", somParameters
+    )
+    # filteredPointSet = filterOutliers(reducedPointSet)
+    reducedPointSet, l1Median = reducePointSet(
+        inputPointSet, reducedPointSet, "l1", l1Parameters
+    )
+    C = l1Median.getCorrespondences()
+
+    combinedPointSet = np.vstack((reducedPointSet, inputPointSet))
+    combinedMinSpanTree = minimalSpanningTree(
+        distance_matrix(combinedPointSet, combinedPointSet)
+    )
+    pathDistanceMatrix, predecessorMatrix = shortest_path(
+        combinedMinSpanTree,
+        method="auto",
+        directed=False,
+        return_predecessors=True,
+        unweighted=False,
+        overwrite=False,
+        indices=list(range(0, numSeedPoints)),
+    )
+    pathDistanceMatrix = pathDistanceMatrix[:, :numSeedPoints]
+    cartesianDistanceMatrix = distance_matrix(reducedPointSet, reducedPointSet)
+    # normalization
+    min_max_scaler = preprocessing.MinMaxScaler()
+    pathDistanceMatrixNormalized = min_max_scaler.fit_transform(pathDistanceMatrix)
+    cartesianDistanceMatrixNormalized = min_max_scaler.fit_transform(
+        cartesianDistanceMatrix
+    )
+    featureMatrix = pathDistanceMatrixNormalized * cartesianDistanceMatrixNormalized
+    extractTopology(reducedPointSet, featureMatrix)
+    extractTopology(reducedPointSet, cartesianDistanceMatrix)
+    plt.show(block=True)
+    print("End")
+
+
 if __name__ == "__main__":
     # eval_SOM()
     # eval_L1()
     # eval_MLLE()
-    eval_SOM_L1()
+    # eval_SOM_L1()
     # eval_SOM_L1_MLLE()  # seems not useful
     # eval_MLLE_SOM_L1()
     # eval_MLLE_4D_2D()
     # eval_SOM_L1_MLLEWeightedFeatureMatrix()
     # eval_LocalDensityBasedFeatureMatrix()
+    eval_EMSTBasedFeatureMatrix()

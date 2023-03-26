@@ -94,6 +94,8 @@ class SelfOrganizingMap(DataReduction):
                 (self.numNearestNeighborsAnnealing) ** (self.iteration)
                 * self.numNearestNeighbors
             )
+            if numNearestNeighbors < 1:
+                numNearestNeighbors = 1
 
             # find the winning neurons for the dataset
             distanceMatrix = distance_matrix(self.T, self.Y)

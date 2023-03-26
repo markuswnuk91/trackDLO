@@ -73,8 +73,8 @@ contamination = 0.1
 # downsampling algorithm parameters
 somParameters = {
     "alpha": 1,
-    "numNearestNeighbors": 30,
-    "numNearestNeighborsAnnealing": 0.8,
+    "numNearestNeighbors": 5,
+    "numNearestNeighborsAnnealing": 0.93,
     "sigma2": 0.03,
     "alphaAnnealing": 0.9,
     "sigma2Annealing": 0.8,

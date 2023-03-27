@@ -49,6 +49,7 @@ class SelfOrganizingMap(DataReduction):
     def __init__(
         self,
         alpha=None,
+        beta=None,
         alphaAnnealing=None,
         numNearestNeighbors=None,
         numNearestNeighborsAnnealing=None,
@@ -69,9 +70,10 @@ class SelfOrganizingMap(DataReduction):
             else numNearestNeighborsAnnealing
         )
         self.alpha = 0.9 if alpha is None else alpha
+        self.beta = 0.1 if beta is None else beta
         self.alphaAnnealing = 0.93 if alphaAnnealing is None else alphaAnnealing
         self.sigma2 = 1 if sigma2 is None else sigma2
-        sigma2Annealing = 0.9 if sigma2Annealing is None else sigma2Annealing
+        self.sigma2Annealing = 0.9 if sigma2Annealing is None else sigma2Annealing
         self.kernelMethod = kernelMethod
 
     def calculateReducedRepresentation(self, Y=None, X=None):
@@ -88,14 +90,15 @@ class SelfOrganizingMap(DataReduction):
 
         while self.iteration < self.max_iterations:
             # anneling of update parameter
-            alpha = (self.alpha) ** (self.iteration) * self.alpha
-            sigma2 = (self.sigma2) ** (self.iteration) * self.sigma2
+            alpha = (self.alphaAnnealing) ** (self.iteration) * self.alpha
+            beta = self.beta
+            sigma2 = (self.sigma2Annealing) ** (self.iteration) * self.sigma2
             numNearestNeighbors = round(
                 (self.numNearestNeighborsAnnealing) ** (self.iteration)
                 * self.numNearestNeighbors
             )
             if numNearestNeighbors < 1:
-                numNearestNeighbors = 1
+                numNearestNeighbors = 0
 
             # find the winning neurons for the dataset
             distanceMatrix = distance_matrix(self.T, self.Y)
@@ -131,14 +134,32 @@ class SelfOrganizingMap(DataReduction):
                     self.T = (H @ YMean) / (H @ NumCorrespondences)[:, None]
             else:
                 # determine neighbors
-                (nearestNeighbors, _) = knn(self.T, self.T, numNearestNeighbors + 1)
-                for i in range(self.N):
+                # (nearestNeighbors, _) = knn(self.T, self.T, numNearestNeighbors + 1)
+                for i in range(0, self.N):
+                    knn = NearestNeighbors(n_neighbors=(numNearestNeighbors + 1))
+                    knn.fit(self.T)
+                    (neighborDistances, nearestNeighbors) = knn.kneighbors(
+                        self.T, return_distance=True
+                    )
                     if np.any(winnerIdxs == i):
-                        nearestNeighborIdxs = nearestNeighbors[i, :]
+                        idxsInNeighborArray = np.where(nearestNeighbors[i, :] != i)[0]
+                        nearestNeighborIdxs = nearestNeighbors[i, idxsInNeighborArray]
+                        nearestNeighborDistances = neighborDistances[
+                            i, idxsInNeighborArray
+                        ]
                         correspondingPointIdxs = np.where(winnerIdxs == i)[0]
                         yMean = np.sum(self.Y[correspondingPointIdxs, :], axis=0) / len(
                             correspondingPointIdxs
                         )
+                        # self.T[i, :] = self.T[i, :] + alpha * (yMean - self.T[i, :])
+                        # if len(nearestNeighborIdxs) > 0 and numNearestNeighbors >= 1:
+                        #     for k, neighborIdx in enumerate(nearestNeighborIdxs):
+                        #         self.T[neighborIdx, :] = self.T[neighborIdx, :] + (
+                        #             alpha
+                        #             * np.exp(-nearestNeighborDistances[k] / (beta))
+                        #             * (yMean - self.T[neighborIdx, :])
+                        #         )
+                        nearestNeighborIdxs = np.insert(nearestNeighborIdxs, 0, i)
                         self.T[nearestNeighborIdxs, :] = self.T[
                             nearestNeighborIdxs, :
                         ] + alpha * (

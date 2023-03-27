@@ -42,7 +42,7 @@ except:
 visControl = {
     "visualizeInput": True,
     "visualizeRandomSample": True,
-    "visualizeDimReducedPointSet": True,
+    "visualizeDimReducedPointSet": False,
     "visualizeReducedPointSet": True,
     "visualizeFilteredPointSet": True,
     "visualizeTopology": True,
@@ -71,23 +71,26 @@ numNeighbors = 15
 contamination = 0.1
 
 # downsampling algorithm parameters
+numSeedPoints_SOM = 40
+numSeedPoints_L1 = 150
 somParameters = {
-    "alpha": 1,
-    "numNearestNeighbors": 5,
-    "numNearestNeighborsAnnealing": 0.93,
-    "sigma2": 0.03,
-    "alphaAnnealing": 0.9,
-    "sigma2Annealing": 0.8,
+    "alpha": 0.9,
+    "beta": 1,
+    "numNearestNeighbors": 10,
+    "numNearestNeighborsAnnealing": 0.9,
+    "sigma2": 2,
+    "alphaAnnealing": 0.99,
+    "sigma2Annealing": 1,
     "kernelMethod": False,
-    "max_iterations": 30,
+    "max_iterations": 100,
 }
 
 l1Parameters = {
-    "h": 0.1,
+    "h": 0.12,
     "hAnnealing": 1,
-    "hReductionFactor": 1,
+    "hReductionFactor": 0.5,
     "mu": 0.35,
-    "max_iterations": 30,
+    "max_iterations": 3,
 }
 
 # mlle parameters,
@@ -296,7 +299,7 @@ def extractTopology(pointSet, featureMatrix=None):
             ax=ax, X=pointSet[leafNodeIndices, :], color=[1, 0, 0], size=50, alpha=0.4
         )
         set_axes_equal(ax)
-        plt.show(block=False)
+        plt.show(block=True)
 
 
 def eval_SOM():
@@ -350,6 +353,18 @@ def eval_SOM_L1_MLLE():
     reducedPointSet = reducePointSet(inputPointSet, reducedPointSet, "l1", l1Parameters)
     reconstructedPointSet = reduceDimension(reducedPointSet, mlleParameters)
     extractTopology(reconstructedPointSet)
+
+
+def eval_L1_SOM():
+    inputPointSet = readData(dataPath)
+    seedPoints = samplePointsRandom(inputPointSet, numSeedPoints_L1)
+    (reducedPointSet, _) = reducePointSet(inputPointSet, seedPoints, "l1", l1Parameters)
+    seedPointsNew = samplePointsRandom(reducedPointSet, numSeedPoints_SOM)
+    (reducedPointSet, _) = reducePointSet(
+        reducedPointSet, seedPointsNew, "som", somParameters
+    )
+    filteredPointSet = filterOutliers(reducedPointSet)
+    extractTopology(filteredPointSet)
 
 
 def eval_MLLE_SOM_L1():
@@ -585,4 +600,5 @@ if __name__ == "__main__":
     # eval_MLLE_4D_2D()
     # eval_SOM_L1_MLLEWeightedFeatureMatrix()
     # eval_LocalDensityBasedFeatureMatrix()
-    eval_EMSTBasedFeatureMatrix()
+    # eval_EMSTBasedFeatureMatrix()
+    eval_L1_SOM()

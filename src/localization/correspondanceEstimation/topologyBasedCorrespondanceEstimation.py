@@ -269,3 +269,38 @@ class TopologyBasedCorrespondanceEstimation(object):
                 )
                 pointPairs.append(pointPair)
         return pointPairs
+
+    def findCorrespondancesFromLocalCoordinate(self, s: float):
+        """returns a pair of cartesian coordinates corresponding to the given local coordinate in each branch ordered accrording to their correspondance"""
+        cartesianPositionsTemplate = []
+        cartesianPositionsExtracted = []
+        pointFeatureMatrixTemplate = []
+        pointFeatureMatrixExtracted = []
+
+        # sample points from templateTopology
+        for branch in self.templateTopology.getBranches():
+            branchIndex = self.templateTopology.getBranchIndex(branch)
+            # get cartesian position
+            cartesianPosition = (
+                self.templateTopology.getCartesianPositionFromBranchLocalCoordinate(
+                    branchIndex, s
+                )
+            )
+            cartesianPositionsTemplate.append(cartesianPosition)
+            # build feature matrix
+            pointFeatures = self.getBranchFeatures(self.templateTopology, branch)
+            pointFeatureMatrixTemplate.append(pointFeatures)
+
+        # sample points from extractedTopology
+        for branch in self.extractedTopology.getBranches():
+            branchIndex = self.extractedTopology.getBranchIndex(branch)
+            # get cartesian position
+            cartesianPosition = (
+                self.extractedTopology.getCartesianPositionFromBranchLocalCoordinate(
+                    branchIndex, s
+                )
+            )
+            cartesianPositionsExtracted.append(cartesianPosition)
+            # build feature matrix
+            pointFeatures = self.getBranchFeatures(self.extractedTopology, branch)
+            pointFeatureMatrixExtracted.append(pointFeatures)

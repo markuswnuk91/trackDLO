@@ -77,12 +77,10 @@ class TopologyExtraction(object):
         self.Y = Y
         self.numSeedPoints = numSeedPoints
         self.extractedTopology = None
-
         if randomSamplingParameters is None:
             self.randomSamplingParameters = {"numSeedPoints": int(len(Y) / 3)}
         else:
             self.randomSamplingParameters = randomSamplingParameters
-
         if somParameters is None:
             self.somParameters = {
                 "alpha": 1,
@@ -113,13 +111,14 @@ class TopologyExtraction(object):
             }
         else:
             self.lofOutlierFilterParameters = lofOutlierFilterParameters
-
         self.randomSampling = RandomSampling(**self.randomSamplingParameters)
         self.selfOrganizingMap = SelfOrganizingMap(Y=self.Y, **self.somParameters)
         self.l1Median = L1Median(Y=self.Y, **self.l1Parameters)
         self.lofOutlierFilter = LocalOutlierFactorFilter(
             **self.lofOutlierFilterParameters
         )
+        self.X = self.samplePointsRandom(self.Y, self.numSeedPoints)
+        self.T = self.X
 
     def extractTopology(
         self, numSeedPoints=None, extractionMethod="random_som_l1_outlier"
@@ -132,9 +131,10 @@ class TopologyExtraction(object):
             reducedPointSet = self.reducePointSet_L1(self.Y, reducedPointSet)
             filteredPointSet = self.filterOutliers(reducedPointSet, filterMethod="lof")
             self.extractedTopology = MinimalSpanningTreeTopology(filteredPointSet)
+            self.X = seedPoints
+            self.T = reducedPointSet
         else:
             raise NotImplementedError
-
         return self.extractedTopology
 
     def reducePointSet_SOM(
@@ -233,12 +233,10 @@ class TopologyExtraction(object):
             filteredPointset(np.array): filtered point set
         """
         if filterMethod == "lof":
-            filteredPointSet = self.lofOutlierFilter.calculateReducedRepresentation(
-                pointSet
-            )
+            self.T = self.lofOutlierFilter.calculateReducedRepresentation(pointSet)
         else:
             raise NotImplementedError
-        return filteredPointSet
+        return self.T
 
     def samplePointsRandom(self, pointSet, numSeedPoints):
         self.randomSampling.numSeedPoints = numSeedPoints

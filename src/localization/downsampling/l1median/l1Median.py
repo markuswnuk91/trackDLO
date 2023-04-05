@@ -40,6 +40,7 @@ class L1Median(DataReduction):
         h=None,
         mu=None,
         hReductionFactor=None,
+        hMin=None,
         hAnnealing=None,
         muAnnealing=None,
         densityCompensation=None,
@@ -51,13 +52,13 @@ class L1Median(DataReduction):
         self.h = self.get_h0(self.Y) if h is None else h
         self.mu = 0.35 if mu is None else mu
         self.hReductionFactor = 1 if hReductionFactor is None else hReductionFactor
+        self.hMin = 0 if hMin is None else hMin
         self.hAnnealing = 1 if hAnnealing is None else hAnnealing
         self.muAnnealing = 1 if muAnnealing is None else muAnnealing
         self.densityCompensation = (
             False if densityCompensation is None else densityCompensation
         )
         self.h_d = self.h / 2 if h_d is None else h_d
-        self.h_min = 1e-2
         self.iteration = 0
 
     def get_h0(self, points):
@@ -162,15 +163,14 @@ class L1Median(DataReduction):
         J = len(self.Y)  # number of input points
         I = len(self.T)  # number of seedpoints
         self.localDensity_matrix = self.get_weightedLocalDensitiy()
-        h = self.hReductionFactor * self.h * self.hAnnealing**self.iteration
-
-        if h <= self.h_min:
-            h = self.h_min
 
         alpha_matrix = np.zeros((I, J))
         beta_matrix = np.zeros((I, I))
 
         while self.iteration < self.max_iterations:
+            h = self.hReductionFactor * self.h * self.hAnnealing**self.iteration
+            if h <= self.hMin:
+                h = self.hMin
 
             alpha_matrix = self.get_alphas(self.T, self.Y, h)
             beta_matrix = self.get_betas(self.T, h)
@@ -200,11 +200,19 @@ class L1Median(DataReduction):
                 axis=0,
             )
             sum_Id_betaiid = np.sum(beta_matrix, axis=1) - np.diag(beta_matrix)
-            term2 = (
-                self.mu
-                * sigmas[:, None]
-                * (sum_Id_xixid_betaid / sum_Id_betaiid[:, None])
-            )  # regularization term
+            term2 = np.zeros((self.N, self.D))
+            for i in range(0, self.N):
+                if sum_Id_betaiid[i] <= np.finfo(float).eps:
+                    term2[i, :] = np.zeros(self.D)
+                else:
+                    term2[i, :] = (
+                        self.mu * sigmas[i] * sum_Id_xixid_betaid[i] / sum_Id_betaiid[i]
+                    )
+            # term2 = (
+            #     self.mu
+            #     * sigmas[:, None]
+            #     * (sum_Id_xixid_betaid / sum_Id_betaiid[:, None])
+            # )  # regularization term
 
             # update positions
             self.T = term1 + term2

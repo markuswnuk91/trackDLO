@@ -21,7 +21,7 @@ except:
     raise
 
 # script control parameters
-saveFig = True
+saveFig = False
 s = np.linspace(0, 1, 30)  # discretization of centerline
 nSamples = 10  # num samples per discretitzed point on centerline
 cov = 0.01 * np.eye(3)  # noise

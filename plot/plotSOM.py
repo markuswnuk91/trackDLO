@@ -33,11 +33,10 @@ upperBorder = 2.5
 # SOM
 numSeedPoints = 20
 alpha = 0.1
-numNearestNeighbors = 15
-numIterations = 300
-minNumNearestNeighbors = 3
-knn = True
-kernel = True
+numNearestNeighbors = 2
+numIterations = 100
+minNumNearestNeighbors = 2
+method = "kernel"
 sigma2 = 0.1
 sigma2Annealing = 0.9
 
@@ -118,8 +117,7 @@ def computeSOM(X):
             "numNearestNeighbors": numNearestNeighbors,
             "max_iterations": numIterations,
             "minNumNearestNeighbors": minNumNearestNeighbors,
-            "knn": knn,
-            "kernelMethod": kernel,
+            "method": method,
             "sigma2": sigma2,
             "sigma2Annealing": sigma2Annealing,
         }

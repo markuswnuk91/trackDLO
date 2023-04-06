@@ -54,10 +54,11 @@ class SelfOrganizingMap(DataReduction):
         numNearestNeighbors=None,
         numNearestNeighborsAnnealing=None,
         minNumNearestNeighbors=None,
+        h0=None,
+        h0Annealing=None,
         sigma2=None,
         sigma2Annealing=None,
-        kernelMethod=False,
-        knn=True,
+        method="kernel",
         *args,
         **kwargs
     ):
@@ -74,10 +75,11 @@ class SelfOrganizingMap(DataReduction):
         self.alpha = 0.9 if alpha is None else alpha
         self.beta = 0.1 if beta is None else beta
         self.alphaAnnealing = 0.93 if alphaAnnealing is None else alphaAnnealing
+        self.h0 = 1 if h0 is None else h0
         self.sigma2 = 1 if sigma2 is None else sigma2
         self.sigma2Annealing = 0.9 if sigma2Annealing is None else sigma2Annealing
-        self.kernelMethod = kernelMethod
-        self.knn = knn
+        self.h0Annealing = 1 if h0Annealing is None else h0Annealing
+        self.method = method
         self.minNumNearestNeighbors = (
             0 if minNumNearestNeighbors is None else minNumNearestNeighbors
         )
@@ -98,6 +100,10 @@ class SelfOrganizingMap(DataReduction):
             # anneling of update parameter
             # alpha = (self.alphaAnnealing) ** (self.iteration) * self.alpha
             alpha = self.alpha * (1 - self.iteration / self.max_iterations)
+            # h0 = self.h0 * (1 - self.iteration / self.max_iterations)
+            h0 = (self.h0Annealing) ** (self.iteration) * self.h0
+            sigma2 = (self.sigma2Annealing) ** (self.iteration) * self.sigma2
+            # sigma2 = self.sigma2 * (1 - self.iteration / self.max_iterations)
             # numNearestNeighbors = round(
             #     (self.numNearestNeighborsAnnealing) ** (self.iteration)
             #     * self.numNearestNeighbors
@@ -110,16 +116,14 @@ class SelfOrganizingMap(DataReduction):
 
             beta = self.beta
 
-            sigma2 = (self.sigma2Annealing) ** (self.iteration) * self.sigma2
-
             # update neurons
-            if self.kernelMethod == True:
+            if self.method == "kernel":
                 # find the winning neurons for the dataset
                 distanceMatrix = distance_matrix(self.T, self.Y)
                 if sigma2 <= np.finfo(float).eps:
                     H = np.eye(self.N)
                 else:
-                    H = alpha * gaussian_kernel(self.T, sigma2)
+                    H = h0 * gaussian_kernel(self.T, np.square(sigma2))
                 winnerIdxs = np.argmin(distanceMatrix, axis=0)
 
                 YMean = np.zeros((self.N, self.D))
@@ -144,7 +148,7 @@ class SelfOrganizingMap(DataReduction):
                         self.T[idx, :] = YMeanWeighted / NumCorrespondencesWeighted
                 else:
                     self.T = (H @ YMean) / (H @ NumCorrespondences)[:, None]
-            elif self.kernelMethod == False and self.knn == True:
+            elif self.method == "knn":
                 for i in range(0, self.N):
                     # find the winning neurons for the dataset
                     distanceMatrix = distance_matrix(self.T, self.Y)
@@ -170,9 +174,7 @@ class SelfOrganizingMap(DataReduction):
                         if len(nearestNeighborIdxs) > 0 and numNearestNeighbors >= 1:
                             for k, neighborIdx in enumerate(nearestNeighborIdxs):
                                 self.T[neighborIdx, :] = self.T[neighborIdx, :] + (
-                                    alpha
-                                    * np.exp(-nearestNeighborDistances[k] / (beta))
-                                    * (yMean - self.T[neighborIdx, :])
+                                    alpha * (yMean - self.T[neighborIdx, :])
                                 )
                         # nearestNeighborIdxs = np.insert(nearestNeighborIdxs, 0, i)
                         # self.T[nearestNeighborIdxs, :] = self.T[
@@ -205,7 +207,7 @@ class SelfOrganizingMap(DataReduction):
                         nearestNeighborIdxs = np.setdiff1d(
                             nearestNeighborIdxs, winnerIdx
                         )
-                    elif winnerIdx + round(numNearestNeighbors / 2) > self.N:
+                    elif winnerIdx + round(numNearestNeighbors / 2) >= self.N:
                         nearestNeighborIdxs = np.arange(
                             self.N - round(numNearestNeighbors / 2), self.N
                         )
@@ -215,7 +217,7 @@ class SelfOrganizingMap(DataReduction):
                     else:
                         nearestNeighborIdxs = np.arange(
                             winnerIdx - round(numNearestNeighbors / 2),
-                            winnerIdx + round(numNearestNeighbors / 2),
+                            winnerIdx + round(numNearestNeighbors / 2) + 1,
                         )
                         nearestNeighborIdxs = np.setdiff1d(
                             nearestNeighborIdxs, winnerIdx

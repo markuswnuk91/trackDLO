@@ -71,18 +71,19 @@ numNeighbors = 15
 contamination = 0.1
 
 # downsampling algorithm parameters
-numSeedPoints_SOM = 40
+numSeedPoints_SOM = 50
 numSeedPoints_L1 = 150
 somParameters = {
     "alpha": 0.9,
-    "beta": 1,
     "numNearestNeighbors": 10,
-    "numNearestNeighborsAnnealing": 0.9,
-    "sigma2": 2,
-    "alphaAnnealing": 0.99,
-    "sigma2Annealing": 1,
-    "kernelMethod": False,
-    "max_iterations": 100,
+    "numNearestNeighborsAnnealing": 0.7,
+    "sigma2": 0.1,
+    "alphaAnnealing": 0.93,
+    "h0": 1,
+    "h0Annealing": 0.93,
+    "sigma2Annealing": 0.97,
+    "method": "kernel",
+    "max_iterations": 10,
 }
 
 l1Parameters = {
@@ -363,8 +364,8 @@ def eval_L1_SOM():
     (reducedPointSet, _) = reducePointSet(
         reducedPointSet, seedPointsNew, "som", somParameters
     )
-    filteredPointSet = filterOutliers(reducedPointSet)
-    extractTopology(filteredPointSet)
+    # filteredPointSet = filterOutliers(reducedPointSet)
+    extractTopology(reducedPointSet)
 
 
 def eval_MLLE_SOM_L1():

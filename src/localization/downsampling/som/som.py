@@ -58,6 +58,7 @@ class SelfOrganizingMap(DataReduction):
         h0Annealing=None,
         sigma2=None,
         sigma2Annealing=None,
+        sigma2Min=None,
         method="kernel",
         *args,
         **kwargs
@@ -83,6 +84,7 @@ class SelfOrganizingMap(DataReduction):
         self.minNumNearestNeighbors = (
             0 if minNumNearestNeighbors is None else minNumNearestNeighbors
         )
+        self.sigma2Min = np.finfo(float).eps if sigma2Min is None else sigma2Min
 
     def calculateReducedRepresentation(self, Y=None, X=None):
         """
@@ -103,6 +105,8 @@ class SelfOrganizingMap(DataReduction):
             # h0 = self.h0 * (1 - self.iteration / self.max_iterations)
             h0 = (self.h0Annealing) ** (self.iteration) * self.h0
             sigma2 = (self.sigma2Annealing) ** (self.iteration) * self.sigma2
+            if sigma2 < self.sigma2Min:
+                sigma2 = self.sigma2Min
             # sigma2 = self.sigma2 * (1 - self.iteration / self.max_iterations)
             # numNearestNeighbors = round(
             #     (self.numNearestNeighborsAnnealing) ** (self.iteration)

@@ -11,7 +11,7 @@ from functools import partial
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.localization.downsampling.som.som import SelfOrganizingMap
+    from src.localization.downsampling.l1median.l1Median import L1Median
     from src.visualization.curveShapes3D import helixShape
     from src.visualization.plot3D import *
     from src.sensing.loadPointCloud import readPointCloudFromPLY
@@ -25,22 +25,20 @@ saveFig = False
 vis = True  # if SOM iterations should be visualized
 numSamples = 500
 noise = 0.1
-numBackgroundSamples = 0
-leftBorder = -1
-rightBorder = 1
-lowerBorder = -2
-upperBorder = 2
-# SOM
-numSeedPoints = 20
-alpha = 0.1
-numNearestNeighbors = 2
+numBackgroundSamples = 100
+leftBorder = -4
+rightBorder = 4
+lowerBorder = -2.5
+upperBorder = 2.5
+# L1
+h = 4
+hMin = 1.3
+mu = 0.37
+hAnnealing = 0.8
+numSeedPoints = 25
 numIterations = 100
-minNumNearestNeighbors = 2
-method = "kernel"
-sigma2 = 0.1
-sigma2Annealing = 0.93
-sigma2Min = 0.01
-X_SOM_iter = []
+
+uniSLightBlue = [0 / 255, 190 / 255, 255 / 255]
 
 
 def generateSamplePoints():
@@ -103,52 +101,31 @@ def visualizationCallback(
     plt.draw()
     plt.pause(0.1)
     print(classHandle.iteration)
-    # if classHandle.iteration == 3:
-    #     X_SOM_3 = classHandle.T
-    # elif classHandle.iteration == 5:
-    #     X_SOM_5 = classHandle.T
-    # elif classHandle.iteration == 10:
-    #     X_SOM_10 = classHandle.T
-    # elif classHandle.iteration == 30:
-    #     X_SOM_30 = classHandle.T
-    # elif classHandle.iteration == 50:
-    #     X_SOM_50 = classHandle.T
-    # elif classHandle.iteration == 100:
-    #     X_SOM_100 = classHandle.T
-    X_SOM_iter.append(classHandle.T)
     if savePath is not None:
         fig.savefig(savePath + fileName + "_" + str(classHandle.iter) + ".png")
 
 
-def computeSOM(X):
-    # random_indices = random.sample(range(0, len(X)), numSeedPoints)
+def computeL1(X):
+    # random_indices = random.sample(range(0, numSamples), numSeedPoints)
     # seedpoints = X[random_indices, :]
-    random_indices = random.sample(
-        range(round(0.45 * len(X)), round(0.55 * len(X))), numSeedPoints
-    )
-    seedpoints = X[random_indices, :]
+    indices = range(0, numSamples, round(numSamples / numSeedPoints))
+    seedpoints = X[indices, :]
     # seedpoints = np.tile(X[0, :], (len(X), 1))
-    # seedpoints = np.zeros((numSeedPoints, 2))
-    seedpoints = (np.random.rand(numSeedPoints, 2) - 0.5) * 0
-    testReduction = SelfOrganizingMap(
+    testReduction = L1Median(
         **{
             "Y": X,
             "X": seedpoints,
-            "alpha": alpha,
-            "numNearestNeighbors": numNearestNeighbors,
+            "h": h,
+            "hMin": hMin,
+            "mu": mu,
+            "hAnnealing": hAnnealing,
             "max_iterations": numIterations,
-            "minNumNearestNeighbors": minNumNearestNeighbors,
-            "method": method,
-            "sigma2": sigma2,
-            "sigma2Annealing": sigma2Annealing,
-            "sigma2Min": sigma2Min,
         }
     )
     if vis:
         visCallback = setupVisualizationCallback(testReduction)
         testReduction.registerCallback(visCallback)
-    reducedPoints = testReduction.calculateReducedRepresentation()
-    return reducedPoints
+    return testReduction.calculateReducedRepresentation()
 
 
 if __name__ == "__main__":
@@ -160,13 +137,15 @@ if __name__ == "__main__":
     s = pca.transform(samplePoints)
     pcaLine = s * np.tile(pricipalComponent, (len(s), 1)) + mean
 
-    # SOM
-    X_SOM = computeSOM(samplePoints)
+    # L1
+    reducedPoints = computeL1(samplePoints)
 
     # plotting
     fig = plt.figure()
     ax = fig.add_subplot()
     plotPointSet(ax=ax, X=samplePoints, color=[0, 0, 0], size=5)
     set_axes_equal(ax=ax)
-    plotPointSet(ax=ax, X=X_SOM, color=[1, 0, 0])
+    plotPointSet(ax=ax, X=reducedPoints, color=[1, 0, 0])
+    plotPoint(ax=ax, x=mean, color=uniSLightBlue)
+    plt.plot(pcaLine[:, 0], pcaLine[:, 1], color=uniSLightBlue)
     plt.show(block=True)

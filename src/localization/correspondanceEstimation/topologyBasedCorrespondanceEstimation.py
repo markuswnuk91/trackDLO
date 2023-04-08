@@ -122,7 +122,7 @@ class TopologyBasedCorrespondanceEstimation(object):
             sumAdjacentBranchLength += adjacentBranch.getBranchInfo()["length"]
         featureList.append(sumAdjacentBranchLength)
 
-        # length to next branch point
+        # summed length of adjacent nrachnes without leafnodes
         lengthToNextBranchPoint = 0
         adjacentBranches = topology.getAdjacentBranches(branch)
         for adjacentBranch in adjacentBranches:
@@ -272,6 +272,7 @@ class TopologyBasedCorrespondanceEstimation(object):
 
     def findCorrespondancesFromLocalCoordinate(self, s: float):
         """returns a pair of cartesian coordinates corresponding to the given local coordinate in each branch ordered accrording to their correspondance"""
+        raise NotImplementedError
         cartesianPositionsTemplate = []
         cartesianPositionsExtracted = []
         pointFeatureMatrixTemplate = []

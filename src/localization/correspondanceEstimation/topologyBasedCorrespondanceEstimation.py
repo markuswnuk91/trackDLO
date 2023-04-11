@@ -103,17 +103,10 @@ class TopologyBasedCorrespondanceEstimation(object):
         """
         featureList = []
 
+        # geomatrical features
         # branch length
         branchLength = branch.getBranchInfo()["length"]
         featureList.append(branchLength)
-
-        # number of branch poitns
-        numBranchPoints = topology.getNumBranchNodesFromBranch(branch)
-        featureList.append(numBranchPoints)
-
-        # number of leaf points
-        numLeafPoints = topology.getNumLeafNodesFromBranch(branch)
-        featureList.append(numLeafPoints)
 
         # summed length of adjacent branches
         sumAdjacentBranchLength = 0
@@ -122,15 +115,59 @@ class TopologyBasedCorrespondanceEstimation(object):
             sumAdjacentBranchLength += adjacentBranch.getBranchInfo()["length"]
         featureList.append(sumAdjacentBranchLength)
 
-        # summed length of adjacent nrachnes without leafnodes
-        lengthToNextBranchPoint = 0
+        # topological features
+        # number of branch poitns
+        numBranchPoints = topology.getNumBranchNodesFromBranch(branch)
+        featureList.append(numBranchPoints)
+
+        # number of leaf points
+        numLeafPoints = topology.getNumLeafNodesFromBranch(branch)
+        featureList.append(numLeafPoints)
+
+        # summed number of adjacent branch branchnodes
+        numAdjacentBranchNodes = 0
+        adjacentBranches = topology.getAdjacentBranches(branch)
+        for adjacentBranch in adjacentBranches:
+            if topology.isBranchNode(adjacentBranch.getStartNode()):
+                numAdjacentBranchNodes += 1
+            if topology.isBranchNode(adjacentBranch.getEndNode()):
+                numAdjacentBranchNodes += 1
+        featureList.append(numAdjacentBranchNodes)
+
+        # summed number of adjacent branch leafnodes
+        numAdjacentLeafNodes = 0
+        adjacentBranches = topology.getAdjacentBranches(branch)
+        for adjacentBranch in adjacentBranches:
+            if topology.isLeafNode(adjacentBranch.getStartNode()):
+                numAdjacentLeafNodes += 1
+            if topology.isLeafNode(adjacentBranch.getEndNode()):
+                numAdjacentBranchNodes += 1
+        featureList.append(numAdjacentLeafNodes)
+
+        # combined features
+        # summed length of adjacent brachnes without leafnodes
+        adjacentBranchLengthNoLeafnode = 0
         adjacentBranches = topology.getAdjacentBranches(branch)
         for adjacentBranch in adjacentBranches:
             if topology.isBranchNode(
                 adjacentBranch.getStartNode()
             ) and topology.isBranchNode(adjacentBranch.getEndNode()):
-                lengthToNextBranchPoint += adjacentBranch.getBranchInfo()["length"]
-        featureList.append(lengthToNextBranchPoint)
+                adjacentBranchLengthNoLeafnode += adjacentBranch.getBranchInfo()[
+                    "length"
+                ]
+        featureList.append(adjacentBranchLengthNoLeafnode)
+
+        # summed length of adjacent brachnes with a leafnode
+        adjacentBranchLengthWithLeafnode = 0
+        adjacentBranches = topology.getAdjacentBranches(branch)
+        for adjacentBranch in adjacentBranches:
+            if topology.isLeafNode(
+                adjacentBranch.getStartNode()
+            ) or topology.isLeafNode(adjacentBranch.getEndNode()):
+                adjacentBranchLengthWithLeafnode += adjacentBranch.getBranchInfo()[
+                    "length"
+                ]
+        featureList.append(adjacentBranchLengthWithLeafnode)
 
         branchFeatures = np.array(featureList)
         return branchFeatures
@@ -222,7 +259,6 @@ class TopologyBasedCorrespondanceEstimation(object):
         # map from extracted corresponances to template corresponances
         correspondingBranchIndicesInTemplateTopology = []
         for branchIndex in correspondingBranchIndicesInExtractedTopology:
-
             correspondingBranchIndexInTemplateTopology = (
                 self.mapBranchIndexFromExtractedToTemplate(branchIndex)
             )
@@ -270,38 +306,148 @@ class TopologyBasedCorrespondanceEstimation(object):
                 pointPairs.append(pointPair)
         return pointPairs
 
-    def findCorrespondancesFromLocalCoordinate(self, s: float):
-        """returns a pair of cartesian coordinates corresponding to the given local coordinate in each branch ordered accrording to their correspondance"""
-        raise NotImplementedError
+    # def findCorrespondancesFromLocalCoordinate(self, s: float):
+    #     """returns a pair of cartesian coordinates corresponding to the given local coordinate in each branch ordered accrording to their correspondance
+
+    #     Returns
+    #     Ysample: sample points on the branches of the extracted topology at the local coordinate s
+    #     Xsample: sample points on the branches of the template topology at the local coordinate s
+    #     C: correspondance matrix such that gives to correspondance betwwen Ysample and Xsample, such that Ysample ~ C @ Xsample.
+    #     """
+    #     cartesianPositionsTemplate = []
+    #     cartesianPositionsExtracted = []
+    #     pointFeaturesTemplate = []
+    #     pointFeaturesExtracted = []
+
+    #     # sample points from templateTopology
+    #     for branch in self.templateTopology.getBranches():
+    #         branchIndex = self.templateTopology.getBranchIndex(branch)
+    #         # get cartesian position
+    #         cartesianPosition = (
+    #             self.templateTopology.getCartesianPositionFromBranchLocalCoordinate(
+    #                 branchIndex, s
+    #             )
+    #         )
+    #         cartesianPositionsTemplate.append(cartesianPosition)
+    #         # build feature matrix
+    #         pointFeatures = self.getBranchFeatures(self.templateTopology, branch)
+    #         pointFeatures = np.insert(pointFeatures, 0, s)
+    #         pointFeaturesTemplate.append(pointFeatures)
+
+    #     # sample points from extractedTopology
+    #     for branch in self.extractedTopology.getBranches():
+    #         branchIndex = self.extractedTopology.getBranchIndex(branch)
+    #         # get cartesian position
+    #         cartesianPosition = self.extractedTopology.interpolateCartesianPositionFromBranchLocalCoordinate(
+    #             branchIndex, s
+    #         )
+    #         cartesianPositionsExtracted.append(cartesianPosition)
+    #         # build feature matrix
+    #         pointFeatures = self.getBranchFeatures(self.extractedTopology, branch)
+    #         pointFeatures = np.insert(pointFeatures, 0, s)
+    #         pointFeaturesExtracted.append(pointFeatures)
+
+    #     # correspondance estimation
+    #     pointFeatureMatrixTemplate = np.array(pointFeaturesTemplate)
+    #     pointFeatureMatrixExtracted = np.array(pointFeaturesExtracted)
+    #     scaler = MinMaxScaler()  # normalization
+    #     pointFeatureMatrixTemplateNormalized = scaler.fit_transform(
+    #         pointFeatureMatrixTemplate
+    #     )
+    #     pointFeatureMatrixExtractedNormalized = scaler.fit_transform(
+    #         pointFeatureMatrixExtracted
+    #     )
+    #     correspondenceMatrix = distance_matrix(
+    #         pointFeatureMatrixExtractedNormalized,
+    #         pointFeatureMatrixTemplateNormalized,
+    #     )
+    #     (
+    #         pointIndicesExtracted,
+    #         correspondingPointIndicesTemplate,
+    #     ) = linear_sum_assignment(correspondenceMatrix)
+    #     Ysample = np.array(cartesianPositionsExtracted)
+    #     Xsample = np.array(cartesianPositionsTemplate)
+    #     C = np.zeros(
+    #         (
+    #             self.extractedTopology.getNumBranches(),
+    #             self.templateTopology.getNumBranches(),
+    #         )
+    #     )
+    #     for i in pointIndicesExtracted:
+    #         j = correspondingPointIndicesTemplate[i]
+    #         C[i, j] = 1
+    #     return Ysample, Xsample, C
+
+    def findCorrespondancesFromLocalCoordinates(self, S: float):
+        """returns a pair of cartesian coordinates corresponding to the given local coordinate in each branch ordered accrording to their correspondance
+
+        Returns
+        Ysample: sample points on the branches of the extracted topology at the local coordinate s
+        Xsample: sample points on the branches of the template topology at the local coordinate s
+        C: correspondance matrix such that gives to correspondance betwwen Ysample and Xsample, such that Ysample ~ C @ Xsample.
+        """
         cartesianPositionsTemplate = []
         cartesianPositionsExtracted = []
-        pointFeatureMatrixTemplate = []
-        pointFeatureMatrixExtracted = []
+        pointFeaturesTemplate = []
+        pointFeaturesExtracted = []
 
         # sample points from templateTopology
         for branch in self.templateTopology.getBranches():
             branchIndex = self.templateTopology.getBranchIndex(branch)
-            # get cartesian position
-            cartesianPosition = (
-                self.templateTopology.getCartesianPositionFromBranchLocalCoordinate(
-                    branchIndex, s
+            # get cartesian positions
+            for s in S:
+                cartesianPosition = (
+                    self.templateTopology.getCartesianPositionFromBranchLocalCoordinate(
+                        branchIndex, s
+                    )
                 )
-            )
-            cartesianPositionsTemplate.append(cartesianPosition)
-            # build feature matrix
-            pointFeatures = self.getBranchFeatures(self.templateTopology, branch)
-            pointFeatureMatrixTemplate.append(pointFeatures)
+                cartesianPositionsTemplate.append(cartesianPosition)
+                # build feature matrix
+                pointFeatures = self.getBranchFeatures(self.templateTopology, branch)
+                pointFeatures = np.insert(pointFeatures, 0, s)
+                pointFeaturesTemplate.append(pointFeatures)
 
         # sample points from extractedTopology
         for branch in self.extractedTopology.getBranches():
             branchIndex = self.extractedTopology.getBranchIndex(branch)
             # get cartesian position
-            cartesianPosition = (
-                self.extractedTopology.getCartesianPositionFromBranchLocalCoordinate(
+            for s in S:
+                cartesianPosition = self.extractedTopology.interpolateCartesianPositionFromBranchLocalCoordinate(
                     branchIndex, s
                 )
+                cartesianPositionsExtracted.append(cartesianPosition)
+                # build feature matrix
+                pointFeatures = self.getBranchFeatures(self.extractedTopology, branch)
+                pointFeatures = np.insert(pointFeatures, 0, s)
+                pointFeaturesExtracted.append(pointFeatures)
+
+        # correspondance estimation
+        pointFeatureMatrixTemplate = np.array(pointFeaturesTemplate)
+        pointFeatureMatrixExtracted = np.array(pointFeaturesExtracted)
+        scaler = MinMaxScaler()  # normalization
+        pointFeatureMatrixTemplateNormalized = scaler.fit_transform(
+            pointFeatureMatrixTemplate
+        )
+        pointFeatureMatrixExtractedNormalized = scaler.fit_transform(
+            pointFeatureMatrixExtracted
+        )
+        correspondenceMatrix = distance_matrix(
+            pointFeatureMatrixExtractedNormalized,
+            pointFeatureMatrixTemplateNormalized,
+        )
+        (
+            pointIndicesExtracted,
+            correspondingPointIndicesTemplate,
+        ) = linear_sum_assignment(correspondenceMatrix)
+        Ysample = np.array(cartesianPositionsExtracted)
+        Xsample = np.array(cartesianPositionsTemplate)
+        C = np.zeros(
+            (
+                self.extractedTopology.getNumBranches() * len(S),
+                self.templateTopology.getNumBranches() * len(S),
             )
-            cartesianPositionsExtracted.append(cartesianPosition)
-            # build feature matrix
-            pointFeatures = self.getBranchFeatures(self.extractedTopology, branch)
-            pointFeatureMatrixExtracted.append(pointFeatures)
+        )
+        for i in pointIndicesExtracted:
+            j = correspondingPointIndicesTemplate[i]
+            C[i, j] = 1
+        return Ysample, Xsample, C

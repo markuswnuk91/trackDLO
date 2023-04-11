@@ -264,9 +264,24 @@ def test_correspondanceEstimation():
         samplePoints
     )
 
+    # test findCorrespondancesFromLocalCoordinate
     correspondingPointPairs = testCorrespondanceEstimator.getCorrespondingCartesianPointPairsFromBranchLocalCoordinatesInExtractedTopology(
         samplePointsBranchIndices, samplePointsLocalCoordinates
     )
+
+    # (
+    #     Ysample,
+    #     Xsample,
+    #     C,
+    # ) = testCorrespondanceEstimator.findCorrespondancesFromLocalCoordinate(0.1)
+
+    # test findCorrespondancesFromLocalCoordinates
+    S = np.linspace(0, 1, 5)
+    (
+        Ysample,
+        Xsample,
+        C,
+    ) = testCorrespondanceEstimator.findCorrespondancesFromLocalCoordinates(S)
 
     if vis:
         # colormap
@@ -318,6 +333,16 @@ def test_correspondanceEstimation():
         fig, ax = setupVisualization(len(extractedPointPairs[0][0]))
         for pointPair in correspondingPointPairs:
             stackedPair = np.stack(pointPair[:2])
+            plotLine(ax, pointPair=stackedPair, color=[1, 0, 0], alpha=0.3)
+            plotPoint(ax=ax, x=stackedPair[0], color=[1, 0, 0])
+            plotPoint(ax=ax, x=stackedPair[1], color=[0, 0, 1])
+        set_axes_equal(ax)
+
+        # visualize point correspondances for sampling methods
+        fig, ax = setupVisualization(len(extractedPointPairs[0][0]))
+        transformedX = C @ Xsample
+        for i in range(len(Ysample)):
+            stackedPair = np.stack((transformedX[i, :], Ysample[i, :]))
             plotLine(ax, pointPair=stackedPair, color=[1, 0, 0], alpha=0.3)
             plotPoint(ax=ax, x=stackedPair[0], color=[1, 0, 0])
             plotPoint(ax=ax, x=stackedPair[1], color=[0, 0, 1])

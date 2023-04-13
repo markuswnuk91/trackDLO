@@ -80,6 +80,38 @@ def set_axes_equal(ax):
         ax.set_aspect("equal", adjustable="box")
 
 
+def setupLatexPlot2D(
+    figureWidth=483.6969,
+    figureHeight=None,
+    axisLimX=[0, 1],
+    axisLimY=[0, 1],
+    xlabel="$x$",
+    ylabel="$y$",
+    xTickStep=None,
+    yTickStep=None,
+):
+    if figureHeight is not None:
+        fig = plt.figure(figsize=set_size(width=figureWidth, height=figureHeight))
+    else:
+        fig = plt.figure(figsize=set_size(width=figureWidth))
+    ax = fig.add_subplot()
+
+    # set axis limits
+    ax.set_xlim(axisLimX[0], axisLimX[1])
+    ax.set_ylim(axisLimY[0], axisLimY[1])
+
+    # set axis lables
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+
+    # set x ticks
+    if xTickStep is not None:
+        ax.set_xticks(np.arange(axisLimX[0], axisLimX[1] + xTickStep, step=xTickStep))
+    if yTickStep is not None:
+        ax.set_yticks(np.arange(axisLimY[0], axisLimY[1] + yTickStep, step=yTickStep))
+    return fig, ax
+
+
 def setupLatexPlot3D(
     figureWidth=483.6969,
     figureHeight=None,
@@ -261,7 +293,6 @@ def plotPointSets(
     xLabel=None,
     yLabel=None,
 ):
-
     xSize = 20 if xSize is None else xSize
     ySize = 20 if xSize is None else xSize
     xMarkerStyle = "o" if xMarkerStyle is None else xMarkerStyle

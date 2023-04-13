@@ -104,7 +104,6 @@ class Edge:
     ID = 0
 
     def __init__(self, nodes: tuple, edgeInfo: dict = None, name: str = None):
-
         if len(nodes) != 2:
             raise ValueError(
                 "Edges connect two nodes. Indest got {} nodes.".format(len(nodes))
@@ -158,7 +157,6 @@ class branch:
         branchInfo: dict = None,
         name: str = None,
     ):
-
         if name is None:
             self.name = "Branch_" + str(branch.ID)
         else:
@@ -326,7 +324,6 @@ class leafnode:
         leafNodeInfo: dict = None,
         name=None,
     ):
-
         self.ID = leafnode.ID
         leafnode.ID += 1
 
@@ -580,7 +577,7 @@ class topologyModel(object):
         visitedNodes = [self.rootNode]
         while len(nextBranchNodes) > 0:
             thisNode = nextBranchNodes.pop(0)
-            nextBranchOrLeafNodes = self._findNextBranchOrLeafNodes(thisNode)
+            nextBranchOrLeafNodes = self.findNextBranchORLeafNodeBFS(thisNode)
             for branchOrLeafNode in nextBranchOrLeafNodes:
                 if branchOrLeafNode in visitedNodes:
                     pass
@@ -750,10 +747,35 @@ class topologyModel(object):
                 adjacentNodes = thisNode.getAdjacentNodes()
                 adjacentNodes.remove(previousNode)
             for adjacentNode in adjacentNodes:
-                nextBranchOrLeafNodes.append(
-                    self._findNextBranchOrLeafNodes(adjacentNode, thisNode)[0]
-                )
+                foundNodes = self._findNextBranchOrLeafNodes(adjacentNode, thisNode)
+                if len(foundNodes) != 0:
+                    for node in foundNodes:
+                        if node != previousNode:
+                            nextBranchOrLeafNodes.append(node)
+        return nextBranchOrLeafNodes
 
+    def findNextBranchORLeafNodeBFS(self, thisNode):
+        nextBranchOrLeafNodes = []
+        visited = set()
+        queue = []
+        queue.append(thisNode)
+        visited.add(thisNode)
+
+        while len(queue) > 0:
+            currentNode = queue.pop(0)
+            adjacentNodes = currentNode.getAdjacentNodes()
+            for adjacentNode in adjacentNodes:
+                if adjacentNode not in visited:
+                    if (
+                        adjacentNode.getNumEdges() == 1
+                        or adjacentNode.getNumEdges() > 2
+                    ):
+                        nextBranchOrLeafNodes.append(adjacentNode)
+                    else:
+                        queue.append(adjacentNode)
+                    visited.add(adjacentNode)
+                else:
+                    pass
         return nextBranchOrLeafNodes
 
     def getLeafNodeFromNode(self, node: Node):

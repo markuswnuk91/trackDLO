@@ -9,7 +9,7 @@ from scipy.spatial.transform import Rotation as R
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.simulation.bdlo import bdloSpecification, BranchedDeformableLinearObject
+    from src.simulation.bdlo import BDLOTopology, BranchedDeformableLinearObject
     from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
     from src.tracking.kpr.kinematicsModel import KinematicsModelDart
     from src.visualization.plot3D import plotPointSets, setupLatexPlot3D
@@ -48,16 +48,22 @@ def visualizationCallback(
     ax.set_xlim(-0.5, 1)
     ax.set_ylim(-0.5, 1)
     ax.set_zlim(-0.5, 1)
-    plotPointSets(ax=ax, X=registration.T, Y=registration.Y, waitTime=0.5)
+    plotPointSets(ax=ax, X=registration.T, Y=registration.Y)
+    plt.draw()
+    plt.pause(0.1)
     if savePath is not None:
         fig.savefig(savePath + fileName + "_" + str(registration.iteration) + ".png")
 
 
 def testKPR():
-    testTopology = np.array([[0, 1, 0, 0], [1, 0, 1, 1], [0, 1, 0, 1], [0, 1, 1, 0]])
-    testSpec = bdloSpecification(testTopology, defaultNumBodyNodes=30)
-    testDLO = BranchedDeformableLinearObject(testSpec)
-    testDLO.setBranchDof(0, 0, 0.3)
+    testTopology = np.array([[0, 1, 0, 0], [1, 0, 1, 1], [0, 1, 0, 0], [0, 1, 0, 0]])
+    testSpec = BDLOTopology(
+        **{"adjacencyMatrix": testTopology, "defaultNumBodyNodes": 30}
+    )
+    testDLO = BranchedDeformableLinearObject(
+        **{"adjacencyMatrix": testTopology, "defaultNumBodyNodes": 30}
+    )
+    testDLO.setBranchRootDof(0, 0, 0.3)
     kinematicModel = KinematicsModelDart(testDLO.skel.clone())
     B = []
     for i in range(0, testDLO.getNumBranches()):

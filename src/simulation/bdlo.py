@@ -326,7 +326,8 @@ class BranchedDeformableLinearObject(BDLOTopology):
         return self.skel.getNumBodyNodes()
 
     # branch Functions
-    def getBranchBodyNodeIndices(self, branchIndex):
+
+    def getBranchBodyNodes(self, branchIndex):
         """
         Returns the dart bodyNodes corresponding to a branch
         """
@@ -336,6 +337,15 @@ class BranchedDeformableLinearObject(BDLOTopology):
         ]:
             bodyNodeList.append(self.skel.getBodyNode(bodyNodeIndex))
         return bodyNodeList
+
+    def getBranchBodyNodeIndices(self, branchIndex):
+        """
+        Returns the dart bodyNodeIndices corresponding to a branch
+        """
+        bodyNodeIndices = self.getBranch(branchIndex).getBranchInfo()[
+            "correspondingBodyNodeIndices"
+        ]
+        return bodyNodeIndices
 
     def getBranchRootBodyNodeIndex(self, branchIndex):
         """returns the bodyNode index of the first bodyNode of a branch with the given index
@@ -1083,11 +1093,18 @@ class BranchedDeformableLinearObject(BDLOTopology):
 #             .getParentJoint()
 #             .getIndexInSkeleton(dof)
 #         )
+# def setBranchDof(self, branchPointIndex: int, dof: int, value: float):
+#     branchPointBodyNodeIndex = self.getBranchPointBodyNodeIndices()[
+#         branchPointIndex
+#     ]
+#     dofIdx = self.getBranchDofIndexInSkel(branchPointBodyNodeIndex, dof)
+#     self.skel.setPosition(dofIdx, value)
+#     return
 
-#     def setBranchDof(self, branchPointIndex: int, dof: int, value: float):
-#         branchPointBodyNodeIndex = self.getBranchPointBodyNodeIndices()[
-#             branchPointIndex
-#         ]
-#         dofIdx = self.getBranchDofIndexInSkel(branchPointBodyNodeIndex, dof)
-#         self.skel.setPosition(dofIdx, value)
-#         return
+# def getBranchPointBodyNodeIndices(self):
+#     branchBodyNodeIndices = []
+#     for branchNode in self.topology.getBranchNodes():
+#         branchBodyNodeIndices.append(
+#             branchNode.getBranchNodeInfo()["bodyNodeIndex"]
+#         )
+#     return branchBodyNodeIndices

@@ -99,7 +99,7 @@ class L1Median(DataReduction):
             h: support radius h defining the size of the supporting local neighborhood for L1-medial skeleton
         """
         distances = distance_matrix(X, Y)
-        thetas = self.get_thetas(distances, h)
+        thetas = self.get_thetas(distances, np.sqrt(h))
         alphas = np.divide(
             thetas,
             distances,
@@ -115,7 +115,7 @@ class L1Median(DataReduction):
             h: support radius h defining the size of the supporting local neighborhood for L1-medial skeleton
         """
         distances = distance_matrix(X, X)
-        thetas = self.get_thetas(distances, h)
+        thetas = self.get_thetas(distances, np.sqrt(h))
         distances2 = distances * distances
         betas = np.divide(
             thetas,
@@ -134,7 +134,7 @@ class L1Median(DataReduction):
         OUTPUT:
             sigmas: Ix1 vector of sigmas
         """
-        thetas = self.get_thetas(distance_matrix(X, X), h)
+        thetas = self.get_thetas(distance_matrix(X, X), np.sqrt(h))
         sigmas = np.zeros(len(X))
         for i, x in enumerate(X):
             C_i = np.zeros((self.D, self.D))

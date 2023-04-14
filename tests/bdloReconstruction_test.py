@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.reconstruction.bdloReconstruction import (
+    from src.reconstruction.deprecated.bdloReconstruction import (
         BDLOReconstruction,
     )
     from src.localization.correspondanceEstimation.topologyBasedCorrespondanceEstimation import (

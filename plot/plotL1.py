@@ -17,31 +17,75 @@ try:
     from src.sensing.loadPointCloud import readPointCloudFromPLY
     from src.visualization.curveShapes3D import helixShape
 except:
-    print("Imports for Neighborhood MST failed.")
+    print("Imports for plotting L1 example failed.")
     raise
 
 # script control parameters
-saveFig = False
-vis = True  # if SOM iterations should be visualized
+saveFig = True
+vis = False  # if iterations should be visualized
+savePath = "/mnt/c/Users/ac129490/Documents/Dissertation/Thesis/62bebc3388a16f7dcc7f9153/figures/plots/"
+fileName = "plotExampleL1"
+fileType = ".pdf"
 numSamples = 500
+numOutliers = 100
 noise = 0.1
-numBackgroundSamples = 100
-leftBorder = -4
-rightBorder = 4
-lowerBorder = -2.5
-upperBorder = 2.5
-# L1
-h = 4.3
-hMin = 1.5
-mu = 0.35
-hAnnealing = 0.91
-numSeedPoints = 70
-numIterations = 100
+leftBorder = -1.3
+rightBorder = 1.3
+lowerBorder = -2.3
+upperBorder = 2.3
+X_iter = []
 
+# parameters
+h = 5
+hMin = 1.4
+muList = [0, 0.1, 0.35]
+hAnnealing = 0.95
+numSeedPoints = 50
+numIterations = 150
+
+# plot layout parameters
+samplePointSize = 5
+seedPointSize = 50
 uniSLightBlue = [0 / 255, 190 / 255, 255 / 255]
+textwidth_in_pt = 483.6969
+figureScaling = 1
+latexFontSize_in_pt = 14
+latexFootNoteFontSize_in_pt = 10
+desiredFigureWidth = figureScaling * textwidth_in_pt
+desiredFigureHeight = None
+tex_fonts = {
+    # Use pfg for rendering
+    "pgf.texsystem": "pdflatex",
+    # Use LaTeX to write all text
+    "text.usetex": True,
+    "font.family": "serif",
+    "pgf.rcfonts": False,
+    # Use 10pt font in plots, to match 10pt font in document
+    "axes.labelsize": latexFontSize_in_pt,
+    "font.size": latexFontSize_in_pt,
+    # Make the legend/label fonts a little smaller
+    "legend.fontsize": latexFootNoteFontSize_in_pt,
+    "xtick.labelsize": latexFootNoteFontSize_in_pt,
+    "ytick.labelsize": latexFootNoteFontSize_in_pt,
+}
+if saveFig:
+    matplotlib.use("pgf")
+    matplotlib.rcParams.update(tex_fonts)
 
 
-def generateSamplePoints():
+def setupPlotLayout():
+    fig, ax = setupLatexPlot2D(
+        figureWidth=desiredFigureWidth,
+        figureHeight=desiredFigureHeight,
+        axisLimX=[leftBorder, rightBorder],
+        axisLimY=[lowerBorder, upperBorder],
+        xTickStep=0.5,
+        yTickStep=0.5,
+    )
+    return fig, ax
+
+
+def generateSamplePoints(numBackgroundSamples):
     (S, s) = make_s_curve(n_samples=numSamples, noise=noise, random_state=None)
     backgroundPoints = np.column_stack(
         (
@@ -51,15 +95,6 @@ def generateSamplePoints():
     )
     noisyS = np.vstack((S[:, [0, 2]], backgroundPoints))
     return noisyS
-
-
-def computePCA(X):
-    pca = PCA(n_components=1)
-    pca.fit(X)
-
-    mean = pca.mean_
-    principalComponent = pca.components_
-    return pca, mean, principalComponent
 
 
 def setupVisualizationCallback(classHandle):
@@ -105,10 +140,7 @@ def visualizationCallback(
         fig.savefig(savePath + fileName + "_" + str(classHandle.iter) + ".png")
 
 
-def computeL1(X):
-    random_indices = random.sample(range(0, len(X)), numSeedPoints)
-    seedpoints = X[random_indices, :]
-    # seedpoints = np.tile(X[0, :], (len(X), 1))
+def computeL1(X, seedpoints, mu):
     testReduction = L1Median(
         **{
             "Y": X,
@@ -127,23 +159,64 @@ def computeL1(X):
 
 
 if __name__ == "__main__":
-    samplePoints = generateSamplePoints()
-    pca, mean, pricipalComponent = computePCA(samplePoints)
+    samplePoints = generateSamplePoints(0)
+    samplePointsOutliers = generateSamplePoints(numOutliers)
+    random_indices = random.sample(range(0, len(samplePoints)), numSeedPoints)
+    seedpoints = samplePoints[random_indices, :]
+    # seedpoints = np.tile(X[0, :], (len(X), 1))
 
-    # PCA
-    # s = np.linspace(-1, 1, 10)
-    s = pca.transform(samplePoints)
-    pcaLine = s * np.tile(pricipalComponent, (len(s), 1)) + mean
-
-    # L1
-    reducedPoints = computeL1(samplePoints)
+    # L1 for different mu
+    for mu in muList:
+        X_L1 = computeL1(samplePoints, seedpoints.copy(), mu)
+        X_iter.append(X_L1)
+    # L1 with outliers
+    X_Outlier = computeL1(samplePointsOutliers, seedpoints.copy(), muList[-1])
 
     # plotting
-    fig = plt.figure()
-    ax = fig.add_subplot()
-    plotPointSet(ax=ax, X=samplePoints, color=[0, 0, 0], size=5)
+    # seedpoints
+    fig, ax = setupPlotLayout()
+    plotPointSet(ax=ax, X=samplePoints, color=[0, 0, 0], size=samplePointSize)
     set_axes_equal(ax=ax)
-    plotPointSet(ax=ax, X=reducedPoints, color=[1, 0, 0])
-    plotPoint(ax=ax, x=mean, color=uniSLightBlue)
-    plt.plot(pcaLine[:, 0], pcaLine[:, 1], color=uniSLightBlue)
-    plt.show(block=True)
+    plotPointSet(ax=ax, X=seedpoints, color=[1, 0, 0], size=seedPointSize)
+    plt.grid(False)
+    plt.axis("off")
+    if saveFig:
+        plt.savefig(
+            savePath + fileName + "_" + "init" + fileType,
+            bbox_inches="tight",
+        )
+    else:
+        plt.show(block=False)
+    # results for diffrent mu
+    for i, X_L1 in enumerate(X_iter):
+        fig, ax = setupPlotLayout()
+        plotPointSet(ax=ax, X=samplePoints, color=[0, 0, 0], size=samplePointSize)
+        set_axes_equal(ax=ax)
+        plotPointSet(ax=ax, X=X_L1, color=[1, 0, 0], size=seedPointSize)
+        plt.grid(False)
+        plt.axis("off")
+        plt.show(block=False)
+        if saveFig:
+            plt.savefig(
+                savePath + fileName + "_" + str(muList[i]) + fileType,
+                bbox_inches="tight",
+            )
+        else:
+            plt.show(block=False)
+    # result for outliers
+    fig, ax = setupPlotLayout()
+    plotPointSet(ax=ax, X=samplePointsOutliers, color=[0, 0, 0], size=samplePointSize)
+    set_axes_equal(ax=ax)
+    plotPointSet(ax=ax, X=X_Outlier, color=[1, 0, 0], size=seedPointSize)
+    plt.grid(False)
+    plt.axis("off")
+    plt.show(block=False)
+    if saveFig:
+        plt.savefig(
+            savePath + fileName + "_" + "outlier" + fileType,
+            bbox_inches="tight",
+        )
+    else:
+        plt.show(block=False)
+    if not saveFig:
+        plt.show(block=True)

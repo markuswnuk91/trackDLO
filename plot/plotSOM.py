@@ -17,23 +17,27 @@ try:
     from src.sensing.loadPointCloud import readPointCloudFromPLY
     from src.visualization.curveShapes3D import helixShape
 except:
-    print("Imports for Neighborhood MST failed.")
+    print("Imports for plotting SOM Example failed.")
     raise
 
 # script control parameters
 saveFig = True
-vis = False  # if SOM iterations should be visualized
+vis = False  # if iterations should be visualized
 savePath = "/mnt/c/Users/ac129490/Documents/Dissertation/Thesis/62bebc3388a16f7dcc7f9153/figures/plots/"
 fileName = "plotExampleSOM"
 fileType = ".pdf"
 numSamples = 500
+numOutliers = 100
 noise = 0.1
 numBackgroundSamples = 0
 leftBorder = -1.3
 rightBorder = 1.3
 lowerBorder = -2.3
 upperBorder = 2.3
-# SOM
+X_SOM_iter = []
+plotIterList = [5, 10, 30]
+
+# parameters
 numSeedPoints = 20
 alpha = 0.1
 numNearestNeighbors = 2
@@ -43,10 +47,11 @@ method = "kernel"
 sigma2 = 0.5
 sigma2Annealing = 0.93
 sigma2Min = 0.2
-X_SOM_iter = []
-plotIterList = [5, 10, 30]
+
 
 # plot layout parameters
+samplePointSize = 5
+seedPointSize = 50
 uniSLightBlue = [0 / 255, 190 / 255, 255 / 255]
 textwidth_in_pt = 483.6969
 figureScaling = 1
@@ -86,7 +91,7 @@ def setupPlotLayout():
     return fig, ax
 
 
-def generateSamplePoints():
+def generateSamplePoints(numBackgroundSamples):
     (S, s) = make_s_curve(n_samples=numSamples, noise=noise, random_state=None)
     backgroundPoints = np.column_stack(
         (
@@ -96,15 +101,6 @@ def generateSamplePoints():
     )
     noisyS = np.vstack((S[:, [0, 2]], backgroundPoints))
     return noisyS
-
-
-def computePCA(X):
-    pca = PCA(n_components=1)
-    pca.fit(X)
-
-    mean = pca.mean_
-    principalComponent = pca.components_
-    return pca, mean, principalComponent
 
 
 def setupVisualizationCallback(classHandle):
@@ -174,14 +170,28 @@ def computeSOM(X, seedpoints):
     return reducedPoints
 
 
-if __name__ == "__main__":
-    samplePoints = generateSamplePoints()
-    pca, mean, pricipalComponent = computePCA(samplePoints)
+def computeSOM_noCallback(X, seedpoints):
+    testReduction = SelfOrganizingMap(
+        **{
+            "Y": X,
+            "X": seedpoints,
+            "alpha": alpha,
+            "numNearestNeighbors": numNearestNeighbors,
+            "max_iterations": numIterations,
+            "minNumNearestNeighbors": minNumNearestNeighbors,
+            "method": method,
+            "sigma2": sigma2,
+            "sigma2Annealing": sigma2Annealing,
+            "sigma2Min": sigma2Min,
+        }
+    )
+    reducedPoints = testReduction.calculateReducedRepresentation()
+    return reducedPoints
 
-    # PCA
-    # s = np.linspace(-1, 1, 10)
-    s = pca.transform(samplePoints)
-    pcaLine = s * np.tile(pricipalComponent, (len(s), 1)) + mean
+
+if __name__ == "__main__":
+    samplePoints = generateSamplePoints(0)
+    samplePointsOutliers = generateSamplePoints(numOutliers)
 
     # generate random seedpoints
     # random_indices = random.sample(range(0, len(X)), numSeedPoints)
@@ -197,29 +207,28 @@ if __name__ == "__main__":
 
     # SOM
     X_SOM = computeSOM(samplePoints, seedpoints.copy())
-
+    X_Outlier = computeSOM_noCallback(samplePoints, seedpoints.copy())
     # plotting
     # seedpoints
     fig, ax = setupPlotLayout()
-    plotPointSet(ax=ax, X=samplePoints, color=[0, 0, 0], size=5)
+    plotPointSet(ax=ax, X=samplePoints, color=[0, 0, 0], size=samplePointSize)
     set_axes_equal(ax=ax)
-    plotPointSet(ax=ax, X=seedpoints, color=[1, 0, 0])
+    plotPointSet(ax=ax, X=seedpoints, color=[1, 0, 0], size=seedPointSize)
     plt.grid(False)
     plt.axis("off")
-    # iteration 0
     if saveFig:
         plt.savefig(
-            savePath + fileName + "_" + str(0) + fileType,
+            savePath + fileName + "_" + "init" + fileType,
             bbox_inches="tight",
         )
     else:
         plt.show(block=False)
-
+    # iterations
     for i in plotIterList:
         fig, ax = setupPlotLayout()
-        plotPointSet(ax=ax, X=samplePoints, color=[0, 0, 0], size=5)
+        plotPointSet(ax=ax, X=samplePoints, color=[0, 0, 0], size=samplePointSize)
         set_axes_equal(ax=ax)
-        plotPointSet(ax=ax, X=X_SOM_iter[i], color=[1, 0, 0])
+        plotPointSet(ax=ax, X=X_SOM_iter[i], color=[1, 0, 0], size=seedPointSize)
         plt.grid(False)
         plt.axis("off")
         plt.show(block=False)
@@ -230,5 +239,20 @@ if __name__ == "__main__":
             )
         else:
             plt.show(block=False)
+    # result for outliers
+    fig, ax = setupPlotLayout()
+    plotPointSet(ax=ax, X=samplePointsOutliers, color=[0, 0, 0], size=samplePointSize)
+    set_axes_equal(ax=ax)
+    plotPointSet(ax=ax, X=X_Outlier, color=[1, 0, 0], size=seedPointSize)
+    plt.grid(False)
+    plt.axis("off")
+    plt.show(block=False)
+    if saveFig:
+        plt.savefig(
+            savePath + fileName + "_" + "outlier" + fileType,
+            bbox_inches="tight",
+        )
+    else:
+        plt.show(block=False)
     if not saveFig:
         plt.show(block=True)

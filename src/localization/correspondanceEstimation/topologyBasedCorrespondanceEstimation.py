@@ -39,35 +39,40 @@ class TopologyBasedCorrespondanceEstimation(object):
         *args,
         **kwargs
     ):
+        if type(Y) is not np.ndarray or Y.ndim != 2:
+            raise ValueError("The target points (Y) must be at a 2D numpy array.")
+
+        if Y.shape[0] < Y.shape[1]:
+            raise ValueError(
+                "The dimensionality is larger than the number of points. Possibly wrong orientation of X."
+            )
+
         if extractedTopology is None and Y is None:
             raise ValueError(
                 "Obtained no extracted topology, nor point set to extract topology from. Please privede a topology or point set."
             )
         elif extractedTopology is None and Y is not None:
             if numSeedPoints is None:
-                raise warn(
+                warn(
                     "No number of seedpoints provided for topology extraction, choosing 1/3 of the dataset as default."
                 )
                 numSeedPoints = int(Y.shape[0] / 3)
             self.topologyExtractor = TopologyExtraction(
                 Y=Y, numSeedPoints=numSeedPoints, *args, **kwargs
             )
-            X = None
 
         else:
             numSeedPoints = extractedTopology.X.shape[0]
-            X = extractedTopology.X
 
         self.Y = Y
+        (self.M, self.D) = self.Y.shape
         self.numSeedPoints = numSeedPoints
         self.templateTopology = templateTopology
-        self.X = X
         self.extractedTopology = extractedTopology
 
     def extractTopology(self):
         if self.extractedTopology is None:
             self.extractedTopology = self.topologyExtractor.extractTopology()
-            self.X = self.extractedTopology.X
             if (
                 self.extractedTopology.getNumBranches()
                 > self.templateTopology.getNumBranches()
@@ -386,6 +391,8 @@ class TopologyBasedCorrespondanceEstimation(object):
         Xsample: sample points on the branches of the template topology at the local coordinate s
         C: correspondance matrix such that gives to correspondance betwwen Ysample and Xsample, such that Ysample ~ C @ Xsample.
         """
+        if self.extractedTopology is None:
+            raise ValueError("No topology extracted yet.")
         cartesianPositionsTemplate = []
         cartesianPositionsExtracted = []
         pointFeaturesTemplate = []

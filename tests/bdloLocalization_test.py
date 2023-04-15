@@ -7,22 +7,19 @@ import matplotlib.pyplot as plt
 
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.reconstruction.deprecated.bdloReconstruction import (
-        BDLOReconstruction,
+    from src.localization.bdloLocalization import (
+        BDLOLocalization,
     )
-    from src.localization.correspondanceEstimation.topologyBasedCorrespondanceEstimation import (
-        TopologyBasedCorrespondanceEstimation,
-    )
+    from src.simulation.bdloTemplates import initArenaWireHarness
     from src.localization.topologyExtraction.minimalSpanningTreeTopology import (
         MinimalSpanningTreeTopology,
     )
-    from src.simulation.bdloTemplates import initArenaWireHarness
     from src.visualization.plot3D import *
 except:
     print("Imports for BDLOReconstruction Test failed.")
     raise
 
-saveImgs = False
+# script control parameters
 vis = True  # enable for visualization
 dataPath = "tests/testdata/topologyExtraction/wireHarnessReduced.txt"
 
@@ -64,64 +61,43 @@ def visualizationCallback(
     plotPointSets(
         ax=ax,
         X=classHandle.X,
-        Y=classHandle.Y,
+        Y=classHandle.YTarget,
         ySize=10,
         xSize=10,
     )
-    for i, y in enumerate(classHandle.Y):
+    for i, y in enumerate(classHandle.YTarget):
         plotLine(
             ax=ax,
-            pointPair=np.vstack((classHandle.X[i], y)),
+            pointPair=np.vstack(((classHandle.C @ classHandle.X)[i], y)),
             color=[1, 0, 0],
             alpha=0.3,
         )
-
-    bdloConnectedEdges = classHandle.bdlo.getAdjacentPointPairsAndBranchCorrespondance()
-    for pointPair in bdloConnectedEdges:
-        stackedPair = np.stack(pointPair[:2])
-        branchNumber = pointPair[2]
-        # plotColor = [
-        #     sm.to_rgba(branchNumber)[0],
-        #     sm.to_rgba(branchNumber)[1],
-        #     sm.to_rgba(branchNumber)[2],
-        # ]
-        plotLine(ax=ax, pointPair=stackedPair, color=[0, 0, 1])
-    ax.view_init(elev=40, azim=-65)
-    set_axes_equal(ax)
     plt.draw()
     plt.pause(0.1)
-    print(classHandle.iter)
-    if saveImgs and savePath is not None:
-        fig.savefig(savePath + fileName + "_" + str(classHandle.iter) + ".png")
 
 
 def runReconstruction():
     testPointSet = np.loadtxt(dataPath)
-    testBDLO = initArenaWireHarness()
-    testCorrespondanceEstimator = TopologyBasedCorrespondanceEstimation(
-        **{
-            "Y": testPointSet,
-            "extractedTopology": MinimalSpanningTreeTopology(testPointSet),
-            "numSeedPoints": 70,
-            "templateTopology": testBDLO,
-        }
-    )
+    templateTopologyModel = initArenaWireHarness()
+    extractedTopologyModel = MinimalSpanningTreeTopology(testPointSet)
+    testPointSet = np.loadtxt(dataPath)
+
     Y = testPointSet
-    (
-        CBY,
-        SY,
-    ) = testCorrespondanceEstimator.calculateTemplateBranchCorrespondanceAndLocalCoordinatsFromPointSet(
-        Y
-    )
-    testReconstruction = BDLOReconstruction(
-        **{"bdlo": testBDLO, "Y": Y, "SY": SY, "CBY": CBY}
+    S = np.linspace(0, 1, 10)
+    testLocalization = BDLOLocalization(
+        **{
+            "Y": Y,
+            "S": S,
+            "templateTopology": templateTopologyModel,
+            "extractedTopology": extractedTopologyModel,
+        }
     )
 
     if vis:
-        visualizationCallback = setupVisualizationCallback(testReconstruction)
-        testReconstruction.registerCallback(visualizationCallback)
+        visualizationCallback = setupVisualizationCallback(testLocalization)
+        testLocalization.registerCallback(visualizationCallback)
 
-    testReconstruction.reconstructShape()
+    testLocalization.reconstructShape()
 
 
 if __name__ == "__main__":

@@ -48,7 +48,6 @@ class DeformableLinearObject(object):
         *args,
         **kwargs,
     ):
-
         self.ID = DeformableLinearObject.ID
         DeformableLinearObject.ID += 1
         if name is None:

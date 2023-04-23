@@ -41,9 +41,8 @@ class SelfOrganizingMap(DataReduction):
         factor for determining the neighborhood if the kernel method is used.
     sigma2Annealing : float
         annealing factor of sigma2
-    kernelMethod: bool
-        if the "original" numNeighbor-based implementation of the
-
+    method: string
+        kernel, knn, legacy, what method should be used to perfrom the SOM updates
     """
 
     def __init__(
@@ -134,24 +133,24 @@ class SelfOrganizingMap(DataReduction):
                 NumCorrespondences = np.zeros(self.N)
                 for j in range(0, self.N):
                     J = np.where(winnerIdxs == j)[0]
-                    YMean[j, :] = np.sum(
+                    YMean[j, :] = self.T[j, :] + np.sum(
                         self.Y[np.where(winnerIdxs == j)[0], :], axis=0
                     )
-                    NumCorrespondences[j] = len(J)
+                    NumCorrespondences[j] = len(J) + 1
 
-                if np.any(NumCorrespondences == 0):
-                    updateIdxs = np.where(NumCorrespondences != 0)[0]
-                    for idx in updateIdxs:
-                        YMeanWeighted = np.zeros(self.D)
-                        NumCorrespondencesWeighted = 0
-                        for j in range(0, self.N):
-                            YMeanWeighted += H[idx, j] * YMean[j, :]
-                            NumCorrespondencesWeighted += (
-                                H[idx, j] * NumCorrespondences[j]
-                            )
-                        self.T[idx, :] = YMeanWeighted / NumCorrespondencesWeighted
-                else:
-                    self.T = (H @ YMean) / (H @ NumCorrespondences)[:, None]
+                    # if np.any(NumCorrespondences == 0):
+                    # updateIdxs = np.where(NumCorrespondences != 0)[0]
+                    # for idx in updateIdxs:
+                    #     YMeanWeighted = np.zeros(self.D)
+                    #     NumCorrespondencesWeighted = 0
+                    #     for j in range(0, self.N):
+                    #         YMeanWeighted += H[idx, j] * YMean[j, :]
+                    #         NumCorrespondencesWeighted += (
+                    #             H[idx, j] * NumCorrespondences[j]
+                    #         )
+                    #     self.T[idx, :] = YMeanWeighted / NumCorrespondencesWeighted
+                    # else:
+                self.T = (H @ YMean) / (H @ NumCorrespondences)[:, None]
             elif self.method == "knn":
                 for i in range(0, self.N):
                     # find the winning neurons for the dataset

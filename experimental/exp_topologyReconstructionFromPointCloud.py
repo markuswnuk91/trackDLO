@@ -1,3 +1,7 @@
+"""Scipt to experiment with different point cloud processing (filtering), data- and dimensionality reduction methods to find a combination of methods to reliable extract a underlying BDLO topology from the given point cloud data.
+"""
+
+
 import os, sys
 import numpy as np
 import random
@@ -10,7 +14,7 @@ from scipy.sparse.csgraph import shortest_path
 from sklearn import preprocessing
 
 try:
-    sys.path.append(os.getcwd().replace("/app", ""))
+    sys.path.append(os.getcwd().replace("/experimental", ""))
     from src.localization.downsampling.som.som import SelfOrganizingMap
     from src.localization.downsampling.l1median.l1Median import L1Median
     from src.localization.downsampling.mlle.mlle import Mlle
@@ -53,7 +57,7 @@ save = False  # if data  should be saved under the given savepath
 savePath = "tests/testdata/topologyExtraction/topologyExtractionTestSet.txt"
 
 # source data
-sourceSample = 1
+sourceSample = 2
 dataSrc = [
     "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_3D_DLO/pointcloud_1.ply",
     "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_2.ply",
@@ -71,27 +75,28 @@ numNeighbors = 15
 contamination = 0.1
 
 # downsampling algorithm parameters
-numSeedPoints_SOM = 50
-numSeedPoints_L1 = 150
+numSeedPoints_SOM = 100
 somParameters = {
     "alpha": 0.9,
     "numNearestNeighbors": 10,
     "numNearestNeighborsAnnealing": 0.7,
     "sigma2": 0.1,
+    "sigma2Min": 0.01,
+    "sigma2Annealing": 0.9,
     "alphaAnnealing": 0.93,
     "h0": 1,
     "h0Annealing": 0.93,
-    "sigma2Annealing": 0.97,
     "method": "kernel",
-    "max_iterations": 10,
+    "max_iterations": 30,
 }
-
+numSeedPoints_L1 = 300
 l1Parameters = {
-    "h": 0.12,
-    "hAnnealing": 1,
-    "hReductionFactor": 0.5,
+    "h": 0.03,
+    "hAnnealing": 0.9,
+    "hMin": 0.01,
+    "hReductionFactor": 1,
     "mu": 0.35,
-    "max_iterations": 3,
+    "max_iterations": 30,
 }
 
 # mlle parameters,

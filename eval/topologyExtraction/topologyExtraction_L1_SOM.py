@@ -10,12 +10,21 @@ try:
         TopologyExtraction,
     )
     from src.visualization.plot3D import *
+    from src.sensing.loadPointCloud import readPointCloudFromPLY
 except:
     print("Imports for Evaluation of Topology Extraction Method L1_SOM failed.")
     raise
 
 # control parameters
-dataPath = "tests/testdata/topologyExtraction/wireHarness.txt"
+# source data
+sourceSample = 1
+dataSrc = [
+    "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_2.ply",
+    "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_7.ply",
+    "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_4.ply",
+]
+dataPath = dataSrc[sourceSample]
+
 vis = True  # enable for visualization
 numSeedPointsL1 = 300
 numSeedPointsSOM = 50
@@ -33,12 +42,12 @@ def setupTopologyExtractor(pointSet):
     }
 
     l1Parameters = {
-        "h": 0.03,
+        "h": 0.01,
         "hAnnealing": 0.9,
         "hMin": 0.01,
         "hReductionFactor": 1,
         "mu": 0.35,
-        "max_iterations": 20,
+        "max_iterations": 30,
     }
     lofOutlierFilterParameters = {
         "numNeighbors": 15,
@@ -118,7 +127,7 @@ def visualizationCallback(
 
 
 def evalTopologyExtraction():
-    Y = np.loadtxt(dataPath)
+    Y = readPointCloudFromPLY(dataPath)[:, :3]
     topologyExtractor = setupTopologyExtractor(Y)
     seedPointsL1 = topologyExtractor.randomSample(Y, numSeedPointsL1)
     reducedPointSetL1 = topologyExtractor.reducePointSetL1(Y, seedPointsL1)

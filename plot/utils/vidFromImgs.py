@@ -1,5 +1,6 @@
 import os
 import moviepy.video.io.ImageSequenceClip
+import cv2
 
 
 def extract_integer(filename):

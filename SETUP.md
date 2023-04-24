@@ -51,6 +51,11 @@ if __name__== "__main__":
     viewer.run()
 
 ```
+
+## install dart
+```sh
+pip3 install opencv-python
+```
 ## Troubleshooting
 ### Cannot import dartpy
 Make sure the dartpy (.so file) is in the python path.

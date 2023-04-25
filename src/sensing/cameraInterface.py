@@ -12,8 +12,12 @@ except:
     print("Imports for SPR failed.")
     raise
 
-class cameraInterface (object):
+class CameraInterface (object):
+    """Class used to interface the Nerian Scarlet stereo camera system
+    """
     def __init__(self):
+        """Initialization: Finding the camera and retrieving the camera parameters
+        """
         device_enum = visiontransfer.DeviceEnumeration()
         devices = device_enum.discover_devices()
         if len(devices) < 1:
@@ -27,14 +31,14 @@ class cameraInterface (object):
         print(f'Selected device #{selected_device+1}')
         self.device = devices[selected_device]
         print('Ask parameter server to set stereo mode ...')
-        self.params = visiontransfer.DeviceParameters(device)
+        self.params = visiontransfer.DeviceParameters(self.device)
         self.params.set_operation_mode(visiontransfer.OperationMode.STEREO_MATCHING)
         self.cameraParameters = self.getCameraParameters()
         
 
     def getCameraParameters(self):
         cameraParameters = {}
-        print('Acquiring test image to determine camera parameters')
+        print('Acquiring test image to determine camera parameters ...')
         transfer = visiontransfer.AsyncTransfer(self.device)
         image_set = None
         while image_set is None:
@@ -52,7 +56,7 @@ class cameraInterface (object):
         # disparityRangeFactor to retrieve the disparity values from neriam image sets
         disprange = image_set.get_disparity_range()[1]
         if disprange == 511:
-            factor = 8  
+            disparityRangeFactor = 8  
         elif disprange == 255:
             disparityRangeFactor = 16
         else:
@@ -77,7 +81,7 @@ class cameraInterface (object):
         cameraParameters["Tx"] = -1/Q[3, 2]
         cameraParameters["disparityRangeFactor"] = disparityRangeFactor
         cameraParameters["disparity2ImgScalingFactor"] = disparity2ImgScalingFactor
-
+        print('Successfully extracted camera parameters ...')
         return cameraParameters
     
     def setupAsyncConnection(self):
@@ -157,6 +161,33 @@ class cameraInterface (object):
         dispImg = self.convertDisparityMapToImage(dispMap)
         return rgbImg, dispMap, dispImg
     
+    def displayLeftRBGImage(self):
+        transfer = self.setupAsyncConnection()
+        image_set = self.acquireImageSet(transfer)
+        rgb_image = self.getRGBDataFromImageSet(image_set)
+        cv2.imshow("RGB image", cv2.resize(rgb_image, None, fx=.25, fy=.25))
+        return
+    
+    def streamLeftRBGImage(self, fps = 30):
+        transfer = self.setupAsyncConnection()
+        run = True
+        print("Press 'ESC' to stop image stream ...")
+        waitTime = int(1000/fps) # waitTime [ms] = 1000ms / fps
+        while run:
+            try:
+                key = cv2.waitKey(waitTime)
+                if key == 27:#if ESC is pressed, exit loop
+                    print("Stopped streaming.")
+                    break
+                image_set = self.acquireImageSet(transfer)
+                rgb_image = self.getRGBDataFromImageSet(image_set)
+                cv2.imshow("RGB image", cv2.resize(rgb_image, None, fx=.25, fy=.25))
+            except:
+                print("Stopped streaming due to exception")
+                run = False
+                break
+        return
+    
     def saveRGBImageFromImageSet(self,image_set,folderPath,fileName):
         img_left_rbg = self.getRGBDataFromImageSet(image_set)
         cv2.imwrite(folderPath+fileName+'.png', img_left_rbg)
@@ -200,5 +231,22 @@ class cameraInterface (object):
         else:
             cv2.imwrite(folderPath+fileName+'.png', img_disparity)
 
-    def saveStereoImages(self,folderPath):
-        raise NotImplementedError
+    def plotRBGImageFromImageSet(self, image_set, waitTime = None):
+        """Using matplot lib to plot the RGB image of the given image set.
+
+        Args:
+            image_set: the acquired image set
+            waitTime (int, optional): Wait time in s. Defaults to None.
+        """
+        rgb_image = self.getRGBDataFromImageSet(image_set)
+        # Color image: Nerian API uses RGB, OpenCV uses BGR
+        img_left_rbg = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+        plt.imshow(img_left_rbg)
+        if waitTime == -1:
+            plt.show(block=True)
+        elif waitTime is None:
+            plt.show(block=False)
+            plt.pause(0.001)
+        else:
+            plt.show(block=False)
+            plt.pause(waitTime)

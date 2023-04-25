@@ -33,7 +33,8 @@ class DataAcquisition(CameraInterface):
             Raises:
                 ValueError: throws if disparity image has the wrong dimension.
             """
-            numpyArray.tofile(folderPath + fileName +".bin")
+            #numpyArray.tofile(folderPath + fileName +".bin")
+            np.save(folderPath + fileName+".npy", numpyArray)
 
     def saveDisparityMapAsImage(self,disparityMap,folderPath,fileName):
         """Saves the disparity map from the given image set as .png to the specified folder path.

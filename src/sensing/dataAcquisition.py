@@ -1,10 +1,10 @@
 import os
 import sys
-from warnings import warn
-import visiontransfer
 import cv2
 import matplotlib.pyplot as plt
 import datetime
+import json
+import numpy as np
 
 try:
     sys.path.append(os.getcwd().replace("/src/sensing", ""))
@@ -66,6 +66,23 @@ class DataAcquisition(CameraInterface):
         date_time_string = now.strftime("%Y%m%d_%H%M%S%f")
         return date_time_string
     
+    def jsonifyDictionary(self, inputDict):
+        outputDict = inputDict.copy()
+        for key in outputDict:
+            if isinstance(outputDict[key],np.ndarray):
+                outputDict[key] = outputDict[key].tolist()
+            elif isinstance(outputDict[key], np.float32):
+                outputDict[key] = float(outputDict[key])
+        return outputDict
+
+    def saveCameraParameters(self, folderPath, fileName = "cameraParameters"):
+        cameraParameters = self.jsonifyDictionary(self.cameraParameters)
+        self.saveMetaDataAsJson(cameraParameters, folderPath, fileName)
+
+    def saveMetaDataAsJson(self, metaData: dict, folderPath, fileName):
+        with open(folderPath + fileName + ".json", "w") as fp:
+            json.dump(metaData,fp, indent=4)
+
     def recordStereoDataSet(self, folderPath = None):
         """Method to acquire a single stereo data set (rgb image, disparityMap, disparityImage)
 
@@ -79,16 +96,22 @@ class DataAcquisition(CameraInterface):
         transfer = self.setupAsyncConnection()
         image_set = self.acquireImageSet(transfer)
         stereoDataSet = self.getStereoDataFromImageSet(image_set)
+
         #generate unique identifier for dataset
         date_time_string = self.generateIdentifier()
         fileNameRGB = date_time_string + "_image_rgb"
         fileNameDisparityMap = date_time_string + "_map_disparity"
         fileNameDisparityImage = date_time_string + "_image_disparity"
+
+        # saving data
+        # meta data
+        self.saveCameraParameters(folderPath)
+        # stereo data
         self.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], folderPath = folderPath, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
         print("Successfully saved data to: ")
         print(folderPath)
         return
-    
+
     def recordStereoDataSets(self, folderPath = None, method = "manual", fps = 30):
         """Method to acquire several stereo datasets
         Args:
@@ -123,6 +146,8 @@ class DataAcquisition(CameraInterface):
                         print("stopped data acquisition.")
                         break
                     elif key != -1:
+                        if dataSetCounter==0:
+                            self.saveCameraParameters(folderPath)
                         stereoDataSet = self.getStereoDataFromImageSet(image_set)
                         #generate unique identifier for dataset
                         date_time_string = self.generateIdentifier()
@@ -154,6 +179,8 @@ class DataAcquisition(CameraInterface):
                         print("stopped data acquisition.")
                         break
                     else:
+                        if dataSetCounter==0:
+                            self.saveCameraParameters(folderPath)
                         stereoDataSet = self.getStereoDataFromImageSet(image_set)
                         #generate unique identifier for dataset
                         date_time_string = self.generateIdentifier()

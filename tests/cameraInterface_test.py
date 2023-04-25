@@ -8,6 +8,7 @@ except:
     print("Imports for testing camera interface failed.")
     raise
 
+savePath = "data/acquired_data/20230425_TestDataAcquisiton/"
 
 def testCameraInteface():
     testInterface = CameraInterface()
@@ -17,12 +18,20 @@ def testCameraInteface():
 
 
 def testDataAcquisition():
-    savePath = "data/sensor_data/20230425_TestDataAcquisiton/"
+
     testAcquisition = DataAcquisition(savePath)
     testAcquisition.recordStereoDataSet()
+
+def testRecordStereoDataSetsManually():
+    testAcquisition = DataAcquisition(savePath)
     testAcquisition.recordStereoDataSets(method="manual")
+
+def testRecordStereoDataSetsAutomatically():
+    testAcquisition = DataAcquisition(savePath)
     testAcquisition.recordStereoDataSets(method="auto")
 
 if __name__ == "__main__":
-    testCameraInteface()
-    testDataAcquisition()
+    #testCameraInteface()
+    #testDataAcquisition()
+    #testRecordStereoDataSetsManually()
+    testRecordStereoDataSetsAutomatically()

@@ -34,7 +34,9 @@ class CameraInterface (object):
         self.params = visiontransfer.DeviceParameters(self.device)
         self.params.set_operation_mode(visiontransfer.OperationMode.STEREO_MATCHING)
         self.cameraParameters = self.getCameraParameters()
-        
+        print('Got the follwing camera parameters: {}'.format(self.cameraParameters["qmatrix"]))
+        for key in self.cameraParameters:
+            print('{}: {}'.format(key, self.cameraParameters[key]))
 
     def getCameraParameters(self):
         cameraParameters = {}

@@ -13,15 +13,16 @@ def testCameraInteface():
     testInterface = CameraInterface()
     
     testInterface.displayLeftRBGImage()
-    
     testInterface.streamLeftRBGImage()
 
 
 def testDataAcquisition():
     savePath = "data/sensor_data/20230425_TestDataAcquisiton/"
     testAcquisition = DataAcquisition(savePath)
-    testAcquisition.acquireStereoDataSet()
+    testAcquisition.recordStereoDataSet()
+    testAcquisition.recordStereoDataSets(method="manual")
+    testAcquisition.recordStereoDataSets(method="auto")
 
 if __name__ == "__main__":
-    #testCameraInteface()
+    testCameraInteface()
     testDataAcquisition()

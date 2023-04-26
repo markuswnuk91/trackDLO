@@ -32,7 +32,7 @@ class ImageProcessing(DataHandler):
             mask (np.array): mask
                 mask values not within threshold bounds are 0, mask values within threshold bounds are 255
         """
-        hsvImage = cv2.cvtColor(rgbImage, cv2.COLOR_RBG2HSV)
+        hsvImage = cv2.cvtColor(rgbImage, cv2.COLOR_RGB2HSV)
         mask = cv2.inRange(hsvImage, (hMin, sMin, vMin), (hMax, sMax, vMax))
         return mask
     

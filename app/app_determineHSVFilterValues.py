@@ -11,8 +11,8 @@ except:
     print("Imports for Application determineHSVFilterValues failed.")
     raise
 
-folderPath = "data/acquired_data/20230426_TestImageProcessing/"
-fileName = "20230426_093458733302_image_rgb.png"
+folderPath = "data/acquired_data/20230426_133624_DataSet/"
+fileName = "20230426_133625761810_image_rgb.png"
 
 max_value = 255
 max_value_H = 360//2
@@ -83,7 +83,7 @@ if __name__=='__main__':
     # load image
     dataHandler = DataHandler(folderPath)
     rgbImage = dataHandler.loadNumpyArrayFromPNG(fileName)
-
+    
     #create windows
     cv2.namedWindow(image_window__name)
     cv2.namedWindow(mask_window_name)
@@ -101,9 +101,9 @@ if __name__=='__main__':
         # mask_inv = cv2.bitwise_not(mask)
         frame_diff = cv2.bitwise_and(rgbImage,rgbImage, mask= mask)
         frame_diff[np.where((frame_diff == [0,0,0]).all(axis=2))] = [255,255,255]
-        cv2.imshow(image_window__name,cv2.resize(rgbImage, None, fx=.25, fy=.25))
+        cv2.imshow(image_window__name,cv2.resize(cv2.cvtColor(rgbImage, cv2.COLOR_RGB2BGR), None, fx=.25, fy=.25))
         cv2.imshow(mask_window_name, cv2.resize(mask, None, fx=.25, fy=.25))
-        cv2.imshow(diff_window_name, cv2.resize(frame_diff, None, fx=.25, fy=.25))
+        cv2.imshow(diff_window_name, cv2.resize(cv2.cvtColor(frame_diff, cv2.COLOR_RGB2BGR), None, fx=.25, fy=.25))
         key = cv2.waitKey(30)
         if key == ord('q') or key == 27:
             break

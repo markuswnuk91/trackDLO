@@ -2,7 +2,6 @@ import os, sys
 import matplotlib.pyplot as plt
 try:
     sys.path.append(os.getcwd().replace("/tests", ""))
-    from src.sensing.dataHandler import DataHandler
     from src.sensing.pointCloudProcessing import PointCloudProcessing
 except:
     print("Imports for testing camera interface failed.")

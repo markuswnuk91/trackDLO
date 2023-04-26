@@ -168,6 +168,7 @@ class CameraInterface (object):
         image_set = self.acquireImageSet(transfer)
         rgb_image = self.getRGBDataFromImageSet(image_set)
         cv2.imshow("RGB image", cv2.resize(rgb_image, None, fx=.25, fy=.25))
+        cv2.waitKey(0)
         return
     
     def streamLeftRBGImage(self, fps = 30):

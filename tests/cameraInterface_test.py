@@ -13,7 +13,7 @@ def testCameraInteface():
     testInterface = CameraInterface()
     
     testInterface.displayLeftRBGImage()
-    testInterface.streamLeftRBGImage()
+    #testInterface.streamLeftRBGImage()
 
 if __name__ == "__main__":
     testCameraInteface()

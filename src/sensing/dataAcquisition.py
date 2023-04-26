@@ -21,7 +21,7 @@ class DataAcquisition(CameraInterface):
         self.folderPath = folderPath
 
     def saveRGBImage(self,rgb_image,folderPath,fileName):
-        cv2.imwrite(folderPath+fileName+'.png', rgb_image)
+        cv2.imwrite(folderPath+fileName+'.png')
 
     def saveNumpyArrayAsBinary(self,numpyArray,folderPath,fileName):
             """Saves the disparity map as a binary numpy array to the specified folder path.

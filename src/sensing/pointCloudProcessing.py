@@ -6,7 +6,7 @@ try:
     sys.path.append(os.getcwd().replace("/src/sensing", ""))
     from src.sensing.dataHandler import DataHandler
 except:
-    print("Imports for Data Hander failed.")
+    print("Imports for class PointCloudPorcessing failed.")
     raise
 
 class PointCloudProcessing(DataHandler):
@@ -15,7 +15,19 @@ class PointCloudProcessing(DataHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     
-    def calculatePointCloudFromImageAndDisparity(self, image: np.ndarray, disparityMap: np.ndarray, qMatrix: np.ndarray):
+    def calculatePointCloud(self, image: np.ndarray, disparityMap: np.ndarray, qMatrix: np.ndarray, mask = None):
+        """calculates a point cloud from a given image and disparity map
+
+        Args:
+            image (np.ndarray): WidthxHeightxDim image
+            disparityMap (np.ndarray): WidthxHeightx1 dispartiy map
+            qMatrix (np.ndarray): 4x4 Q matrix for stereo projection
+            mask (np.ndarray): WidthxHeightx1 mask, 0 for pixels which should not be projected
+        Returns:
+            pointCloud(tuple): point cloud information
+                pointCloud[0] Mx3 np.array with 3D xyz-coordinates of the points,
+                pointCloud[1] Mx3 or Mx1 np.array of color information, depending if input image is color or grayscale
+        """
         if len(image.shape) == 3:
             color = True
             invalidMatch = 511.875
@@ -41,6 +53,17 @@ class PointCloudProcessing(DataHandler):
         else:
             colors = image[0].flatten("F")
 
+        # apply mask
+        if mask is not None:
+            maskedPixels = mask.flatten("F")
+            d = d[maskedPixels!=0]
+            u = u[maskedPixels!=0]
+            v = v[maskedPixels!=0]
+            if len(colors.shape)>1:
+                colors = colors[maskedPixels!=0,:]
+            else:
+                colors = colors[maskedPixels!=0]
+
         # filter invalid points
         d[d == 0] = invalidMatch
         u = u[d!=invalidMatch]
@@ -52,11 +75,21 @@ class PointCloudProcessing(DataHandler):
         d = d[d!=invalidMatch]
 
         #compute point cloud
-        w = (qMatrix[3, 2] * d) + qMatrix[3, 3]
-        x = (u * qMatrix[0, 0] + qMatrix[0, 3]) / w
-        y = (v * qMatrix[1, 1] + qMatrix[1, 3]) / w
+        xyz = self.stereoProjection(u,v,d,qMatrix)
+
+        return xyz, colors
+    
+    def stereoProjection(self, uVector,vVector,dVector,qMatrix):
+        """performs stereo porjection from image space in 3D space
+        Args:
+            uVector (np.array): vector of image coordinates along the image width
+            vVector (np.array): vector of image coordinates along the image height
+            dVector (np.array): vector of disparity values corresponding to the image coordinates
+            qMatrix (np.array): Q marix for stereo projection
+        """
+        w = (qMatrix[3, 2] * dVector) + qMatrix[3, 3]
+        x = (uVector * qMatrix[0, 0] + qMatrix[0, 3]) / w
+        y = (vVector * qMatrix[1, 1] + qMatrix[1, 3]) / w
         z =  qMatrix[2, 3] / w
         xyz = np.column_stack((x,y,z))
-
-        pointCloud = np.hstack((xyz, colors.astype(float)))
-        return pointCloud
+        return xyz

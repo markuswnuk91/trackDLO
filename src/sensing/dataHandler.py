@@ -30,6 +30,7 @@ class DataHandler(object):
             folderPath = self.folderPath
         if type == "rgb":
             imageArray = cv2.imread(folderPath+fileName,cv2.IMREAD_COLOR)
+            imageArray = cv2.cvtColor(imageArray, cv2.COLOR_BGR2RGB)
         elif type == "grayscale":
             imageArray = cv2.imread(folderPath+fileName,cv2.IMREAD_GRAYSCALE)
         return imageArray

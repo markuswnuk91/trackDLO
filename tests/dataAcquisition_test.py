@@ -8,7 +8,7 @@ except:
     print("Imports for testing camera interface failed.")
     raise
 
-savePath = "data/acquired_data/20230425_TestDataAcquisiton/"
+savePath = "data/acquired_data/20230426_TestImageProcessing/"
 
 def testDataAcquisition():
 

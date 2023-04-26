@@ -12,20 +12,6 @@ except:
 folderPath = "data/acquired_data/20230426_133624_DataSet/"
 fileName = "20230426_133625761810_image_rgb.png"
 
-original_image_window_name = 'Original Image'
-
-mask_red_window_name = 'Mask Red'
-mask_green_window_name = 'Mask Green'
-mask_blue_window_name = 'Mask Blue'
-mask_bright_window_name = 'Mask Bright'
-mask_dark_window_name = 'Mask Dark'
-
-filtered_red_window_name = 'Filtered Red'
-filtered_green_window_name = 'Filtered Green'
-filtered_blue_window_name = 'Filtered Blue'
-filtered_bright_window_name = 'Filtered Bright'
-filtered_dark_window_name = 'Filtered Dark'
-
 def getParametersFilterRed():
     hueMin= 0
     hueMax = 15
@@ -71,7 +57,24 @@ def getParametersFilterDark():
     valueMax = 85
     return hueMin, hueMax, saturationMin, saturationMax, valueMin, valueMax
 
-def testImageProcessing():
+def testHSVFilter():
+    original_image_window_name = 'Original Image'
+    
+    mask_red_window_name = 'Mask Red'
+    mask_green_window_name = 'Mask Green'
+    mask_blue_window_name = 'Mask Blue'
+    mask_bright_window_name = 'Mask Bright'
+    mask_dark_window_name = 'Mask Dark'
+
+    filtered_red_window_name = 'Filtered Red'
+    filtered_green_window_name = 'Filtered Green'
+    filtered_blue_window_name = 'Filtered Blue'
+    filtered_bright_window_name = 'Filtered Bright'
+    filtered_dark_window_name = 'Filtered Dark'
+
+    imageProcessor = ImageProcessing(folderPath)
+    rgbImage = imageProcessor.loadNumpyArrayFromPNG(fileName)
+
     cv2.namedWindow(original_image_window_name)
 
     #red
@@ -89,9 +92,6 @@ def testImageProcessing():
     #dark
     cv2.namedWindow(mask_dark_window_name)
     cv2.namedWindow(filtered_dark_window_name)
-
-    imageProcessor = ImageProcessing(folderPath)
-    rgbImage = imageProcessor.loadNumpyArrayFromPNG(fileName)
 
     # filter red
     (hueMin, hueMax, saturationMin, saturationMax, valueMin, valueMax) = getParametersFilterRed()
@@ -135,5 +135,31 @@ def testImageProcessing():
     cv2.imshow(filtered_dark_window_name, cv2.resize(cv2.cvtColor(fileredImage_Dark, cv2.COLOR_RGB2BGR), None, fx=.25, fy=.25))
     key = cv2.waitKey(0)
     return
+
+def testROIFilter():
+    original_image_window_name = 'Original Image'
+    mask_roi_window_name = "Mask ROI"
+    filtered_window_name = "Image ROI"
+    imageProcessor = ImageProcessing(folderPath)
+    rgbImage = imageProcessor.loadNumpyArrayFromPNG(fileName)
+    width = rgbImage.shape[1]
+    height = rgbImage.shape[0]
+    uMin = int(1/5*width)
+    uMax = int((1-1/5)*width)
+    vMin = int(1/5*height)
+    vMax = int((1-1/5)*height)
+    maskFilter_ROI = imageProcessor.getMaskFromRGB_applyROI(rgbImage, uMin, uMax, vMin,vMax)
+    fileredImage_ROI= imageProcessor.filterRGB_applyROI(rgbImage, uMin, uMax, vMin,vMax)
+    cv2.namedWindow(original_image_window_name)
+    cv2.namedWindow(mask_roi_window_name)
+    cv2.namedWindow(filtered_window_name)
+    #show
+    cv2.imshow(original_image_window_name,cv2.resize(cv2.cvtColor(rgbImage, cv2.COLOR_RGB2BGR), None, fx=.25, fy=.25))
+    cv2.imshow(mask_roi_window_name, cv2.resize(maskFilter_ROI, None, fx=.25, fy=.25))
+    cv2.imshow(filtered_window_name, cv2.resize(cv2.cvtColor(fileredImage_ROI, cv2.COLOR_RGB2BGR), None, fx=.25, fy=.25))
+    key = cv2.waitKey(0)
+    return
+
 if __name__ == "__main__":
-    testImageProcessing()
+    #testHSVFilter()
+    testROIFilter()

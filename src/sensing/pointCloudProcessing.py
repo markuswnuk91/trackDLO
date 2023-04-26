@@ -80,7 +80,7 @@ class PointCloudProcessing(DataHandler):
         return xyz, colors
     
     def stereoProjection(self, uVector,vVector,dVector,qMatrix):
-        """performs stereo porjection from image space in 3D space
+        """performs stereo projection from image space in 3D space
         Args:
             uVector (np.array): vector of image coordinates along the image width
             vVector (np.array): vector of image coordinates along the image height
@@ -93,3 +93,53 @@ class PointCloudProcessing(DataHandler):
         z =  qMatrix[2, 3] / w
         xyz = np.column_stack((x,y,z))
         return xyz
+    
+    def getMaskFromPointCloud_BoundingBox(self, points, min_x=-np.inf, max_x=np.inf, min_y=-np.inf, max_y=np.inf, min_z=-np.inf, max_z=np.inf):
+        """ Compute a mask of a bounding box filter on the given points
+        Method from: https://stackoverflow.com/questions/42352622/finding-points-within-a-bounding-box-with-numpy
+        Args:                       
+            points: (n,3) array
+                The array containing all the points's coordinates. Expected format:
+                    array([
+                        [x1,y1,z1],
+                        ...,
+                        [xn,yn,zn]])
+
+            min_i, max_i: float
+                The bounding box limits for each coordinate. If some limits are missing,
+                the default values are -infinite for the min_i and infinite for the max_i.
+
+        Returns:
+            mask : boolean array
+                The boolean mask indicating wherever a point should be keeped or not.
+                The size of the boolean mask will be the same as the number of given points.
+
+        """
+        bound_x = np.logical_and(points[:, 0] > min_x, points[:, 0] < max_x)
+        bound_y = np.logical_and(points[:, 1] > min_y, points[:, 1] < max_y)
+        bound_z = np.logical_and(points[:, 2] > min_z, points[:, 2] < max_z)
+
+        mask = np.logical_and(np.logical_and(bound_x, bound_y), bound_z)
+
+        return mask
+    
+    def filterPointsBoundingBox(self, points, min_x=-np.inf, max_x=np.inf, min_y=-np.inf, max_y=np.inf, min_z=-np.inf, max_z=np.inf):
+        """_summary_
+        Args:
+            points: (n,3) array
+                The array containing all the points's coordinates. Expected format:
+                    array([
+                        [x1,y1,z1],
+                        ...,
+                        [xn,yn,zn]])
+
+            min_i, max_i: float
+                The bounding box limits for each coordinate. If some limits are missing,
+                the default values are -infinite for the min_i and infinite for the max_i.
+        Returns:
+            filteredPoints : np. array
+                The array of remaining points after applying the boxfilter
+        """
+        mask = self.getMaskFromPointCloud_BoundingBox(points, min_x, max_x, min_y, max_y, min_z, max_z)
+        filteredPoints = points[mask,:]
+        return filteredPoints

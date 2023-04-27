@@ -43,7 +43,7 @@ boundingBoxParameters = {
 
 innerBoundingBoxParameters = {
     "xMin" : 0,
-    "xMax" : 0.1,
+    "xMax" : 1,
     "yMin" : 0,
     "yMax" : 1,
     "zMin" : 0,

@@ -93,6 +93,15 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         return points, colors
     
     def getInliersFromBoundingBox(self, pointCloud: tuple, boundingBoxParameters: dict):
+        """returns a point cloud of inliers for a given boudning box
+
+        Args:
+            pointCloud (tuple): point cloud data
+            boundingBoxParameters (dict): dictionary containing the parameters of the bounding box
+
+        Returns:
+            inliers, colors: point cloud data of the inliers and corresponding color information
+        """
         (xMin, xMax, yMin, yMax, zMin, zMax) = self.getParametersFromDict_BoundingBox(boundingBoxParameters)
         inlierMask = self.getMaskFromBoundingBox(pointCloud[0], xMin, xMax, yMin, yMax, zMin, zMax)
         inliers = pointCloud[0][inlierMask,:]
@@ -100,6 +109,15 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         return inliers, colors
 
     def getOutliersFromBoundingBox(self, pointCloud: tuple, boundingBoxParameters: dict):
+        """returns a point cloud of outliers for a given bounding box
+
+        Args:
+            pointCloud (tuple): point cloud data
+            boundingBoxParameters (dict): dictionary containing the parameters of the bounding box
+
+        Returns:
+            outliers, colors: point cloud data of the outliers and corresponding color information
+        """
         (xMin, xMax, yMin, yMax, zMin, zMax) = self.getParametersFromDict_BoundingBox(boundingBoxParameters)
         inlierMask = self.getMaskFromBoundingBox(pointCloud[0], xMin, xMax, yMin, yMax, zMin, zMax)
         outlierMask = np.invert(inlierMask)
@@ -108,6 +126,15 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         return outliers, colors
     
     def transformPointsFromCameraToRobotBaseCoordinates(self, points: np.array):
-        transformationMatrix = np.linalg.inv(self.calibrationParameters["T_Camera_To_RobotBase"])
+        """Tranforms a given set of points given in the camera coordinate system into the robot base coordinate system
+
+        Args:
+            points (np.array): Set of points with coordinates given in camera corodinate system
+
+        Returns:
+            points: Set of points with coordinates measured in the robot base coordinate system
+        """
+        # T_Camera_To_RobotBase: coordinate transfrom of the robot base with respect to the camera coordinate system
+        transformationMatrix = np.linalg.inv(self.calibrationParameters["T_Camera_To_RobotBase"]) 
         transformedPoints = self.transformPoints(points,transformationMatrix)
         return transformedPoints

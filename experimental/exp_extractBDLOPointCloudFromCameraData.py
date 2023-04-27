@@ -12,7 +12,7 @@ except:
     print("Imports for testing image processing class failed.")
     raise
 
-visImage = False
+visImage = True
 visPointCloud = True
 folderPath = "data/acquired_data/20230426_133624_DataSet/"
 fileName = "20230426_133625761810_image_rgb.png"
@@ -29,10 +29,10 @@ def getParametersFilterColor():
     return hueMin, hueMax, saturationMin, saturationMax, valueMin, valueMax
 
 def getParametersFilterROI():
-    uMin = 1000
-    uMax = 2313
-    vMin = 77
-    vMax = 1794
+    uMin = 0.5
+    uMax = 0.95
+    vMin = 0.03
+    vMax = 0.87
     return uMin, uMax, vMin, vMax
 
 def getParametersFilterBoxOuter():
@@ -96,13 +96,13 @@ def extractPointCloudFromImage():
     
     # BoxFilter for working area
     (xMin, xMax, yMin, yMax, zMin, zMax) = getParametersFilterBoxOuter()
-    indexMaskOuter = pointCloudProcessor.getMaskFromPointCloud_BoundingBox(points, xMin, xMax, yMin, yMax, zMin, zMax)
+    indexMaskOuter = pointCloudProcessor.getMaskFromBoundingBox(points, xMin, xMax, yMin, yMax, zMin, zMax)
     points = points[indexMaskOuter,:]
     colors = colors[indexMaskOuter,:]
     
     # Box filter for region of interest
     (xMin, xMax, yMin, yMax, zMin, zMax) = getParametersFilterBoxInner()
-    indexMaskInner = pointCloudProcessor.getMaskFromPointCloud_BoundingBox(points, xMin, xMax, yMin, yMax, zMin, zMax)
+    indexMaskInner = pointCloudProcessor.getMaskFromBoundingBox(points, xMin, xMax, yMin, yMax, zMin, zMax)
     indexMaskOuter = np.invert(indexMaskInner)
     inliers = points[indexMaskInner,:]
     inlierColors = colors[indexMaskInner,:]

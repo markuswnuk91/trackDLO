@@ -42,3 +42,16 @@ class DataHandler(object):
             cameraParameters = json.load(f)  
         cameraParameters["qmatrix"] = np.array(cameraParameters["qmatrix"])
         return cameraParameters
+    
+    def loadCalibrationParameters(self, fileName, folderPath):
+        with open(folderPath+fileName, 'r') as f:
+            calibrationParameters = json.load(f)  
+        calibrationParameters["T_Camera_To_RobotBase"] = np.array(calibrationParameters["T_Camera_To_RobotBase"])
+        return calibrationParameters
+    
+    def loadStereoDataSet_FromRGB(self, rgbFileName, folderPath = None):
+        fileID = rgbFileName.split("_")[0] + "_" + rgbFileName.split("_")[1]
+        disparityMapName = fileID + "_" + "map_disparity.npy"
+        rgbImage = self.loadNumpyArrayFromPNG(rgbFileName, folderPath)
+        disparityMap = self.loadNumpyArrayFromBinary(disparityMapName, folderPath)
+        return (rgbImage, disparityMap)

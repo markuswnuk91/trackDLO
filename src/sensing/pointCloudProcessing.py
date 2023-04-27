@@ -14,7 +14,7 @@ class PointCloudProcessing(DataHandler):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    
+        
     def calculatePointCloud(self, image: np.ndarray, disparityMap: np.ndarray, qMatrix: np.ndarray, mask = None):
         """calculates a point cloud from a given image and disparity map
 
@@ -94,7 +94,14 @@ class PointCloudProcessing(DataHandler):
         xyz = np.column_stack((x,y,z))
         return xyz
     
-    def getMaskFromPointCloud_BoundingBox(self, points, min_x=-np.inf, max_x=np.inf, min_y=-np.inf, max_y=np.inf, min_z=-np.inf, max_z=np.inf):
+    def inverseStereoProjection(points, qMatrix): 
+        w = qMatrix[2, 3] / points[:,2]
+        u = ((points[:,0] * w) - qMatrix[0, 3]) / qMatrix[0, 0]
+        v = ((points[:,1] * w) - qMatrix[1, 3]) / qMatrix[1, 1]
+        d = (w - qMatrix[3, 3]) / qMatrix[3, 2]
+        return u.astype(int) , v.astype(int), d.astype(int)
+    
+    def getMaskFromBoundingBox(self, points, min_x=-np.inf, max_x=np.inf, min_y=-np.inf, max_y=np.inf, min_z=-np.inf, max_z=np.inf):
         """ Compute a mask of a bounding box filter on the given points
         Method from: https://stackoverflow.com/questions/42352622/finding-points-within-a-bounding-box-with-numpy
         Args:                       
@@ -124,7 +131,7 @@ class PointCloudProcessing(DataHandler):
         return indexMask
     
     def filterPointsBoundingBox(self, points, min_x=-np.inf, max_x=np.inf, min_y=-np.inf, max_y=np.inf, min_z=-np.inf, max_z=np.inf):
-        """_summary_
+        """Determines inliers and outliers of a given point cloud and bounding box
         Args:
             points: (n,3) array
                 The array containing all the points's coordinates. Expected format:
@@ -140,6 +147,17 @@ class PointCloudProcessing(DataHandler):
             filteredPoints : np. array
                 The array of remaining points after applying the boxfilter
         """
-        mask = self.getMaskFromPointCloud_BoundingBox(points, min_x, max_x, min_y, max_y, min_z, max_z)
+        mask = self.getMaskFromBoundingBox(points, min_x, max_x, min_y, max_y, min_z, max_z)
         filteredPoints = points[mask,:]
         return filteredPoints
+    
+    def downsamplePointCloud_nthElement(self, pointCloud: tuple, nthElement):
+        points = pointCloud[0]
+        colors = pointCloud[1]
+        points = points[::nthElement,:]
+        colors = colors[::nthElement,:]
+        return points, colors
+    
+    def transformPoints(self, points: np.array, transformationMatrix: np.array):
+        transformedPoints = points @ transformationMatrix[:3,:3].T + transformationMatrix[:3,3]
+        return transformedPoints

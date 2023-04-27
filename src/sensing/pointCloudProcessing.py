@@ -77,7 +77,7 @@ class PointCloudProcessing(DataHandler):
         #compute point cloud
         xyz = self.stereoProjection(u,v,d,qMatrix)
 
-        return xyz, colors
+        return xyz, colors/255
     
     def stereoProjection(self, uVector,vVector,dVector,qMatrix):
         """performs stereo projection from image space in 3D space
@@ -110,8 +110,8 @@ class PointCloudProcessing(DataHandler):
                 the default values are -infinite for the min_i and infinite for the max_i.
 
         Returns:
-            mask : boolean array
-                The boolean mask indicating wherever a point should be keeped or not.
+            indexMask : boolean array
+                The boolean mask of indices indicating wherever a point should be keeped or not.
                 The size of the boolean mask will be the same as the number of given points.
 
         """
@@ -119,9 +119,9 @@ class PointCloudProcessing(DataHandler):
         bound_y = np.logical_and(points[:, 1] > min_y, points[:, 1] < max_y)
         bound_z = np.logical_and(points[:, 2] > min_z, points[:, 2] < max_z)
 
-        mask = np.logical_and(np.logical_and(bound_x, bound_y), bound_z)
+        indexMask = np.logical_and(np.logical_and(bound_x, bound_y), bound_z)
 
-        return mask
+        return indexMask
     
     def filterPointsBoundingBox(self, points, min_x=-np.inf, max_x=np.inf, min_y=-np.inf, max_y=np.inf, min_z=-np.inf, max_z=np.inf):
         """_summary_

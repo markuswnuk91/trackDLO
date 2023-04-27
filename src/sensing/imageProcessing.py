@@ -66,3 +66,7 @@ class ImageProcessing(DataHandler):
         mask = self.getMaskFromRGB_applyROI(rgbImage, uMin, uMax, vMin, vMax)
         filteredImage = cv2.bitwise_and(rgbImage, rgbImage, mask=mask)
         return filteredImage
+    
+    def filterRGB_applyMask(self, rgbImage: np.array, mask: np.array):
+        filteredImage = cv2.bitwise_and(rgbImage, rgbImage, mask=mask)
+        return filteredImage

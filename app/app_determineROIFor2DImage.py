@@ -29,10 +29,10 @@ upperBoarder = imageHeight
 image_window__name = 'Image'
 mask_window_name = 'Mask'
 diff_window_name = 'Difference'
-left_boarder_name = 'Left Boarder'
-lower_boarder_name = 'Lower Boarder' # lower and upper relative to image coordinates (inverted to how user perceives the image)
-right_boarder_name = 'Right Boarder'
-upper_boarder_name = 'Upper Boarder'
+left_boarder_name = 'uMin'
+lower_boarder_name = 'vMin' # lower and upper relative to image coordinates (inverted to how user perceives the image)
+right_boarder_name = 'uMax'
+upper_boarder_name = 'vMax'
 
 def on_left_boarder_thresh_trackbar(val):
     global leftBoarder

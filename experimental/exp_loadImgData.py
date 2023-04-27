@@ -14,8 +14,8 @@ except:
     print("Imports for experimental script to load image data failed.")
     raise
 
-path = "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/image_grayscale_1.png"
-
+# path = "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/image_grayscale_1.png"
+path = "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/image_disparity_1.png"
 
 # imageio
 im = iio.imread(path)

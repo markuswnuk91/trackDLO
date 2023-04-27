@@ -2,3 +2,4 @@ pyDataverse
 pytest
 numpy
 scipy
+opencv-python

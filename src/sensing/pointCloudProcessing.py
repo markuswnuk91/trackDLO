@@ -94,7 +94,9 @@ class PointCloudProcessing(DataHandler):
         xyz = np.column_stack((x,y,z))
         return xyz
     
-    def inverseStereoProjection(points, qMatrix): 
+    def inverseStereoProjection(self, points, qMatrix): 
+        if len(points.shape)==1:
+            points = np.expand_dims(points,axis=0)
         w = qMatrix[2, 3] / points[:,2]
         u = ((points[:,0] * w) - qMatrix[0, 3]) / qMatrix[0, 0]
         v = ((points[:,1] * w) - qMatrix[1, 3]) / qMatrix[1, 1]

@@ -88,5 +88,6 @@ def testPointCloudExtraction():
         fig.add_subplot()
         plt.imshow(rgbImage_WithRobotBase)
         plt.show(block=True)
+        
 if __name__ == "__main__":
     testPointCloudExtraction()

@@ -1,0 +1,5 @@
+# add table to world
+    loader_table = dart.utils.DartLoader()
+    loader.addPackageDirectory("Tisch.SLDASM", "/mnt/d/Projekte/Soft_Tissue_Robotics/Paper/Model_Predictive_Trajectory_Control/Memorable/resources/Table")
+    table = loader.parseSkeleton("/mnt/d/Projekte/Soft_Tissue_Robotics/Paper/Model_Predictive_Trajectory_Control/Memorable/resources/Table/urdf/TischSLDASM.urdf")
+    world.addSkeleton(table)

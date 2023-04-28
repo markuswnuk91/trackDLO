@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="Clips_3_modified.SLDPRT">
+  <link
+    name="Clips_3_modified.SLDPRT">
+    <inertial>
+      <origin
+        xyz="-5.2132E-07 -0.01892 -0.000122309999999999"
+        rpy="0 0 0" />
+      <mass
+        value="0.0063855" />
+      <inertia
+        ixx="1.4942E-06"
+        ixy="-6.6352E-11"
+        ixz="3.40929999999996E-13"
+        iyy="2.6005E-07"
+        iyz="5.21720000000007E-09"
+        izz="1.4649E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5707963267949 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Clips_3_modified.SLDPRT/meshes/Clips_3_modified.SLDPRT.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.2 0.2 0.2 1" />
+        <texture
+          filename="package://Clips_3_modified.SLDPRT/textures/" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5707963267949 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Clips_3_modified.SLDPRT/meshes/Clips_3_modified.SLDPRT.STL" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

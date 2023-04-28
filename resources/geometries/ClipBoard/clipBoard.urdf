@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter 
+     xyz="0.43 0.48 -0.131"" -->
+<robot
+  name="ClipBoard">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.0 0.0 0.0" 
+        rpy="0 0 0" />
+      <mass
+        value="56.2277810360349" />
+      <inertia
+        ixx="6.37264864164212"
+        ixy="-1.10412050416119E-15"
+        ixz="-1.13266492050572E-15"
+        iyy="0.963263002255306"
+        iyz="-6.56548228060159E-14"
+        izz="7.26557217551952" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0.0 0.0 0.0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ClipBoard/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.796078431372549 0.823529411764706 0.937254901960784 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://ClipBoard/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

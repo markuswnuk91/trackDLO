@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
+
 def set_axes_equal3D(ax):
     """Make axes of 3D plot have equal scale so that spheres appear as spheres,
     cubes as cubes, etc..  This is one possible solution to Matplotlib's
@@ -168,6 +169,8 @@ def plotPoint(
     alpha=1,
     label: str = None,
     size=20,
+    marker="o",
+    zorder=1,
 ):
     edgeColor = color if edgeColor is None else edgeColor
     if len(x) == 3:
@@ -180,6 +183,8 @@ def plotPoint(
                 alpha=alpha,
                 s=size,
                 edgecolors=edgeColor,
+                marker=marker,
+                zorder=zorder,
             )
         else:
             ax.scatter(
@@ -191,11 +196,20 @@ def plotPoint(
                 alpha=alpha,
                 s=size,
                 edgecolors=edgeColor,
+                marker=marker,
+                zorder=zorder,
             )
     elif len(x) == 2:
         if label is None:
             ax.scatter(
-                x[0], x[1], color=color, alpha=alpha, s=size, edgecolors=edgeColor
+                x[0],
+                x[1],
+                color=color,
+                alpha=alpha,
+                s=size,
+                edgecolors=edgeColor,
+                marker=marker,
+                zorder=zorder,
             )
         else:
             ax.scatter(
@@ -206,6 +220,8 @@ def plotPoint(
                 alpha=alpha,
                 s=size,
                 edgecolors=edgeColor,
+                marker=marker,
+                zorder=zorder,
             )
 
 
@@ -231,7 +247,7 @@ def plotPointSet(
                 X[:, 0],
                 X[:, 1],
                 X[:, 2],
-                c=color,
+                color=color,
                 alpha=alpha,
                 s=size,
                 marker=markerStyle,
@@ -242,7 +258,7 @@ def plotPointSet(
                 X[:, 0],
                 X[:, 1],
                 X[:, 2],
-                c=color,
+                color=color,
                 label=label,
                 alpha=alpha,
                 s=size,
@@ -255,7 +271,7 @@ def plotPointSet(
             ax.scatter(
                 X[:, 0],
                 X[:, 1],
-                c=color,
+                color=color,
                 alpha=alpha,
                 s=size,
                 marker=markerStyle,
@@ -265,7 +281,7 @@ def plotPointSet(
             ax.scatter(
                 X[:, 0],
                 X[:, 1],
-                c=color,
+                ccolor=color,
                 label=label,
                 alpha=alpha,
                 s=size,
@@ -489,26 +505,26 @@ def plotPointSetAsColorGradedLine(
     elif waitTime == -1:
         plt.show(block=False)
 
+
 def plotCube(ax, x_Min, x_Max, y_Min, y_Max, z_Min, z_Max, color="r", alpha=0.2):
     x_range = np.array([x_Min, x_Max])
     y_range = np.array([y_Min, y_Max])
     z_range = np.array([z_Min, z_Max])
 
     xx, yy = np.meshgrid(x_range, y_range)
-    ax.plot_wireframe(xx, yy, z_range[0]*np.ones(4).reshape(2, 2), color="r")
-    ax.plot_surface(xx, yy, z_range[0]*np.ones(4).reshape(2, 2), color="r", alpha=0.2)
-    ax.plot_wireframe(xx, yy, z_range[1]*np.ones(4).reshape(2, 2), color="r")
-    ax.plot_surface(xx, yy, z_range[1]*np.ones(4).reshape(2, 2), color="r", alpha=0.2)
-
+    ax.plot_wireframe(xx, yy, z_range[0] * np.ones(4).reshape(2, 2), color="r")
+    ax.plot_surface(xx, yy, z_range[0] * np.ones(4).reshape(2, 2), color="r", alpha=0.2)
+    ax.plot_wireframe(xx, yy, z_range[1] * np.ones(4).reshape(2, 2), color="r")
+    ax.plot_surface(xx, yy, z_range[1] * np.ones(4).reshape(2, 2), color="r", alpha=0.2)
 
     yy, zz = np.meshgrid(y_range, z_range)
-    ax.plot_wireframe(x_range[0]*np.ones(4).reshape(2, 2), yy, zz, color="r")
-    ax.plot_surface(x_range[0]*np.ones(4).reshape(2, 2), yy, zz, color="r", alpha=0.2)
-    ax.plot_wireframe(x_range[1]*np.ones(4).reshape(2, 2), yy, zz, color="r")
-    ax.plot_surface(x_range[1]*np.ones(4).reshape(2, 2), yy, zz, color="r", alpha=0.2)
+    ax.plot_wireframe(x_range[0] * np.ones(4).reshape(2, 2), yy, zz, color="r")
+    ax.plot_surface(x_range[0] * np.ones(4).reshape(2, 2), yy, zz, color="r", alpha=0.2)
+    ax.plot_wireframe(x_range[1] * np.ones(4).reshape(2, 2), yy, zz, color="r")
+    ax.plot_surface(x_range[1] * np.ones(4).reshape(2, 2), yy, zz, color="r", alpha=0.2)
 
     xx, zz = np.meshgrid(x_range, z_range)
-    ax.plot_wireframe(xx, y_range[0]*np.ones(4).reshape(2, 2), zz, color="r")
-    ax.plot_surface(xx, y_range[0]*np.ones(4).reshape(2, 2), zz, color="r", alpha=0.2)
-    ax.plot_wireframe(xx, y_range[1]*np.ones(4).reshape(2, 2), zz, color="r")
-    ax.plot_surface(xx, y_range[1]*np.ones(4).reshape(2, 2), zz, color="r", alpha=0.2)
+    ax.plot_wireframe(xx, y_range[0] * np.ones(4).reshape(2, 2), zz, color="r")
+    ax.plot_surface(xx, y_range[0] * np.ones(4).reshape(2, 2), zz, color="r", alpha=0.2)
+    ax.plot_wireframe(xx, y_range[1] * np.ones(4).reshape(2, 2), zz, color="r")
+    ax.plot_surface(xx, y_range[1] * np.ones(4).reshape(2, 2), zz, color="r", alpha=0.2)

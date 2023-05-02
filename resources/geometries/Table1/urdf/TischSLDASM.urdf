@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="TischSLDASM">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="0.433176227599425 0.0856921390659518 -0.136584900188357"
+        rpy="0 0 0" />
+      <mass
+        value="49.0474481752342" />
+      <inertia
+        ixx="0.607878917589982"
+        ixy="-0.000161768430699553"
+        ixz="0.000111105676609948"
+        iyy="4.00865477289331"
+        iyz="-4.87977690014073E-05"
+        izz="3.49273916337564" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Tisch.SLDASM/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Tisch.SLDASM/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

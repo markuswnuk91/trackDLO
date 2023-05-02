@@ -1,0 +1,34 @@
+Mass properties of finger (Collision Geometry was used! Material Properties not set, so values are only rough estimates.)
+     Configuration: Default
+     Coordinate system: -- default --
+
+Density = 0.00 grams per cubic millimeter
+
+Mass = 21.98 grams
+
+Volume = 21976.55 cubic millimeters
+
+Surface area = 4987.82  square millimeters
+
+Center of mass: ( millimeters )
+	X = -0.02
+	Y = 11.96
+	Z = 23.78
+
+Principal axes of inertia and principal moments of inertia: ( grams *  square millimeters )
+Taken at the center of mass.
+	 Ix = ( 0.00, -0.17,  0.98)   	Px = 1559.01
+	 Iy = (-0.02, -0.98, -0.17)   	Py = 5586.05
+	 Iz = ( 1.00, -0.02,  0.00)   	Pz = 5722.94
+
+Moments of inertia: ( grams *  square millimeters )
+Taken at the center of mass and aligned with the output coordinate system.
+	Lxx = 5722.88	Lxy = 3.69	Lxz = -6.39
+	Lyx = 3.69	Lyy = 5465.48	Lyz = -686.42
+	Lzx = -6.39	Lzy = -686.42	Lzz = 1679.63
+
+Moments of inertia: ( grams *  square millimeters )
+Taken at the output coordinate system.
+	Ixx = 21294.76	Ixy = -2.68	Ixz = -19.06
+	Iyx = -2.68	Iyy = 17894.61	Iyz = 5563.52
+	Izx = -19.06	Izy = 5563.52	Izz = 4822.41

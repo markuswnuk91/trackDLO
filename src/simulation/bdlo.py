@@ -297,6 +297,28 @@ class BranchedDeformableLinearObject(BDLOTopology):
                         self.skel.getBodyNode(parentBodyNodeIdx)
                     )
                     segmentLengths = newbranchDLO.segmentLengths
+                    # set transform such that new branch is appended at the end of the parentBody:
+                    bodyNodeIndexInNewSkel = currentNumBodyNodes
+                    branchRootJointInNewSkel = self.skel.getBodyNode(
+                        bodyNodeIndexInNewSkel
+                    ).getParentJoint()
+                    parentBodyNode = (
+                        self.skel.getBodyNode(bodyNodeIndexInNewSkel)
+                        .getParentJoint()
+                        .getParentBodyNode()
+                    )
+                    parentBodyNodeOffset = (
+                        branchRootJointInNewSkel.getParentBodyNode()
+                        .getParentJoint()
+                        .getTransformFromChildBodyNode()
+                        .translation()
+                    )
+                    transform = (
+                        branchRootJointInNewSkel.getTransformFromParentBodyNode()
+                    )
+                    transform.set_translation(-parentBodyNodeOffset)
+                    branchRootJointInNewSkel.setTransformFromParentBodyNode(transform)
+
                 branch.addBranchInfo(
                     "correspondingBodyNodeIndices", correspondingBodyNodeIndices
                 )
@@ -708,6 +730,25 @@ class BranchedDeformableLinearObject(BDLOTopology):
                 paddedJacobian[:, i] = jacobian[:, indexPointer]
                 indexPointer += 1
         return paddedJacobian
+
+    def getLeafNodeCartesianPositions(self):
+        """returns the cartesian positions for all leafnodes"""
+        leafNodeCartesiantPositions = []
+        for i, branch in enumerate(self.branches):
+            if self.getNumLeafNodesFromBranch(branch) == 1:
+                cartesianPosition = self.getCartesianPositionFromBranchLocalCoordinate(
+                    i, 1
+                )
+                leafNodeCartesiantPositions.append(cartesianPosition)
+        return np.vstack(leafNodeCartesiantPositions)
+
+    def getBranchNodeCartesianPositions(self):
+        """returns the cartesian positions for all branchnodes"""
+        branchNodeCartesiantPositions = []
+        for i, branch in enumerate(self.branches):
+            cartesianPosition = self.getCartesianPositionFromBranchLocalCoordinate(i, 0)
+            branchNodeCartesiantPositions.append(cartesianPosition)
+        return np.vstack(branchNodeCartesiantPositions)
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

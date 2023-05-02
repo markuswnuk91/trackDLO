@@ -1,0 +1,34 @@
+Mass properties of hand (Collision Geometry was used! Material Properties not set, so values are only rough estimates.)
+     Configuration: Default
+     Coordinate system: -- default --
+
+Density = 0.00 grams per cubic millimeter
+
+Mass = 708.85 grams
+
+Volume = 708853.80 cubic millimeters
+
+Surface area = 50603.55  square millimeters
+
+Center of mass: ( millimeters )
+	X = 0.00
+	Y = -0.62
+	Z = 23.93
+
+Principal axes of inertia and principal moments of inertia: ( grams *  square millimeters )
+Taken at the center of mass.
+	 Ix = ( 0.00,  1.00,  0.03)   	Px = 482454.13
+	 Iy = ( 0.00, -0.03,  1.00)   	Py = 2177838.95
+	 Iz = ( 1.00,  0.00,  0.00)   	Pz = 2405515.05
+
+Moments of inertia: ( grams *  square millimeters )
+Taken at the center of mass and aligned with the output coordinate system.
+	Lxx = 2405514.91	Lxy = 420.06	Lxz = -95.22
+	Lyx = 420.06	Lyy = 483577.96	Lyz = 43633.71
+	Lzx = -95.22	Lzy = 43633.71	Lzz = 2176715.26
+
+Moments of inertia: ( grams *  square millimeters )
+Taken at the output coordinate system.
+	Ixx = 2811688.71	Ixy = 421.27	Ixz = -142.15
+	Iyx = 421.27	Iyy = 889483.25	Iyz = 33193.78
+	Izx = -142.15	Izy = 33193.78	Izz = 2176983.78

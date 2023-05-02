@@ -1,0 +1,2 @@
+/usr/bin/ar qc librobotInterface.a CMakeFiles/robotInterface.dir/lowLevelControl.cpp.o CMakeFiles/robotInterface.dir/highLevelControl.cpp.o CMakeFiles/robotInterface.dir/motion.cpp.o CMakeFiles/robotInterface.dir/trajectory.cpp.o CMakeFiles/robotInterface.dir/sevenPhaseProfile.cpp.o CMakeFiles/robotInterface.dir/zeroSpaceInverseKinematics.cpp.o CMakeFiles/robotInterface.dir/inverseKinematics.cpp.o CMakeFiles/robotInterface.dir/dampedInverseKinematics.cpp.o
+/usr/bin/ranlib librobotInterface.a

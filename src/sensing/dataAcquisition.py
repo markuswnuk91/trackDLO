@@ -21,7 +21,7 @@ class DataAcquisition(CameraInterface):
         self.folderPath = folderPath
 
     def saveRGBImage(self,rgb_image,folderPath,fileName):
-        cv2.imwrite(folderPath+fileName+'.png')
+        cv2.imwrite(folderPath+fileName+'.png', rgb_image)
 
     def saveNumpyArrayAsBinary(self,numpyArray,folderPath,fileName):
             """Saves the disparity map as a binary numpy array to the specified folder path.
@@ -78,9 +78,13 @@ class DataAcquisition(CameraInterface):
 
     def saveCameraParameters(self, folderPath, fileName = "cameraParameters"):
         cameraParameters = self.jsonifyDictionary(self.cameraParameters)
-        self.saveMetaDataAsJson(cameraParameters, folderPath, fileName)
+        self.saveDictionaryAsJson(cameraParameters, folderPath, fileName)
 
-    def saveMetaDataAsJson(self, metaData: dict, folderPath, fileName):
+    def saveRobotState(self, robotState: dict, folderPath, fileName):
+        robotState = self.jsonifyDictionary(robotState)
+        self.saveDictionaryAsJson(robotState, folderPath, fileName)
+        
+    def saveDictionaryAsJson(self, metaData: dict, folderPath, fileName):
         with open(folderPath + fileName + ".json", "w") as fp:
             json.dump(metaData,fp, indent=4)
 

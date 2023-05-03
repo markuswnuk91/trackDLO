@@ -7,10 +7,16 @@ except:
     print("Imports for BDLO testing failed.")
     raise
 
-
-
-if __name__ == "__main__":
+def test_printEEPose():
     robot = FrankaEmikaPanda()
-    
     while True:
         print(robot.getO_T_EE())
+
+def test_printRobotState():
+    robot = FrankaEmikaPanda()
+    while True:
+        print(robot.getRobotState())
+
+if __name__ == "__main__":
+    # test_printEEPose()
+    test_printRobotState()

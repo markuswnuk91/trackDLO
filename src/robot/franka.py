@@ -10,7 +10,7 @@ try:
     sys.path.append(os.getcwd().replace("/src/robot/", ""))
 
     # from src.Robot.RobotInterface.build.python.panda_python_bindings import pyPanda
-    from src.robot.build.pythonBindings.robotBindings import highLevelControl
+    from src.robot.build.pythonBindings import libfrankaInterface
 
 
 except:
@@ -19,11 +19,11 @@ except:
 
 class FrankaEmikaPanda(object):
         def __init__(self) -> None:
-            self.robotInterface = highLevelControl()
+            self.robot = libfrankaInterface.Robot("172.16.0.2")
         
 
         def getO_T_EE(self, verbose=False):
-            state = self.robotInterface.getRobotState()
+            state = self.robot.readOnce()
             if verbose:
                 print("O_T_EE: ", repr(np.reshape(state.O_T_EE, (4, 4)).T))
                 print("q: ", state.q)
@@ -31,7 +31,7 @@ class FrankaEmikaPanda(object):
             return np.reshape(state.O_T_EE, (4, 4)).T
         
         def getRobotState(self):
-            roboState = self.robotInterface.getRobotState()
+            roboState = self.robot.readOnce()
             roboDict = {}
             roboDict["O_T_EE"] = roboState.O_T_EE
             roboDict["O_T_EE_d"] = roboState.O_T_EE_d

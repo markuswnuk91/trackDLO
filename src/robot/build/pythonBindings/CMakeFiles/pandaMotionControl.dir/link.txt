@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -std=c++11 -pthread -O3 -flto -shared  -o pandaMotionControl.cpython-310-x86_64-linux-gnu.so CMakeFiles/pandaMotionControl.dir/robot_bindings.cpp.o  -Wl,-rpath,/usr/local/lib ../src/librobotInterface.a /usr/lib/x86_64-linux-gnu/libpython3.10.so /usr/local/lib/libfranka.so.0.9.2 

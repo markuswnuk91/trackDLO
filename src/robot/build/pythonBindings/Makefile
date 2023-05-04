@@ -117,42 +117,80 @@ depend:
 .PHONY : depend
 
 # Convenience name for target.
-pythonBindings/CMakeFiles/robotBindings.dir/rule:
-	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pythonBindings/CMakeFiles/robotBindings.dir/rule
-.PHONY : pythonBindings/CMakeFiles/robotBindings.dir/rule
+pythonBindings/CMakeFiles/pandaMotionControl.dir/rule:
+	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pythonBindings/CMakeFiles/pandaMotionControl.dir/rule
+.PHONY : pythonBindings/CMakeFiles/pandaMotionControl.dir/rule
 
 # Convenience name for target.
-robotBindings: pythonBindings/CMakeFiles/robotBindings.dir/rule
-.PHONY : robotBindings
+pandaMotionControl: pythonBindings/CMakeFiles/pandaMotionControl.dir/rule
+.PHONY : pandaMotionControl
 
 # fast build rule for target.
-robotBindings/fast:
-	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/robotBindings.dir/build.make pythonBindings/CMakeFiles/robotBindings.dir/build
-.PHONY : robotBindings/fast
+pandaMotionControl/fast:
+	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/pandaMotionControl.dir/build.make pythonBindings/CMakeFiles/pandaMotionControl.dir/build
+.PHONY : pandaMotionControl/fast
 
-robotBindings.o: robotBindings.cpp.o
-.PHONY : robotBindings.o
+# Convenience name for target.
+pythonBindings/CMakeFiles/libfrankaInterface.dir/rule:
+	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pythonBindings/CMakeFiles/libfrankaInterface.dir/rule
+.PHONY : pythonBindings/CMakeFiles/libfrankaInterface.dir/rule
+
+# Convenience name for target.
+libfrankaInterface: pythonBindings/CMakeFiles/libfrankaInterface.dir/rule
+.PHONY : libfrankaInterface
+
+# fast build rule for target.
+libfrankaInterface/fast:
+	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/libfrankaInterface.dir/build.make pythonBindings/CMakeFiles/libfrankaInterface.dir/build
+.PHONY : libfrankaInterface/fast
+
+libfranka_bindings.o: libfranka_bindings.cpp.o
+.PHONY : libfranka_bindings.o
 
 # target to build an object file
-robotBindings.cpp.o:
-	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/robotBindings.dir/build.make pythonBindings/CMakeFiles/robotBindings.dir/robotBindings.cpp.o
-.PHONY : robotBindings.cpp.o
+libfranka_bindings.cpp.o:
+	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/libfrankaInterface.dir/build.make pythonBindings/CMakeFiles/libfrankaInterface.dir/libfranka_bindings.cpp.o
+.PHONY : libfranka_bindings.cpp.o
 
-robotBindings.i: robotBindings.cpp.i
-.PHONY : robotBindings.i
+libfranka_bindings.i: libfranka_bindings.cpp.i
+.PHONY : libfranka_bindings.i
 
 # target to preprocess a source file
-robotBindings.cpp.i:
-	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/robotBindings.dir/build.make pythonBindings/CMakeFiles/robotBindings.dir/robotBindings.cpp.i
-.PHONY : robotBindings.cpp.i
+libfranka_bindings.cpp.i:
+	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/libfrankaInterface.dir/build.make pythonBindings/CMakeFiles/libfrankaInterface.dir/libfranka_bindings.cpp.i
+.PHONY : libfranka_bindings.cpp.i
 
-robotBindings.s: robotBindings.cpp.s
-.PHONY : robotBindings.s
+libfranka_bindings.s: libfranka_bindings.cpp.s
+.PHONY : libfranka_bindings.s
 
 # target to generate assembly for a file
-robotBindings.cpp.s:
-	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/robotBindings.dir/build.make pythonBindings/CMakeFiles/robotBindings.dir/robotBindings.cpp.s
-.PHONY : robotBindings.cpp.s
+libfranka_bindings.cpp.s:
+	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/libfrankaInterface.dir/build.make pythonBindings/CMakeFiles/libfrankaInterface.dir/libfranka_bindings.cpp.s
+.PHONY : libfranka_bindings.cpp.s
+
+robot_bindings.o: robot_bindings.cpp.o
+.PHONY : robot_bindings.o
+
+# target to build an object file
+robot_bindings.cpp.o:
+	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/pandaMotionControl.dir/build.make pythonBindings/CMakeFiles/pandaMotionControl.dir/robot_bindings.cpp.o
+.PHONY : robot_bindings.cpp.o
+
+robot_bindings.i: robot_bindings.cpp.i
+.PHONY : robot_bindings.i
+
+# target to preprocess a source file
+robot_bindings.cpp.i:
+	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/pandaMotionControl.dir/build.make pythonBindings/CMakeFiles/pandaMotionControl.dir/robot_bindings.cpp.i
+.PHONY : robot_bindings.cpp.i
+
+robot_bindings.s: robot_bindings.cpp.s
+.PHONY : robot_bindings.s
+
+# target to generate assembly for a file
+robot_bindings.cpp.s:
+	cd /home/xwk/projects/trackdlo/src/robot/build && $(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/pandaMotionControl.dir/build.make pythonBindings/CMakeFiles/pandaMotionControl.dir/robot_bindings.cpp.s
+.PHONY : robot_bindings.cpp.s
 
 # Help Target
 help:
@@ -162,10 +200,14 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... robotBindings"
-	@echo "... robotBindings.o"
-	@echo "... robotBindings.i"
-	@echo "... robotBindings.s"
+	@echo "... libfrankaInterface"
+	@echo "... pandaMotionControl"
+	@echo "... libfranka_bindings.o"
+	@echo "... libfranka_bindings.i"
+	@echo "... libfranka_bindings.s"
+	@echo "... robot_bindings.o"
+	@echo "... robot_bindings.i"
+	@echo "... robot_bindings.s"
 .PHONY : help
 
 

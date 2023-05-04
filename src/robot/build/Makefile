@@ -130,17 +130,30 @@ robotInterface/fast:
 .PHONY : robotInterface/fast
 
 #=============================================================================
-# Target rules for targets named robotBindings
+# Target rules for targets named pandaMotionControl
 
 # Build rule for target.
-robotBindings: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 robotBindings
-.PHONY : robotBindings
+pandaMotionControl: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pandaMotionControl
+.PHONY : pandaMotionControl
 
 # fast build rule for target.
-robotBindings/fast:
-	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/robotBindings.dir/build.make pythonBindings/CMakeFiles/robotBindings.dir/build
-.PHONY : robotBindings/fast
+pandaMotionControl/fast:
+	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/pandaMotionControl.dir/build.make pythonBindings/CMakeFiles/pandaMotionControl.dir/build
+.PHONY : pandaMotionControl/fast
+
+#=============================================================================
+# Target rules for targets named libfrankaInterface
+
+# Build rule for target.
+libfrankaInterface: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 libfrankaInterface
+.PHONY : libfrankaInterface
+
+# fast build rule for target.
+libfrankaInterface/fast:
+	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/libfrankaInterface.dir/build.make pythonBindings/CMakeFiles/libfrankaInterface.dir/build
+.PHONY : libfrankaInterface/fast
 
 # Help Target
 help:
@@ -150,7 +163,8 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... robotBindings"
+	@echo "... libfrankaInterface"
+	@echo "... pandaMotionControl"
 	@echo "... robotInterface"
 .PHONY : help
 

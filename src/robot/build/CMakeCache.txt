@@ -225,11 +225,14 @@ RobotInterface_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 RobotInterface_SOURCE_DIR:STATIC=/home/xwk/projects/trackdlo/src/robot
 
-//The directory containing a CMake configuration file for pybind11.
-pybind11_DIR:PATH=/usr/local/share/cmake/pybind11
+//Dependencies for the target
+libfrankaInterface_LIB_DEPENDS:STATIC=general;Franka::Franka;
 
 //Dependencies for the target
-robotBindings_LIB_DEPENDS:STATIC=general;robotInterface;general;/usr/lib/x86_64-linux-gnu/libpython3.10.so;
+pandaMotionControl_LIB_DEPENDS:STATIC=general;robotInterface;general;/usr/lib/x86_64-linux-gnu/libpython3.10.so;
+
+//The directory containing a CMake configuration file for pybind11.
+pybind11_DIR:PATH=/usr/local/share/cmake/pybind11
 
 //Dependencies for the target
 robotInterface_LIB_DEPENDS:STATIC=general;Franka::Franka;

@@ -81,7 +81,8 @@ clean: pythonBindings/clean
 # Directory level rules for directory pythonBindings
 
 # Recursive "all" directory target.
-pythonBindings/all: pythonBindings/CMakeFiles/robotBindings.dir/all
+pythonBindings/all: pythonBindings/CMakeFiles/pandaMotionControl.dir/all
+pythonBindings/all: pythonBindings/CMakeFiles/libfrankaInterface.dir/all
 .PHONY : pythonBindings/all
 
 # Recursive "preinstall" directory target.
@@ -89,7 +90,8 @@ pythonBindings/preinstall:
 .PHONY : pythonBindings/preinstall
 
 # Recursive "clean" directory target.
-pythonBindings/clean: pythonBindings/CMakeFiles/robotBindings.dir/clean
+pythonBindings/clean: pythonBindings/CMakeFiles/pandaMotionControl.dir/clean
+pythonBindings/clean: pythonBindings/CMakeFiles/libfrankaInterface.dir/clean
 .PHONY : pythonBindings/clean
 
 #=============================================================================
@@ -114,7 +116,7 @@ src/clean: src/CMakeFiles/robotInterface.dir/clean
 src/CMakeFiles/robotInterface.dir/all:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/robotInterface.dir/build.make src/CMakeFiles/robotInterface.dir/depend
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/robotInterface.dir/build.make src/CMakeFiles/robotInterface.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/xwk/projects/trackdlo/src/robot/build/CMakeFiles --progress-num=3,4,5,6,7,8,9,10,11 "Built target robotInterface"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/xwk/projects/trackdlo/src/robot/build/CMakeFiles --progress-num=5,6,7,8,9,10,11,12,13 "Built target robotInterface"
 .PHONY : src/CMakeFiles/robotInterface.dir/all
 
 # Build rule for subdir invocation for target.
@@ -134,30 +136,56 @@ src/CMakeFiles/robotInterface.dir/clean:
 .PHONY : src/CMakeFiles/robotInterface.dir/clean
 
 #=============================================================================
-# Target rules for target pythonBindings/CMakeFiles/robotBindings.dir
+# Target rules for target pythonBindings/CMakeFiles/pandaMotionControl.dir
 
 # All Build rule for target.
-pythonBindings/CMakeFiles/robotBindings.dir/all: src/CMakeFiles/robotInterface.dir/all
-	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/robotBindings.dir/build.make pythonBindings/CMakeFiles/robotBindings.dir/depend
-	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/robotBindings.dir/build.make pythonBindings/CMakeFiles/robotBindings.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/xwk/projects/trackdlo/src/robot/build/CMakeFiles --progress-num=1,2 "Built target robotBindings"
-.PHONY : pythonBindings/CMakeFiles/robotBindings.dir/all
+pythonBindings/CMakeFiles/pandaMotionControl.dir/all: src/CMakeFiles/robotInterface.dir/all
+	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/pandaMotionControl.dir/build.make pythonBindings/CMakeFiles/pandaMotionControl.dir/depend
+	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/pandaMotionControl.dir/build.make pythonBindings/CMakeFiles/pandaMotionControl.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/xwk/projects/trackdlo/src/robot/build/CMakeFiles --progress-num=3,4 "Built target pandaMotionControl"
+.PHONY : pythonBindings/CMakeFiles/pandaMotionControl.dir/all
 
 # Build rule for subdir invocation for target.
-pythonBindings/CMakeFiles/robotBindings.dir/rule: cmake_check_build_system
+pythonBindings/CMakeFiles/pandaMotionControl.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/xwk/projects/trackdlo/src/robot/build/CMakeFiles 11
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pythonBindings/CMakeFiles/robotBindings.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pythonBindings/CMakeFiles/pandaMotionControl.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/xwk/projects/trackdlo/src/robot/build/CMakeFiles 0
-.PHONY : pythonBindings/CMakeFiles/robotBindings.dir/rule
+.PHONY : pythonBindings/CMakeFiles/pandaMotionControl.dir/rule
 
 # Convenience name for target.
-robotBindings: pythonBindings/CMakeFiles/robotBindings.dir/rule
-.PHONY : robotBindings
+pandaMotionControl: pythonBindings/CMakeFiles/pandaMotionControl.dir/rule
+.PHONY : pandaMotionControl
 
 # clean rule for target.
-pythonBindings/CMakeFiles/robotBindings.dir/clean:
-	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/robotBindings.dir/build.make pythonBindings/CMakeFiles/robotBindings.dir/clean
-.PHONY : pythonBindings/CMakeFiles/robotBindings.dir/clean
+pythonBindings/CMakeFiles/pandaMotionControl.dir/clean:
+	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/pandaMotionControl.dir/build.make pythonBindings/CMakeFiles/pandaMotionControl.dir/clean
+.PHONY : pythonBindings/CMakeFiles/pandaMotionControl.dir/clean
+
+#=============================================================================
+# Target rules for target pythonBindings/CMakeFiles/libfrankaInterface.dir
+
+# All Build rule for target.
+pythonBindings/CMakeFiles/libfrankaInterface.dir/all:
+	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/libfrankaInterface.dir/build.make pythonBindings/CMakeFiles/libfrankaInterface.dir/depend
+	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/libfrankaInterface.dir/build.make pythonBindings/CMakeFiles/libfrankaInterface.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/xwk/projects/trackdlo/src/robot/build/CMakeFiles --progress-num=1,2 "Built target libfrankaInterface"
+.PHONY : pythonBindings/CMakeFiles/libfrankaInterface.dir/all
+
+# Build rule for subdir invocation for target.
+pythonBindings/CMakeFiles/libfrankaInterface.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/xwk/projects/trackdlo/src/robot/build/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 pythonBindings/CMakeFiles/libfrankaInterface.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/xwk/projects/trackdlo/src/robot/build/CMakeFiles 0
+.PHONY : pythonBindings/CMakeFiles/libfrankaInterface.dir/rule
+
+# Convenience name for target.
+libfrankaInterface: pythonBindings/CMakeFiles/libfrankaInterface.dir/rule
+.PHONY : libfrankaInterface
+
+# clean rule for target.
+pythonBindings/CMakeFiles/libfrankaInterface.dir/clean:
+	$(MAKE) $(MAKESILENT) -f pythonBindings/CMakeFiles/libfrankaInterface.dir/build.make pythonBindings/CMakeFiles/libfrankaInterface.dir/clean
+.PHONY : pythonBindings/CMakeFiles/libfrankaInterface.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

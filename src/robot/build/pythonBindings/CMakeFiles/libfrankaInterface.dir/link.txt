@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -std=c++11 -pthread -O3 -flto -shared  -o libfrankaInterface.cpython-310-x86_64-linux-gnu.so CMakeFiles/libfrankaInterface.dir/libfranka_bindings.cpp.o  -Wl,-rpath,/usr/local/lib /usr/local/lib/libfranka.so.0.9.2 

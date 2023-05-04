@@ -13,6 +13,7 @@ except:
 savePath = None
 defaultPath = "data/acquired_data/"
 fps = 30 # maximum fps the application will display images
+method = 'auto' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
 
 def generateFolderPath(path):
     now = datetime.datetime.now()
@@ -47,7 +48,7 @@ if __name__ == "__main__":
                 cv2.destroyAllWindows()
                 print("stopped data acquisition.")
                 break
-            elif key != -1:
+            elif (method == "auto") or (key != -1):
                 if dataSetCounter==0:
                     dataAcquistion.saveCameraParameters(folderPath)
                 stereoDataSet = dataAcquistion.getStereoDataFromImageSet(image_set)

@@ -1,6 +1,7 @@
 import os, sys
 import datetime
 import cv2
+import shutil
 try:
     sys.path.append(os.getcwd().replace("/app", ""))
     from src.sensing.dataAcquisition import DataAcquisition
@@ -10,10 +11,12 @@ except:
     raise
 
 # save path: if None default path is used
-savePath = "data/acquiredData/20340505_ArenaWireHarness/Configurations_static/"
-defaultPath = "data/acquiredData/"
-fps = 30 # maximum fps the application will display images
-method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
+savePath = "data/acquiredData/20230505_ArenaWireHarness_ManipulationSequence/"
+modelParameterPath = "src/evaluation/bdloDesciptions/arena/"
+calibrationParameterFilePath = "config/calibration/calibrationParameters.json"
+
+fps = 20 # maximum fps the application will display images
+method = 'auto' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
 saveRobotPose = False # if robot pose should also be saved
 
 def generateFolderPath(path):
@@ -25,6 +28,7 @@ def generateFolderPath(path):
     return newFolderPath
 
 if __name__ == "__main__":
+    defaultPath = "data/acquiredData/"
     if savePath is None:
         folderPath = generateFolderPath(defaultPath)
     else:
@@ -32,6 +36,10 @@ if __name__ == "__main__":
     isExist = os.path.exists(folderPath)
     if not isExist:
         os.makedirs(folderPath)
+    folderPath_imagedata = folderPath + "data/"
+    folderPath_imagedata_exists = os.path.exists(folderPath_imagedata)
+    if not folderPath_imagedata_exists:
+            os.makedirs(folderPath_imagedata)
 
     if saveRobotPose:
         # connect to robot 
@@ -42,6 +50,10 @@ if __name__ == "__main__":
     dataSetCounter = 0
     run = True
     waitTime = int(1000/fps) # waitTime [ms] = 1000ms / fps
+
+    acquiring = False
+    if method == "auto":
+        print("Hit ENTER to start acquisition ...")
     while run:
         try:
             image_set = dataAcquistion.acquireImageSet(transfer)
@@ -52,9 +64,17 @@ if __name__ == "__main__":
                 cv2.destroyAllWindows()
                 print("stopped data acquisition.")
                 break
-            elif (method == "auto") or (key != -1):
+            elif (method == "manual") and (key != -1):
+                acquiring = True
+            elif (method == "auto") and (key == 13):
+                acquiring = True
+            if acquiring:    
                 if dataSetCounter==0:
+                    #add meta data for data set
                     dataAcquistion.saveCameraParameters(folderPath)
+                    shutil.copy(calibrationParameterFilePath, folderPath)
+                    shutil.copy(modelParameterPath + "model.json", folderPath)
+                    shutil.copy(modelParameterPath + "model.png", folderPath)
                 stereoDataSet = dataAcquistion.getStereoDataFromImageSet(image_set)
                 if saveRobotPose:
                     robotState = robot.getRobotState()
@@ -64,11 +84,13 @@ if __name__ == "__main__":
                 fileNameDisparityMap = date_time_string + "_map_disparity"
                 fileNameDisparityImage = date_time_string + "_image_disparity"
                 fileNameRobotState= date_time_string + "_robot_state"
-                dataAcquistion.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], folderPath = folderPath, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
+                dataAcquistion.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], folderPath = folderPath_imagedata, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
                 if saveRobotPose:
                     dataAcquistion.saveRobotState(robotState, folderPath = folderPath, fileName=fileNameRobotState)
                 dataSetCounter += 1
                 print("Acquired data sets: {}".format(dataSetCounter)) 
+                if method == "manual":
+                    acquiring = False
         except:
             cv2.destroyAllWindows()
             print("Stopped data acquisition due to exception")

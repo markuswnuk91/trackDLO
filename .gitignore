@@ -19,3 +19,6 @@ imgs
 
 #vid folder
 vids
+
+# build folders
+build/

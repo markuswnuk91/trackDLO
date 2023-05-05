@@ -10,10 +10,11 @@ except:
     raise
 
 # save path: if None default path is used
-savePath = None
-defaultPath = "data/acquired_data/"
+savePath = "data/acquiredData/20340505_ArenaWireHarness/Configurations_static/"
+defaultPath = "data/acquiredData/"
 fps = 30 # maximum fps the application will display images
-method = 'auto' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
+method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
+saveRobotPose = False # if robot pose should also be saved
 
 def generateFolderPath(path):
     now = datetime.datetime.now()
@@ -26,12 +27,15 @@ def generateFolderPath(path):
 if __name__ == "__main__":
     if savePath is None:
         folderPath = generateFolderPath(defaultPath)
-        isExist = os.path.exists(folderPath)
-        if not isExist:
-            os.makedirs(folderPath)
+    else:
+        folderPath = savePath
+    isExist = os.path.exists(folderPath)
+    if not isExist:
+        os.makedirs(folderPath)
 
-    # connect to robot 
-    robot = FrankaEmikaPanda()
+    if saveRobotPose:
+        # connect to robot 
+        robot = FrankaEmikaPanda()
     #connect to camera
     dataAcquistion = DataAcquisition(folderPath)
     transfer = dataAcquistion.setupAsyncConnection()
@@ -52,7 +56,8 @@ if __name__ == "__main__":
                 if dataSetCounter==0:
                     dataAcquistion.saveCameraParameters(folderPath)
                 stereoDataSet = dataAcquistion.getStereoDataFromImageSet(image_set)
-                robotState = robot.getRobotState()
+                if saveRobotPose:
+                    robotState = robot.getRobotState()
                 #generate unique identifier for dataset
                 date_time_string = dataAcquistion.generateIdentifier()
                 fileNameRGB = date_time_string + "_image_rgb"
@@ -60,7 +65,8 @@ if __name__ == "__main__":
                 fileNameDisparityImage = date_time_string + "_image_disparity"
                 fileNameRobotState= date_time_string + "_robot_state"
                 dataAcquistion.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], folderPath = folderPath, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
-                dataAcquistion.saveRobotState(robotState, folderPath = folderPath, fileName=fileNameRobotState)
+                if saveRobotPose:
+                    dataAcquistion.saveRobotState(robotState, folderPath = folderPath, fileName=fileNameRobotState)
                 dataSetCounter += 1
                 print("Acquired data sets: {}".format(dataSetCounter)) 
         except:

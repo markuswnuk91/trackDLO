@@ -11,7 +11,7 @@ except:
 
 # save path: if None default path is used
 savePath = None
-defaultPath = "data/acquired_data/"
+defaultPath = "data/acquiredData/"
 
 
 def generateFolderPath(path):

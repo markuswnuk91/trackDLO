@@ -3,3 +3,4 @@ pytest
 numpy
 scipy
 opencv-python
+Cython numpy wheel

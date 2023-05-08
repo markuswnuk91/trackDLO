@@ -16,37 +16,37 @@
         "branch_1" :  {
             "length": 0.32,
             "radius": 0.01,
-            "color": [0, 0, 0]
+            "color": [1, 0, 0]
             },
         "branch_2" :  {
             "length": 0.38,
             "radius": 0.005,
-            "color": [0, 0, 0]
+            "color": [1, 0, 0]
             },
         "branch_3" :  {
             "length": 0.07,
             "radius": 0.01,
-            "color": [0, 0, 0]
+            "color": [1, 0, 0]
             },
         "branch_4" :  {
             "length": 0.47,
             "radius": 0.005,
-            "color": [0, 0, 0]
+            "color": [1, 0, 0]
             },
         "branch_5" :  {
             "length": 0.16,
             "radius": 0.01,
-            "color": [0, 0, 0]
+            "color": [1, 0, 0]
             },
         "branch_6" :  {
             "length": 0.19,
             "radius": 0.05,
-            "color": 1
+            "color": [1, 0, 0]
             },
         "branch_7" :  {
             "length": 0.45,
             "radius": 0.05,
-            "color": [0, 0, 0]
+            "color": [1, 0, 0]
             }
         },
 

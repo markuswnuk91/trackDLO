@@ -11,8 +11,9 @@ __pycache__/
 #vscode files
 .vscode/settings.json
 
-#data folder
+#data folders
 data
+!*/data/darus_data_download/scripts/darus_config.json
 
 #imgs folder
 imgs

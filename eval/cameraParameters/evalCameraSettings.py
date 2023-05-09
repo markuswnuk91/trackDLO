@@ -18,6 +18,7 @@ vis = True
 evalConfigPath = os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/"
 evalConfigFiles = ["/evalConfig.json"]
 
+fileNameNumber = 1 # index of the file in the filename list in evalConfig
 dataHandler = DataHandler("data/eval/experiments/20230508_111645_testCameraSettings")
 evalConfig = dataHandler.loadFromJson(evalConfigPath + evalConfigFiles[0])
 evalParameters = evalConfig["preprocessingParameters"]
@@ -30,7 +31,7 @@ def testPointCloudExtraction():
         roiFilterParameters=evalParameters["roiFilterParameters"],
     )
     rgbImage, disparityMap = preProcessor.loadStereoDataSet_FromRGB(
-        evalConfig["loadPathInfo"]["fileNames"][2]
+        evalConfig["loadPathInfo"]["fileNames"][fileNameNumber]
     )
     # point cloud generation
     points, colors = preProcessor.calculatePointCloudFiltered_2D_3D(

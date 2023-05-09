@@ -10,14 +10,24 @@ except:
     print("Imports for application acquireStereoDataSetsAndRobotPose failed.")
     raise
 
-# save path: if None default path is used
-savePath = "data/acquiredData/20230505_ArenaWireHarness_ManipulationSequence/"
+#loading paths for parameter files
 modelParameterPath = "src/evaluation/bdloDesciptions/arena/"
 calibrationParameterFilePath = "config/calibration/calibrationParameters.json"
 
-fps = 20 # maximum fps the application will display images
+# save path: if None default path is used
+saveRootDirectory = "data/acquiredData/"
+dataSetFolerName =  "ArenaWireHarness_ManipulationSequence_Manual/"
+
+
+fps = 5 # maximum fps the application will display images
 method = 'auto' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
 saveRobotPose = False # if robot pose should also be saved
+
+# not to be configured
+now = datetime.datetime.now()
+date_string = now.strftime("%Y%m%d")
+time_string = now.strftime("%H%M%S")
+savePath = saveRootDirectory + date_string + "_" + time_string + "_" + dataSetFolerName
 
 def generateFolderPath(path):
     now = datetime.datetime.now()

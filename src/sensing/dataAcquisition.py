@@ -64,7 +64,7 @@ class DataAcquisition(CameraInterface):
     
     def generateIdentifier(self):
         now = datetime.datetime.now()
-        date_time_string = now.strftime("%Y%m%d_%H%M%S%f")
+        date_time_string = now.strftime("%Y%m%d_%H%M%S_%f")
         return date_time_string
     
     def jsonifyDictionary(self, inputDict):

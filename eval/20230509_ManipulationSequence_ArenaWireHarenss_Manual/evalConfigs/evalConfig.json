@@ -1,0 +1,52 @@
+{
+    "loadPathInfo" : {
+        "folderPaths": [
+            "data/darus_data_download/data/20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/"
+        ],
+        "fileNames": [
+            "20230508_174753797929_image_rgb.png",
+            "20230508_174803124630_image_rgb.png"
+        ]
+    },
+    "savePathInfo" : {
+        "folderPaths": [],
+        "fileNames": []
+    },
+    "preprocessingParameters": {
+        "hsvFilterParameters" : {
+            "hueMin": 0,
+            "hueMax": 7,
+            "saturationMin": 150,
+            "saturationMax": 250,
+            "valueMin": 190,
+            "valueMax": 255
+        },
+        "roiFilterParameters" : {
+            "uMin" : 0,
+            "uMax" : 1,
+            "vMin" : 0,
+            "vMax" : 1
+        },
+        
+        "cameraCoordinateBoundingBoxParameters" : {
+            "xMin" : -1,
+            "xMax" : 1,
+            "yMin" : -1,
+            "yMax" : 1,
+            "zMin" : 0,
+            "zMax" : 2
+        },
+        
+        "robotCoordinateBoundingBoxParameters" : {
+            "xMin" : 0.2,
+            "xMax" : 0.63,
+            "yMin" : -0.5,
+            "yMax" : 0.5,
+            "zMin" : 0.25,
+            "zMax" : 0.35
+        },
+        "downsamplingParameters" : {
+            "nthElement" : 10
+        }
+    }
+}

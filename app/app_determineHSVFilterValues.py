@@ -11,10 +11,8 @@ except:
     print("Imports for Application determineHSVFilterValues failed.")
     raise
 
-folderPath = (
-    "data/darus_data_download/data/20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/"
-)
-fileName = "20230508_174802342077_image_rgb.png"
+folderPath = "data/darus_data_download/data/20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/"
+fileName = "20230508_174835734716_image_rgb.png"
 
 max_value = 255
 max_value_H = 360 // 2

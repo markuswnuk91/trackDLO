@@ -39,7 +39,6 @@ class L1Median(DataReduction):
         self,
         h=None,
         mu=None,
-        hReductionFactor=None,
         hMin=None,
         hAnnealing=None,
         muAnnealing=None,
@@ -51,7 +50,6 @@ class L1Median(DataReduction):
         super().__init__(*args, **kwargs)
         self.h = self.get_h0(self.Y) if h is None else h
         self.mu = 0.35 if mu is None else mu
-        self.hReductionFactor = 1 if hReductionFactor is None else hReductionFactor
         self.hMin = 0 if hMin is None else hMin
         self.hAnnealing = 1 if hAnnealing is None else hAnnealing
         self.muAnnealing = 1 if muAnnealing is None else muAnnealing
@@ -154,11 +152,12 @@ class L1Median(DataReduction):
         """
         if Y is not None:
             self.Y = Y
-            (self.M, _) = self.Y.shape
         if X is not None:
             self.X = X
-            (self.N, self.D) = self.X.shape
-
+        else:
+            self.X = self.sampleRandom(self.Y, self.numSeedPoints)
+        (self.M, _) = self.Y.shape
+        (self.N, self.D) = self.X.shape
         self.T = self.X
         J = len(self.Y)  # number of input points
         I = len(self.T)  # number of seedpoints
@@ -168,7 +167,7 @@ class L1Median(DataReduction):
         beta_matrix = np.zeros((I, I))
 
         while self.iteration < self.max_iterations:
-            h = self.hReductionFactor * self.h * self.hAnnealing**self.iteration
+            h = self.h * self.hAnnealing**self.iteration
             if h <= self.hMin:
                 h = self.hMin
 

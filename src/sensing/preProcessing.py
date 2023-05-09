@@ -228,3 +228,17 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         )
         transformedPoints = self.transformPoints(points, transformationMatrix)
         return transformedPoints
+
+    def transformPointsFromRobotBaseToCameraCoordinates(self, points: np.array):
+        """Tranforms a given set of points given in the camera coordinate system into the robot base coordinate system
+
+        Args:
+            points (np.array): Set of points with coordinates given in camera corodinate system
+
+        Returns:
+            points: Set of points with coordinates measured in the robot base coordinate system
+        """
+        # T_Camera_To_RobotBase: coordinate transfrom of the robot base with respect to the camera coordinate system
+        transformationMatrix = self.calibrationParameters["T_Camera_To_RobotBase"]
+        transformedPoints = self.transformPoints(points, transformationMatrix)
+        return transformedPoints

@@ -6,40 +6,85 @@ import numpy as np
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
+    # input data porcessing
     from src.sensing.preProcessing import PreProcessing
     from src.sensing.dataHandler import DataHandler
+
+    # inital localization
+    from src.localization.topologyExtraction.topologyExtraction import (
+        TopologyExtraction,
+    )
+    from src.localization.correspondanceEstimation.topologyBasedCorrespondanceEstimation import (
+        TopologyBasedCorrespondanceEstimation,
+    )
+    from src.localization.downsampling.som.som import SelfOrganizingMap
+    from src.localization.downsampling.l1median.l1Median import L1Median
+
+    # visualization
     from src.visualization.plot3D import *
 except:
     print("Imports for testing image processing class failed.")
     raise
+global dataHandler
+global evalConfig
+global preProcessor
 
+# results
+results = {
+    "preprocessing": [],
+    "topologyExtraction": [],
+    "localization": [],
+    "tracking": [],
+}
 
 # visualization
-visControl = {"preprocessing": {"vis": True, "block": True}}
+visControl = {
+    "preprocessing": {"vis": True, "block": False},
+    "somResult": {"vis": True, "block": False},
+    "extractedTopology": {"vis": True, "block": False},
+}
 saveControl = {
     "parentDirectory": "data/eval/experiments/",
     "folderName": "20230509_ManipulationSequence_ArenaWireHarenss_Manual",
 }
-dataSetControl = {"folderNumber": 0, "fileNumber": 0}
+loadControl = {
+    "parentDirectory": "data/darus_data_download/data/",
+    "folderName": "20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/",
+    "initFileNames": [
+        "20230508_174753797929_image_rgb.png",
+        "20230508_174835734716_image_rgb.png",
+    ],
+    "initFileNumber": 1,
+}
 
 
 def setupEvaluation():
     """sets up the evaluation
     reading the evaluation config, setting up and setting up the data handler
     """
+    global dataHandler
+    global evalConfig
     # read eval config
     evalConfigPath = os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/"
     evalConfigFiles = ["/evalConfig.json"]
+    loadPath = loadControl["parentDirectory"] + loadControl["folderName"]
     savePath = saveControl["parentDirectory"] + saveControl["folderName"]
-    dataHandler = DataHandler(savePath)
+    dataHandler = DataHandler(
+        defaultLoadFolderPath=loadPath, defaultSaveFolderPath=savePath
+    )
     evalConfig = dataHandler.loadFromJson(evalConfigPath + evalConfigFiles[0])
     preprocessingParameters = evalConfig["preprocessingParameters"]
-    return dataHandler, evalConfig, preprocessingParameters
+    topologyExtractionParameters = evalConfig["topologyExtractionParameters"]
+    return (
+        preprocessingParameters,
+        topologyExtractionParameters,
+    )
 
 
-def preprocessDataSet(dataSetPath, dataSetFileName, preprocessingParameters):
+def preprocessDataSet(dataSetFolder, dataSetFileName, preprocessingParameters):
+    global preProcessor
     preProcessor = PreProcessing(
-        defaultLoadFolderPath=dataSetPath,
+        defaultLoadFolderPath=dataSetFolder,
         hsvFilterParameters=preprocessingParameters["hsvFilterParameters"],
         roiFilterParameters=preprocessingParameters["roiFilterParameters"],
     )
@@ -79,7 +124,7 @@ def preprocessDataSet(dataSetPath, dataSetFileName, preprocessingParameters):
         (points, colors),
         preprocessingParameters["robotCoordinateBoundingBoxParameters"],
     )
-    outlierColors[:, :] = np.array([0.5, 0.5, 0.5])
+
     # camera center coordinates
     cameraCenter_inRobotBaseCoordinates = np.linalg.inv(
         preProcessor.calibrationParameters["T_Camera_To_RobotBase"]
@@ -118,24 +163,131 @@ def preprocessDataSet(dataSetPath, dataSetFileName, preprocessingParameters):
         fig.add_subplot()
         plt.imshow(rgbImage_WithRobotBase)
         plt.show(block=visControl["preprocessing"]["block"])
+
+    results["preprocessing"].append(
+        {
+            "dataSetPath": dataSetFolder,
+            "dataSetFileName": dataSetFileName,
+            "robotBaseCoordinates": {
+                "image": robotBase_inImageCoordinates,
+                "3D": cameraCenter_inRobotBaseCoordinates,
+                "cam": robotBase_inCameraCoordinates,
+            },
+            "cameraCoordinates": {
+                "3D": cameraCenter_inRobotBaseCoordinates,
+                "cam": np.array([0, 0, 0]),
+            },
+            "pointCloud": {
+                "inliers": inliers,
+                "inlierColors": inlierColors,
+                "outliers": inlierColors,
+                "outlierColors": outlierColors,
+            },
+        }
+    )
     return inliers, inlierColors
+
+
+def topologyExtraction(pointCloud, topologyExtractionParameters):
+    Y = pointCloud[0]
+    # topology extraction
+    topologyExtraction = TopologyExtraction(
+        Y=Y,
+        somParameters=topologyExtractionParameters["somParameters"],
+        l1Parameters=topologyExtractionParameters["l1Parameters"],
+    )
+    reducedPointSet = Y
+    # reducedPointSet = topologyExtraction.reducePointSetL1(reducedPointSet)
+    reducedPointSet = topologyExtraction.reducePointSetSOM(reducedPointSet)
+    extractedTopology = topologyExtraction.extractTopology(reducedPointSet)
+
+    # Visualization
+    if visControl["somResult"]["vis"]:
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        plotPointSet(ax=ax, X=topologyExtraction.Y, color=[0, 0, 0], size=1)
+        plotPointSet(
+            ax=ax, X=topologyExtraction.reducedPointSetsSOM[0], color=[1, 0, 0], size=20
+        )
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+        set_axes_equal3D(ax)
+        plt.show(block=visControl["somResult"]["block"])
+
+    if visControl["extractedTopology"]["vis"]:
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        pointPairs = extractedTopology.getAdjacentPointPairs()
+        leafNodeIndices = extractedTopology.getLeafNodeIndices()
+        pointPairs_inCamCoordinates = []
+        for pointPair in pointPairs:
+            stackedPair = np.stack(pointPair)
+            plotLine(ax, pointPair=stackedPair, color=[0, 0, 1])
+        plotPointSet(ax=ax, X=extractedTopology.X, color=[1, 0, 0], size=30)
+        plotPointSet(ax=ax, X=extractedTopology.X, color=[1, 0, 0], size=20)
+        plotPointSet(
+            ax=ax,
+            X=extractedTopology.X[leafNodeIndices, :],
+            color=[1, 0, 0],
+            size=50,
+            alpha=0.4,
+        )
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+        set_axes_equal3D(ax)
+        plt.show(block=visControl["extractedTopology"]["block"])
+        # 2D image
+        rgbImage = dataHandler.loadNumpyArrayFromPNG(
+            results["preprocessing"][0]["dataSetFileName"]
+        )
+        rgbImage_topology = rgbImage.copy()
+        pointPairs_inCameraCoordinates = (
+            preProcessor.transformPointsFromRobotBaseToCameraCoordinates(
+                np.concatenate(pointPairs, axis=0)
+            )
+        )
+        U, V, D = preProcessor.inverseStereoProjection(
+            pointPairs_inCameraCoordinates, preProcessor.cameraParameters["qmatrix"]
+        )
+        i = 0
+        while i <= len(U) - 1:
+            cv2.line(
+                rgbImage_topology,
+                (U[i], V[i]),
+                (U[i + 1], V[i + 1]),
+                (0, 255, 0),
+                5,
+            )
+            i += 2
+        fig = plt.figure()
+        fig.add_subplot()
+        plt.imshow(rgbImage_topology)
+        plt.show(block=True)
+
+    results["topologyExtraction"].append(
+        {
+            "reducedPointSet": extractedTopology.X,
+            "reducedPointSetsSOM": topologyExtraction.reducedPointSetsSOM,
+            "reducedPointSetsL1": topologyExtraction.reducedPointSetsL1,
+            "extractedFeatureMatrix": topologyExtraction.extractedFeatureMatrix,
+        }
+    )
+    return extractedTopology
 
 
 if __name__ == "__main__":
     # setup
-    dataHandler, evalConfig, preprocessingParameters = setupEvaluation()
-    # path managment
-    dataSetPath = evalConfig["loadPathInfo"]["folderPaths"][
-        dataSetControl["folderNumber"]
-    ]
-    dataSetFileName = evalConfig["loadPathInfo"]["fileNames"][
-        dataSetControl["fileNumber"]
-    ]
+    (preprocessingParameters, topologyExtractionParameters) = setupEvaluation()
+
+    # choose file for initialization
+    initDataSetFileName = loadControl["initFileNames"][loadControl["initFileNumber"]]
     # preprocessing
-    pointCloud, pointCloudColors = preprocessDataSet(
-        dataSetPath, dataSetFileName, preprocessingParameters
+    pointCloud = preprocessDataSet(
+        dataHandler.defaultLoadFolderPath, initDataSetFileName, preprocessingParameters
     )
-    print(pointCloud)
+    extractedTopology = topologyExtraction(pointCloud, topologyExtractionParameters)
 
     # TODO initialization
 

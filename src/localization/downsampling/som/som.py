@@ -48,13 +48,10 @@ class SelfOrganizingMap(DataReduction):
     def __init__(
         self,
         alpha=None,
-        beta=None,
         alphaAnnealing=None,
         numNearestNeighbors=None,
         numNearestNeighborsAnnealing=None,
         minNumNearestNeighbors=None,
-        h0=None,
-        h0Annealing=None,
         sigma2=None,
         sigma2Annealing=None,
         sigma2Min=None,
@@ -73,12 +70,9 @@ class SelfOrganizingMap(DataReduction):
             else numNearestNeighborsAnnealing
         )
         self.alpha = 0.9 if alpha is None else alpha
-        self.beta = 0.1 if beta is None else beta
-        self.alphaAnnealing = 0.93 if alphaAnnealing is None else alphaAnnealing
-        self.h0 = 1 if h0 is None else h0
+        self.alphaAnnealing = 1 if alphaAnnealing is None else alphaAnnealing
         self.sigma2 = 1 if sigma2 is None else sigma2
         self.sigma2Annealing = 0.9 if sigma2Annealing is None else sigma2Annealing
-        self.h0Annealing = 1 if h0Annealing is None else h0Annealing
         self.method = method
         self.minNumNearestNeighbors = (
             0 if minNumNearestNeighbors is None else minNumNearestNeighbors
@@ -94,30 +88,23 @@ class SelfOrganizingMap(DataReduction):
             (self.M, _) = self.Y.shape
         if X is not None:
             self.X = X
-            (self.N, self.D) = self.X.shape
+        else:
+            self.X = self.sampleRandom(self.Y, self.numSeedPoints)
+        (self.N, self.D) = self.X.shape
         self.T = self.X
 
         while self.iteration < self.max_iterations:
             # anneling of update parameter
-            # alpha = (self.alphaAnnealing) ** (self.iteration) * self.alpha
-            alpha = self.alpha * (1 - self.iteration / self.max_iterations)
-            # h0 = self.h0 * (1 - self.iteration / self.max_iterations)
-            h0 = (self.h0Annealing) ** (self.iteration) * self.h0
+            alpha = (self.alphaAnnealing) ** (self.iteration) * self.alpha
+            # alpha = self.alpha * (1 - self.iteration / self.max_iterations)
             sigma2 = (self.sigma2Annealing) ** (self.iteration) * self.sigma2
             if sigma2 < self.sigma2Min:
                 sigma2 = self.sigma2Min
-            # sigma2 = self.sigma2 * (1 - self.iteration / self.max_iterations)
-            # numNearestNeighbors = round(
-            #     (self.numNearestNeighborsAnnealing) ** (self.iteration)
-            #     * self.numNearestNeighbors
-            # )
             numNearestNeighbors = round(
                 self.numNearestNeighbors * (1 - self.iteration / self.max_iterations)
             )
             if numNearestNeighbors < self.minNumNearestNeighbors:
                 numNearestNeighbors = self.minNumNearestNeighbors
-
-            beta = self.beta
 
             # update neurons
             if self.method == "kernel":
@@ -126,7 +113,7 @@ class SelfOrganizingMap(DataReduction):
                 if sigma2 <= np.finfo(float).eps:
                     H = np.eye(self.N)
                 else:
-                    H = h0 * gaussian_kernel(self.T, np.square(sigma2))
+                    H = alpha * gaussian_kernel(self.T, np.square(sigma2))
                 winnerIdxs = np.argmin(distanceMatrix, axis=0)
 
                 YMean = np.zeros((self.N, self.D))

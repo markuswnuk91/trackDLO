@@ -7,15 +7,15 @@ from warnings import warn
 try:
     sys.path.append(os.getcwd().replace("/src/localization/downsampling", ""))
     from src.utils.utils import gaussian_kernel, knn
-    from src.localization.downsampling.downsampling import (
-        Downsampling,
+    from src.localization.downsampling.random.randomSampling import (
+        RandomSampling,
     )
 except:
     print("Imports for Data Reduction failed.")
     raise
 
 
-class DataReduction(Downsampling):
+class DataReduction(RandomSampling):
     """Base class for dimensionality reduction methods
 
     Attributes:
@@ -60,6 +60,10 @@ class DataReduction(Downsampling):
             if X.shape[0] < X.shape[1]:
                 raise ValueError(
                     "The dimensionality is larger than the number of points. Possibly the wrong orientation of X."
+                )
+            if len(X) != self.numSeedPoints:
+                raise ValueError(
+                    "Number of given initial seeds is not equal to number of expected seed points."
                 )
         if max_iterations is not None and (
             not isinstance(max_iterations, numbers.Number) or max_iterations < 0

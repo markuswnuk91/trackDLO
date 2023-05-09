@@ -1,24 +1,11 @@
 {
-    "loadPathInfo" : {
-        "folderPaths": [
-            "data/darus_data_download/data/20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/"
-        ],
-        "fileNames": [
-            "20230508_174753797929_image_rgb.png",
-            "20230508_174803124630_image_rgb.png"
-        ]
-    },
-    "savePathInfo" : {
-        "folderPaths": [],
-        "fileNames": []
-    },
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
             "hueMax": 7,
             "saturationMin": 150,
             "saturationMax": 250,
-            "valueMin": 190,
+            "valueMin": 120,
             "valueMax": 255
         },
         "roiFilterParameters" : {
@@ -43,10 +30,30 @@
             "yMin" : -0.5,
             "yMax" : 0.5,
             "zMin" : 0.25,
-            "zMax" : 0.35
+            "zMax" : 0.5
         },
         "downsamplingParameters" : {
             "nthElement" : 10
+        }
+    },
+    "topologyExtractionParameters" : {
+        "somParameters" : {
+            "numSeedPoints": 100,
+            "alpha": 1,
+            "alphaAnnealing": 0.93,
+            "sigma2": 0.1,
+            "sigma2Min": 0.01,
+            "sigma2Annealing": 0.9,
+            "method": "kernel",
+            "max_iterations": 30
+        },
+        "l1Parameters" : {
+            "numSeedPoints": 300,
+            "h": 0.03,
+            "hAnnealing": 0.9,
+            "hMin": 0.01,
+            "mu": 0.35,
+            "max_iterations": 1
         }
     }
 }

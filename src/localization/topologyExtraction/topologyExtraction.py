@@ -81,25 +81,27 @@ class TopologyExtraction(object):
         self.reducedPointSetsL1 = []
         self.reducedPointSetsFilter = []
         self.extractedTopology = None
+        self.extractedFeatureMatrix = None
 
         if somParameters is None:
             self.somParameters = {
+                "numSeedPoints": 100,
                 "alpha": 1,
-                "numNearestNeighbors": 30,
-                "numNearestNeighborsAnnealing": 0.8,
-                "sigma2": 0.03,
-                "alphaAnnealing": 0.9,
-                "sigma2Annealing": 0.8,
-                "kernelMethod": False,
+                "alphaAnnealing": 0.93,
+                "sigma2": 0.1,
+                "sigma2Min": 0.01,
+                "sigma2Annealing": 0.9,
+                "method": "kernel",
                 "max_iterations": 30,
             }
         else:
             self.somParameters = somParameters
         if l1Parameters is None:
             self.l1Parameters = {
-                "h": 0.12,
+                "numSeedPoints": 300,
+                "h": 0.03,
                 "hAnnealing": 0.9,
-                "hReductionFactor": 1,
+                "hMin": 0.01,
                 "mu": 0.35,
                 "max_iterations": 30,
             }
@@ -142,7 +144,7 @@ class TopologyExtraction(object):
         AdjMinSpan = minimalSpanningTree(
             distance_matrix(combinedPointSet, combinedPointSet)
         )
-        pathDistanceMatrix, predecessorMatrix = shortest_path(
+        (pathDistanceMatrix, _) = shortest_path(
             AdjMinSpan,
             method="auto",
             directed=False,
@@ -164,16 +166,12 @@ class TopologyExtraction(object):
             )
             AdjGeodesicMinSpan = minimalSpanningTree(geodesicDistanceMatrix)
             connectivityGeodesicMinSpan = np.array(AdjGeodesicMinSpan != 0, dtype=int)
-            extractedTopology = MinimalSpanningTreeTopology(
-                **{
-                    "X": reducedPointSet,
-                    "featureMatrix": connectivityGeodesicMinSpan
-                    * cartesianDistanceMatrix,
-                },
+            self.extractedFeatureMatrix = (
+                connectivityGeodesicMinSpan * cartesianDistanceMatrix
             )
         elif method == "cartesian":
-            extractedTopology = MinimalSpanningTreeTopology(
-                distance_matrix(reducedPointSet, reducedPointSet)
+            self.extactedFeatureMatrix = distance_matrix(
+                reducedPointSet, reducedPointSet
             )
         elif method == "combined":
             if densePointSet is None:
@@ -192,24 +190,24 @@ class TopologyExtraction(object):
             # combinedFeatureMatrix = (
             #     geodesicDistanceMatrixNormalized * cartesianDistanceMatrixNormalized
             # )
-            combinedFeatureMatrix = (
+            self.extactedFeatureMatrix = (
                 geodesicDistanceMatrixNormalized * cartesianDistanceMatrix
-            )
-            extractedTopology = MinimalSpanningTreeTopology(
-                **{
-                    "X": reducedPointSet,
-                    "featureMatrix": combinedFeatureMatrix,
-                },
             )
         else:
             raise NotImplementedError
+        extractedTopology = MinimalSpanningTreeTopology(
+            **{
+                "X": reducedPointSet,
+                "featureMatrix": self.extactedFeatureMatrix,
+            },
+        )
         self.extractedTopology = extractedTopology
         return extractedTopology
 
     def reducePointSetSOM(
         self,
         pointSet,
-        seedPoints,
+        seedPoints=None,
     ):
         """downsamples a pointSet with the self organizing map
 
@@ -229,7 +227,7 @@ class TopologyExtraction(object):
     def reducePointSetL1(
         self,
         pointSet,
-        seedPoints,
+        seedPoints=None,
     ):
         """downsamples a pointSet with the l1-median
 
@@ -304,9 +302,7 @@ class TopologyExtraction(object):
             filteredPointset(np.array): filtered point set
         """
         if filterMethod == "lof":
-            reducedPoints = self.lofOutlierFilter.calculateReducedRepresentation(
-                pointSet
-            )
+            reducedPoints = self.lofOutlierFilter.sampleLOF(pointSet)
         else:
             raise NotImplementedError
         self.reducedPointSetsSOM.append(reducedPoints)
@@ -314,7 +310,7 @@ class TopologyExtraction(object):
 
     def randomSample(self, pointSet, numSeedPoints):
         self.randomSampling.numSeedPoints = numSeedPoints
-        reducedPointSet = self.randomSampling.calculateReducedRepresentation(pointSet)
+        reducedPointSet = self.randomSampling.sampleRandom(pointSet)
         self.X = reducedPointSet
         self.reducedPointSetsRandom.append(reducedPointSet)
         return reducedPointSet

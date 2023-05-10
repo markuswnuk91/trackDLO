@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
+import dartpy as dart
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -10,7 +11,7 @@ try:
     from src.sensing.preProcessing import PreProcessing
     from src.sensing.dataHandler import DataHandler
 
-    # inital localization
+    # topology extraction
     from src.localization.topologyExtraction.topologyExtraction import (
         TopologyExtraction,
     )
@@ -19,6 +20,9 @@ try:
     )
     from src.localization.downsampling.som.som import SelfOrganizingMap
     from src.localization.downsampling.l1median.l1Median import L1Median
+
+    # model generation
+    from src.simulation.bdlo import BranchedDeformableLinearObject
 
     # visualization
     from src.visualization.plot3D import *
@@ -39,9 +43,10 @@ results = {
 
 # visualization
 visControl = {
-    "preprocessing": {"vis": True, "block": False},
-    "somResult": {"vis": True, "block": False},
-    "extractedTopology": {"vis": True, "block": False},
+    "preprocessing": {"vis": False, "block": False},
+    "somResult": {"vis": False, "block": False},
+    "extractedTopology": {"vis": False, "block": False},
+    "generatedModel": {"vis": True, "block": True},
 }
 saveControl = {
     "parentDirectory": "data/eval/experiments/",
@@ -216,28 +221,6 @@ def topologyExtraction(pointCloud, topologyExtractionParameters):
         plt.show(block=visControl["somResult"]["block"])
 
     if visControl["extractedTopology"]["vis"]:
-        fig = plt.figure()
-        ax = fig.add_subplot(projection="3d")
-        pointPairs = extractedTopology.getAdjacentPointPairs()
-        leafNodeIndices = extractedTopology.getLeafNodeIndices()
-        pointPairs_inCamCoordinates = []
-        for pointPair in pointPairs:
-            stackedPair = np.stack(pointPair)
-            plotLine(ax, pointPair=stackedPair, color=[0, 0, 1])
-        plotPointSet(ax=ax, X=extractedTopology.X, color=[1, 0, 0], size=30)
-        plotPointSet(ax=ax, X=extractedTopology.X, color=[1, 0, 0], size=20)
-        plotPointSet(
-            ax=ax,
-            X=extractedTopology.X[leafNodeIndices, :],
-            color=[1, 0, 0],
-            size=50,
-            alpha=0.4,
-        )
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_zlabel("Z")
-        set_axes_equal3D(ax)
-        plt.show(block=visControl["extractedTopology"]["block"])
         # 2D image
         rgbImage = dataHandler.loadNumpyArrayFromPNG(
             results["preprocessing"][0]["dataSetFileName"]
@@ -264,7 +247,29 @@ def topologyExtraction(pointCloud, topologyExtractionParameters):
         fig = plt.figure()
         fig.add_subplot()
         plt.imshow(rgbImage_topology)
-        plt.show(block=True)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+        pointPairs = extractedTopology.getAdjacentPointPairs()
+        leafNodeIndices = extractedTopology.getLeafNodeIndices()
+        pointPairs_inCamCoordinates = []
+        for pointPair in pointPairs:
+            stackedPair = np.stack(pointPair)
+            plotLine(ax, pointPair=stackedPair, color=[0, 0, 1])
+        plotPointSet(ax=ax, X=extractedTopology.X, color=[1, 0, 0], size=30)
+        plotPointSet(ax=ax, X=extractedTopology.X, color=[1, 0, 0], size=20)
+        plotPointSet(
+            ax=ax,
+            X=extractedTopology.X[leafNodeIndices, :],
+            color=[1, 0, 0],
+            size=50,
+            alpha=0.4,
+        )
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+        set_axes_equal3D(ax)
+        plt.show(block=visControl["extractedTopology"]["block"])
 
     results["topologyExtraction"].append(
         {
@@ -275,6 +280,45 @@ def topologyExtraction(pointCloud, topologyExtractionParameters):
         }
     )
     return extractedTopology
+
+
+def modelGeneration():
+    global dataHandler
+    # load model
+    modelInfo = dataHandler.loadModelParameters("model.json")
+    branchSpecs = list(modelInfo["branchSpecifications"].values())
+    bdloModel = BranchedDeformableLinearObject(
+        **{"adjacencyMatrix": modelInfo["topologyModel"], "branchSpecs": branchSpecs}
+    )
+    bdloModel.setBranchRootDof(1, 0, np.pi * 3 / 4)
+    bdloModel.setBranchRootDofs(2, np.array([0, 0, 0]))
+    bdloModel.setBranchRootDofs(3, np.array([-np.pi * 3 / 4, 0, 0]))
+    bdloModel.setBranchRootDofs(4, np.array([0, 0, 0]))
+    bdloModel.setBranchRootDofs(5, np.array([np.pi / 4, 0, 0]))
+    bdloModel.setBranchRootDofs(6, np.array([0, 0, 0]))
+
+    if visControl["generatedModel"]["vis"]:
+        world = dart.simulation.World()
+        node = dart.gui.osg.WorldNode(world)
+        # Create world node and add it to viewer
+        viewer = dart.gui.osg.Viewer()
+        viewer.addWorldNode(node)
+
+        # add skeleton
+        world.addSkeleton(bdloModel.skel)
+
+        # Grid settings
+        grid = dart.gui.osg.GridVisual()
+        grid.setPlaneType(dart.gui.osg.GridVisual.PlaneType.XY)
+        grid.setOffset([0, 0, 0])
+        viewer.addAttachment(grid)
+
+        viewer.setUpViewInWindow(0, 0, 1200, 900)
+        viewer.setCameraHomePosition([8.0, 8.0, 4.0], [0, 0, -2.5], [0, 0, 1])
+        if visControl["generatedModel"]["block"]:
+            viewer.run()
+        else:
+            viewer.frame()
 
 
 if __name__ == "__main__":
@@ -289,6 +333,8 @@ if __name__ == "__main__":
     )
     extractedTopology = topologyExtraction(pointCloud, topologyExtractionParameters)
 
-    # TODO initialization
+    # model generation
 
+    # TODO initialLocalization
+    modelGeneration()
     # TODO tracking

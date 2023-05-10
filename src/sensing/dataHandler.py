@@ -66,6 +66,16 @@ class DataHandler(object):
         f.close()
         return calibrationParameters
 
+    def loadModelParameters(self, fileName, folderPath=None):
+        if folderPath is None:
+            folderPath = self.defaultLoadFolderPath
+        with open(folderPath + fileName, "r") as f:
+            modelParameters = json.load(f)
+            modelParameters["topologyModel"] = np.array(
+                modelParameters["topologyModel"]
+            )
+        return modelParameters
+
     def loadFromJson(self, filePath):
         with open(filePath, "r") as f:
             data = json.load(f)

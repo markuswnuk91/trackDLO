@@ -15,34 +15,41 @@ modelParameterPath = "src/evaluation/bdloDesciptions/arena/"
 calibrationParameterFilePath = "config/calibration/calibrationParameters.json"
 
 # save path: if None default path is used
-saveRootDirectory = "data/acquiredData/"
-dataSetFolerName =  "ArenaWireHarness_ManipulationSequence_Manual/"
+saveRootDirectory = None
+dataSetFolderName = "Test"
 
 
 fps = 5 # maximum fps the application will display images
-method = 'auto' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
+method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
+
 saveRobotPose = False # if robot pose should also be saved
 
 # not to be configured
 now = datetime.datetime.now()
 date_string = now.strftime("%Y%m%d")
 time_string = now.strftime("%H%M%S")
-savePath = saveRootDirectory + date_string + "_" + time_string + "_" + dataSetFolerName
 
-def generateFolderPath(path):
+
+def generateFolderPath(path, folderName = None):
     now = datetime.datetime.now()
     date_string = now.strftime("%Y%m%d")
     time_string = now.strftime("%H%M%S")
-    newFolderName = date_string + '_' + time_string + '_' + "DataSet"
+    if folderName is None:
+        newFolderName = date_string + '_' + time_string + '_' + "DataSet"
+    else:
+        newFolderName = date_string + '_' + time_string + '_' + folderName
     newFolderPath = path + newFolderName + "/"
     return newFolderPath
 
 if __name__ == "__main__":
-    defaultPath = "data/acquiredData/"
-    if savePath is None:
-        folderPath = generateFolderPath(defaultPath)
+    if saveRootDirectory is None:
+        saveRootDirectory = "data/acquiredData/"
+
+    if dataSetFolderName is None:
+        folderPath = generateFolderPath(saveRootDirectory)
     else:
-        folderPath = savePath
+        folderPath = generateFolderPath(saveRootDirectory, dataSetFolderName)
+
     isExist = os.path.exists(folderPath)
     if not isExist:
         os.makedirs(folderPath)

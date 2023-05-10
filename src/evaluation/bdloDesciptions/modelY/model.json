@@ -1,0 +1,30 @@
+
+{
+    "name": "modelY",
+    "topologyModel" : [
+        [0.00, 0.22, 0.00, 0.00],
+        [0.22, 0.00, 0.42, 0.75],
+        [0.00, 0.42, 0.00, 0.00],
+        [0.00, 0.75, 0.00, 0.00]
+    ],
+
+    "branchSpecifications" : {
+        "branch_1" :  {
+            "length": 0.22,
+            "radius": 0.015,
+            "color": [1, 0, 0]
+            },
+        "branch_2" :  {
+            "length": 0.42,
+            "radius": 0.01,
+            "color": [1, 0, 0]
+            },
+        "branch_3" :  {
+            "length": 0.75,
+            "radius": 0.01,
+            "color": [1, 0, 0]
+            }
+        },
+
+    "mass" : 1
+}

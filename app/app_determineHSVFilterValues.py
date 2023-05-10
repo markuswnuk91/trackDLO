@@ -12,9 +12,9 @@ except:
     raise
 
 folderPath = (
-    "data/acquiredData/20230510_140017_DataSet/"
+    "data/acquiredData/20230510_164533_DataSet/"
 )
-fileName = "20230510_140018_171128_image_rgb.png"
+fileName = "20230510_164533_386572_image_rgb.png"
 
 max_value = 255
 max_value_H = 360 // 2

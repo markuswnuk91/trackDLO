@@ -1,0 +1,18 @@
+
+{
+    "name": "singleDLO",
+    "topologyModel" : [
+        [0.00, 0.65],
+        [0.65, 0.00 ]
+    ],
+
+    "branchSpecifications" : {
+        "branch_1" :  {
+            "length": 0.65,
+            "radius": 0.008,
+            "color": [1, 0, 0]
+            }
+        },
+
+    "mass" : 1
+}

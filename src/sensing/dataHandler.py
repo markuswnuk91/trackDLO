@@ -16,14 +16,19 @@ except:
 class DataHandler(object):
     """Class providing functions for data handling"""
 
-    def __init__(self, defaultLoadFolderPath):
-        """_summary_
+    def __init__(
+        self,
+        defaultLoadFolderPath="data/darus_data_download/data",
+        defaultSaveFolderPath="data/eval/default",
+    ):
+        """initialization
 
         Args:
             dataSetFolderPath (string): provide the folder path to the data set folder containing the parameter files
         """
-        self.defaultLoadFolderPath_Parameters = defaultLoadFolderPath
+        self.defaultLoadFolderPath = defaultLoadFolderPath
         self.defaultLoadFolderPath_Data = defaultLoadFolderPath + "data/"
+        self.defaultSaveFolderpath = defaultSaveFolderPath
 
     def loadNumpyArrayFromBinary(self, fileName, folderPath=None):
         if folderPath is None:
@@ -43,7 +48,7 @@ class DataHandler(object):
 
     def loadCameraParameters(self, fileName, folderPath=None):
         if folderPath is None:
-            folderPath = self.defaultLoadFolderPath_Parameters
+            folderPath = self.defaultLoadFolderPath
         with open(folderPath + fileName, "r") as f:
             cameraParameters = json.load(f)
         cameraParameters["qmatrix"] = np.array(cameraParameters["qmatrix"])
@@ -52,7 +57,7 @@ class DataHandler(object):
 
     def loadCalibrationParameters(self, fileName, folderPath=None):
         if folderPath is None:
-            folderPath = self.defaultLoadFolderPath_Parameters
+            folderPath = self.defaultLoadFolderPath
         with open(folderPath + fileName, "r") as f:
             calibrationParameters = json.load(f)
         calibrationParameters["T_Camera_To_RobotBase"] = np.array(
@@ -60,6 +65,16 @@ class DataHandler(object):
         )
         f.close()
         return calibrationParameters
+
+    def loadModelParameters(self, fileName, folderPath=None):
+        if folderPath is None:
+            folderPath = self.defaultLoadFolderPath
+        with open(folderPath + fileName, "r") as f:
+            modelParameters = json.load(f)
+            modelParameters["topologyModel"] = np.array(
+                modelParameters["topologyModel"]
+            )
+        return modelParameters
 
     def loadFromJson(self, filePath):
         with open(filePath, "r") as f:

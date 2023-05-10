@@ -86,8 +86,35 @@ sudo make install
 ### std import error when building with tag/0.8.0
 add required libraries
 
-# Install libvisiontransfer
-wget tar \
+# Install libvisiontransfer (Nerian API)
+## Dependencies
+Required libraries
+```
+# Open CV
+sudo apt install libopencv-dev python3-opencv
+```
+Required Python packages
+```
+# for installation of Nerian API (libvisiontransfer)
+pip3 Cython numpy wheel 
+```
+## Install
+Download the Nerian Repoitory from github
+```
+$ git clone git@github.com:nerian-vision/nerian-vision-software.git
+```
+Go in the folder and build the project
+```
+$ cd nerian-vision-software/
+$ mkdir build
+$ cd build
+$ cmake ..
+$ make
+```
+To install on the system
+```
+$ sudo make install
+```
 
 # Install pyDataverse 
 ```sh

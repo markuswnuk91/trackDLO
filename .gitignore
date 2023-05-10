@@ -11,7 +11,7 @@ __pycache__/
 #vscode files
 .vscode/settings.json
 
-#data folder
+#data folders
 data
 
 #imgs folder

@@ -22,31 +22,4 @@ trackDLO
 └── SETUP.md            # install instructions and dependencies
 ```
 
-## Installation
 
-### Dependencies
-Required libraries
-```
-# Open CV
-sudo apt install libopencv-dev python3-opencv
-```
-Required Python packages
-```
-# for installation of Nerian API (libvisiontransfer)
-pip3 Cython numpy wheel 
-```
-
-### Nerian API (libvisiontransfer)
-Download the Nerian Repoitory from github
-```
-$ git clone git@github.com:nerian-vision/nerian-vision-software.git
-```
-Go in the folder and build the project
-```
-$ cd nerian-vision-software/
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make
-```
-$ sudo make install

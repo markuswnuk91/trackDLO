@@ -19,15 +19,22 @@ class RandomSampling(Downsampling):
 
     def __init__(self, numSeedPoints, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.Y is not None:
+            if numSeedPoints > len(self.Y):
+                raise ValueError(
+                    "Requested number of seed points larger than input point set. Expected  number of seed points to be lower than the size of the input sample."
+                )
         self.numSeedPoints = numSeedPoints
 
-    def calculateReducedRepresentation(self, Y=None):
+    def sampleRandom(self, Y=None, numSeedPoints=None):
         """
         Function to perform random downsampling
         """
         if Y is not None:
             self.Y = Y
-        random_indices = random.sample(range(0, len(self.Y)), self.numSeedPoints)
+        if numSeedPoints is None:
+            numSeedPoints = self.numSeedPoints
+        random_indices = random.sample(range(0, len(self.Y)), numSeedPoints)
         self.T = self.Y[random_indices, :]
         if callable(self.callback):
             self.callback()

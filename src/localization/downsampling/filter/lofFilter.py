@@ -22,7 +22,7 @@ class LocalOutlierFactorFilter(Downsampling):
         self.numNeighbors = numNeighbors
         self.contamination = contamination
 
-    def calculateReducedRepresentation(self, Y=None):
+    def sampleLOF(self, Y=None):
         """
         Function to perform lof outlier  filtering
         """

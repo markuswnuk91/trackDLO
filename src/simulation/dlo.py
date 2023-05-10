@@ -216,7 +216,7 @@ class DeformableLinearObject(object):
         tf.set_translation(bodyNodeCenter)
         rootjoint.setTransformFromChildBodyNode(tf)
 
-        self.setJointShape_Ball(body=rootbody, radius=radius)
+        self.setJointShape_Ball(body=rootbody, radius=radius, color=color)
 
     def addBody(
         self,
@@ -280,7 +280,7 @@ class DeformableLinearObject(object):
         tf.set_translation(bodyNodeCenter)
         joint.setTransformFromChildBodyNode(tf)
 
-        self.setJointShape_Ball(body=body, radius=radius)
+        self.setJointShape_Ball(body=body, radius=radius, color=color)
 
     def setJointShape_Ball(self, body, radius, color=[0, 0, 1]):
         ballShape = dart.dynamics.SphereShape(radius)

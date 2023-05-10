@@ -28,6 +28,10 @@ def acquireData():
         isExist = os.path.exists(folderPath)
         if not isExist:
             os.makedirs(folderPath)
+        folderPath_imagedata = folderPath + "data/"
+        folderPath_imagedata_exists = os.path.exists(folderPath_imagedata)
+        if not folderPath_imagedata_exists:
+                os.makedirs(folderPath_imagedata)
     else:
         folderPath = savePath
     dataAcquistion = DataAcquisition(folderPath)

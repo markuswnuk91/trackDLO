@@ -112,7 +112,7 @@ class DataAcquisition(CameraInterface):
         # meta data
         self.saveCameraParameters(folderPath)
         # stereo data
-        self.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], folderPath = folderPath, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
+        self.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], folderPath = folderPath +"/data/", filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
         print("Successfully saved data to: ")
         print(folderPath)
         return

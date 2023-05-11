@@ -19,13 +19,13 @@
             },
         "branch_2" :  {
             "length": 0.37,
-            "radius": 0.01,
+            "radius": 0.013,
             "color": [1, 0, 0],
             "rootJointRestPositions":[-0.52,0,0]
             },
         "branch_3" :  {
             "length": 0.20,
-            "radius": 0.02,
+            "radius": 0.015,
             "color": [1, 0, 0],
             "rootJointRestPositions":[0,0,0]
             },

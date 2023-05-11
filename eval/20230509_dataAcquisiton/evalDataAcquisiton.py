@@ -292,15 +292,13 @@ def topologyExtraction(pointCloud, topologyExtractionParameters):
         for pointPair in pointPairs:
             stackedPair = np.stack(pointPair)
             plotLine(ax, pointPair=stackedPair, color=[0, 0, 1])
-        for i, point in enumerate(extractedTopology.X):
-            numPoints = len(extractedTopology.X)
-            plotPoint(
-                ax=ax,
-                x=point,
-                color=[1 / (numPoints * (i + 1)), 0, 1 / numPoints * i],
-                size=i,
-            )
-            plt.show()
+        plotPointSet(
+            ax=ax,
+            X=extractedTopology.X,
+            color=[0, 0, 1],
+            size=30,
+            alpha=0.4,
+        )
         plotPointSet(
             ax=ax,
             X=extractedTopology.X[leafNodeIndices, :],

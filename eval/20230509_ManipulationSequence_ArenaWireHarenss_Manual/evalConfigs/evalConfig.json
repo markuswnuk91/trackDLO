@@ -33,7 +33,7 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 1
+            "nthElement" : 10
         }
     },
     "topologyExtractionParameters" : {

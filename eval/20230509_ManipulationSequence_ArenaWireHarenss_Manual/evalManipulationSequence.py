@@ -45,7 +45,7 @@ results = {
 visControl = {
     "preprocessing": {"vis": False, "block": False},
     "somResult": {"vis": False, "block": False},
-    "extractedTopology": {"vis": False, "block": False},
+    "extractedTopology": {"vis": False, "block": True},
     "generatedModel": {"vis": True, "block": True},
 }
 saveControl = {
@@ -54,8 +54,9 @@ saveControl = {
 }
 loadControl = {
     "parentDirectory": {
-        "paths": ["data/darus_data_download/data/"],
-        "index": 0,
+        "paths": ["data/darus_data_download/data/",
+                  "data/acquiredData/20230511_Configurations_Static_Overlap3D/",],
+        "index": 1,
     },
     "folderName": {
         "paths": [
@@ -63,8 +64,13 @@ loadControl = {
             "20230510_175759_YShape/",
             "20230510_190017_Partial/",
             "20230510_175016_singledlo/",
+            "20230511_130114_Arena/",
+            "20230511_112944_YShape/",
+            "20230511_105435_Partial/"
+
+
         ],
-        "index": 3,
+        "index": 6,
     },
     "initFile": {
         "index": 0,
@@ -241,6 +247,7 @@ def topologyExtraction(pointCloud, topologyExtractionParameters):
         plt.show(block=visControl["somResult"]["block"])
 
     if visControl["extractedTopology"]["vis"]:
+        pointPairs = extractedTopology.getAdjacentPointPairs()
         # 2D image
         rgbImage = dataHandler.loadNumpyArrayFromPNG(
             results["preprocessing"][0]["dataSetFileName"]
@@ -270,9 +277,7 @@ def topologyExtraction(pointCloud, topologyExtractionParameters):
 
         fig = plt.figure()
         ax = fig.add_subplot(projection="3d")
-        pointPairs = extractedTopology.getAdjacentPointPairs()
         leafNodeIndices = extractedTopology.getLeafNodeIndices()
-        pointPairs_inCamCoordinates = []
         for pointPair in pointPairs:
             stackedPair = np.stack(pointPair)
             plotLine(ax, pointPair=stackedPair, color=[0, 0, 1])
@@ -310,12 +315,6 @@ def modelGeneration():
     bdloModel = BranchedDeformableLinearObject(
         **{"adjacencyMatrix": modelInfo["topologyModel"], "branchSpecs": branchSpecs}
     )
-    # bdloModel.setBranchRootDof(1, 0, np.pi * 3 / 4)
-    # bdloModel.setBranchRootDofs(2, np.array([0, 0, 0]))
-    # bdloModel.setBranchRootDofs(3, np.array([-np.pi * 3 / 4, 0, 0]))
-    # bdloModel.setBranchRootDofs(4, np.array([0, 0, 0]))
-    # bdloModel.setBranchRootDofs(5, np.array([np.pi / 4, 0, 0]))
-    # bdloModel.setBranchRootDofs(6, np.array([0, 0, 0]))
 
     if visControl["generatedModel"]["vis"]:
         world = dart.simulation.World()

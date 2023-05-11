@@ -9,36 +9,40 @@
         [0.00, 0.00, 0.00, 0.10, 0.00, 0.00],
         [0.00, 0.00, 0.00, 0.38, 0.00, 0.00]
     ],
-
+    
     "branchSpecifications" : {
         "branch_1" :  {
             "length": 0.52,
             "radius": 0.008,
-            "color": [1, 0, 0]
+            "color": [1, 0, 0],
+            "rootJointRestPositions":[0,0,0,0,0,0]
             },
         "branch_2" :  {
-            "length": 0.49,
+            "length": 0.37,
             "radius": 0.01,
-            "color": [1, 0, 0]
+            "color": [1, 0, 0],
+            "rootJointRestPositions":[-0.52,0,0]
             },
         "branch_3" :  {
             "length": 0.20,
             "radius": 0.02,
-            "color": [1, 0, 0]
+            "color": [1, 0, 0],
+            "rootJointRestPositions":[0,0,0]
             },
         "branch_4" :  {
             "length": 0.10,
             "radius": 0.008,
-            "color": [1, 0, 0]
+            "color": [1, 0, 0],
+            "rootJointRestPositions":[-0.39,0,0]
             },
         "branch_5" :  {
             "length": 0.38,
             "radius": 0.008,
-            "color": [1, 0, 0]
+            "color": [1, 0, 0],
+            "rootJointRestPositions":[0.39,0,0]
             }
         },
-
-    "mass" : 1,
+    "mass" : 0.274,
 
     "targets" : {
         "target_1" :  {

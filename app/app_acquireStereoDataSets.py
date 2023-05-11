@@ -11,11 +11,11 @@ except:
     raise
 
 #loading paths for parameter files
-modelParameterPath = "src/evaluation/bdloDesciptions/modelY/" # "singleDLO, partial, modelY, arena"
+modelParameterPath = "src/evaluation/bdloDesciptions/arena/" # "singleDLO, partial, modelY, arena"
 calibrationParameterFilePath = "config/calibration/calibrationParameters.json"
 # save path: if None default path is used
-saveRootDirectory = "data/acquiredData/20230511_Configurations/"
-dataSetFolderName = "YShape"
+saveRootDirectory = "data/acquiredData/20230511_Configurations_Static_Overlap3D/"
+dataSetFolderName = "Arena"
 fps = 30 # maximum fps the application will display images
 method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
 saveRobotPose = False # if robot pose should also be saved

@@ -74,13 +74,5 @@
             }
         },
 
-    "mass" : 1,
-
-    "targets" : {
-        "target_1" :  {
-            "branch": 1,
-            "location": 0.5,
-            "color": [1, 0, 0]
-            }
-    }
+    "mass" : 0.171
 }

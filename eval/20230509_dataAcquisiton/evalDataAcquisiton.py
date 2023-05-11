@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 import dartpy as dart
+from scipy.spatial import distance_matrix
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -24,6 +25,11 @@ try:
     # model generation
     from src.simulation.bdlo import BranchedDeformableLinearObject
 
+    # initial localization
+    from src.localization.bdloLocalization import (
+        BDLOLocalization,
+    )
+
     # visualization
     from src.visualization.plot3D import *
 except:
@@ -43,10 +49,10 @@ results = {
 
 # visualization
 visControl = {
-    "preprocessing": {"vis": False, "block": False},
-    "somResult": {"vis": False, "block": False},
-    "extractedTopology": {"vis": False, "block": True},
-    "generatedModel": {"vis": True, "block": True},
+    "preprocessing": {"vis": True, "block": False},
+    "somResult": {"vis": True, "block": False},
+    "extractedTopology": {"vis": True, "block": True},
+    "generatedModel": {"vis": False, "block": True},
 }
 saveControl = {
     "parentDirectory": "data/eval/experiments/",
@@ -54,9 +60,11 @@ saveControl = {
 }
 loadControl = {
     "parentDirectory": {
-        "paths": ["data/darus_data_download/data/",
-                  "data/acquiredData/20230511_Configurations_Static_Overlap3D/",],
-        "index": 1,
+        "paths": [
+            "data/darus_data_download/data/",
+            "data/acquiredData/20230511_Configurations_Static_Overlap3D/",
+        ],
+        "index": 0,
     },
     "folderName": {
         "paths": [
@@ -66,11 +74,9 @@ loadControl = {
             "20230510_175016_singledlo/",
             "20230511_130114_Arena/",
             "20230511_112944_YShape/",
-            "20230511_105435_Partial/"
-
-
+            "20230511_105435_Partial/",
         ],
-        "index": 6,
+        "index": 0,
     },
     "initFile": {
         "index": 0,
@@ -106,9 +112,11 @@ def setupEvaluation():
     evalConfig = dataHandler.loadFromJson(evalConfigPath + evalConfigFiles[0])
     preprocessingParameters = evalConfig["preprocessingParameters"]
     topologyExtractionParameters = evalConfig["topologyExtractionParameters"]
+    localizationParameters = evalConfig["localizationParameters"]
     return (
         preprocessingParameters,
         topologyExtractionParameters,
+        localizationParameters,
     )
 
 
@@ -230,6 +238,9 @@ def topologyExtraction(pointCloud, topologyExtractionParameters):
     reducedPointSet = Y
     # reducedPointSet = topologyExtraction.reducePointSetL1(reducedPointSet)
     reducedPointSet = topologyExtraction.reducePointSetSOM(reducedPointSet)
+    reducedPointSet = topologyExtraction.pruneDuplicatePoints(
+        reducedPointSet, topologyExtractionParameters["pruningThreshold"]
+    )
     extractedTopology = topologyExtraction.extractTopology(reducedPointSet)
 
     # Visualization
@@ -281,8 +292,15 @@ def topologyExtraction(pointCloud, topologyExtractionParameters):
         for pointPair in pointPairs:
             stackedPair = np.stack(pointPair)
             plotLine(ax, pointPair=stackedPair, color=[0, 0, 1])
-        plotPointSet(ax=ax, X=extractedTopology.X, color=[1, 0, 0], size=30)
-        plotPointSet(ax=ax, X=extractedTopology.X, color=[1, 0, 0], size=20)
+        for i, point in enumerate(extractedTopology.X):
+            numPoints = len(extractedTopology.X)
+            plotPoint(
+                ax=ax,
+                x=point,
+                color=[1 / (numPoints * (i + 1)), 0, 1 / numPoints * i],
+                size=i,
+            )
+            plt.show()
         plotPointSet(
             ax=ax,
             X=extractedTopology.X[leafNodeIndices, :],
@@ -338,11 +356,37 @@ def modelGeneration():
             viewer.run()
         else:
             viewer.frame()
+    return bdloModel
+
+
+def initialLocalization(
+    pointCloud, extractedTopology, bdloModel, localizationParameters
+):
+    localCoordinateSamples = np.linspace(
+        0,
+        1,
+        localizationParameters["numLocalCoordinateSamples"],
+    )
+    Y = pointCloud[0]
+    localization = BDLOLocalization(
+        **{
+            "Y": Y,
+            "S": localCoordinateSamples,
+            "templateTopology": bdloModel,
+            "extractedTopology": extractedTopology,
+        }
+    )
+    qInit = localization.reconstructShape()
+    return qInit
 
 
 if __name__ == "__main__":
     # setup
-    (preprocessingParameters, topologyExtractionParameters) = setupEvaluation()
+    (
+        preprocessingParameters,
+        topologyExtractionParameters,
+        localizationParameters,
+    ) = setupEvaluation()
 
     # choose file for initialization
     initDataSetFileName = dataHandler.getDataSetFileName_RBG(
@@ -352,10 +396,16 @@ if __name__ == "__main__":
     pointCloud = preprocessDataSet(
         dataHandler.defaultLoadFolderPath, initDataSetFileName, preprocessingParameters
     )
+    # model generation
+    bdloModel = modelGeneration()
+
+    # topology extraction
     extractedTopology = topologyExtraction(pointCloud, topologyExtractionParameters)
 
-    # model generation
-
     # TODO initialLocalization
-    modelGeneration()
+    qInit = initialLocalization(
+        pointCloud, extractedTopology, bdloModel, localizationParameters
+    )
+
+    print(qInit)
     # TODO tracking

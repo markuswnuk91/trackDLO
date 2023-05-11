@@ -314,3 +314,23 @@ class TopologyExtraction(object):
         self.X = reducedPointSet
         self.reducedPointSetsRandom.append(reducedPointSet)
         return reducedPointSet
+
+    def pruneDuplicatePoints(self, pointSet, threshold=1e-6):
+        """prunes duplicate points from a point set.
+            If two points are closer than the given threshold from each other, one of the points is deleted
+
+        Args:
+            pointSet (_type_): _description_
+            threshold (_type_, optional): _description_. Defaults to 1e-6.
+        """
+        pruningIndices = np.where(
+            (distance_matrix(pointSet, pointSet) + np.eye(len(pointSet)) * threshold)
+            < threshold
+        )
+        tuplesOfPruningIndices = list(zip(pruningIndices[0], pruningIndices[1]))
+        uniqueTuplesOfPruningIndices = {
+            tuple(item) for item in map(sorted, tuplesOfPruningIndices)
+        }
+        unqiquePruningIndices = list(map(list, zip(*uniqueTuplesOfPruningIndices)))
+        prunedPointSet = np.delete(pointSet, unqiquePruningIndices[0], axis=0)
+        return prunedPointSet

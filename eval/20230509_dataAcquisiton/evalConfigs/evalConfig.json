@@ -54,6 +54,10 @@
             "hMin": 0.01,
             "mu": 0.35,
             "max_iterations": 1
-        }
+        },
+        "pruningThreshold": 1e-6
+    },
+    "localizationParameters" : {
+        "numLocalCoordinateSamples" : 10
     }
 }

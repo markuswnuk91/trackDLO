@@ -8,7 +8,6 @@
 
     "branchSpecifications" : {
         "branch_1" :  {
-            "length": 0.65,
             "radius": 0.008,
             "color": [1, 0, 0]
             }

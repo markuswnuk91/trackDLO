@@ -21,7 +21,6 @@ class BDLOTopology(topologyModel):
     Attributes:
     branchSpecs (list of dict): branch specifications for each branch of the BDLO as a dict of parameters. For the required parameters see: branchSpec
     branchSpec (dict) with parameters as keywords:
-        - length (float) : length of the branch [m]
         - radius (float): radius of the branch [m]
         - numSegments (int): desired number of segments the branch should be discretized into
         - density (float): density of the DLO material [kg/m^3]
@@ -58,16 +57,6 @@ class BDLOTopology(topologyModel):
 
         # make sure specification contains all necessary information
         for i, branchSpec in enumerate(self.branchSpecs):
-            if "length" not in branchSpec:
-                warn(
-                    "Expected the branch length to be specified in the branch specification, but specification has no parameter length for branch {}. Calculating length from adjacency matrix.".format(
-                        i
-                    )
-                )
-                newSpec = self.branchSpecs[i].copy()
-                newSpec["length"] = self.branches[i].getBranchInfo()["length"]
-                self.branchSpecs[i] = newSpec
-
             if "radius" not in branchSpec:
                 warn(
                     "Expected the branch radius to be specified in the branch specification, but specification has no parameter radius for branch {}. Assuming default value for radius.".format(
@@ -194,6 +183,11 @@ class BDLOTopology(topologyModel):
                         newSpec["rootJointRestPositions"] = np.array([restAngle, 0, 0])
 
                 self.branchSpecs[i] = newSpec
+
+            # acquire length information from topology model
+            newSpec = self.branchSpecs[i].copy()
+            newSpec["length"] = self.branches[i].getBranchInfo()["length"]
+            self.branchSpecs[i] = newSpec
 
         # set the branchInfo according to the specification
         for i, branch in enumerate(self.branches):

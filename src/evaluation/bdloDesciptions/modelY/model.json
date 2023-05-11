@@ -10,19 +10,16 @@
 
     "branchSpecifications" : {
         "branch_1" :  {
-            "length": 0.22,
             "radius": 0.015,
             "color": [1, 0, 0],
             "rootJointRestPositions":[0,0,0,0,0,0]
             },
         "branch_2" :  {
-            "length": 0.42,
             "radius": 0.01,
             "color": [1, 0, 0],
             "rootJointRestPositions":[0.39,0,0]
             },
         "branch_3" :  {
-            "length": 0.75,
             "radius": 0.01,
             "color": [1, 0, 0],
             "rootJointRestPositions":[-0.39,0,0]

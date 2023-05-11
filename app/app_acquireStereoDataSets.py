@@ -11,13 +11,13 @@ except:
     raise
 
 #loading paths for parameter files
-modelParameterPath = "src/evaluation/bdloDesciptions/partial/"
+modelParameterPath = "src/evaluation/bdloDesciptions/modelY/" # "singleDLO, partial, modelY, arena"
 calibrationParameterFilePath = "config/calibration/calibrationParameters.json"
 # save path: if None default path is used
-saveRootDirectory = "data/acquiredData/20230510_ManipulationSequences_varyingTopologies/"
-dataSetFolderName = "Partial"
-fps = 10 # maximum fps the application will display images
-method = 'auto' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
+saveRootDirectory = "data/acquiredData/20230511_Configurations/"
+dataSetFolderName = "YShape"
+fps = 30 # maximum fps the application will display images
+method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
 saveRobotPose = False # if robot pose should also be saved
 
 # not to be configured

@@ -85,8 +85,20 @@ class DataHandler(object):
     def loadStereoDataSet_FromRGB(self, rgbFileName, folderPath=None):
         if folderPath is None:
             folderpath = self.defaultLoadFolderPath_Data
-        fileID = rgbFileName.split("_")[0] + "_" + rgbFileName.split("_")[1]
+        fileID = "_".join(rgbFileName.split("_")[:-2])
         disparityMapName = fileID + "_" + "map_disparity.npy"
         rgbImage = self.loadNumpyArrayFromPNG(rgbFileName, folderPath)
         disparityMap = self.loadNumpyArrayFromBinary(disparityMapName, folderPath)
         return (rgbImage, disparityMap)
+
+    def getDataSetFileNames_RBG(self, folderPath=None):
+        if folderPath is None:
+            folderPath = self.defaultLoadFolderPath_Data
+        dataSetFileNames = []
+        for fileName in os.listdir(folderPath):
+            if fileName.endswith("rgb.png"):
+                dataSetFileNames.append(fileName)
+        return dataSetFileNames
+
+    def getDataSetFileName_RBG(self, index, folderPath=None):
+        return self.getDataSetFileNames_RBG(folderPath)[index]

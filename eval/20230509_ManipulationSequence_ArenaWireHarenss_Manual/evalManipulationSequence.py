@@ -53,14 +53,31 @@ saveControl = {
     "folderName": "20230509_ManipulationSequence_ArenaWireHarenss_Manual",
 }
 loadControl = {
-    "parentDirectory": "data/darus_data_download/data/",
-    "folderName": "20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/",
-    "initFileNames": [
-        "20230508_174753797929_image_rgb.png",
-        "20230508_174835734716_image_rgb.png",
-    ],
-    "initFileNumber": 1,
+    "parentDirectory": {
+        "paths": ["data/darus_data_download/data/"],
+        "index": 0,
+    },
+    "folderName": {
+        "paths": [
+            "20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/",
+            "20230510_175759_YShape/",
+            "20230510_190017_Partial/",
+            "20230510_175016_singledlo/",
+        ],
+        "index": 3,
+    },
+    "initFile": {
+        "index": 0,
+    },
 }
+
+
+def getDataSetFileNames(dataSetFolderPath):
+    dataSetFileNames = []
+    for file in os.listdir(dataSetFolderPath + "/data"):
+        if file.endswith("rgb.png"):
+            dataSetFileNames.append(os.path.join("/mydir", file))
+    return dataSetFileNames
 
 
 def setupEvaluation():
@@ -72,7 +89,10 @@ def setupEvaluation():
     # read eval config
     evalConfigPath = os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/"
     evalConfigFiles = ["/evalConfig.json"]
-    loadPath = loadControl["parentDirectory"] + loadControl["folderName"]
+    loadPath = (
+        loadControl["parentDirectory"]["paths"][loadControl["parentDirectory"]["index"]]
+        + loadControl["folderName"]["paths"][loadControl["folderName"]["index"]]
+    )
     savePath = saveControl["parentDirectory"] + saveControl["folderName"]
     dataHandler = DataHandler(
         defaultLoadFolderPath=loadPath, defaultSaveFolderPath=savePath
@@ -290,12 +310,12 @@ def modelGeneration():
     bdloModel = BranchedDeformableLinearObject(
         **{"adjacencyMatrix": modelInfo["topologyModel"], "branchSpecs": branchSpecs}
     )
-    bdloModel.setBranchRootDof(1, 0, np.pi * 3 / 4)
-    bdloModel.setBranchRootDofs(2, np.array([0, 0, 0]))
-    bdloModel.setBranchRootDofs(3, np.array([-np.pi * 3 / 4, 0, 0]))
-    bdloModel.setBranchRootDofs(4, np.array([0, 0, 0]))
-    bdloModel.setBranchRootDofs(5, np.array([np.pi / 4, 0, 0]))
-    bdloModel.setBranchRootDofs(6, np.array([0, 0, 0]))
+    # bdloModel.setBranchRootDof(1, 0, np.pi * 3 / 4)
+    # bdloModel.setBranchRootDofs(2, np.array([0, 0, 0]))
+    # bdloModel.setBranchRootDofs(3, np.array([-np.pi * 3 / 4, 0, 0]))
+    # bdloModel.setBranchRootDofs(4, np.array([0, 0, 0]))
+    # bdloModel.setBranchRootDofs(5, np.array([np.pi / 4, 0, 0]))
+    # bdloModel.setBranchRootDofs(6, np.array([0, 0, 0]))
 
     if visControl["generatedModel"]["vis"]:
         world = dart.simulation.World()
@@ -326,7 +346,9 @@ if __name__ == "__main__":
     (preprocessingParameters, topologyExtractionParameters) = setupEvaluation()
 
     # choose file for initialization
-    initDataSetFileName = loadControl["initFileNames"][loadControl["initFileNumber"]]
+    initDataSetFileName = dataHandler.getDataSetFileName_RBG(
+        loadControl["initFile"]["index"]
+    )
     # preprocessing
     pointCloud = preprocessDataSet(
         dataHandler.defaultLoadFolderPath, initDataSetFileName, preprocessingParameters

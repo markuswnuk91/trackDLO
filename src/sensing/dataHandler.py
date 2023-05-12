@@ -102,3 +102,7 @@ class DataHandler(object):
 
     def getDataSetFileName_RBG(self, index, folderPath=None):
         return self.getDataSetFileNames_RBG(folderPath)[index]
+
+    def getDataSetIndexFromFileName(self, fileName, folderPath=None):
+        fileNames = self.getDataSetFileNames_RBG(folderPath)
+        return fileNames.index(fileName)

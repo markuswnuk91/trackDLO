@@ -78,9 +78,7 @@ loadControl = {
         ],
         "index": 0,
     },
-    "initFile": {
-        "index": 0,
-    },
+    "initFile": "20230508_174836529458_image_rgb.png",
 }
 
 
@@ -387,9 +385,15 @@ if __name__ == "__main__":
     ) = setupEvaluation()
 
     # choose file for initialization
-    initDataSetFileName = dataHandler.getDataSetFileName_RBG(
-        loadControl["initFile"]["index"]
-    )
+    if loadControl["initFile"].isnumeric():
+        initDataSetFileName = dataHandler.getDataSetFileName_RBG(
+            loadControl["initFile"]
+        )
+    else:
+        initDataSetIndex = dataHandler.getDataSetIndexFromFileName(
+            loadControl["initFile"]
+        )
+        initDataSetFileName = dataHandler.getDataSetFileName_RBG(initDataSetIndex)
     # preprocessing
     pointCloud = preprocessDataSet(
         dataHandler.defaultLoadFolderPath, initDataSetFileName, preprocessingParameters

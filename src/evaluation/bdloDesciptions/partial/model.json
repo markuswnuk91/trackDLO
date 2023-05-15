@@ -116,8 +116,8 @@
             "branch": 3,
             "branchRootNode":2,
             "branchLength": 0.2,
-            "lenthFromBranchRootNode": 0.19,
-            "s": 0.95,
+            "lenthFromBranchRootNode": 0.2,
+            "s": 1.0,
             "type": "BranchNode"
         },
         {

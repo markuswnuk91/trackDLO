@@ -47,17 +47,15 @@ class MinimalSpanningTreeTopology(topologyModel):
 
         self.X = X
         (self.N, self.D) = self.X.shape
+        self.distanceMatrix = distance_matrix(self.X, self.X)
         if featureMatrix is None:
-            self.featureMatrix = distance_matrix(self.X, self.X)
+            self.featureMatrix = self.distanceMatrix
         else:
             self.featureMatrix = featureMatrix
-        self.adjacencyMatrix = self.findMinimalSpanningTree(self.featureMatrix)
+        self.adjacencyMatrix = np.sign(minimalSpanningTree(self.featureMatrix)) * self.distanceMatrix
         super().__init__(adjacencyMatrix=self.adjacencyMatrix, *args, **kwargs)
         for i, node in enumerate(self.nodes):
             node.addNodeInfo(key="cartesianPosition", info=self.X[i])
-
-    def findMinimalSpanningTree(self, featureMatrix):
-        return minimalSpanningTree(featureMatrix)
 
     # correspondance functions
     def getCorrespondingBranchFromNode(self, nodeIndex: int):

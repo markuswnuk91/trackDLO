@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import dartpy as dart
 from scipy.spatial import distance_matrix
-
+from functools import partial
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
     # input data porcessing
@@ -51,8 +51,9 @@ results = {
 visControl = {
     "preprocessing": {"vis": True, "block": False},
     "somResult": {"vis": True, "block": False},
-    "extractedTopology": {"vis": True, "block": True},
-    "generatedModel": {"vis": False, "block": True},
+    "extractedTopology": {"vis": True, "block": False},
+    "generatedModel": {"vis": False, "block": False},
+    "initialLocalization": {"vis": True, "block": True},
 }
 saveControl = {
     "parentDirectory": "data/eval/experiments/",
@@ -81,6 +82,56 @@ loadControl = {
     "initFile": "20230508_174836529458_image_rgb.png",
 }
 
+def setupVisualization(dim):
+    if dim == 3:
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+    elif dim <= 2:
+        fig = plt.figure()
+        ax = fig.add_subplot()
+    return fig, ax
+
+def setupVisualizationCallback(classHandle):
+    fig, ax = setupVisualization(classHandle.Y.shape[1])
+    return partial(
+        visualizationCallback,
+        fig,
+        ax,
+        classHandle,
+        savePath=None,
+    )
+
+
+def visualizationCallback(
+    fig,
+    ax,
+    classHandle,
+    savePath=None,
+    fileName="img",
+):
+    if savePath is not None and type(savePath) is not str:
+        raise ValueError("Error saving 3D plot. The given path should be a string.")
+
+    if fileName is not None and type(fileName) is not str:
+        raise ValueError("Error saving 3D plot. The given filename should be a string.")
+    ax.cla()
+    plotPointSets(
+        ax=ax,
+        X=classHandle.X,
+        Y=classHandle.YTarget,
+        ySize=10,
+        xSize=10,
+    )
+    for i, y in enumerate(classHandle.YTarget):
+        plotLine(
+            ax=ax,
+            pointPair=np.vstack(((classHandle.C @ classHandle.X)[i], y)),
+            color=[1, 0, 0],
+            alpha=0.3,
+        )
+    plt.draw()
+    plt.pause(0.01)
+    return 
 
 def getDataSetFileNames(dataSetFolderPath):
     dataSetFileNames = []
@@ -234,7 +285,7 @@ def topologyExtraction(pointCloud, topologyExtractionParameters):
         l1Parameters=topologyExtractionParameters["l1Parameters"],
     )
     reducedPointSet = Y
-    # reducedPointSet = topologyExtraction.reducePointSetL1(reducedPointSet)
+    reducedPointSet = topologyExtraction.reducePointSetL1(reducedPointSet)
     reducedPointSet = topologyExtraction.reducePointSetSOM(reducedPointSet)
     reducedPointSet = topologyExtraction.pruneDuplicatePoints(
         reducedPointSet, topologyExtractionParameters["pruningThreshold"]
@@ -372,7 +423,12 @@ def initialLocalization(
             "extractedTopology": extractedTopology,
         }
     )
+
+    if visControl["initialLocalization"]["vis"]:
+        visualizationCallback = setupVisualizationCallback(localization)
+        localization.registerCallback(visualizationCallback)
     qInit = localization.reconstructShape()
+
     return qInit
 
 

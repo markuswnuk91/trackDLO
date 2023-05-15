@@ -5,7 +5,7 @@
             "hueMax": 7,
             "saturationMin": 150,
             "saturationMax": 250,
-            "valueMin": 120,
+            "valueMin": 0,
             "valueMax": 255
         },
         "roiFilterParameters" : {
@@ -53,7 +53,7 @@
             "hAnnealing": 0.9,
             "hMin": 0.01,
             "mu": 0.35,
-            "max_iterations": 1
+            "max_iterations": 10
         },
         "pruningThreshold": 1e-6
     },

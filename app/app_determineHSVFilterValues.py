@@ -12,9 +12,9 @@ except:
     raise
 
 folderPath = (
-    "data/acquiredData/20230510_164533_DataSet/"
+    "data/darus_data_download/data/20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/"
 )
-fileName = "20230510_164533_386572_image_rgb.png"
+fileName = "20230508_174836529458_image_rgb.png"
 
 max_value = 255
 max_value_H = 360 // 2

@@ -3,22 +3,22 @@
      Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="Clips_3.SLDPRT">
+  name="Clip2_modified">
   <link
-    name="Clips_3.SLDPRT">
+    name="Clips_2_modified.SLDPRT">
     <inertial>
       <origin
-        xyz="-2.2842E-21 0.0015493 0.00063024"
+        xyz="0.00026733 -0.022944 -6.48479999859513E-09"
         rpy="0 0 0" />
       <mass
-        value="0.001788" />
+        value="0.0053058" />
       <inertia
-        ixx="1.3102E-07"
-        ixy="1.6695E-24"
-        ixz="2.9629E-24"
-        iyy="7.2264E-08"
-        iyz="-2.0793E-09"
-        izz="1.0643E-07" />
+        ixx="9.5316E-07"
+        ixy="-1.5976E-08"
+        ixz="-1.99090000000098E-12"
+        iyy="2.543E-07"
+        iyz="-6.5845999996097E-13"
+        izz="8.9173E-07" />
     </inertial>
     <visual>
       <origin
@@ -26,14 +26,14 @@
         rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
-          filename="package://Clips_3.SLDPRT/meshes/Clips_3.SLDPRT.STL" />
+          filename="package://Clip2_modified/meshes/Clips_2_modified.SLDPRT.STL" />
       </geometry>
       <material
         name="">
         <color
           rgba="0.2 0.2 0.2 1" />
         <texture
-          filename="package://Clips_3.SLDPRT/textures/" />
+          filename="package://Clip2_modified/textures/" />
       </material>
     </visual>
     <collision>
@@ -42,7 +42,7 @@
         rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
-          filename="package://Clips_3.SLDPRT/meshes/Clips_3.SLDPRT.STL" />
+          filename="package://Clip2_modified/meshes/Clips_2_modified.SLDPRT.STL" />
       </geometry>
     </collision>
   </link>

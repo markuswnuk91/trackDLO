@@ -3,22 +3,22 @@
      Commit Version: 1.5.1-0-g916b5db  Build Version: 1.5.7152.31018
      For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
 <robot
-  name="Clips_1_modified.SLDPRT">
+  name="Clip4_modified.SLDPRT">
   <link
-    name="Clips_1_modified.SLDPRT">
+    name="Clips_4_modified.SLDPRT">
     <inertial>
       <origin
-        xyz="-2.3128E-09 -0.021332 -0.000140489999999999"
+        xyz="-1.1157E-08 -0.018535 -0.000220489999999999"
         rpy="0 0 0" />
       <mass
-        value="0.0058626" />
+        value="0.0065162" />
       <inertia
-        ixx="1.1179E-06"
-        ixy="2.5956E-13"
-        ixz="4.857E-14"
-        iyy="2.2034E-07"
-        iyz="-3.47749999999995E-09"
-        izz="1.0881E-06" />
+        ixx="1.5711E-06"
+        ixy="1.1642E-12"
+        ixz="-2.7234E-13"
+        iyy="2.8011E-07"
+        iyz="-3.43269999999992E-09"
+        izz="1.5879E-06" />
     </inertial>
     <visual>
       <origin
@@ -26,14 +26,14 @@
         rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
-          filename="package://Clips_1_modified.SLDPRT/meshes/Clips_1_modified.SLDPRT.STL" />
+          filename="package://Clip4_modified/meshes/Clips_4_modified.SLDPRT.STL" />
       </geometry>
       <material
         name="">
         <color
           rgba="0.2 0.2 0.2 1" />
         <texture
-          filename="package://Clips_1_modified.SLDPRT/textures/" />
+          filename="package://Clip4_modified/textures/" />
       </material>
     </visual>
     <collision>
@@ -42,7 +42,7 @@
         rpy="1.5707963267949 0 0" />
       <geometry>
         <mesh
-          filename="package://Clips_1_modified.SLDPRT/meshes/Clips_1_modified.SLDPRT.STL" />
+          filename="package://Clip4_modified/meshes/Clips_4_modified.SLDPRT.STL" />
       </geometry>
     </collision>
   </link>

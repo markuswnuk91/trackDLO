@@ -3,10 +3,10 @@
     "name": "arenaWireHarness",
     "topologyModel" : [
         [0.00, 0.22, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
-        [0.22, 0.00, 0.36, 0.07, 0.00, 0.00, 0.00, 0.00],
+        [0.22, 0.00, 0.36, 0.08, 0.00, 0.00, 0.00, 0.00],
         [0.00, 0.36, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
-        [0.00, 0.07, 0.00, 0.00, 0.47, 0.16, 0.00, 0.00],
-        [0.00, 0.00, 0.00, 0.47, 0.00, 0.00, 0.00, 0.00],
+        [0.00, 0.08, 0.00, 0.00, 0.46, 0.16, 0.00, 0.00],
+        [0.00, 0.00, 0.00, 0.46, 0.00, 0.00, 0.00, 0.00],
         [0.00, 0.00, 0.00, 0.16, 0.00, 0.00, 0.19, 0.45],
         [0.00, 0.00, 0.00, 0.00, 0.00, 0.19, 0.00, 0.00],
         [0.00, 0.00, 0.00, 0.00, 0.00, 0.45, 0.00, 0.00]
@@ -55,14 +55,183 @@
         {
             "number": 1,
             "branch": 1,
-            "s": 1,
+            "branchRootNode":2,
+            "branchLength": 0.22,
+            "lenthFromBranchRootNode": 0.21,
+            "s": 0.95,
             "type": "LeafNode"
         },
         {
             "number": 2,
             "branch": 1,
-            "s": 0.59,
-            "type": "Steckverbinder"
+            "branchRootNode":2,
+            "branchLength": 0.22,
+            "lenthFromBranchRootNode": 0.135,
+            "s": 0.61,
+            "type": "Clip4"
+        },
+        {
+            "number": 3,
+            "branch": 1,
+            "branchRootNode":2,
+            "branchLength": 0.22,
+            "lenthFromBranchRootNode": 0.0,
+            "s": 0.0,
+            "type": "LeafNode"
+        },
+        {
+            "number": 4,
+            "branch": 2,
+            "branchRootNode":2,
+            "branchLength": 0.36,
+            "lenthFromBranchRootNode": 0.10,
+            "s": 0.27,
+            "type": "Clip3"
+        },
+        {
+            "number": 5,
+            "branch": 2,
+            "branchRootNode":2,
+            "branchLength": 0.36,
+            "lenthFromBranchRootNode": 0.24,
+            "s": 0.66,
+            "type": "Clip3"
+        },
+        {
+            "number": 6,
+            "branch": 2,
+            "branchRootNode":2,
+            "branchLength": 0.36,
+            "lenthFromBranchRootNode": 0.35,
+            "s": 0.97,
+            "type": "LeafNode"
+        },
+        {
+            "number": 7,
+            "branch": 3,
+            "branchRootNode":2,
+            "branchLength": 0.08,
+            "lenthFromBranchRootNode": 0.08,
+            "s": 1.0,
+            "type": "BranchNode"
+        },
+        {
+            "number": 8,
+            "branch": 4,
+            "branchRootNode":4,
+            "branchLength": 0.46,
+            "lenthFromBranchRootNode": 0.125,
+            "s": 0.266,
+            "type": "Wire"
+        },
+        {
+            "number": 9,
+            "branch": 4,
+            "branchRootNode":4,
+            "branchLength": 0.46,
+            "lenthFromBranchRootNode": 0.24,
+            "s": 0.51,
+            "type": "Clip2"
+        },
+        {
+            "number": 10,
+            "branch": 4,
+            "branchRootNode":4,
+            "branchLength": 0.46,
+            "lenthFromBranchRootNode": 0.33,
+            "s": 0.70,
+            "type": "Wire"
+        },
+        {
+            "number": 11,
+            "branch": 4,
+            "branchRootNode":4,
+            "branchLength": 0.46,
+            "lenthFromBranchRootNode": 0.45,
+            "s": 0.978,
+            "type": "LeafNode"
+        },
+        {
+            "number": 12,
+            "branch": 5,
+            "branchRootNode":4,
+            "branchLength": 0.16,
+            "lenthFromBranchRootNode": 0.04,
+            "s": 0.25,
+            "type": "Clip1"
+        },
+        {
+            "number": 13,
+            "branch": 5,
+            "branchRootNode":4,
+            "branchLength": 0.16,
+            "lenthFromBranchRootNode": 0.1275,
+            "s": 0.797,
+            "type": "Clip1"
+        },
+        {
+            "number": 14,
+            "branch": 5,
+            "branchRootNode":4,
+            "branchLength": 0.16,
+            "lenthFromBranchRootNode": 0.16,
+            "s": 1.0,
+            "type": "BranchNode"
+        },
+        {
+            "number": 15,
+            "branch": 6,
+            "branchRootNode":6,
+            "branchLength": 0.19,
+            "lenthFromBranchRootNode": 0.095,
+            "s": 0.5,
+            "type": "Clip2"
+        },
+        {
+            "number": 16,
+            "branch": 6,
+            "branchRootNode":6,
+            "branchLength": 0.19,
+            "lenthFromBranchRootNode": 0.18,
+            "s": 0.947,
+            "type": "LeafNode"
+        },
+        {
+            "number": 17,
+            "branch": 7,
+            "branchRootNode":6,
+            "branchLength": 0.45,
+            "lenthFromBranchRootNode": 0.1,
+            "s": 0.22,
+            "type": "Clip4"
+        },
+        {
+            "number": 18,
+            "branch": 7,
+            "branchRootNode":6,
+            "branchLength": 0.45,
+            "lenthFromBranchRootNode": 0.23,
+            "s": 0.51,
+            "type": "Wire"
+        },
+        {
+            "number": 19,
+            "branch": 7,
+            "branchRootNode":6,
+            "branchLength": 0.45,
+            "lenthFromBranchRootNode": 0.33,
+            "s": 0.73,
+            "type": "Clip1"
+        },
+        {
+            "number": 20,
+            "branch": 7,
+            "branchRootNode":6,
+            "branchLength": 0.45,
+            "lenthFromBranchRootNode": 0.44,
+            "s": 0.978,
+            "type": "LeafNode"
         }
+        
     ]
 }

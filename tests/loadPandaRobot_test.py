@@ -54,9 +54,14 @@ def test_loadFixture():
     skel = urdfLoader.loadFixture()
     runViewer(skel)
 
+def test_loadClip_1(clipNum, modified):
+    urdfLoader = URDFLoader()
+    skel = urdfLoader.loadClip(clipNum=clipNum, modified = modified)
+    runViewer(skel)
 
 if __name__ == "__main__":
     # test_loadPanda()
     # test_loadCell()
     # test_loadClipBoard()
-    test_loadFixture()
+    # test_loadFixture()
+    test_loadClip_1(clipNum=3, modified = None)

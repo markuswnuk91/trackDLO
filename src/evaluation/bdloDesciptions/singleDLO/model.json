@@ -28,6 +28,42 @@
             "number": 2,
             "branch": 1,
             "branchRootNode":1,
+            "lenthFromBranchRootNode": 0.13,
+            "branchLength": 0.65,
+            "s": 0.2,
+            "type": "Wire"
+        },
+        {
+            "number": 3,
+            "branch": 1,
+            "branchRootNode":1,
+            "lenthFromBranchRootNode": 0.26,
+            "branchLength": 0.65,
+            "s": 0.4,
+            "type": "Wire"
+        },
+        {
+            "number": 4,
+            "branch": 1,
+            "branchRootNode":1,
+            "lenthFromBranchRootNode": 0.39,
+            "branchLength": 0.65,
+            "s": 0.6,
+            "type": "Wire"
+        },
+        {
+            "number": 5,
+            "branch": 1,
+            "branchRootNode":1,
+            "lenthFromBranchRootNode": 0.52,
+            "branchLength": 0.65,
+            "s": 0.8,
+            "type": "Wire"
+        },
+        {
+            "number": 6,
+            "branch": 1,
+            "branchRootNode":1,
             "lenthFromBranchRootNode": 0.64,
             "branchLength": 0.65,
             "s": 0.98,

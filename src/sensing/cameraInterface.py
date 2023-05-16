@@ -132,6 +132,14 @@ class CameraInterface (object):
             img_left_rbg = np.stack(pixeldata_left,pixeldata_left,pixeldata_left,axis=2)
         return img_left_rbg
     
+    def getDisparityDataFromImageSet(self, image_set):
+        pixeldata_disparity = (
+            image_set.get_pixel_data(
+                visiontransfer.ImageType.IMAGE_DISPARITY, do_copy=True
+            )
+        )
+        return pixeldata_disparity
+      
     def getDisparityMapFromImageSet(self,image_set):
         pixeldata_disparity = (
                 image_set.get_pixel_data(
@@ -160,7 +168,7 @@ class CameraInterface (object):
         """
         rgbImg = self.getRGBDataFromImageSet(image_set)
         dispMap = self.getDisparityMapFromImageSet(image_set)
-        dispImg = self.convertDisparityMapToImage(dispMap)
+        dispImg = self.getDisparityDataFromImageSet(image_set)
         return rgbImg, dispMap, dispImg
     
     def displayLeftRBGImage(self):
@@ -227,12 +235,11 @@ class CameraInterface (object):
         Raises:
             ValueError: throws if disparity image has the wrong dimension.
         """
-        pixeldata_disparity = self.getDisparityMapFromImageSet(image_set)
-        img_disparity = self.convertDisparityMapToImage(pixeldata_disparity)
-        if len(pixeldata_disparity.shape)>1:
+        img_disparity = self.getDisparityDataFromImageSet(image_set)
+        if len(img_disparity.shape)>1:
             raise ValueError("Obtained 3 dimensions for each pixel. Expected to obtain only one dimension")
         else:
-            cv2.imwrite(folderPath+fileName+'.png', img_disparity)
+            cv2.imwrite(folderPath+fileName+'.tif', img_disparity)
 
     def plotRBGImageFromImageSet(self, image_set, waitTime = None):
         """Using matplot lib to plot the RGB image of the given image set.

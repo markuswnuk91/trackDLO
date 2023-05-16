@@ -6,6 +6,7 @@ import numpy as np
 import dartpy as dart
 from scipy.spatial import distance_matrix
 from functools import partial
+
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
     # input data porcessing
@@ -82,6 +83,7 @@ loadControl = {
     "initFile": "20230508_174836529458_image_rgb.png",
 }
 
+
 def setupVisualization(dim):
     if dim == 3:
         fig = plt.figure()
@@ -91,20 +93,26 @@ def setupVisualization(dim):
         ax = fig.add_subplot()
     return fig, ax
 
+
 def setupVisualizationCallback(classHandle):
-    fig, ax = setupVisualization(classHandle.Y.shape[1])
+    fig2D, ax2D = setupVisualization(2)
+    fig3D, ax3D = setupVisualization(3)
     return partial(
         visualizationCallback,
-        fig,
-        ax,
+        fig2D,
+        ax2D,
+        fig3D,
+        ax3D,
         classHandle,
         savePath=None,
     )
 
 
 def visualizationCallback(
-    fig,
-    ax,
+    fig2D,
+    ax2D,
+    fig3D,
+    ax3D,
     classHandle,
     savePath=None,
     fileName="img",
@@ -114,9 +122,36 @@ def visualizationCallback(
 
     if fileName is not None and type(fileName) is not str:
         raise ValueError("Error saving 3D plot. The given filename should be a string.")
-    ax.cla()
+
+    # 2D image
+    ax2D.cla()
+    jointPositions = classHandle.templateTopology.getCartesianJointPositions()
+    rgbImage = dataHandler.loadNumpyArrayFromPNG(
+        results["preprocessing"][0]["dataSetFileName"]
+    )
+    rgbImage_topology = rgbImage.copy()
+    jointPositions_inCameraCoordinates = (
+        preProcessor.transformPointsFromRobotBaseToCameraCoordinates(jointPositions)
+    )
+    U, V, D = preProcessor.inverseStereoProjection(
+        jointPositions_inCameraCoordinates, preProcessor.cameraParameters["qmatrix"]
+    )
+    i = 0
+    while i <= len(U) - 1:
+        cv2.line(
+            rgbImage_topology,
+            (U[i], V[i]),
+            (U[i + 1], V[i + 1]),
+            (0, 255, 0),
+            5,
+        )
+        i += 2
+    ax2D.imshow(rgbImage_topology)
+
+    # 3D Image
+    ax3D.cla()
     plotPointSets(
-        ax=ax,
+        ax=ax3D,
         X=classHandle.X,
         Y=classHandle.YTarget,
         ySize=10,
@@ -124,14 +159,15 @@ def visualizationCallback(
     )
     for i, y in enumerate(classHandle.YTarget):
         plotLine(
-            ax=ax,
+            ax=ax3D,
             pointPair=np.vstack(((classHandle.C @ classHandle.X)[i], y)),
             color=[1, 0, 0],
             alpha=0.3,
         )
     plt.draw()
     plt.pause(0.01)
-    return 
+    return
+
 
 def getDataSetFileNames(dataSetFolderPath):
     dataSetFileNames = []

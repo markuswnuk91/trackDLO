@@ -46,6 +46,21 @@ class DataHandler(object):
             imageArray = cv2.imread(folderPath + fileName, cv2.IMREAD_GRAYSCALE)
         return imageArray
 
+    def loadDisparityDataFromTIF(self, fileName, folderPath=None):
+        if folderPath is None:
+            folderPath = self.defaultLoadFolderPath_Data
+        dispartiy_data = cv2.imread(folderPath + fileName, -1)
+        return dispartiy_data
+
+    def loadDisparityMapFromTIF(self, fileName, folderPath=None):
+        if folderPath is None:
+            folderPath_Data = self.defaultLoadFolderPath_Data   
+            folderPath = self.defaultLoadFolderPath 
+        disparity_data = self.loadDisparityDataFromTIF(fileName, folderPath_Data)
+        cameraParameters = self.loadCameraParameters("cameraParameters.json", folderPath)
+        disparityMap = disparity_data/cameraParameters["disparityRangeFactor"]
+        return disparityMap
+    
     def loadCameraParameters(self, fileName, folderPath=None):
         if folderPath is None:
             folderPath = self.defaultLoadFolderPath

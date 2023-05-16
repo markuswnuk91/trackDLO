@@ -55,11 +55,29 @@ class DataAcquisition(CameraInterface):
         else:
             cv2.imwrite(folderPath+fileName+'.png', img_disparity)
 
-    
-    def saveStereoData(self,rgb_image, disparityMap, folderPath , filename_rgbImage, filename_disparityMap, filename_disparityImage):
+    def saveDisparityImage(self,img_disparity,folderPath,fileName):
+        """Saves the disparity map from the given image set as .tif to the specified folder path.
+        CAUTION: The saved disparity values should not be used for point cloud reconstruction.
+        They contain a scaling factor to map the range of the disparity values to the grayscale image range of 0-255.
+        
+        Args:
+            image_set (): visiontransfer image set
+            folderPath (string): path to the folder where the image shoud be saved
+            fileName (string): filename of the image
+
+        Raises:
+            ValueError: throws if disparity image has the wrong dimension.
+        """
+        if len(img_disparity.shape)>=3:
+            raise ValueError("Obtained 3 dimensions for each pixel. Expected to obtain only one dimension")
+        else:
+            cv2.imwrite(folderPath+fileName+'.tif', img_disparity)
+
+    def saveStereoData(self,rgb_image, disparityMap, disparity_image, folderPath , filename_rgbImage, filename_disparityMap, filename_disparityImage, saveDisparityMap = False):
         self.saveRGBImage(rgb_image,folderPath ,filename_rgbImage)
-        self.saveNumpyArrayAsBinary(disparityMap, folderPath, filename_disparityMap)
-        self.saveDisparityMapAsImage(disparityMap , folderPath, filename_disparityImage)
+        if saveDisparityMap:
+            self.saveNumpyArrayAsBinary(disparityMap, folderPath, filename_disparityMap)
+        self.saveDisparityImage(disparity_image , folderPath, filename_disparityImage)
         return
     
     def generateIdentifier(self):
@@ -112,7 +130,7 @@ class DataAcquisition(CameraInterface):
         # meta data
         self.saveCameraParameters(folderPath)
         # stereo data
-        self.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], folderPath = folderPath +"/data/", filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
+        self.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], disparity_image = stereoDataSet[2], folderPath = folderPath +"/data/", filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
         print("Successfully saved data to: ")
         print(folderPath)
         return
@@ -159,7 +177,7 @@ class DataAcquisition(CameraInterface):
                         fileNameRGB = date_time_string + "_image_rgb"
                         fileNameDisparityMap = date_time_string + "_map_disparity"
                         fileNameDisparityImage = date_time_string + "_image_disparity"
-                        self.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], folderPath = folderPath, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
+                        self.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], disparityImage = stereoDataSet[2], folderPath = folderPath, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
                         dataSetCounter += 1
                         print("Acquired data sets: {}".format(dataSetCounter)) 
                 except:
@@ -192,7 +210,7 @@ class DataAcquisition(CameraInterface):
                         fileNameRGB = date_time_string + "_image_rgb"
                         fileNameDisparityMap = date_time_string + "_map_disparity"
                         fileNameDisparityImage = date_time_string + "_image_disparity"
-                        self.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], folderPath = folderPath, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
+                        self.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], disparityImage = stereoDataSet[2], folderPath = folderPath, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
                         dataSetCounter += 1
                         print("Acquired data sets: {}".format(dataSetCounter)) 
                 except:

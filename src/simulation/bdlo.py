@@ -471,6 +471,14 @@ class BranchedDeformableLinearObject(BDLOTopology):
         return correspondingBranches[0]
 
     # custom functions for plotting
+    def getAdjacentPointPairs(self):
+        pointPairs = []
+        for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
+            jointPositions = self.getCartesianJointPositionsForBodyNode(bodyNodeIndex)
+            pointPair = (jointPositions[0], jointPositions[1])
+            pointPairs.append(pointPair)
+        return pointPairs
+
     def getAdjacentPointPairsAndBranchCorrespondance(self):
         pointPairs = []
         for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):

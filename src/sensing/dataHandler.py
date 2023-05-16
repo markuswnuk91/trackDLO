@@ -30,6 +30,11 @@ class DataHandler(object):
         self.defaultLoadFolderPath_Data = defaultLoadFolderPath + "data/"
         self.defaultSaveFolderpath = defaultSaveFolderPath
 
+    def generateIdentifier(self):
+        now = datetime.datetime.now()
+        date_time_string = now.strftime("%Y%m%d_%H%M%S_%f")
+        return date_time_string
+
     def loadNumpyArrayFromBinary(self, fileName, folderPath=None):
         if folderPath is None:
             folderPath = self.defaultLoadFolderPath_Data
@@ -106,3 +111,14 @@ class DataHandler(object):
     def getDataSetIndexFromFileName(self, fileName, folderPath=None):
         fileNames = self.getDataSetFileNames_RBG(folderPath)
         return fileNames.index(fileName)
+
+    def saveFigure(
+        self,
+        fileName,
+        fileType,
+        folderPath=None,
+    ):
+        plt.savefig(
+            folderPath + fileName + fileType,
+            bbox_inches="tight",
+        )

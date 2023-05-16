@@ -57,8 +57,10 @@ visControl = {
     "initialLocalization": {"vis": True, "block": True},
 }
 saveControl = {
-    "parentDirectory": "data/eval/experiments/",
-    "folderName": "20230509_ManipulationSequence_ArenaWireHarenss_Manual",
+    "parentDirectory": "data/eval/20230516_Test/",
+    "folderNames": [
+        "Localization/",
+    ],
 }
 loadControl = {
     "parentDirectory": {
@@ -104,7 +106,7 @@ def setupVisualizationCallback(classHandle):
         fig3D,
         ax3D,
         classHandle,
-        savePath=None,
+        savePath=saveControl["parentDirectory"] + saveControl["folderNames"][0],
     )
 
 
@@ -125,13 +127,15 @@ def visualizationCallback(
 
     # 2D image
     ax2D.cla()
-    jointPositions = classHandle.templateTopology.getCartesianJointPositions()
+    jointPositions = classHandle.templateTopology.getAdjacentPointPairs()
     rgbImage = dataHandler.loadNumpyArrayFromPNG(
         results["preprocessing"][0]["dataSetFileName"]
     )
     rgbImage_topology = rgbImage.copy()
     jointPositions_inCameraCoordinates = (
-        preProcessor.transformPointsFromRobotBaseToCameraCoordinates(jointPositions)
+        preProcessor.transformPointsFromRobotBaseToCameraCoordinates(
+            np.concatenate(jointPositions, axis=0)
+        )
     )
     U, V, D = preProcessor.inverseStereoProjection(
         jointPositions_inCameraCoordinates, preProcessor.cameraParameters["qmatrix"]
@@ -147,6 +151,10 @@ def visualizationCallback(
         )
         i += 2
     ax2D.imshow(rgbImage_topology)
+    fig2D.savefig(
+        savePath + fileName + "_" + str(classHandle.iter) + ".png",
+        bbox_inches="tight",
+    )
 
     # 3D Image
     ax3D.cla()
@@ -190,7 +198,7 @@ def setupEvaluation():
         loadControl["parentDirectory"]["paths"][loadControl["parentDirectory"]["index"]]
         + loadControl["folderName"]["paths"][loadControl["folderName"]["index"]]
     )
-    savePath = saveControl["parentDirectory"] + saveControl["folderName"]
+    savePath = saveControl["parentDirectory"] + saveControl["folderNames"][0]
     dataHandler = DataHandler(
         defaultLoadFolderPath=loadPath, defaultSaveFolderPath=savePath
     )

@@ -18,7 +18,7 @@ except:
 
 
 class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
-    """Calss for perfoming a localization for a BDLO from point cloud data
+    """Class for perfoming a localization for a BDLO from point cloud data
     Localization aims to obtain the generalized coordinates corresponding to the current configuration of the BDLO from a (high dimensional) set of points (point cloud).
     This class uses a discrete finite segment BDLO model.
 

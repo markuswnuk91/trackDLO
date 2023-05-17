@@ -11,13 +11,13 @@ except:
     raise
 
 #loading paths for parameter files
-modelParameterPath = "src/evaluation/bdloDesciptions/arena/" # "singleDLO, partial, modelY, arena"
+modelParameterPath = "src/evaluation/bdloDesciptions/modelY/" # "singleDLO, partial, modelY, arena"
 calibrationParameterFilePath = "config/calibration/calibrationParameters.json"
 # save path: if None default path is used
-saveRootDirectory = "data/acquiredData/20230516_configurations_labeled/"
-dataSetFolderName = "arena"
+saveRootDirectory = "data/acquiredData/Test/"
+dataSetFolderName = "YShape"
 fps = 30 # maximum fps the application will display images
-method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
+method = 'auto' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
 saveRobotPose = False # if robot pose should also be saved
 
 # not to be configured
@@ -70,7 +70,7 @@ if __name__ == "__main__":
         try:
             image_set = dataAcquistion.acquireImageSet(transfer)
             rgb_image = dataAcquistion.getRGBDataFromImageSet(image_set)
-            cv2.imshow("RGB image", cv2.resize(rgb_image, None, fx=.25, fy=.25))
+            cv2.imshow("RGB image", cv2.resize(rgb_image, None, fx=1, fy=1))
             key = cv2.waitKey(waitTime)
             if key == 27:#if ESC is pressed, exit loop
                 cv2.destroyAllWindows()
@@ -96,7 +96,7 @@ if __name__ == "__main__":
                 fileNameDisparityMap = date_time_string + "_map_disparity"
                 fileNameDisparityImage = date_time_string + "_image_disparity"
                 fileNameRobotState= date_time_string + "_robot_state"
-                dataAcquistion.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], folderPath = folderPath_imagedata, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
+                dataAcquistion.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], disparity_image = stereoDataSet[1], folderPath = folderPath_imagedata, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
                 if saveRobotPose:
                     dataAcquistion.saveRobotState(robotState, folderPath = folderPath, fileName=fileNameRobotState)
                 dataSetCounter += 1

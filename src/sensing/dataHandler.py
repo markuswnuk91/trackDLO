@@ -111,6 +111,102 @@ class DataHandler(object):
         disparityMap = self.loadNumpyArrayFromBinary(disparityMapName, folderPath)
         return (rgbImage, disparityMap)
 
+    def saveRGBImage(self, rgb_image, folderPath, fileName):
+        cv2.imwrite(folderPath + fileName + ".png", rgb_image)
+
+    def saveNumpyArrayAsBinary(self, numpyArray, folderPath, fileName):
+        """Saves the disparity map as a binary numpy array to the specified folder path.
+        Args:
+            numpyArray (np.array): disparity map as a numpy array
+            folderPath (string): path to the folder where the image shoud be saved
+            fileName (string): filename of the image
+
+        Raises:
+            ValueError: throws if disparity image has the wrong dimension.
+        """
+        # numpyArray.tofile(folderPath + fileName +".bin")
+        np.save(folderPath + fileName + ".npy", numpyArray)
+
+    def saveDisparityMapAsImage(self, disparityMap, folderPath, fileName):
+        """Saves the disparity map from the given image set as .png to the specified folder path.
+        CAUTION: The saved disparity values should not be used for point cloud reconstruction.
+        They contain a scaling factor to map the range of the disparity values to the grayscale image range of 0-255.
+
+        Args:
+            image_set (): visiontransfer image set
+            folderPath (string): path to the folder where the image shoud be saved
+            fileName (string): filename of the image
+
+        Raises:
+            ValueError: throws if disparity image has the wrong dimension.
+        """
+        img_disparity = self.convertDisparityMapToImage(disparityMap)
+        if len(disparityMap.shape) >= 3:
+            raise ValueError(
+                "Obtained 3 dimensions for each pixel. Expected to obtain only one dimension"
+            )
+        else:
+            cv2.imwrite(folderPath + fileName + ".png", img_disparity)
+
+    def saveDisparityImage(self, img_disparity, folderPath, fileName):
+        """Saves the disparity map from the given image set as .tif to the specified folder path.
+        CAUTION: The saved disparity values should not be used for point cloud reconstruction.
+        They contain a scaling factor to map the range of the disparity values to the grayscale image range of 0-255.
+
+        Args:
+            image_set (): visiontransfer image set
+            folderPath (string): path to the folder where the image shoud be saved
+            fileName (string): filename of the image
+
+        Raises:
+            ValueError: throws if disparity image has the wrong dimension.
+        """
+        if len(img_disparity.shape) >= 3:
+            raise ValueError(
+                "Obtained 3 dimensions for each pixel. Expected to obtain only one dimension"
+            )
+        else:
+            cv2.imwrite(folderPath + fileName + ".tif", img_disparity, params=(cv2.IMWRITE_TIFF_COMPRESSION, 32946))
+
+    def saveStereoData(
+        self,
+        rgb_image,
+        disparityMap,
+        disparity_image,
+        folderPath,
+        filename_rgbImage,
+        filename_disparityMap,
+        filename_disparityImage,
+        saveDisparityMap=False,
+    ):
+        self.saveRGBImage(rgb_image, folderPath, filename_rgbImage)
+        if saveDisparityMap:
+            self.saveNumpyArrayAsBinary(disparityMap, folderPath, filename_disparityMap)
+        self.saveDisparityImage(disparity_image, folderPath, filename_disparityImage)
+        return
+
+    def jsonifyDictionary(self, inputDict):
+        outputDict = inputDict.copy()
+        for key in outputDict:
+            if isinstance(outputDict[key], np.ndarray):
+                outputDict[key] = outputDict[key].tolist()
+            elif isinstance(outputDict[key], np.float32):
+                outputDict[key] = float(outputDict[key])
+        return outputDict
+
+    def saveCameraParameters(self, folderPath, fileName="cameraParameters"):
+        cameraParameters = self.jsonifyDictionary(self.cameraParameters)
+        self.saveDictionaryAsJson(cameraParameters, folderPath, fileName)
+
+    def saveRobotState(self, robotState: dict, folderPath, fileName):
+        robotState = self.jsonifyDictionary(robotState)
+        self.saveDictionaryAsJson(robotState, folderPath, fileName)
+
+    def saveDictionaryAsJson(self, metaData: dict, folderPath, fileName):
+        with open(folderPath + fileName + ".json", "w") as fp:
+            json.dump(metaData, fp, indent=4)
+
+
     def getDataSetFileNames_RBG(self, folderPath=None):
         if folderPath is None:
             folderPath = self.defaultLoadFolderPath_Data
@@ -118,8 +214,29 @@ class DataHandler(object):
         for fileName in os.listdir(folderPath):
             if fileName.endswith("rgb.png"):
                 dataSetFileNames.append(fileName)
+        dataSetFileNames.sort()
         return dataSetFileNames
 
+    def getDataSetFileNames_TIF(self, folderPath=None):
+        if folderPath is None:
+            folderPath = self.defaultLoadFolderPath_Data
+        dataSetFileNames = []
+        for fileName in os.listdir(folderPath):
+            if fileName.endswith(".tif"):
+                dataSetFileNames.append(fileName)
+        dataSetFileNames.sort()
+        return dataSetFileNames
+
+    def getDataSetFileNames_NPY(self, folderPath=None):
+        if folderPath is None:
+            folderPath = self.defaultLoadFolderPath_Data
+        dataSetFileNames = []
+        for fileName in os.listdir(folderPath):
+            if fileName.endswith(".npy"):
+                dataSetFileNames.append(fileName)
+        dataSetFileNames.sort()
+        return dataSetFileNames
+    
     def getDataSetFileName_RBG(self, index, folderPath=None):
         return self.getDataSetFileNames_RBG(folderPath)[index]
 

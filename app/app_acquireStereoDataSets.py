@@ -12,13 +12,14 @@ except:
 
 #loading paths for parameter files
 modelParameterPath = "src/evaluation/bdloDesciptions/modelY/" # "singleDLO, partial, modelY, arena"
+setupParameterPath = "src/evaluation/setupDesciptions/manipulationScenario/modelY/"
 calibrationParameterFilePath = "config/calibration/calibrationParameters.json"
 # save path: if None default path is used
-saveRootDirectory = "data/acquiredData/Test/"
+saveRootDirectory = "data/acquiredData/20230518_RoboticWireHarnessDismounting/"
 dataSetFolderName = "YShape"
 fps = 30 # maximum fps the application will display images
-method = 'auto' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
-saveRobotPose = False # if robot pose should also be saved
+method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
+saveRobotPose = True # if robot pose should also be saved
 
 # not to be configured
 now = datetime.datetime.now()
@@ -70,7 +71,7 @@ if __name__ == "__main__":
         try:
             image_set = dataAcquistion.acquireImageSet(transfer)
             rgb_image = dataAcquistion.getRGBDataFromImageSet(image_set)
-            cv2.imshow("RGB image", cv2.resize(rgb_image, None, fx=1, fy=1))
+            cv2.imshow("RGB image", cv2.resize(rgb_image, None, fx=0.8, fy=0.8))
             key = cv2.waitKey(waitTime)
             if key == 27:#if ESC is pressed, exit loop
                 cv2.destroyAllWindows()
@@ -87,6 +88,8 @@ if __name__ == "__main__":
                     shutil.copy(calibrationParameterFilePath, folderPath)
                     shutil.copy(modelParameterPath + "model.json", folderPath)
                     shutil.copy(modelParameterPath + "model.png", folderPath)
+                    if saveRobotPose:
+                        shutil.copy(setupParameterPath + "setup.json", folderPath)
                 stereoDataSet = dataAcquistion.getStereoDataFromImageSet(image_set)
                 if saveRobotPose:
                     robotState = robot.getRobotState()
@@ -98,7 +101,7 @@ if __name__ == "__main__":
                 fileNameRobotState= date_time_string + "_robot_state"
                 dataAcquistion.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], disparity_image = stereoDataSet[2], folderPath = folderPath_imagedata, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
                 if saveRobotPose:
-                    dataAcquistion.saveRobotState(robotState, folderPath = folderPath, fileName=fileNameRobotState)
+                    dataAcquistion.saveRobotState(robotState, folderPath = folderPath_imagedata, fileName=fileNameRobotState)
                 dataSetCounter += 1
                 print("Acquired data sets: {}".format(dataSetCounter)) 
                 if method == "manual":

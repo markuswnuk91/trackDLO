@@ -19,19 +19,30 @@ evalConfigPath = os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/"
 evalConfigFiles = ["/evalConfig.json"]
 
 fileNameNumber = 1 # index of the file in the filename list in evalConfig
-dataHandler = DataHandler("data/eval/experiments/20230508_111645_testCameraSettings")
+folderPathNumber = 1
+
+savepath = "data/eval/experiments/20230508_111645_testCameraSettings"
+#loadFilePath = "data/acquiredData/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120112_746315_image_rgb.png" # messed up data
+loadFilePath ="data/acquiredData/20230518_darus_upload/20230517_093206_singleDLO_ISW_Knot/data/20230517_093241_908270_image_rgb.png"
+dataHandler = DataHandler(savepath)
 evalConfig = dataHandler.loadFromJson(evalConfigPath + evalConfigFiles[0])
 evalParameters = evalConfig["preprocessingParameters"]
+
+def getDataSetFolderPathFromRelativeFilePath(filePath):
+    return "/".join(filePath.split("/")[:-2])+"/"
+
+def getFileNameFromRelativeFilePath(filePath):
+    return filePath.split("/")[-1]
+
 
 
 def testPointCloudExtraction():
     preProcessor = PreProcessing(
-        defaultLoadFolderPath=evalConfig["loadPathInfo"]["folderPaths"][0],
+        defaultLoadFolderPath= getDataSetFolderPathFromRelativeFilePath(loadFilePath),
         hsvFilterParameters=evalParameters["hsvFilterParameters"],
         roiFilterParameters=evalParameters["roiFilterParameters"],
     )
-    rgbImage, disparityMap = preProcessor.loadStereoDataSet_FromRGB(
-        evalConfig["loadPathInfo"]["fileNames"][fileNameNumber]
+    rgbImage, disparityMap = preProcessor.loadStereoDataSet_FromRGB(getFileNameFromRelativeFilePath(loadFilePath)
     )
     # point cloud generation
     points, colors = preProcessor.calculatePointCloudFiltered_2D_3D(

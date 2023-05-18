@@ -1,10 +1,11 @@
 {
     "loadPathInfo" : {
         "folderPaths": [
-            "data/darus_data_download/data/20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/"
+            "data/darus_data_download/data/20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/",
+            "data/acquiredData/20230516_Configurations_labeled/20230516_115857_arena/"
         ],
         "fileNames": [
-            "20230508_174753797929_image_rgb.png",
+            "20230516_120112_746315_image_rgb.png",
             "20230508_174803124630_image_rgb.png"
         ]
     },

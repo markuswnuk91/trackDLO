@@ -14,9 +14,8 @@ except:
 
 visImage = True
 visPointCloud = True
-folderPath = "data/acquired_data/20230426_133624_DataSet/"
-fileName = "20230426_133625761810_image_rgb.png"
-fileName_disp = "20230426_133625761810_map_disparity.npy"
+folderPath = "data/acquiredData/20230516_Configurations_labeled/20230516_115857_arena/"
+fileName = "20230508_174803124630_image_rgb.png"
 
 
 def getParametersFilterColor():

@@ -2,7 +2,7 @@ import os, sys
 import numpy as np
 
 try:
-    sys.path.append(os.getcwd().replace("/app", ""))
+    sys.path.append(os.getcwd().replace("/script", ""))
     from src.sensing.loadPointCloud import readPointCloudFromPLY
 except:
     print("Imports for application topologyReconstructionFromPointCloud failed.")

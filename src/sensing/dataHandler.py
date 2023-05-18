@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import datetime
 import json
 import numpy as np
-
+import glob
 try:
     sys.path.append(os.getcwd().replace("/src/sensing", ""))
 except:
@@ -102,13 +102,37 @@ class DataHandler(object):
         f.close()
         return data
 
+    def checkFileExtension(self, file_list, extension):
+        for file_path in file_list:
+            if file_path.endswith(extension):
+                return True
+        return False
+    
+    def checkIfDisparityDataIsSavedAsTif(self, fileID, folderPath):
+        search_pattern = os.path.join(folderPath, f"{fileID}_*")
+        matching_files = glob.glob(search_pattern)
+        if self.checkFileExtension(matching_files, ".tif"):
+            return True
+        elif self.checkFileExtension(matching_files, ".npy"):
+            return False
+        else:
+            raise ValueError("Disparity data not saved as tif or npy for file with ID: {}".format(fileID))
+    
+
     def loadStereoDataSet_FromRGB(self, rgbFileName, folderPath=None):
         if folderPath is None:
-            folderpath = self.defaultLoadFolderPath_Data
+            folderPath = self.defaultLoadFolderPath_Data
         fileID = "_".join(rgbFileName.split("_")[:-2])
-        disparityMapName = fileID + "_" + "map_disparity.npy"
+        
         rgbImage = self.loadNumpyArrayFromPNG(rgbFileName, folderPath)
-        disparityMap = self.loadNumpyArrayFromBinary(disparityMapName, folderPath)
+        hasTif = self.checkIfDisparityDataIsSavedAsTif(fileID, folderPath)
+
+        if hasTif:
+            disparityFileName = fileID + "_" + "image_disparity.tif"
+            disparityMap = self.loadDisparityMapFromTIF(disparityFileName)
+        else:
+            disparityFileName= fileID + "_" + "map_disparity.npy"
+            disparityMap = self.loadNumpyArrayFromBinary(disparityFileName, folderPath)
         return (rgbImage, disparityMap)
 
     def saveRGBImage(self, rgb_image, folderPath, fileName):

@@ -31,13 +31,16 @@ def compress_tif(dirpath, fileName):
     
 if __name__ == "__main__":
     # find all folders that contain tif files to be compressed
-    rootDirectory = "data/acquiredData"
+    rootDirectory = "data/acquiredData/data_convert_tif_to_tif"
     relevantDirectories = []
+    numConversions = 0
     for dirpath, dirnames, filenames in os.walk(rootDirectory):
         for filename in [f for f in filenames if f.endswith(".tif")]:
             print(os.path.join(dirpath, filename))
             try:
                 compress_tif(dirpath, filename)
+                numConversions+=1
+                print(numConversions)
             except:
                 print("Could not convert {}".format(filename))
     # for dataSetFolderPath in dataSetFolderPaths:

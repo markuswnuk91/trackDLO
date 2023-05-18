@@ -96,7 +96,7 @@ if __name__ == "__main__":
                 fileNameDisparityMap = date_time_string + "_map_disparity"
                 fileNameDisparityImage = date_time_string + "_image_disparity"
                 fileNameRobotState= date_time_string + "_robot_state"
-                dataAcquistion.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], disparity_image = stereoDataSet[1], folderPath = folderPath_imagedata, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
+                dataAcquistion.saveStereoData(rgb_image = stereoDataSet[0],disparityMap = stereoDataSet[1], disparity_image = stereoDataSet[2], folderPath = folderPath_imagedata, filename_rgbImage = fileNameRGB, filename_disparityMap = fileNameDisparityMap, filename_disparityImage = fileNameDisparityImage)
                 if saveRobotPose:
                     dataAcquistion.saveRobotState(robotState, folderPath = folderPath, fileName=fileNameRobotState)
                 dataSetCounter += 1

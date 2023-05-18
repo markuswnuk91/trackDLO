@@ -20,10 +20,10 @@ def convert_npy_to_tif(folderPath):
         #load disparity map
         disparityMap = dataAcqusition.loadNumpyArrayFromBinary(fileName)
         # convert to integer array
-        disparityData = disparityMap * cameraParameters["disparityRangeFactor"]
+        disparityData = (disparityMap * cameraParameters["disparityRangeFactor"]).astype(np.uint16)
         # save as tif
         tifFileName = "_".join(fileName.split("_")[:3]) + "_image_disparity"
-        #dataAcqusition.saveDisparityImage(disparityData,dataAcqusition.defaultLoadFolderPath_Data, tifFileName)
+        dataAcqusition.saveDisparityImage(disparityData,dataAcqusition.defaultLoadFolderPath_Data, tifFileName)
         # test
         test_disparityMap = dataAcqusition.loadDisparityMapFromTIF(tifFileName+".tif")
         testResult = np.sum(test_disparityMap - disparityMap)

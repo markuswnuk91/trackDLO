@@ -57,12 +57,16 @@ visControl = {
     "initialLocalization": {"vis": True, "block": True},
 }
 saveControl = {
-    "parentDirectory": "data/eval/20230516_Test/",
-    "folderNames": [
-        "Localization/",
-    ],
+    "defaultPath": "data/eval/20230516_Test/",
+    "preprocessing": {"save": False, "path": "data/eval/20230516_Test/Preprocessing/"},
+    "localizaiton": {"save": False, "path": "data/eval/20230516_Test/Localization/"},
 }
+
 loadControl = {
+    "dataSetPaths": [
+        "data/darus_data_download/data/20230518_roboticwireharnessmounting/20230518_RoboticWireHarnessMounting/20230518_170955_YShape/",
+    ],
+    "dataSetToLoad": 0,
     "parentDirectory": {
         "paths": [
             "data/darus_data_download/data/",
@@ -99,6 +103,10 @@ def setupVisualization(dim):
 def setupVisualizationCallback(classHandle):
     fig2D, ax2D = setupVisualization(2)
     fig3D, ax3D = setupVisualization(3)
+    if saveControl["localizaiton"]["save"]:
+        savePath = saveControl["localization"]["path"]
+    else:
+        savePath = None
     return partial(
         visualizationCallback,
         fig2D,
@@ -106,7 +114,7 @@ def setupVisualizationCallback(classHandle):
         fig3D,
         ax3D,
         classHandle,
-        savePath=saveControl["parentDirectory"] + saveControl["folderNames"][0],
+        savePath=savePath,
     )
 
 
@@ -151,10 +159,11 @@ def visualizationCallback(
         )
         i += 2
     ax2D.imshow(rgbImage_topology)
-    fig2D.savefig(
-        savePath + fileName + "_" + str(classHandle.iter) + ".png",
-        bbox_inches="tight",
-    )
+    if savePath is not None:
+        fig2D.savefig(
+            savePath + fileName + "_" + str(classHandle.iter) + ".png",
+            bbox_inches="tight",
+        )
 
     # 3D Image
     ax3D.cla()
@@ -194,11 +203,8 @@ def setupEvaluation():
     # read eval config
     evalConfigPath = os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/"
     evalConfigFiles = ["/evalConfig.json"]
-    loadPath = (
-        loadControl["parentDirectory"]["paths"][loadControl["parentDirectory"]["index"]]
-        + loadControl["folderName"]["paths"][loadControl["folderName"]["index"]]
-    )
-    savePath = saveControl["parentDirectory"] + saveControl["folderNames"][0]
+    loadPath = loadControl["dataSetPaths"][loadControl["dataSetToLoad"]]
+    savePath = saveControl["defaultPath"]
     dataHandler = DataHandler(
         defaultLoadFolderPath=loadPath, defaultSaveFolderPath=savePath
     )
@@ -485,15 +491,17 @@ if __name__ == "__main__":
     ) = setupEvaluation()
 
     # choose file for initialization
-    if loadControl["initFile"].isnumeric():
-        initDataSetFileName = dataHandler.getDataSetFileName_RBG(
-            loadControl["initFile"]
-        )
-    else:
-        initDataSetIndex = dataHandler.getDataSetIndexFromFileName(
-            loadControl["initFile"]
-        )
-        initDataSetFileName = dataHandler.getDataSetFileName_RBG(initDataSetIndex)
+    # if loadControl["initFile"].isnumeric():
+    #     initDataSetFileName = dataHandler.getDataSetFileName_RBG(
+    #         loadControl["initFile"]
+    #     )
+    # else:
+    #     initDataSetIndex = dataHandler.getDataSetIndexFromFileName(
+    #         loadControl["initFile"]
+    #     )
+    #     initDataSetFileName = dataHandler.getDataSetFileName_RBG(initDataSetIndex)
+
+    initDataSetFileName = dataHandler.getDataSetFileNames()[0]
     # preprocessing
     pointCloud = preprocessDataSet(
         dataHandler.defaultLoadFolderPath, initDataSetFileName, preprocessingParameters

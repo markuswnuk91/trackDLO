@@ -19,9 +19,8 @@ class DataAcquisition(DataHandler, CameraInterface):
     """Class providing higher level functions for data acquisition"""
 
     def __init__(self, folderPath):
-        super(DataHandler,self).__init__()
-        super(CameraInterface,self).__init__()
-        self.defaultSaveFolderPath = folderPath
+        super(DataHandler, self).__init__(defaultSaveFolderPath=folderPath)
+        super(CameraInterface, self).__init__()
 
     def recordStereoDataSet(self, folderPath=None, saveDisparityMap=False):
         """Method to acquire a single stereo data set (rgb image, disparityMap, disparityImage)
@@ -55,7 +54,7 @@ class DataAcquisition(DataHandler, CameraInterface):
             filename_rgbImage=fileNameRGB,
             filename_disparityMap=fileNameDisparityMap,
             filename_disparityImage=fileNameDisparityImage,
-            saveDisparityMap = saveDisparityMap
+            saveDisparityMap=saveDisparityMap,
         )
         print("Successfully saved data to: ")
         print(folderPath)

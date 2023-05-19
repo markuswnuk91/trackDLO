@@ -6,6 +6,7 @@ import datetime
 import json
 import numpy as np
 import glob
+
 try:
     sys.path.append(os.getcwd().replace("/src/sensing", ""))
 except:
@@ -18,8 +19,8 @@ class DataHandler(object):
 
     def __init__(
         self,
-        defaultLoadFolderPath="data/darus_data_download/data",
-        defaultSaveFolderPath="data/eval/default",
+        defaultLoadFolderPath=None,
+        defaultSaveFolderPath=None,
     ):
         """initialization
 
@@ -27,14 +28,49 @@ class DataHandler(object):
             dataSetFolderPath (string): provide the folder path to the data set folder containing the parameter files
         """
         self.defaultLoadFolderPath = defaultLoadFolderPath
-        self.defaultLoadFolderPath_Data = defaultLoadFolderPath + "data/"
+        self.defaultLoadFolderPath_Data = (
+            None
+            if defaultLoadFolderPath is None
+            else self.defaultLoadFolderPath + "data/"
+        )
         self.defaultSaveFolderpath = defaultSaveFolderPath
 
+    # utility functions
     def generateIdentifier(self):
         now = datetime.datetime.now()
         date_time_string = now.strftime("%Y%m%d_%H%M%S_%f")
         return date_time_string
 
+    def checkFileExtension(self, file_list, extension):
+        for file_path in file_list:
+            if file_path.endswith(extension):
+                return True
+        return False
+
+    def checkIfDisparityDataIsSavedAsTif(self, fileID, folderPath):
+        search_pattern = os.path.join(folderPath, f"{fileID}_*")
+        matching_files = glob.glob(search_pattern)
+        if self.checkFileExtension(matching_files, ".tif"):
+            return True
+        elif self.checkFileExtension(matching_files, ".npy"):
+            return False
+        else:
+            raise ValueError(
+                "Disparity data not saved as tif or npy for file with ID: {}".format(
+                    fileID
+                )
+            )
+
+    def jsonifyDictionary(self, inputDict):
+        outputDict = inputDict.copy()
+        for key in outputDict:
+            if isinstance(outputDict[key], np.ndarray):
+                outputDict[key] = outputDict[key].tolist()
+            elif isinstance(outputDict[key], np.float32):
+                outputDict[key] = float(outputDict[key])
+        return outputDict
+
+    # load functions
     def loadNumpyArrayFromBinary(self, fileName, folderPath=None):
         if folderPath is None:
             folderPath = self.defaultLoadFolderPath_Data
@@ -59,13 +95,15 @@ class DataHandler(object):
 
     def loadDisparityMapFromTIF(self, fileName, folderPath=None):
         if folderPath is None:
-            folderPath_Data = self.defaultLoadFolderPath_Data   
-            folderPath = self.defaultLoadFolderPath 
+            folderPath_Data = self.defaultLoadFolderPath_Data
+            folderPath = self.defaultLoadFolderPath
         disparity_data = self.loadDisparityDataFromTIF(fileName, folderPath_Data)
-        cameraParameters = self.loadCameraParameters("cameraParameters.json", folderPath)
-        disparityMap = disparity_data/cameraParameters["disparityRangeFactor"]
+        cameraParameters = self.loadCameraParameters(
+            "cameraParameters.json", folderPath
+        )
+        disparityMap = disparity_data / cameraParameters["disparityRangeFactor"]
         return disparityMap
-    
+
     def loadCameraParameters(self, fileName, folderPath=None):
         if folderPath is None:
             folderPath = self.defaultLoadFolderPath
@@ -102,28 +140,11 @@ class DataHandler(object):
         f.close()
         return data
 
-    def checkFileExtension(self, file_list, extension):
-        for file_path in file_list:
-            if file_path.endswith(extension):
-                return True
-        return False
-    
-    def checkIfDisparityDataIsSavedAsTif(self, fileID, folderPath):
-        search_pattern = os.path.join(folderPath, f"{fileID}_*")
-        matching_files = glob.glob(search_pattern)
-        if self.checkFileExtension(matching_files, ".tif"):
-            return True
-        elif self.checkFileExtension(matching_files, ".npy"):
-            return False
-        else:
-            raise ValueError("Disparity data not saved as tif or npy for file with ID: {}".format(fileID))
-    
-
     def loadStereoDataSet_FromRGB(self, rgbFileName, folderPath=None):
         if folderPath is None:
             folderPath = self.defaultLoadFolderPath_Data
         fileID = "_".join(rgbFileName.split("_")[:-2])
-        
+
         rgbImage = self.loadNumpyArrayFromPNG(rgbFileName, folderPath)
         hasTif = self.checkIfDisparityDataIsSavedAsTif(fileID, folderPath)
 
@@ -131,13 +152,14 @@ class DataHandler(object):
             disparityFileName = fileID + "_" + "image_disparity.tif"
             disparityMap = self.loadDisparityMapFromTIF(disparityFileName)
         else:
-            disparityFileName= fileID + "_" + "map_disparity.npy"
+            disparityFileName = fileID + "_" + "map_disparity.npy"
             disparityMap = self.loadNumpyArrayFromBinary(disparityFileName, folderPath)
         return (rgbImage, disparityMap)
 
     def saveRGBImage(self, rgb_image, folderPath, fileName):
         cv2.imwrite(folderPath + fileName + ".png", rgb_image)
 
+    # save functions
     def saveNumpyArrayAsBinary(self, numpyArray, folderPath, fileName):
         """Saves the disparity map as a binary numpy array to the specified folder path.
         Args:
@@ -190,7 +212,11 @@ class DataHandler(object):
                 "Obtained 3 dimensions for each pixel. Expected to obtain only one dimension"
             )
         else:
-            cv2.imwrite(folderPath + fileName + ".tif", img_disparity, params=(cv2.IMWRITE_TIFF_COMPRESSION, 32946))
+            cv2.imwrite(
+                folderPath + fileName + ".tif",
+                img_disparity,
+                params=(cv2.IMWRITE_TIFF_COMPRESSION, 32946),
+            )
 
     def saveStereoData(
         self,
@@ -209,15 +235,6 @@ class DataHandler(object):
         self.saveDisparityImage(disparity_image, folderPath, filename_disparityImage)
         return
 
-    def jsonifyDictionary(self, inputDict):
-        outputDict = inputDict.copy()
-        for key in outputDict:
-            if isinstance(outputDict[key], np.ndarray):
-                outputDict[key] = outputDict[key].tolist()
-            elif isinstance(outputDict[key], np.float32):
-                outputDict[key] = float(outputDict[key])
-        return outputDict
-
     def saveCameraParameters(self, folderPath, fileName="cameraParameters"):
         cameraParameters = self.jsonifyDictionary(self.cameraParameters)
         self.saveDictionaryAsJson(cameraParameters, folderPath, fileName)
@@ -230,6 +247,23 @@ class DataHandler(object):
         with open(folderPath + fileName + ".json", "w") as fp:
             json.dump(metaData, fp, indent=4)
 
+    # getter functions
+    def getDataSetFileNames(self, dataSetFolderPath=None, type="rgb"):
+        if dataSetFolderPath is None:
+            dataSetFolderPath = self.defaultLoadFolderPath
+        dataFolderPath = dataSetFolderPath + "data/"
+
+        if type == "rgb":
+            fileNames = self.getDataSetFileNames_RBG(dataFolderPath)
+        elif type == "npy":
+            fileNames = self.getDataSetFileNames_NPY(dataFolderPath)
+        elif type == "tif":
+            fileNames = self.getDataSetFileNames_TIF(dataFolderPath)
+        else:
+            raise ValueError(
+                "File type expected to be rgb, npy, or tif. Other file types are currently not supported."
+            )
+        return fileNames
 
     def getDataSetFileNames_RBG(self, folderPath=None):
         if folderPath is None:
@@ -260,13 +294,32 @@ class DataHandler(object):
                 dataSetFileNames.append(fileName)
         dataSetFileNames.sort()
         return dataSetFileNames
-    
+
     def getDataSetFileName_RBG(self, index, folderPath=None):
         return self.getDataSetFileNames_RBG(folderPath)[index]
 
     def getDataSetIndexFromFileName(self, fileName, folderPath=None):
         fileNames = self.getDataSetFileNames_RBG(folderPath)
         return fileNames.index(fileName)
+
+    def getDataSetFolderPathFromRelativeFilePath(self, filePath):
+        return "/".join(filePath.split("/")[:-2]) + "/"
+
+    def getDataFolderPathFromRelativeFilePath(self, filePath):
+        return "/".join(filePath.split("/")[:-1]) + "/"
+
+    def getFileNameFromRelativeFilePath(self, filePath):
+        return filePath.split("/")[-1]
+
+    # setter functions
+    def setDefaultLoadFolderPathFromFullFilePath(self, filePath):
+        self.defaultLoadFolderPath = self.getDataSetFolderPathFromRelativeFilePath(
+            filePath
+        )
+        self.defaultLoadFolderPath_Data = self.getDataFolderPathFromRelativeFilePath(
+            filePath
+        )
+        return
 
     def saveFigure(
         self,

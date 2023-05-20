@@ -31,6 +31,10 @@ try:
         BDLOLocalization,
     )
 
+    # tracking
+    from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
+    from src.tracking.kpr.kinematicsModel import KinematicsModelDart
+
     # visualization
     from src.visualization.plot3D import *
 except:
@@ -65,8 +69,10 @@ saveControl = {
 loadControl = {
     "dataSetPaths": [
         "data/darus_data_download/data/20230518_roboticwireharnessmounting/20230518_RoboticWireHarnessMounting/20230518_170955_YShape/",
+        "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/",
     ],
-    "dataSetToLoad": 0,
+    "dataSetToLoad": 1,
+    "fileToLoad": 0,
     "parentDirectory": {
         "paths": [
             "data/darus_data_download/data/",
@@ -212,10 +218,12 @@ def setupEvaluation():
     preprocessingParameters = evalConfig["preprocessingParameters"]
     topologyExtractionParameters = evalConfig["topologyExtractionParameters"]
     localizationParameters = evalConfig["localizationParameters"]
+    trackingParameters = evalConfig["trackingParameters"]
     return (
         preprocessingParameters,
         topologyExtractionParameters,
         localizationParameters,
+        trackingParameters,
     )
 
 
@@ -477,9 +485,32 @@ def initialLocalization(
     if visControl["initialLocalization"]["vis"]:
         visualizationCallback = setupVisualizationCallback(localization)
         localization.registerCallback(visualizationCallback)
-    qInit = localization.reconstructShape()
-
+    result = localization.reconstructShape(numIter=localizationParameters["numIter"])
+    qInit = result.x
     return qInit
+
+
+def tracking(Y, bdloModel, qInit, trackingParameters):
+    kinematicModel = KinematicsModelDart(bdloModel.skel.clone())
+    B = []
+    for i in range(0, bdloModel.getNumBranches()):
+        B.append(bdloModel.getBranchBodyNodeIndices(i))
+        KinematicsPreservingRegistration4BDLO
+    kinematicModel.skel.setPositions(qInit)
+    Dof = qInit.shape[0]
+    stiffnessMatrix = np.eye(Dof)
+    stiffnessMatrix[3:6, 3:6] = np.zeros((3, 3))
+    reg = KinematicsPreservingRegistration4BDLO(
+        qInit=qInit,
+        q0=np.zeros(Dof),
+        Y=Y,
+        model=kinematicModel,
+        B=B,
+        stiffnessMatrix=stiffnessMatrix,
+        **trackingParameters,
+    )
+    qHat = reg.register()
+    return qHat
 
 
 if __name__ == "__main__":
@@ -488,6 +519,7 @@ if __name__ == "__main__":
         preprocessingParameters,
         topologyExtractionParameters,
         localizationParameters,
+        trackingParameters,
     ) = setupEvaluation()
 
     # choose file for initialization
@@ -501,7 +533,7 @@ if __name__ == "__main__":
     #     )
     #     initDataSetFileName = dataHandler.getDataSetFileName_RBG(initDataSetIndex)
 
-    initDataSetFileName = dataHandler.getDataSetFileNames()[0]
+    initDataSetFileName = dataHandler.getDataSetFileNames()[loadControl["fileToLoad"]]
     # preprocessing
     pointCloud = preprocessDataSet(
         dataHandler.defaultLoadFolderPath, initDataSetFileName, preprocessingParameters
@@ -517,5 +549,6 @@ if __name__ == "__main__":
         pointCloud, extractedTopology, bdloModel, localizationParameters
     )
 
-    print(qInit)
     # TODO tracking
+    qHat = tracking(pointCloud[0], bdloModel, qInit, trackingParameters)
+    print(qHat)

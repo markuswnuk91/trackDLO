@@ -33,12 +33,12 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 10
+            "nthElement" : 1
         }
     },
     "topologyExtractionParameters" : {
         "somParameters" : {
-            "numSeedPoints": 100,
+            "numSeedPoints": 20,
             "alpha": 1,
             "alphaAnnealing": 0.93,
             "sigma2": 0.1,
@@ -48,7 +48,7 @@
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 300,
+            "numSeedPoints": 100,
             "h": 0.03,
             "hAnnealing": 0.9,
             "hMin": 0.01,
@@ -58,6 +58,20 @@
         "pruningThreshold": 1e-6
     },
     "localizationParameters" : {
-        "numLocalCoordinateSamples" : 10
+        "numLocalCoordinateSamples" : 10,
+        "numIter": 3
+    },
+    "trackingParameters": {
+        "max_iterations": 100,
+        "damping": 3,
+        "gravity": [0, 0, -1],
+        "mu": 0.0,
+        "wCorrespondance": 10,
+        "wStiffness": 500,
+        "wGravity": 0,
+        "minDampingFactor": 1,
+        "dampingAnnealing": 0.9,
+        "stiffnessAnnealing": 0.3,
+        "gravitationalAnnealing": 1
     }
 }

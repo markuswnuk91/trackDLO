@@ -104,7 +104,6 @@ class KinematicsPreservingRegistration(object):
         *args,
         **kwargs
     ):
-
         if type(qInit) is not np.ndarray or qInit.ndim > 1:
             raise ValueError("The degrees of freedom (q) must be a 1D numpy array.")
 
@@ -202,7 +201,7 @@ class KinematicsPreservingRegistration(object):
         self.W = np.zeros((self.Dof, self.D))
         self.Gq = np.eye(self.Dof)
 
-    def register(self, callback):
+    def register(self, callback=None):
         """
         Peform the registration
 

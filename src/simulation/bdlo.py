@@ -717,14 +717,14 @@ class BranchedDeformableLinearObject(BDLOTopology):
         )
         bodyNode = self.skel.getBodyNode(correspondingBodyNode)
         jacobian = bodyNode.getWorldJacobian(offset)
-        jacobianTrans = jacobian[3:6, :]
-        jacobianRot = jacobian[:3, :]
-        transformToWorld = np.linalg.inv(
-            self.skel.getBodyNode(0).getWorldTransform().rotation()
-        )
-        jacobian = np.vstack(
-            (transformToWorld @ jacobianRot, transformToWorld @ jacobianTrans)
-        )
+        # jacobianTrans = jacobian[3:6, :]
+        # jacobianRot = jacobian[:3, :]
+        # transformToWorld = np.linalg.inv(
+        #     self.skel.getBodyNode(0).getWorldTransform().rotation()
+        # )
+        # jacobian = np.vstack(
+        #     (transformToWorld @ jacobianRot, transformToWorld @ jacobianTrans)
+        # )
         indexPointer = 0
         paddedJacobian = np.zeros((6, self.skel.getNumDofs()))
         for i in range(0, self.skel.getNumDofs()):

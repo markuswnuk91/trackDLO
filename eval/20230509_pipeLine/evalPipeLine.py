@@ -31,6 +31,10 @@ try:
         BDLOLocalization,
     )
 
+    # tracking
+    from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
+    from src.tracking.kpr.kinematicsModel import KinematicsModelDart
+
     # visualization
     from src.visualization.plot3D import *
 except:
@@ -55,14 +59,21 @@ visControl = {
     "extractedTopology": {"vis": True, "block": False},
     "generatedModel": {"vis": False, "block": False},
     "initialLocalization": {"vis": True, "block": True},
+    "tracking": {"vis": True, "block": True},
 }
 saveControl = {
-    "parentDirectory": "data/eval/20230516_Test/",
-    "folderNames": [
-        "Localization/",
-    ],
+    "defaultPath": "data/eval/20230516_Test/",
+    "preprocessing": {"save": False, "path": "data/eval/20230516_Test/Preprocessing/"},
+    "localizaiton": {"save": False, "path": "data/eval/20230516_Test/Localization/"},
 }
+
 loadControl = {
+    "dataSetPaths": [
+        "data/darus_data_download/data/20230518_roboticwireharnessmounting/20230518_RoboticWireHarnessMounting/20230518_170955_YShape/",
+        "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/",
+    ],
+    "dataSetToLoad": 1,
+    "fileToLoad": 150,
     "parentDirectory": {
         "paths": [
             "data/darus_data_download/data/",
@@ -99,6 +110,10 @@ def setupVisualization(dim):
 def setupVisualizationCallback(classHandle):
     fig2D, ax2D = setupVisualization(2)
     fig3D, ax3D = setupVisualization(3)
+    if saveControl["localizaiton"]["save"]:
+        savePath = saveControl["localization"]["path"]
+    else:
+        savePath = None
     return partial(
         visualizationCallback,
         fig2D,
@@ -106,7 +121,7 @@ def setupVisualizationCallback(classHandle):
         fig3D,
         ax3D,
         classHandle,
-        savePath=saveControl["parentDirectory"] + saveControl["folderNames"][0],
+        savePath=savePath,
     )
 
 
@@ -151,10 +166,11 @@ def visualizationCallback(
         )
         i += 2
     ax2D.imshow(rgbImage_topology)
-    fig2D.savefig(
-        savePath + fileName + "_" + str(classHandle.iter) + ".png",
-        bbox_inches="tight",
-    )
+    if savePath is not None:
+        fig2D.savefig(
+            savePath + fileName + "_" + str(classHandle.iter) + ".png",
+            bbox_inches="tight",
+        )
 
     # 3D Image
     ax3D.cla()
@@ -177,6 +193,42 @@ def visualizationCallback(
     return
 
 
+def setupVisualizationCallbackTracking(classHandle):
+    fig, ax = setupVisualization(classHandle.Y.shape[1])
+    return partial(
+        visualizationCallbackTracking,
+        fig,
+        ax,
+        classHandle,
+        savePath="/mnt/c/Users/ac129490/Documents/Dissertation/Software/trackdlo/imgs/bldoReconstruction/test/",
+    )
+
+
+def visualizationCallbackTracking(
+    fig,
+    ax,
+    classHandle,
+    savePath=None,
+    fileName="img",
+):
+    if savePath is not None and type(savePath) is not str:
+        raise ValueError("Error saving 3D plot. The given path should be a string.")
+
+    if fileName is not None and type(fileName) is not str:
+        raise ValueError("Error saving 3D plot. The given filename should be a string.")
+    ax.cla()
+    plotPointSets(
+        ax=ax,
+        X=classHandle.T,
+        Y=classHandle.Y,
+        ySize=3,
+        xSize=10,
+    )
+    set_axes_equal(ax)
+    plt.draw()
+    plt.pause(0.1)
+
+
 def getDataSetFileNames(dataSetFolderPath):
     dataSetFileNames = []
     for file in os.listdir(dataSetFolderPath + "/data"):
@@ -194,11 +246,8 @@ def setupEvaluation():
     # read eval config
     evalConfigPath = os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/"
     evalConfigFiles = ["/evalConfig.json"]
-    loadPath = (
-        loadControl["parentDirectory"]["paths"][loadControl["parentDirectory"]["index"]]
-        + loadControl["folderName"]["paths"][loadControl["folderName"]["index"]]
-    )
-    savePath = saveControl["parentDirectory"] + saveControl["folderNames"][0]
+    loadPath = loadControl["dataSetPaths"][loadControl["dataSetToLoad"]]
+    savePath = saveControl["defaultPath"]
     dataHandler = DataHandler(
         defaultLoadFolderPath=loadPath, defaultSaveFolderPath=savePath
     )
@@ -206,10 +255,12 @@ def setupEvaluation():
     preprocessingParameters = evalConfig["preprocessingParameters"]
     topologyExtractionParameters = evalConfig["topologyExtractionParameters"]
     localizationParameters = evalConfig["localizationParameters"]
+    trackingParameters = evalConfig["trackingParameters"]
     return (
         preprocessingParameters,
         topologyExtractionParameters,
         localizationParameters,
+        trackingParameters,
     )
 
 
@@ -471,9 +522,36 @@ def initialLocalization(
     if visControl["initialLocalization"]["vis"]:
         visualizationCallback = setupVisualizationCallback(localization)
         localization.registerCallback(visualizationCallback)
-    qInit = localization.reconstructShape()
-
+    result = localization.reconstructShape(numIter=localizationParameters["numIter"])
+    qInit = result.x
     return qInit
+
+
+def tracking(Y, bdloModel, qInit, trackingParameters):
+    kinematicModel = KinematicsModelDart(bdloModel.skel.clone())
+    B = []
+    for i in range(0, bdloModel.getNumBranches()):
+        B.append(bdloModel.getBranchBodyNodeIndices(i))
+        KinematicsPreservingRegistration4BDLO
+    kinematicModel.skel.setPositions(qInit)
+    Dof = qInit.shape[0]
+    stiffnessMatrix = np.eye(Dof)
+    stiffnessMatrix[3:6, 3:6] = np.zeros((3, 3))
+    reg = KinematicsPreservingRegistration4BDLO(
+        qInit=qInit,
+        q0=np.zeros(Dof),
+        Y=Y,
+        model=kinematicModel,
+        B=B,
+        stiffnessMatrix=stiffnessMatrix,
+        **trackingParameters,
+    )
+    if visControl["tracking"]["vis"]:
+        visualizationCallbackTracking = setupVisualizationCallbackTracking(reg)
+        qHat = reg.register(visualizationCallbackTracking)
+    else:
+        qHat.register()
+    return qHat
 
 
 if __name__ == "__main__":
@@ -482,18 +560,21 @@ if __name__ == "__main__":
         preprocessingParameters,
         topologyExtractionParameters,
         localizationParameters,
+        trackingParameters,
     ) = setupEvaluation()
 
     # choose file for initialization
-    if loadControl["initFile"].isnumeric():
-        initDataSetFileName = dataHandler.getDataSetFileName_RBG(
-            loadControl["initFile"]
-        )
-    else:
-        initDataSetIndex = dataHandler.getDataSetIndexFromFileName(
-            loadControl["initFile"]
-        )
-        initDataSetFileName = dataHandler.getDataSetFileName_RBG(initDataSetIndex)
+    # if loadControl["initFile"].isnumeric():
+    #     initDataSetFileName = dataHandler.getDataSetFileName_RBG(
+    #         loadControl["initFile"]
+    #     )
+    # else:
+    #     initDataSetIndex = dataHandler.getDataSetIndexFromFileName(
+    #         loadControl["initFile"]
+    #     )
+    #     initDataSetFileName = dataHandler.getDataSetFileName_RBG(initDataSetIndex)
+
+    initDataSetFileName = dataHandler.getDataSetFileNames()[loadControl["fileToLoad"]]
     # preprocessing
     pointCloud = preprocessDataSet(
         dataHandler.defaultLoadFolderPath, initDataSetFileName, preprocessingParameters
@@ -509,5 +590,6 @@ if __name__ == "__main__":
         pointCloud, extractedTopology, bdloModel, localizationParameters
     )
 
-    print(qInit)
     # TODO tracking
+    qHat = tracking(pointCloud[0], bdloModel, qInit, trackingParameters)
+    print(qHat)

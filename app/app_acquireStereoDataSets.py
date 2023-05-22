@@ -10,18 +10,20 @@ except:
     print("Imports for application acquireStereoDataSetsAndRobotPose failed.")
     raise
 
-#loading paths for parameter files
-modelParameterPath = "src/evaluation/bdloDesciptions/modelY/" # "singleDLO, partial, modelY, arena"
-setupParameterPath = "src/evaluation/setupDesciptions/manipulationScenario/modelY/"
-calibrationParameterFilePath = "config/calibration/calibrationParameters.json"
-# save path: if None default path is used
-saveRootDirectory = "data/acquiredData/20230518_RoboticWireHarnessDismounting/"
-dataSetFolderName = "YShape"
+# TO BE CHANGED BEFORE ACQUISITION
+model = "modelY" # "singleDLO, partial, modelY, arena"
 fps = 30 # maximum fps the application will display images
 method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
 saveRobotPose = True # if robot pose should also be saved
+saveRootDirectory = "data/acquiredData/20230522_RoboticWireHarnessMounting/"
 
 # not to be configured
+modelParameterPath = "src/evaluation/bdloDesciptions/" + model + "/"
+graspingPositionsParameterPath = "src/evaluation/setupDesciptions/manipulationScenario/" + model + "/"
+setupParameterPath = "src/evaluation/setupDesciptions/manipulationScenario/"
+
+dataSetFolderName = model
+calibrationParameterFilePath = "config/calibration/calibrationParameters.json"
 now = datetime.datetime.now()
 date_string = now.strftime("%Y%m%d")
 time_string = now.strftime("%H%M%S")
@@ -90,6 +92,9 @@ if __name__ == "__main__":
                     shutil.copy(modelParameterPath + "model.png", folderPath)
                     if saveRobotPose:
                         shutil.copy(setupParameterPath + "setup.json", folderPath)
+                        shutil.copy(setupParameterPath + "setup.png", folderPath)
+                        shutil.copy(graspingPositionsParameterPath + "graspingPositions.json", folderPath)
+                        shutil.copy(graspingPositionsParameterPath + "graspingPositions.png", folderPath)
                 stereoDataSet = dataAcquistion.getStereoDataFromImageSet(image_set)
                 if saveRobotPose:
                     robotState = robot.getRobotState()

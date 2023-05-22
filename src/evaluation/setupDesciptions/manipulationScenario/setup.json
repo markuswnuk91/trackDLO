@@ -1,45 +1,9 @@
 
 {
     "scenario": "wireHarnessMounting",
-    "wireHarnessModel" : "Y-Shape",
-
-    "graspingPositions":[
-        {
-            "number": 1,
-            "branch": 1,
-            "branchRootNode":2,
-            "branchLength": 0.22,
-            "lenthFromBranchRootNode": 0.045,
-            "s": 0.2045
-        },
-        {
-            "number": 2,
-            "branch": 2,
-            "branchRootNode":2,
-            "branchLength": 0.42,
-            "lenthFromBranchRootNode": 0.32,
-            "s": 0.711
-        },
-        {
-            "number": 3,
-            "branch": 3,
-            "branchRootNode":2,
-            "branchLength": 0.75,
-            "lenthFromBranchRootNode": 0.32,
-            "s": 0.4267
-        },
-        {
-            "number": 4,
-            "branch": 3,
-            "branchRootNode":2,
-            "branchLength": 0.75,
-            "lenthFromBranchRootNode": 0.61,
-            "s": 0.8133
-        }
-    ],
     "fixtures": [
         {
-            "correspondingGraspingPosition": 1,
+            "number" : 1,
             "fixtureType": "large",
             "robotPoseAtFixturePosition": [
                 [-0.026381009, 0.999351722, -0.024102597, 0.453529960],
@@ -55,7 +19,23 @@
             ] 
         }, 
         {
-            "correspondingGraspingPosition": 2,
+            "number" : 2,
+            "fixtureType": "small",
+            "robotPoseAtFixturePosition": [
+                [0.926763012, 0.370866191, -0.059576863, 0.435587887],
+                [0.369424346, -0.928627032, -0.034033165, -0.023456752],
+                [-0.067946436, 0.009531535, -0.997643394, 0.362613813],
+                [0.000000000, 0.000000000, 0.000000000, 1.000000000]
+            ],
+            "robotPoseAtReleasePosition":[
+                [0.924281879, 0.381574347, -0.009207306, 0.458059371],
+                [0.381589838, -0.924321338, -0.000080223, -0.015241840],
+                [-0.008541120, -0.003439265, -0.999957609, 0.358504582],
+                [0.000000000, 0.000000000, 0.000000000, 1.000000000]
+            ] 
+        },  
+        {
+            "number" : 3,
             "fixtureType": "medium",
             "robotPoseAtFixturePosition": [
                 [-0.102550094, 0.994695721, 0.006681931, 0.548403712],
@@ -71,7 +51,7 @@
             ] 
         }, 
         {
-            "correspondingGraspingPosition": 3,
+            "number" : 4,
             "fixtureType": "large",
             "robotPoseAtFixturePosition": [
                 [-0.029473849, 0.999553808, 0.002055058, 0.330743405],
@@ -87,8 +67,24 @@
             ] 
         },
         {
-            "correspondingGraspingPosition": 4,
-            "fixtureType": "large",
+            "number" : 5,
+            "fixtureType": "small",
+            "robotPoseAtFixturePosition": [
+                [0.998808990, 0.026473934, -0.040749365, 0.410058583],
+                [0.026113825, -0.999605672, -0.009344408, 0.344059186],
+                [-0.040980679, 0.008269157, -0.999125703, 0.358174197],
+                [0.000000000, 0.000000000, 0.000000000, 1.000000000]
+            ],
+            "robotPoseAtReleasePosition":[
+                [0.998650762, 0.034518981, -0.038547006, 0.385519664],
+                [0.034774175, -0.999367735, 0.005969457, 0.343356270],
+                [-0.038316575, -0.007301843, -0.999238957, 0.356184804],
+                [0.000000000, 0.000000000, 0.000000000, 1.000000000]
+            ] 
+        },
+        {
+            "number" : 6,
+            "fixtureType": "medium",
             "robotPoseAtFixturePosition": [
                 [0.998829282, -0.046109311, -0.013955161, 0.485042238],
                 [-0.046308061, -0.998815629, -0.014270729, 0.420920453],

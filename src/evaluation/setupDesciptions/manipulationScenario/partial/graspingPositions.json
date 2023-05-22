@@ -1,0 +1,51 @@
+
+{
+    "model" : "partial",
+    "graspingPositions":[
+        {
+            "number": 1,
+            "branch": 1,
+            "branchRootNode":2,
+            "branchLength": 0.51,
+            "lenthFromBranchRootNode": 0.35,
+            "s": 0.6862,
+            "correspondingFixture": 1
+        },
+        {
+            "number": 2,
+            "branch": 3,
+            "branchRootNode":2,
+            "branchLength": 0.2 ,
+            "lenthFromBranchRootNode": 0.07,
+            "s": 0.35,
+            "correspondingFixture": 4
+        },
+        {
+            "number": 3,
+            "branch": 2,
+            "branchRootNode":2,
+            "branchLength": 0.37,
+            "lenthFromBranchRootNode": 0.3,
+            "s": 0.8108,
+            "correspondingFixture":3 
+        },
+        {
+            "number": 4,
+            "branch": 4,
+            "branchRootNode":4,
+            "branchLength": 0.08,
+            "lenthFromBranchRootNode": 0.03,
+            "s": 0.375,
+            "correspondingFixture": 5
+        },
+        {
+            "number": 5,
+            "branch": 5,
+            "branchRootNode":4,
+            "branchLength": 0.38,
+            "lenthFromBranchRootNode": 0.18,
+            "s": 0.474,
+            "correspondingFixture": 6
+        }
+    ]
+}

@@ -1,0 +1,60 @@
+
+{
+    "model" : "arena",
+    "graspingPositions":[
+        {
+            "number": 1,
+            "branch": 7,
+            "branchRootNode": 6,
+            "branchLength": 0.45,
+            "lenthFromBranchRootNode": 0.18,
+            "s": 0.399,
+            "correspondingFixture": 1
+        },
+        {
+            "number": 2,
+            "branch": 6,
+            "branchRootNode": 6,
+            "branchLength": 0.19,
+            "lenthFromBranchRootNode": 0.12,
+            "s": 0.632,
+            "correspondingFixture": 2, 
+        },
+        {
+            "number": 3,
+            "branch": 3,
+            "branchRootNode":2,
+            "branchLength": 0.08,
+            "lenthFromBranchRootNode": 0.035,
+            "s": 0.4375,
+            "correspondingFixture": 4
+        },
+        {
+            "number": 4,
+            "branch": 4,
+            "branchRootNode":2,
+            "branchLength": 0.45,
+            "lenthFromBranchRootNode": 0.30,
+            "s": 0.667,
+            "correspondingFixture": 3
+        },
+        {
+            "number": 5,
+            "branch": 1,
+            "branchRootNode":2,
+            "branchLength": 0.22,
+            "lenthFromBranchRootNode": 0.15,
+            "s": 0.6818,
+            "correspondingFixture": 5
+        },
+        {
+            "number": 6,
+            "branch": 2,
+            "branchRootNode": 2,
+            "branchLength": 0.36,
+            "lenthFromBranchRootNode": 0.305,
+            "s": 8472,
+            "correspondingFixture": 6
+        }
+    ]
+}

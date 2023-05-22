@@ -59,6 +59,7 @@ visControl = {
     "extractedTopology": {"vis": True, "block": False},
     "generatedModel": {"vis": False, "block": False},
     "initialLocalization": {"vis": True, "block": True},
+    "tracking": {"vis": True, "block": True},
 }
 saveControl = {
     "defaultPath": "data/eval/20230516_Test/",
@@ -190,6 +191,42 @@ def visualizationCallback(
     plt.draw()
     plt.pause(0.01)
     return
+
+
+def setupVisualizationCallbackTracking(classHandle):
+    fig, ax = setupVisualization(classHandle.Y.shape[1])
+    return partial(
+        visualizationCallbackTracking,
+        fig,
+        ax,
+        classHandle,
+        savePath="/mnt/c/Users/ac129490/Documents/Dissertation/Software/trackdlo/imgs/bldoReconstruction/test/",
+    )
+
+
+def visualizationCallbackTracking(
+    fig,
+    ax,
+    classHandle,
+    savePath=None,
+    fileName="img",
+):
+    if savePath is not None and type(savePath) is not str:
+        raise ValueError("Error saving 3D plot. The given path should be a string.")
+
+    if fileName is not None and type(fileName) is not str:
+        raise ValueError("Error saving 3D plot. The given filename should be a string.")
+    ax.cla()
+    plotPointSets(
+        ax=ax,
+        X=classHandle.T,
+        Y=classHandle.Y,
+        ySize=3,
+        xSize=10,
+    )
+    set_axes_equal(ax)
+    plt.draw()
+    plt.pause(0.1)
 
 
 def getDataSetFileNames(dataSetFolderPath):
@@ -509,7 +546,11 @@ def tracking(Y, bdloModel, qInit, trackingParameters):
         stiffnessMatrix=stiffnessMatrix,
         **trackingParameters,
     )
-    qHat = reg.register()
+    if visControl["tracking"]["vis"]:
+        visualizationCallbackTracking = setupVisualizationCallbackTracking(reg)
+        qHat = reg.register(visualizationCallbackTracking)
+    else:
+        qHat.register()
     return qHat
 
 

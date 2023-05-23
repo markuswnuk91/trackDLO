@@ -224,6 +224,7 @@ def visualizationCallbackTracking(
         ySize=3,
         xSize=10,
     )
+    plotPoint(ax=ax, x=classHandle.T[0], size=50, color=[0, 1, 0])
     set_axes_equal(ax)
     plt.draw()
     plt.pause(0.1)

@@ -28,9 +28,15 @@ class KinematicsModelDart(object):
         """
         self.skel.setPositions(q)
         J = np.zeros((3, self.Dof))
-        dartJacobian = self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[
-            3:6, :
-        ]
+        if n == 0:
+            dartJacobian = (
+                np.linalg.inv(self.skel.getBodyNode(n).getWorldTransform().rotation())
+                @ self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[3:6, :]
+            )
+        else:
+            dartJacobian = self.skel.getBodyNode(n).getWorldJacobian(
+                np.array([0, 0, 0])
+            )[3:6, :]
         if dartJacobian.shape[1] < self.Dof:
             J = np.pad(
                 dartJacobian,

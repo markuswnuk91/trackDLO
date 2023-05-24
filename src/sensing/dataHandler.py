@@ -33,7 +33,7 @@ class DataHandler(object):
             if defaultLoadFolderPath is None
             else self.defaultLoadFolderPath + "data/"
         )
-        self.defaultSaveFolderpath = defaultSaveFolderPath
+        self.defaultSaveFolderPath = defaultSaveFolderPath
 
     # utility functions
     def generateIdentifier(self):

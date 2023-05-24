@@ -11,18 +11,18 @@ except:
     raise
 
 # TO BE CHANGED BEFORE ACQUISITION
-model = "partial" # "singleDLO, partial, modelY, arena"
+model = "singleDLO" # "singleDLO, partial, modelY, arena"
 fps = 30 # maximum fps the application will display images
-method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
-saveRobotPose = True # if robot pose should also be saved
-saveRootDirectory = "data/acquiredData/20230523_MountedConfigurations_occlusion/"
-
+method = 'auto' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
+saveRobotPose = False # if robot pose should also be saved
+saveSetupParameters = True
+saveRootDirectory = "data/acquiredData/"
+dataSetFolderName = "ManipulationSequences_mountedWireHarness" + "_" + model
 # not to be configured
 modelParameterPath = "src/evaluation/bdloDesciptions/" + model + "/"
-graspingPositionsParameterPath = "src/evaluation/setupDesciptions/manipulationScenario/" + model + "/"
-setupParameterPath = "src/evaluation/setupDesciptions/manipulationScenario/"
+graspingPositionsParameterPath = "src/evaluation/setupDesciptions/roboticManipulationScenario/" + model + "/"
+setupParameterPath = "src/evaluation/setupDesciptions/manualManipulationScenario/"
 
-dataSetFolderName = model
 calibrationParameterFilePath = "config/calibration/calibrationParameters.json"
 now = datetime.datetime.now()
 date_string = now.strftime("%Y%m%d")
@@ -90,7 +90,8 @@ if __name__ == "__main__":
                     shutil.copy(calibrationParameterFilePath, folderPath)
                     shutil.copy(modelParameterPath + "model.json", folderPath)
                     shutil.copy(modelParameterPath + "model.png", folderPath)
-                    if saveRobotPose:
+                    shutil.copy(modelParameterPath + "labels.png", folderPath)
+                    if saveSetupParameters:
                         shutil.copy(setupParameterPath + "setup.json", folderPath)
                         shutil.copy(setupParameterPath + "setup.png", folderPath)
                         shutil.copy(graspingPositionsParameterPath + "graspingPositions.json", folderPath)

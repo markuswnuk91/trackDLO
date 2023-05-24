@@ -59,7 +59,7 @@
     },
     "localizationParameters" : {
         "numLocalCoordinateSamples" : 10,
-        "numIter": 10
+        "numIter": 3
     },
     "trackingParameters": {
         "max_iterations": 100,
@@ -67,11 +67,11 @@
         "gravity": [0, 0, 0],
         "mu": 0.0,
         "wCorrespondance": 10,
-        "wStiffness": 500,
+        "wStiffness": 1000,
         "wGravity": 0,
         "minDampingFactor": 1,
         "dampingAnnealing": 0.9,
-        "stiffnessAnnealing": 1,
+        "stiffnessAnnealing": 0.9,
         "gravitationalAnnealing": 1
     }
 }

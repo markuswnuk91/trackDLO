@@ -98,6 +98,7 @@ class KinematicsPreservingRegistration4BDLO(KinematicsPreservingRegistration):
             self.sigma2 * wStiffness * stiffnessMatrix @ (self.q0 - self.q)
         )  # add stiffness term for right side
         B += self.sigma2 * wGravity * dEGrav  # add gravitational term
+
         AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
         self.dq = AInvDamped @ B
 

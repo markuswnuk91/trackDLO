@@ -474,7 +474,11 @@ def modelGeneration():
     modelInfo = dataHandler.loadModelParameters("model.json")
     branchSpecs = list(modelInfo["branchSpecifications"].values())
     bdloModel = BranchedDeformableLinearObject(
-        **{"adjacencyMatrix": modelInfo["topologyModel"], "branchSpecs": branchSpecs}
+        **{
+            "adjacencyMatrix": modelInfo["topologyModel"],
+            "branchSpecs": branchSpecs,
+            "defaultNumBodyNodes": 15,
+        }
     )
 
     if visControl["generatedModel"]["vis"]:
@@ -537,7 +541,8 @@ def tracking(Y, bdloModel, qInit, trackingParameters):
     kinematicModel.skel.setPositions(qInit)
     Dof = qInit.shape[0]
     stiffnessMatrix = np.eye(Dof)
-    stiffnessMatrix[3:6, 3:6] = np.zeros((3, 3))
+    stiffnessMatrix[0:6, 0:6] = np.zeros((6, 6))
+    stiffnessMatrix[6:9, 6:9] = np.eye(3) * 1000
     reg = KinematicsPreservingRegistration4BDLO(
         qInit=qInit,
         q0=np.zeros(Dof),
@@ -586,11 +591,11 @@ if __name__ == "__main__":
     # topology extraction
     extractedTopology = topologyExtraction(pointCloud, topologyExtractionParameters)
 
-    # TODO initialLocalization
+    # initialLocalization
     qInit = initialLocalization(
         pointCloud, extractedTopology, bdloModel, localizationParameters
     )
 
-    # TODO tracking
+    # tracking
     qHat = tracking(pointCloud[0], bdloModel, qInit, trackingParameters)
     print(qHat)

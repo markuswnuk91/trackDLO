@@ -24,19 +24,22 @@ class KinematicsModelDart(object):
 
     def getJacobian(self, q, n):
         """
-        Placeholder for child classes.s
+        Placeholder for child classes
         """
         self.skel.setPositions(q)
         J = np.zeros((3, self.Dof))
-        if n == 0:
-            dartJacobian = (
-                np.linalg.inv(self.skel.getBodyNode(n).getWorldTransform().rotation())
-                @ self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[3:6, :]
-            )
-        else:
-            dartJacobian = self.skel.getBodyNode(n).getWorldJacobian(
-                np.array([0, 0, 0])
-            )[3:6, :]
+        dartJacobian = self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[
+            3:6, :
+        ]
+        dartJacobian[:, 3:6] = (
+            np.linalg.inv(self.skel.getBodyNode(0).getWorldTransform().rotation())
+            @ dartJacobian[:, 3:6]
+        )
+
+        # (
+        #     np.linalg.inv(self.skel.getBodyNode(0).getWorldTransform().rotation())
+        #     @ self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[3:6, :]
+        # )
         if dartJacobian.shape[1] < self.Dof:
             J = np.pad(
                 dartJacobian,
@@ -48,3 +51,11 @@ class KinematicsModelDart(object):
         else:
             raise ValueError("Dimension of Jacobian seems wrong.")
         return J
+
+        # Darts' world jacobian seems wrong for free floating base (translational degrees of freedom are not identity matrix)
+        # return np.linalg.inv(
+        #     self.skel.getBodyNode(0).getTransform().rotation()
+        # ) @ self.skel.getLinearJacobian(self.skel.getBodyNode(n))
+        # jacobian = self.skel.getLinearJacobian(self.skel.getBodyNode(n))
+        # jacobian[:, :3] = np.eye(3)
+        # return self.skel.getLinearJacobian(self.skel.getBodyNode(n))

@@ -20,7 +20,7 @@ except:
 class FrankaEmikaPanda(object):
         def __init__(self) -> None:
             self.robot = libfrankaInterface.Robot("172.16.0.2")
-            # self.gripper = libfrankaInterface.Gripper("172.16.0.2")
+            self.gripper = libfrankaInterface.Gripper("172.16.0.2")
 
         def getO_T_EE(self, verbose=False):
             state = self.robot.readOnce()
@@ -30,8 +30,8 @@ class FrankaEmikaPanda(object):
                 print("dq: ", state.dq)
             return np.reshape(state.O_T_EE, (4, 4)).T
         
-        # def moveGripper(self, width, speed = 0.01):
-        #     self.gripper.move(width, speed)
+        def moveGripper(self, width, speed = 0.01):
+            self.gripper.move(width, speed)
 
         def getRobotState(self):
             roboState = self.robot.readOnce()

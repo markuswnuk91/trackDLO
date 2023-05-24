@@ -18,9 +18,9 @@ except:
 class DataAcquisition(DataHandler, CameraInterface):
     """Class providing higher level functions for data acquisition"""
 
-    def __init__(self, folderPath):
-        super(DataHandler, self).__init__(defaultSaveFolderPath=folderPath)
-        super(CameraInterface, self).__init__()
+    def __init__(self, defaultSaveFolderPath):
+        super().__init__(**{"defaultSaveFolderPath":defaultSaveFolderPath})
+        super(DataHandler,self).__init__()
 
     def recordStereoDataSet(self, folderPath=None, saveDisparityMap=False):
         """Method to acquire a single stereo data set (rgb image, disparityMap, disparityImage)

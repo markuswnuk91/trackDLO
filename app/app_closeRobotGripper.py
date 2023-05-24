@@ -8,7 +8,7 @@ except:
     print("Imports for application closeRobotGripper failed.")
     raise
 
-width = 0.05
+width = 0.02
 
 def closeRobotGripper(width):
     robot = FrankaEmikaPanda()

@@ -11,11 +11,11 @@ except:
     raise
 
 # TO BE CHANGED BEFORE ACQUISITION
-model = "modelY" # "singleDLO, partial, modelY, arena"
+model = "partial" # "singleDLO, partial, modelY, arena"
 fps = 30 # maximum fps the application will display images
 method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
 saveRobotPose = True # if robot pose should also be saved
-saveRootDirectory = "data/acquiredData/20230522_RoboticWireHarnessMounting/"
+saveRootDirectory = "data/acquiredData/20230523_MountedConfigurations_occlusion/"
 
 # not to be configured
 modelParameterPath = "src/evaluation/bdloDesciptions/" + model + "/"

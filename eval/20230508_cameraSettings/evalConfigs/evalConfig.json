@@ -16,10 +16,10 @@
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
-            "hueMax": 7,
-            "saturationMin": 150,
+            "hueMax": 180,
+            "saturationMin": 0,
             "saturationMax": 250,
-            "valueMin": 190,
+            "valueMin": 0,
             "valueMax": 255
         },
         "roiFilterParameters" : {

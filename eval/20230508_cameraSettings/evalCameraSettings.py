@@ -23,7 +23,7 @@ folderPathNumber = 1
 
 savepath = "data/eval/experiments/20230508_111645_testCameraSettings"
 #loadFilePath = "data/acquiredData/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120112_746315_image_rgb.png" # messed up data
-loadFilePath ="data/acquiredData/20230518_darus_upload/20230517_093206_singleDLO_ISW_Knot/data/20230517_093241_908270_image_rgb.png"
+loadFilePath ="data/acquiredData/20230523_MountedConfigurations_occlusion/20230523_153615_singleDLO/data/20230523_153655_689998_image_rgb.png"
 dataHandler = DataHandler(savepath)
 evalConfig = dataHandler.loadFromJson(evalConfigPath + evalConfigFiles[0])
 evalParameters = evalConfig["preprocessingParameters"]

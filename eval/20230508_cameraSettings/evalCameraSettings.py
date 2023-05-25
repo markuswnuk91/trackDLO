@@ -18,31 +18,33 @@ vis = True
 evalConfigPath = os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/"
 evalConfigFiles = ["/evalConfig.json"]
 
-fileNameNumber = 1 # index of the file in the filename list in evalConfig
+fileNameNumber = 1  # index of the file in the filename list in evalConfig
 folderPathNumber = 1
 
 savepath = "data/eval/experiments/20230508_111645_testCameraSettings"
-#loadFilePath = "data/acquiredData/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120112_746315_image_rgb.png" # messed up data
-loadFilePath ="data/acquiredData/20230523_MountedConfigurations_occlusion/20230523_153615_singleDLO/data/20230523_153655_689998_image_rgb.png"
+# loadFilePath = "data/acquiredData/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120112_746315_image_rgb.png" # messed up data
+loadFilePath = "data/darus_data_download/data/20230524_152039_manipulationsequences_mountedwireharness_arena/data/20230524_152143_314549_image_rgb.png"
 dataHandler = DataHandler(savepath)
 evalConfig = dataHandler.loadFromJson(evalConfigPath + evalConfigFiles[0])
 evalParameters = evalConfig["preprocessingParameters"]
 
+
 def getDataSetFolderPathFromRelativeFilePath(filePath):
-    return "/".join(filePath.split("/")[:-2])+"/"
+    return "/".join(filePath.split("/")[:-2]) + "/"
+
 
 def getFileNameFromRelativeFilePath(filePath):
     return filePath.split("/")[-1]
 
 
-
 def testPointCloudExtraction():
     preProcessor = PreProcessing(
-        defaultLoadFolderPath= getDataSetFolderPathFromRelativeFilePath(loadFilePath),
+        defaultLoadFolderPath=getDataSetFolderPathFromRelativeFilePath(loadFilePath),
         hsvFilterParameters=evalParameters["hsvFilterParameters"],
         roiFilterParameters=evalParameters["roiFilterParameters"],
     )
-    rgbImage, disparityMap = preProcessor.loadStereoDataSet_FromRGB(getFileNameFromRelativeFilePath(loadFilePath)
+    rgbImage, disparityMap = preProcessor.loadStereoDataSet_FromRGB(
+        getFileNameFromRelativeFilePath(loadFilePath)
     )
     # point cloud generation
     points, colors = preProcessor.calculatePointCloudFiltered_2D_3D(

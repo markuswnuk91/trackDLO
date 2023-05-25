@@ -11,10 +11,10 @@ except:
     print("Imports for Application determineHSVFilterValues failed.")
     raise
 
-folderPath = (
-    "data/darus_data_download/data/20230508_174656_arenawireharness_manipulationsequence_manual/20230508_174656_ArenaWireHarness_ManipulationSequence_Manual/"
-)
-fileName = "20230508_174836529458_image_rgb.png"
+relFilePath = "data/darus_data_download/data/20230524_152039_manipulationsequences_mountedwireharness_arena/data/20230524_152143_314549_image_rgb.png"
+
+fileName = os.path.basename(relFilePath)
+dataSetFolderPath = os.path.dirname(os.path.dirname(relFilePath)) + "/"
 
 max_value = 255
 max_value_H = 360 // 2
@@ -90,7 +90,7 @@ def filterImageHSV(hMin, hMax, sMin, sMax, vMin, vMax):
 
 if __name__ == "__main__":
     # load image
-    dataHandler = DataHandler(folderPath)
+    dataHandler = DataHandler(dataSetFolderPath)
     rgbImage = dataHandler.loadNumpyArrayFromPNG(fileName)
 
     # create windows

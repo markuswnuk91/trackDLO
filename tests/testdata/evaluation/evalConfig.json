@@ -66,11 +66,11 @@
         "damping": 3,
         "gravity": [0, 0, 0],
         "mu": 0.0,
-        "wCorrespondance": 30,
+        "wCorrespondance": 10,
         "wStiffness": 1000,
         "wGravity": 0,
         "minDampingFactor": 1,
-        "dampingAnnealing": 0.87,
+        "dampingAnnealing": 0.9,
         "stiffnessAnnealing": 0.9,
         "gravitationalAnnealing": 1
     }

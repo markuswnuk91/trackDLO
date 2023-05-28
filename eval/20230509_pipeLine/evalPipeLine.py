@@ -192,8 +192,9 @@ def visualizationCallback(
             color=[1, 0, 0],
             alpha=0.3,
         )
+    set_axes_equal(ax3D)
     plt.draw()
-    plt.pause(0.01)
+    plt.pause(0.1)
     return
 
 
@@ -531,7 +532,9 @@ def initialLocalization(
     if visControl["initialLocalization"]["vis"]:
         visualizationCallback = setupVisualizationCallback(localization)
         localization.registerCallback(visualizationCallback)
-    result = localization.reconstructShape(numIter=localizationParameters["numIter"])
+    result = localization.reconstructShape(
+        numIter=localizationParameters["numIter"], verbose=2
+    )
     qInit = result.x
     return qInit
 

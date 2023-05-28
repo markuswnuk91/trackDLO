@@ -59,7 +59,7 @@
     },
     "localizationParameters" : {
         "numLocalCoordinateSamples" : 10,
-        "numIter": 3
+        "numIter": 1000
     },
     "trackingParameters": {
         "max_iterations": 100,

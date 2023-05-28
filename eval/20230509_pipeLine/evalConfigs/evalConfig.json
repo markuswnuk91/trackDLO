@@ -66,12 +66,17 @@
         "damping": 3,
         "gravity": [0, 0, 0],
         "mu": 0.0,
-        "wCorrespondance": 30,
-        "wStiffness": 1000,
+        "wCorrespondance": 1,
+        "wStiffness":0,
         "wGravity": 0,
         "minDampingFactor": 1,
-        "dampingAnnealing": 0.87,
+        "dampingAnnealing": 0.7,
         "stiffnessAnnealing": 0.9,
-        "gravitationalAnnealing": 1
+        "gravitationalAnnealing": 1,
+        "tauFactor":1000,
+        "lambdaFactor":100,
+        "beta":0.3,
+        "tauAnnealing":1,
+        "lambdaAnnealing":0.8
     }
 }

@@ -63,7 +63,7 @@ class KinematicsPreservingRegistration4BDLO(KinematicsPreservingRegistration):
         self.Np = np.sum(self.P1)
         self.PY = np.matmul(self.P, self.Y)
 
-    def updateParameters(self):
+    def updateParameters(self, method="separated"):
         """
         M-step: Calculate a new parameters of the registration.
         """
@@ -75,32 +75,56 @@ class KinematicsPreservingRegistration4BDLO(KinematicsPreservingRegistration):
             jacobianDamping = self.minDampingFactor
         wStiffness = (self.stiffnessAnnelealing) ** (self.iteration) * self.wStiffness
         wGravity = (self.gravitationalAnnealing) ** (self.iteration) * self.wGravity
-        A = np.zeros((self.Dof, self.Dof))
-        B = np.zeros(self.Dof)
         stiffnessMatrix = (self.stiffnessAnnelealing) ** (
             self.iteration
         ) * self.stiffnessMatrix
-        dEGrav = np.zeros(self.Dof)
-        for n in range(0, self.N):
-            J = self.model.getJacobian(self.q, n)
-            dEGrav += self.gravity @ J
-            for m in range(0, self.M):
-                # A += self.P[n, m] * (self.Gq.T @ J.T @ J @ self.Gq)
-                # B += self.P[n, m] * (self.Gq.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
-                A += self.wCorrespondance * self.P[n, m] * (J.T @ J)
-                B += (
-                    self.wCorrespondance
-                    * self.P[n, m]
-                    * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
-                )
-        A += self.sigma2 * wStiffness * stiffnessMatrix
-        B += (
-            self.sigma2 * wStiffness * stiffnessMatrix @ (self.q0 - self.q)
-        )  # add stiffness term for right side
-        B += self.sigma2 * wGravity * dEGrav  # add gravitational term
+        if method == "together":
+            A = np.zeros((self.Dof, self.Dof))
+            B = np.zeros(self.Dof)
+            dEGrav = np.zeros(self.Dof)
+            for n in range(0, self.N):
+                J = self.model.getJacobian(self.q, n)
+                dEGrav += self.gravity @ J
+                for m in range(0, self.M):
+                    # A += self.P[n, m] * (self.Gq.T @ J.T @ J @ self.Gq)
+                    # B += self.P[n, m] * (self.Gq.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
+                    A += self.wCorrespondance * self.P[n, m] * (J.T @ J)
+                    B += (
+                        self.wCorrespondance
+                        * self.P[n, m]
+                        * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
+                    )
+            A += self.sigma2 * wStiffness * stiffnessMatrix
+            B += (
+                self.sigma2 * wStiffness * stiffnessMatrix @ (self.q0 - self.q)
+            )  # add stiffness term for right side
+            B += self.sigma2 * wGravity * dEGrav  # add gravitational term
 
-        AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
-        self.dq = AInvDamped @ B
+            AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
+            self.dq = AInvDamped @ B
+        elif method == "separated":
+            dqRot = np.concatenate((self.dq[:3], self.dq[6:]))  # only rotational dofs
+            x0Num = 0
+            A = np.zeros((self.Dof - 3, self.Dof - 3))
+            B = np.zeros(self.Dof - 3)
+            for n in range(0, self.N):
+                J_hat = self.model.getJacobian(self.q, n)
+                J = np.hstack((J_hat[:, :3], J_hat[:, 6:]))  # only for rotational dofs
+                for m in range(0, self.M):
+                    x0Num += self.P[n, m] * (self.Y[m, :] - self.T[n, :] - J @ dqRot)
+                    A += self.wCorrespondance * self.P[n, m] * (J.T @ J)
+                    B += (
+                        self.wCorrespondance
+                        * self.P[n, m]
+                        * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
+                    )
+            AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
+            dx0 = x0Num / np.sum(self.P)
+            dqRot = AInvDamped @ B
+            # convert to skeleton DOFs
+            self.dq[:3] = dqRot[:3]
+            self.dq[3:6] = dx0
+            self.dq[6:] = dqRot[3:]
 
         # update degrees of freedom
         self.updateDegreesOfFreedom()

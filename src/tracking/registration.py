@@ -111,13 +111,13 @@ class NonRigidRegistration(object):
         while self.iteration < self.max_iterations and not self.isConverged():
             self.iterate()
             if callable(callback):
-                kwargs = {
-                    "iteration": self.iteration,
-                    "error": self.diff,
-                    "X": self.Y,
-                    "Y": self.T,
-                }
-                callback(**kwargs)
+                # kwargs = {
+                #     "iteration": self.iteration,
+                #     "error": self.diff,
+                #     "X": self.Y,
+                #     "Y": self.T,
+                # }
+                callback()
 
         return self.T, self.getParameters()
 

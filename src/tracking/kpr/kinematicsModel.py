@@ -31,10 +31,10 @@ class KinematicsModelDart(object):
         dartJacobian = self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[
             3:6, :
         ]
-        dartJacobian[:, 3:6] = (
-            np.linalg.inv(self.skel.getBodyNode(0).getWorldTransform().rotation())
-            @ dartJacobian[:, 3:6]
-        )
+        # dartJacobian[:, 3:6] = (
+        #     np.linalg.inv(self.skel.getBodyNode(0).getWorldTransform().rotation())
+        #     @ dartJacobian[:, 3:6]
+        # )
 
         # (
         #     np.linalg.inv(self.skel.getBodyNode(0).getWorldTransform().rotation())
@@ -59,3 +59,6 @@ class KinematicsModelDart(object):
         # jacobian = self.skel.getLinearJacobian(self.skel.getBodyNode(n))
         # jacobian[:, :3] = np.eye(3)
         # return self.skel.getLinearJacobian(self.skel.getBodyNode(n))
+
+    def dependsOn(self, bodyNodeIndex, genCoordinateIndex):
+        return self.skel.getBodyNode(bodyNodeIndex).dependsOn(genCoordinateIndex)

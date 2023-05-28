@@ -51,7 +51,9 @@ def visualizationCallback(
     ax.set_xlim(-0.5, 1)
     ax.set_ylim(-0.5, 1)
     ax.set_zlim(-0.5, 1)
-    plotPointSets(ax=ax, X=registration.T, Y=registration.Y, waitTime=0.5)
+    plotPointSets(ax=ax, X=registration.T, Y=registration.Y)
+    plt.show(block=False)
+    plt.pause(0.1)
     if savePath is not None:
         fig.savefig(savePath + fileName + "_" + str(registration.iteration) + ".png")
 
@@ -86,7 +88,7 @@ def testKPR():
             "Y": YCloud,
             "model": kinematicModel,
             "max_iterations": 100,
-            "damping": 1,
+            "damping": 0.1,
             "stiffnessMatrix": stiffnessMatrix,
             "gravity": np.array([0, 0, -1]),
             "mu": 0.0,

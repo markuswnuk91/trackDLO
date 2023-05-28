@@ -33,7 +33,11 @@ try:
 
     # tracking
     from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
+    from src.tracking.kpr.kpr import KinematicsPreservingRegistration
     from src.tracking.kpr.kinematicsModel import KinematicsModelDart
+    from src.tracking.krspr.krspr import (
+        KinematicRegularizedStructurePreservedRegistration,
+    )
 
     # visualization
     from src.visualization.plot3D import *
@@ -57,7 +61,7 @@ visControl = {
     "preprocessing": {"vis": True, "block": False},
     "somResult": {"vis": True, "block": False},
     "extractedTopology": {"vis": True, "block": False},
-    "generatedModel": {"vis": False, "block": False},
+    "generatedModel": {"vis": False, "block": True},
     "initialLocalization": {"vis": True, "block": True},
     "tracking": {"vis": True, "block": True},
 }
@@ -224,7 +228,7 @@ def visualizationCallbackTracking(
         ySize=3,
         xSize=10,
     )
-    plotPoint(ax=ax, x=classHandle.T[0], size=50, color=[0, 1, 0])
+    plotPointSet(ax=ax, X=classHandle.X_desired, color=[0, 1, 0])
     set_axes_equal(ax)
     plt.draw()
     plt.pause(0.1)
@@ -541,15 +545,28 @@ def tracking(Y, bdloModel, qInit, trackingParameters):
     kinematicModel.skel.setPositions(qInit)
     Dof = qInit.shape[0]
     stiffnessMatrix = np.eye(Dof)
-    stiffnessMatrix[0:6, 0:6] = np.zeros((6, 6))
-    stiffnessMatrix[6:9, 6:9] = np.eye(3) * 1000
-    reg = KinematicsPreservingRegistration4BDLO(
+    # stiffnessMatrix[0:6, 0:6] = np.zeros((6, 6))
+    # reg = KinematicsPreservingRegistration4BDLO(
+    #     qInit=qInit,
+    #     q0=np.zeros(Dof),
+    #     Y=Y,
+    #     model=kinematicModel,
+    #     B=B,
+    #     stiffnessMatrix=stiffnessMatrix,
+    #     **trackingParameters,
+    # )
+    # reg = KinematicsPreservingRegistration(
+    #     qInit=qInit,
+    #     q0=np.zeros(Dof),
+    #     Y=Y,
+    #     model=kinematicModel,
+    #     stiffnessMatrix=stiffnessMatrix,
+    #     **trackingParameters,
+    # )
+    reg = KinematicRegularizedStructurePreservedRegistration(
         qInit=qInit,
-        q0=np.zeros(Dof),
         Y=Y,
         model=kinematicModel,
-        B=B,
-        stiffnessMatrix=stiffnessMatrix,
         **trackingParameters,
     )
     if visControl["tracking"]["vis"]:

@@ -8,6 +8,7 @@ try:
     sys.path.append(os.getcwd().replace("/src/tracking/cpd", ""))
     from src.utils.utils import initialize_sigma2
     from src.tracking.kpr.kinematicsModel import KinematicsModelDart
+    from src.utils.utils import gaussian_kernel, initialize_sigma2
 except:
     print("Imports for KPR failed.")
     raise
@@ -101,6 +102,7 @@ class KinematicsPreservingRegistration(object):
         dampingAnnealing=None,
         stiffnessAnnealing=None,
         gravitationalAnnealing=None,
+        normalize=False,
         *args,
         **kwargs
     ):
@@ -162,9 +164,18 @@ class KinematicsPreservingRegistration(object):
         self.q0 = qInit.copy() if q0 is None else q0
         self.q = qInit.copy()
         self.dq = np.zeros(self.q.shape[0])
+        self.deltaq = np.delete(qInit.copy(), [3, 4, 5])
         self.model = model
         self.Y = Y
+        self.X = model.getPositions(self.qInit)
         self.T = model.getPositions(self.q)
+        if normalize == True:
+            self.YMean = np.mean(self.Y)
+            self.Y = self.Y - self.YMean
+            self.XMean = np.mean(self.X)
+            self.X = self.X - self.XMean
+            self.TMean = np.mean(self.T)
+            self.T = self.T - self.TMean
         self.Dof = self.q.size
         (self.N, _) = self.T.shape
         (self.M, self.D) = self.Y.shape
@@ -200,6 +211,15 @@ class KinematicsPreservingRegistration(object):
         self.PY = np.zeros((self.N, self.D))
         self.W = np.zeros((self.Dof, self.D))
         self.Gq = np.eye(self.Dof)
+
+        self.WRigid = np.zeros((self.N, self.D))
+        self.WNonrigid = np.zeros((self.N, self.D))
+        self.q_t = np.zeros(self.Dof - 3)
+        self.q_t[:3] = self.qInit[:3]
+        self.q_t[3:] = self.qInit[6:]
+        self.deltaX_t = np.zeros((self.N, self.D))
+        self.deltaX_Rigid_t = np.zeros(self.D)
+        self.deltaX_Nonrigid_t = np.zeros((self.N, self.D))
 
     def register(self, callback=None):
         """
@@ -292,7 +312,16 @@ class KinematicsPreservingRegistration(object):
         else:
             for n in range(0, self.N):
                 self.T[n, :] = self.model.getPositions(self.q)[n, :]
-            return
+        # qNonrigid = np.zeros(self.Dof - 3)
+        # qNonrigid[:3] = self.qInit[:3] + self.deltaq[:3]
+        # qNonrigid[3:] = self.qInit[6:] + self.deltaq[3:]
+        # q = np.zeros(self.Dof)
+        # q[:3] = qNonrigid[:3]
+        # q[3:6] = self.X[0, :] + self.WRigid[0, :]
+        # q[6:] = qNonrigid[3:]
+        # for n in range(0, self.N):
+        #     self.T[n, :] = self.model.getPositions(q)[n, :]
+        return
 
     def dampedPseudoInverse(self, J, dampingFactor):
         dim = J.shape[0]
@@ -301,7 +330,7 @@ class KinematicsPreservingRegistration(object):
         )
         return dampedPseudoInverse
 
-    def updateParameters(self):
+    def updateParameters(self, method="absolute"):
         """
         M-step: Calculate a new parameters of the registration.
         """
@@ -312,38 +341,222 @@ class KinematicsPreservingRegistration(object):
             jacobianDamping = self.minDampingFactor
         wStiffness = (self.stiffnessAnnelealing) ** (self.iteration) * self.wStiffness
         wGravity = (self.gravitationalAnnealing) ** (self.iteration) * self.wGravity
-        A = np.zeros((self.Dof, self.Dof))
-        B = np.zeros(self.Dof)
         stiffnessMatrix = (self.stiffnessAnnelealing) ** (
             self.iteration
         ) * self.stiffnessMatrix
-        dEGrav = np.zeros(self.Dof)
-        for n in range(0, self.N):
-            J = self.model.getJacobian(self.q, n)
-            dEGrav += self.gravity @ J
+
+        if method == "together":
+            A = np.zeros((self.Dof, self.Dof))
+            B = np.zeros(self.Dof)
+            dEGrav = np.zeros(self.Dof)
+            for n in range(0, self.N):
+                J = self.model.getJacobian(self.q, n)
+                dEGrav += self.gravity @ J
+                for m in range(0, self.M):
+                    # A += self.P[n, m] * (self.Gq.T @ J.T @ J @ self.Gq)
+                    # B += self.P[n, m] * (self.Gq.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
+                    A += self.wCorrespondance * self.P[n, m] * (J.T @ J)
+                    B += (
+                        self.wCorrespondance
+                        * self.P[n, m]
+                        * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
+                    )
+            A += wStiffness * stiffnessMatrix
+            B += (
+                wStiffness * stiffnessMatrix @ (self.q0 - self.q)
+            )  # add stiffness term for right side
+            B += wGravity * dEGrav  # add gravitational term
+            AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
+            self.dq = AInvDamped @ B
+            # update degrees of freedom
+            self.updateDegreesOfFreedom()
+            # set the new targets
+            self.computeTargets()
+        elif method == "priorFirst":
+            dqRot = np.concatenate((self.dq[:3], self.dq[6:]))  # only rotational dofs
+            x0Num = 0
+            A = np.zeros((self.Dof - 3, self.Dof - 3))
+            B = np.zeros(self.Dof - 3)
+            dEGrav = np.zeros(self.Dof - 3)
+            J = []
+            q0Rot = np.concatenate((self.q0[:3], self.q0[6:]))
+            stiffnessMatrix = self.stiffnessMatrix
+            stiffnessMatrix = np.delete(stiffnessMatrix, [3, 4, 5], axis=0)
+            stiffnessMatrix = np.delete(stiffnessMatrix, [3, 4, 5], axis=1)
+
+            # translation
+            for n in range(0, self.N):
+                J_hat = self.model.getJacobian(self.q, n)
+                J.append(
+                    np.hstack((J_hat[:, :3], J_hat[:, 6:]))
+                )  # only for rotational dofs
             for m in range(0, self.M):
-                # A += self.P[n, m] * (self.Gq.T @ J.T @ J @ self.Gq)
-                # B += self.P[n, m] * (self.Gq.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
-                A += self.wCorrespondance * self.P[n, m] * (J.T @ J)
-                B += (
-                    self.wCorrespondance
-                    * self.P[n, m]
-                    * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
+                x0Num += self.P[0, m] * (self.Y[m, :] - self.T[0, :] - J[0] @ dqRot)
+            dx0 = 0.1 * x0Num / (np.sum(self.P[0, :]))
+            self.q[3:6] = dx0
+            self.computeTargets()
+            self.estimateCorrespondance()
+            # rotation
+            for n in range(0, self.N):
+                dEGrav += self.gravity @ J[n]
+                for m in range(0, self.M):
+                    A += self.wCorrespondance * self.P[n, m] * (J[n].T @ J[n])
+                    B += (
+                        self.wCorrespondance
+                        * self.P[n, m]
+                        * ((J[n].T @ (self.Y[m, :] - self.T[n, :] - dx0).T))
+                    )
+            AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
+            A += wStiffness * stiffnessMatrix
+            B += (
+                wStiffness * stiffnessMatrix @ (q0Rot - dqRot)
+            )  # add stiffness term for right side
+            B += wGravity * dEGrav  # add gravitational term
+            dqRot = AInvDamped @ B
+
+            self.dq[:3] = dqRot[:3]
+            self.dq[3:6] = dx0
+            self.dq[6:] = dqRot[3:]
+            self.updateDegreesOfFreedom()
+            # set the new targets
+            self.computeTargets()
+        elif method == "separated":
+            dqRot = np.concatenate((self.dq[:3], self.dq[6:]))  # only rotational dofs
+            x0Num = 0
+            A = np.zeros((self.Dof - 3, self.Dof - 3))
+            B = np.zeros(self.Dof - 3)
+            dEGrav = np.zeros(self.Dof - 3)
+            J = []
+            q0Rot = np.concatenate((self.q0[:3], self.q0[6:]))
+            stiffnessMatrix = self.stiffnessMatrix
+            stiffnessMatrix = np.delete(stiffnessMatrix, [3, 4, 5], axis=0)
+            stiffnessMatrix = np.delete(stiffnessMatrix, [3, 4, 5], axis=1)
+
+            # translation
+            for n in range(0, self.N):
+                J_hat = self.model.getJacobian(self.q, n)
+                J.append(
+                    np.hstack((J_hat[:, :3], J_hat[:, 6:]))
+                )  # only for rotational dofs
+                for m in range(0, self.M):
+                    x0Num += self.P[n, m] * (
+                        self.Y[m, :] - self.X[n, :] - self.WNonrigid[n]
+                    )
+            dx0 = x0Num / (np.sum(self.P))
+            self.WRigid += 0.9 * (np.tile(dx0, (self.N, 1)) - self.WRigid)
+            self.computeTargets()
+            self.estimateCorrespondance()
+            # rotation
+            for n in range(0, self.N):
+                dEGrav += self.gravity @ J[n]
+                for m in range(0, self.M):
+                    A += self.wCorrespondance * self.P[n, m] * (J[n].T @ J[n])
+                    B += (
+                        self.wCorrespondance
+                        * self.P[n, m]
+                        * ((J[n].T @ (self.Y[m, :] - self.T[n, :]).T))
+                    )
+            AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
+            A += wStiffness * stiffnessMatrix
+            B += (
+                wStiffness * stiffnessMatrix @ (q0Rot - dqRot)
+            )  # add stiffness term for right side
+            B += wGravity * dEGrav  # add gravitational term
+            dqRot = AInvDamped @ B
+
+            # # regularize update velocity
+            # W = np.zeros((self.N, self.D))
+            # G = gaussian_kernel(self.X, 2)
+            # dX = np.zeros((self.N, self.D))
+            # for n in range(0, self.N):
+            #     J_hat = self.model.getJacobian(self.q, n)
+            #     J = np.hstack((J_hat[:, :3], J_hat[:, 6:]))  # only for rotational dofs
+            #     dX[n, :] = dx0 + J @ dqRot
+            # W = np.linalg.inv(G) @ dX
+            # dx0 = (G @ W)[0, :]
+            # convert to skeleton DOFs
+            # self.dq[:3] = dqRot[:3]
+            self.dq[:3] = dqRot[:3]
+            self.dq[3:6] = dx0
+            self.dq[6:] = dqRot[3:]
+
+            self.deltaq += dqRot
+            self.q[:3] = self.qInit[:3] + self.deltaq[:3]
+            self.q[6:] = self.qInit[6:] + self.deltaq[3:]
+            WNonrigid = []
+            for Jn in J:
+                xdot_n = Jn @ dqRot
+                WNonrigid.append(xdot_n)
+            self.WNonrigid += np.vstack(WNonrigid)
+            # set the new targets
+            self.computeTargets()
+
+        if method == "absolute":
+            A = np.zeros((self.Dof - 3, self.Dof - 3))
+            B = np.zeros(self.Dof - 3)
+            J = []
+            for n in range(0, self.N):
+                J_hat = self.model.getJacobian(self.q, n)
+                J.append(
+                    np.hstack((J_hat[:, :3], J_hat[:, 6:]))
+                )  # only for rotational dofs
+
+            # solve translation
+            deltaX_Rigid_t_Nominator = 0
+            for n in range(0, self.N):
+                for m in range(0, self.M):
+                    deltaX_Rigid_t_Nominator += self.P[n, m] * (
+                        self.Y[m, :] - self.X[n, :] - self.deltaX_Nonrigid_t[n, :]
+                    )
+            self.deltaX_Rigid_t = deltaX_Rigid_t_Nominator / (np.sum(self.P))
+            # update T
+            for n in range(0, self.N):
+                self.T[n, :] = (
+                    self.X[n, :] + self.deltaX_Rigid_t + self.deltaX_Nonrigid_t[n, :]
                 )
-        A += wStiffness * stiffnessMatrix
-        B += (
-            wStiffness * stiffnessMatrix @ (self.q0 - self.q)
-        )  # add stiffness term for right side
-        B += wGravity * dEGrav  # add gravitational term
-        AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
-        self.dq = AInvDamped @ B
+            # update correspondances
+            self.estimateCorrespondance()
+            # update q
+            self.q[3:6] = self.T[0, :]
+            J = []
+            for n in range(0, self.N):
+                J_hat = self.model.getJacobian(self.q, n)
+                J.append(
+                    np.hstack((J_hat[:, :3], J_hat[:, 6:]))
+                )  # only for rotational dofs
 
-        # update degrees of freedom
-        self.updateDegreesOfFreedom()
+            # solve for rotations
+            for n in range(0, self.N):
+                for m in range(0, self.M):
+                    A += self.P[n, m] * (J[n].T @ J[n])
+                    B += self.P[n, m] * J[n].T @ (self.Y[m, :] - self.T[n, :]).T
 
-        # set the new targets
-        self.computeTargets()
+            self.dq = self.dampedPseudoInverse(A, jacobianDamping) @ B
+            qNew = np.zeros(self.Dof)
+            qNew[:3] = self.q_t[:3] + self.dq[:3]
+            qNew[3:6] = self.X[0, :] + self.deltaX_Rigid_t
+            qNew[6:] = self.q_t[3:] + self.dq[3:]
+            qOld = np.zeros(self.Dof)
+            qOld[:3] = self.q_t[:3]
+            qOld[3:6] = self.X[0, :] + self.deltaX_Rigid_t
+            qOld[6:] = self.q_t[3:]
 
+            dX_Nonrigid = (
+                self.model.getPositions(qNew)[n, :]
+                - self.model.getPositions(qOld)[n, :]
+            )
+            self.deltaX_Nonrigid_t = self.deltaX_Nonrigid_t + dX_Nonrigid
+            # update T
+            for n in range(0, self.N):
+                self.T[n, :] = (
+                    self.X[n, :] + self.deltaX_Rigid_t + self.deltaX_Nonrigid_t[n, :]
+                )
+
+            self.q_t = self.q_t + self.dq  # update q
+
+            self.q[:3] = self.q_t[:3]
+            self.q[3:6] = self.T[0, :]
+            self.q[6:] = self.q_t[3:]
         # update objective function
         Lold = self.L
         self.L = (

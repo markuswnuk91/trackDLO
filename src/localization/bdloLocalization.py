@@ -63,8 +63,9 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         # for dof in lockedDofs:
         #     if dof in unlockedDofs:
         #         lockedDofs.remove(dof)
-        lockedDofs = [3, 4, 5]
-        self.optimVars, self.mappingDict = self.initOptimVars(lockedDofs)
+        # lockedDofs = [3, 4, 5]
+        lockedDofs = None
+        self.optimVars, self.mappingDict = self.initOptimVars()
         # self.optimVars, self.mappingDict = self.initOptimVars(None)
 
     def sampleCartesianPositionsFromModel(self):
@@ -98,7 +99,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
     def updateParameters(self, optimVars):
         # update skeleton
         self.q[self.mappingDict["freeDofs"]] = optimVars
-        self.q[3:6] = (np.linalg.inv(self.C) @ self.YTarget)[-1, :]
+        # self.q[3:6] = (np.linalg.inv(self.C) @ self.YTarget)[-1, :]
         self.bdlo.skel.setPositions(self.q)
         # determine Positions
         self.X = self.sampleCartesianPositionsFromModel()

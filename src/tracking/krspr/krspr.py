@@ -22,6 +22,7 @@ class KinematicRegularizedStructurePreservedRegistration(
         damping=None,
         minDampingFactor=None,
         dampingAnnealing=None,
+        ik_iterations=None,
         *args,
         **kwargs
     ):
@@ -35,6 +36,7 @@ class KinematicRegularizedStructurePreservedRegistration(
         self.damping = 1 if damping is None else damping
         self.minDampingFactor = 1 if minDampingFactor is None else minDampingFactor
         self.dampingAnnealing = 0.97 if dampingAnnealing is None else dampingAnnealing
+        self.ik_iterations = 1 if ik_iterations is None else ik_iterations
 
     def computeTargets(self, q=None):
         """
@@ -110,12 +112,13 @@ class KinematicRegularizedStructurePreservedRegistration(
         #     dq[6:] = dq_rot[3:]
         #     q = q + dq
 
+        # kinematic regularization
         dq = np.zeros(len(self.q))
         dX = (self.X + np.dot(self.G, self.W)) - self.T
         X_desired = self.X + np.dot(self.G, self.W)
         self.X_desired = X_desired
         q = self.q
-        ik_iterations = 20
+        ik_iterations = self.ik_iterations
         for i in range(0, ik_iterations):
             X_current = self.model.getPositions(q)
             X_error = X_desired - X_current
@@ -126,9 +129,9 @@ class KinematicRegularizedStructurePreservedRegistration(
             J = np.vstack(jacobians)
             dq = self.dampedPseudoInverse(J, jacobianDamping) @ X_error.flatten()
             q = q + dq
-
         # update generalized coordinates
         self.q = q
+
         # set the new targets
         self.computeTargets()
 

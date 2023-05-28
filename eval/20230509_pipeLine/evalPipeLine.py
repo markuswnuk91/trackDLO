@@ -77,7 +77,7 @@ loadControl = {
         "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/",
     ],
     "dataSetToLoad": 1,
-    "fileToLoad": 150,
+    "fileToLoad": 500,
     "parentDirectory": {
         "paths": [
             "data/darus_data_download/data/",

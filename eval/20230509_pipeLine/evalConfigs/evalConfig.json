@@ -59,13 +59,13 @@
     },
     "localizationParameters" : {
         "numLocalCoordinateSamples" : 10,
-        "numIter": 1000
+        "numIter": 1
     },
     "trackingParameters": {
         "max_iterations": 100,
         "damping": 3,
         "gravity": [0, 0, 0],
-        "mu": 0.0,
+        "mu": 0.1,
         "wCorrespondance": 1,
         "wStiffness":0,
         "wGravity": 0,
@@ -73,10 +73,11 @@
         "dampingAnnealing": 0.7,
         "stiffnessAnnealing": 0.9,
         "gravitationalAnnealing": 1,
-        "tauFactor":1000,
-        "lambdaFactor":100,
-        "beta":0.3,
-        "tauAnnealing":1,
-        "lambdaAnnealing":0.8
+        "tauFactor":500,
+        "lambdaFactor":3,
+        "beta":0.8,
+        "tauAnnealing":0.9,
+        "lambdaAnnealing":0.9,
+        "ik_iterations":10
     }
 }

@@ -103,6 +103,7 @@ class KinematicsPreservingRegistration(object):
         stiffnessAnnealing=None,
         gravitationalAnnealing=None,
         normalize=False,
+        ik_iterations=None,
         *args,
         **kwargs
     ):
@@ -220,6 +221,7 @@ class KinematicsPreservingRegistration(object):
         self.deltaX_t = np.zeros((self.N, self.D))
         self.deltaX_Rigid_t = np.zeros(self.D)
         self.deltaX_Nonrigid_t = np.zeros((self.N, self.D))
+        self.ik_iterations = 1 if ik_iterations is None else ik_iterations
 
     def register(self, callback=None):
         """
@@ -262,28 +264,56 @@ class KinematicsPreservingRegistration(object):
         """
         return self.diff < self.tolerance
 
-    def estimateCorrespondance(self):
+    def estimateCorrespondance(self, normalize=True):
         """
         E-step: Compute the expectation step  of the EM algorithm.
         """
-        P = np.sum((self.Y[None, :, :] - self.T[:, None, :]) ** 2, axis=2)
+        if normalize:
+            # normalize to 0 mean
+            Y_hat = self.Y - np.mean(self.Y)
+            T_hat = self.T - np.mean(self.T)
+            # normalize to 0 variance
+            scalingFactor_T = np.sqrt(np.sum(self.T**2) / self.N)
+            scalingFactor_Y = np.sqrt(np.sum(self.Y**2) / self.M)
+            Y_hat = Y_hat / scalingFactor_Y
+            T_hat = T_hat / scalingFactor_T
+            P = np.sum((Y_hat[None, :, :] - T_hat[:, None, :]) ** 2, axis=2)
 
-        c = (2 * np.pi * self.sigma2) ** (self.D / 2)
-        c = c * self.mu / (1 - self.mu)
-        c = c * self.N / self.M
+            c = (2 * np.pi * self.sigma2) ** (self.D / 2)
+            c = c * self.mu / (1 - self.mu)
+            c = c * self.N / self.M
 
-        P = np.exp(-P / (2 * self.sigma2))
-        den = np.sum(P, axis=0)
-        den = np.tile(den, (self.N, 1))
-        den[den == 0] = np.finfo(float).eps
-        den += c
+            P = np.exp(-P / (2 * self.sigma2))
+            den = np.sum(P, axis=0)
+            den = np.tile(den, (self.N, 1))
+            den[den == 0] = np.finfo(float).eps
+            den += c
 
-        self.Pden = den[0, :]
-        self.P = np.divide(P, self.Pden)
-        self.Pt1 = np.sum(self.P, axis=0)
-        self.P1 = np.sum(self.P, axis=1)
-        self.Np = np.sum(self.P1)
-        self.PY = np.matmul(self.P, self.Y)
+            self.Pden = den[0, :]
+            self.P = np.divide(P, self.Pden)
+            self.Pt1 = np.sum(self.P, axis=0)
+            self.P1 = np.sum(self.P, axis=1)
+            self.Np = np.sum(self.P1)
+            self.PY = np.matmul(self.P, self.Y)
+        else:
+            P = np.sum((self.Y[None, :, :] - self.T[:, None, :]) ** 2, axis=2)
+
+            c = (2 * np.pi * self.sigma2) ** (self.D / 2)
+            c = c * self.mu / (1 - self.mu)
+            c = c * self.N / self.M
+
+            P = np.exp(-P / (2 * self.sigma2))
+            den = np.sum(P, axis=0)
+            den = np.tile(den, (self.N, 1))
+            den[den == 0] = np.finfo(float).eps
+            den += c
+
+            self.Pden = den[0, :]
+            self.P = np.divide(P, self.Pden)
+            self.Pt1 = np.sum(self.P, axis=0)
+            self.P1 = np.sum(self.P, axis=1)
+            self.Np = np.sum(self.P1)
+            self.PY = np.matmul(self.P, self.Y)
 
     def updateDegreesOfFreedom(self):
         self.q += self.dq
@@ -330,7 +360,7 @@ class KinematicsPreservingRegistration(object):
         )
         return dampedPseudoInverse
 
-    def updateParameters(self, method="iterative"):
+    def updateParameters(self, method="gmm"):
         """
         M-step: Calculate a new parameters of the registration.
         """
@@ -589,6 +619,31 @@ class KinematicsPreservingRegistration(object):
             self.q = q
             # set the new targets
             self.computeTargets()
+        if method == "gmm":
+            # dP1 = np.diag(self.P1)
+            # A = dP1
+            # B = self.PY - np.dot(dP1, self.X)
+            # self.X_desired = np.linalg.solve(A, B)
+            self.X_desired = np.divide(self.PY, self.P1[:, None])
+            # kinematic regularization
+            dq = np.zeros(len(self.q))
+            q = self.q
+            ik_iterations = self.ik_iterations
+            for i in range(0, ik_iterations):
+                X_current = self.model.getPositions(q)
+                X_error = self.X_desired - X_current
+                jacobians = []
+                for n in range(0, self.N):
+                    J_hat = self.model.getJacobian(q, n)
+                    jacobians.append(J_hat)
+                J = np.vstack(jacobians)
+                dq = self.dampedPseudoInverse(J, jacobianDamping) @ X_error.flatten()
+                q = q + dq
+            # update generalized coordinates
+            self.q = q
+
+        # set the new targets
+        self.computeTargets()
 
         # update objective function
         Lold = self.L

@@ -77,7 +77,7 @@ loadControl = {
         "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/",
     ],
     "dataSetToLoad": 1,
-    "fileToLoad": 150,
+    "fileToLoad": 300,
     "parentDirectory": {
         "paths": [
             "data/darus_data_download/data/",
@@ -229,7 +229,7 @@ def visualizationCallbackTracking(
         ySize=3,
         xSize=10,
     )
-    # plotPointSet(ax=ax, X=classHandle.X_desired, color=[0, 1, 0])
+    plotPointSet(ax=ax, X=classHandle.X_desired, color=[0, 1, 0])
     set_axes_equal(ax)
     plt.draw()
     plt.pause(0.1)

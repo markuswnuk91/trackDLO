@@ -102,7 +102,7 @@ class KinematicsPreservingRegistration(object):
         dampingAnnealing=None,
         stiffnessAnnealing=None,
         gravitationalAnnealing=None,
-        normalize=False,
+        normalize=None,
         ik_iterations=None,
         *args,
         **kwargs
@@ -170,13 +170,6 @@ class KinematicsPreservingRegistration(object):
         self.Y = Y
         self.X = model.getPositions(self.qInit)
         self.T = model.getPositions(self.q)
-        if normalize == True:
-            self.YMean = np.mean(self.Y)
-            self.Y = self.Y - self.YMean
-            self.XMean = np.mean(self.X)
-            self.X = self.X - self.XMean
-            self.TMean = np.mean(self.T)
-            self.T = self.T - self.TMean
         self.Dof = self.q.size
         (self.N, _) = self.T.shape
         (self.M, self.D) = self.Y.shape
@@ -201,6 +194,7 @@ class KinematicsPreservingRegistration(object):
         self.gravitationalAnnealing = (
             0.97 if gravitationalAnnealing is None else gravitationalAnnealing
         )
+        self.normalize = False if normalize is None else normalize
         self.diff = np.inf
         self.L = -np.inf
 
@@ -264,11 +258,11 @@ class KinematicsPreservingRegistration(object):
         """
         return self.diff < self.tolerance
 
-    def estimateCorrespondance(self, normalize=True):
+    def estimateCorrespondance(self):
         """
         E-step: Compute the expectation step  of the EM algorithm.
         """
-        if normalize:
+        if self.normalize:
             # normalize to 0 mean
             Y_hat = self.Y - np.mean(self.Y)
             T_hat = self.T - np.mean(self.T)

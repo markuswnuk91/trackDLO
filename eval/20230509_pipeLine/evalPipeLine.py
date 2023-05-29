@@ -77,7 +77,7 @@ loadControl = {
         "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/",
     ],
     "dataSetToLoad": 1,
-    "fileToLoad": 300,
+    "fileToLoad": 150,
     "parentDirectory": {
         "paths": [
             "data/darus_data_download/data/",
@@ -558,20 +558,20 @@ def tracking(Y, bdloModel, qInit, trackingParameters):
     #     stiffnessMatrix=stiffnessMatrix,
     #     **trackingParameters,
     # )
-    reg = KinematicsPreservingRegistration(
-        qInit=qInit,
-        q0=np.zeros(Dof),
-        Y=Y,
-        model=kinematicModel,
-        stiffnessMatrix=stiffnessMatrix,
-        **trackingParameters,
-    )
-    # reg = KinematicRegularizedStructurePreservedRegistration(
+    # reg = KinematicsPreservingRegistration(
     #     qInit=qInit,
+    #     q0=np.zeros(Dof),
     #     Y=Y,
     #     model=kinematicModel,
+    #     stiffnessMatrix=stiffnessMatrix,
     #     **trackingParameters,
     # )
+    reg = KinematicRegularizedStructurePreservedRegistration(
+        qInit=qInit,
+        Y=Y,
+        model=kinematicModel,
+        **trackingParameters,
+    )
     if visControl["tracking"]["vis"]:
         visualizationCallbackTracking = setupVisualizationCallbackTracking(reg)
         qHat = reg.register(visualizationCallbackTracking)

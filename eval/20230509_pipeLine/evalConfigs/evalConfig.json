@@ -73,11 +73,12 @@
         "dampingAnnealing": 1,
         "stiffnessAnnealing": 0.9,
         "gravitationalAnnealing": 1,
-        "tauFactor":500,
+        "tauFactor":3,
         "lambdaFactor":3,
-        "beta":0.8,
+        "beta":0.3,
         "tauAnnealing":0.9,
         "lambdaAnnealing":0.9,
-        "ik_iterations":10
+        "ik_iterations":10,
+        "normalize": 0
     }
 }

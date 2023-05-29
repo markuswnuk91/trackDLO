@@ -38,7 +38,9 @@ class NonRigidRegistration(object):
         consecutive objective function values falls within this tolerance.
     """
 
-    def __init__(self, X, Y, max_iterations=None, tolerance=None, *args, **kwargs):
+    def __init__(
+        self, X, Y, max_iterations=None, tolerance=None, normalize=0, *args, **kwargs
+    ):
         if type(X) is not np.ndarray or X.ndim != 2:
             raise ValueError("The source point cloud (X) must be at a 2D numpy array.")
 
@@ -88,6 +90,7 @@ class NonRigidRegistration(object):
         self.tolerance = 10e-5 if tolerance is None else tolerance
         self.max_iterations = 100 if max_iterations is None else max_iterations
         self.iteration = 0
+        self.normalize = bool(normalize) if normalize is None else bool(normalize)
 
     def register(self, callback=lambda **kwargs: None):
         """
@@ -139,10 +142,55 @@ class NonRigidRegistration(object):
         )
 
     def estimateCorrespondance(self):
-        """Placeholder for child class."""
-        raise NotImplementedError(
-            "Estimating the correspondance should be defined in child classes."
-        )
+        """
+        E-step: Compute the expectation step  of the EM algorithm.
+        """
+        if self.normalize:
+            # normalize to 0 mean
+            Y_hat = self.Y - np.mean(self.Y)
+            T_hat = self.T - np.mean(self.T)
+            # normalize to 0 variance
+            scalingFactor_T = np.sqrt(np.sum(self.T**2) / self.N)
+            scalingFactor_Y = np.sqrt(np.sum(self.Y**2) / self.M)
+            Y_hat = Y_hat / scalingFactor_Y
+            T_hat = T_hat / scalingFactor_T
+            P = np.sum((Y_hat[None, :, :] - T_hat[:, None, :]) ** 2, axis=2)
+
+            c = (2 * np.pi * self.sigma2) ** (self.D / 2)
+            c = c * self.mu / (1 - self.mu)
+            c = c * self.N / self.M
+
+            P = np.exp(-P / (2 * self.sigma2))
+            den = np.sum(P, axis=0)
+            den = np.tile(den, (self.N, 1))
+            den[den == 0] = np.finfo(float).eps
+            den += c
+
+            self.Pden = den[0, :]
+            self.P = np.divide(P, self.Pden)
+            self.Pt1 = np.sum(self.P, axis=0)
+            self.P1 = np.sum(self.P, axis=1)
+            self.Np = np.sum(self.P1)
+            self.PY = np.matmul(self.P, self.Y)
+        else:
+            P = np.sum((self.Y[None, :, :] - self.T[:, None, :]) ** 2, axis=2)
+
+            c = (2 * np.pi * self.sigma2) ** (self.D / 2)
+            c = c * self.mu / (1 - self.mu)
+            c = c * self.N / self.M
+
+            P = np.exp(-P / (2 * self.sigma2))
+            den = np.sum(P, axis=0)
+            den = np.tile(den, (self.N, 1))
+            den[den == 0] = np.finfo(float).eps
+            den += c
+
+            self.Pden = den[0, :]
+            self.P = np.divide(P, self.Pden)
+            self.Pt1 = np.sum(self.P, axis=0)
+            self.P1 = np.sum(self.P, axis=1)
+            self.Np = np.sum(self.P1)
+            self.PY = np.matmul(self.P, self.Y)
 
     def computeTargets(self):
         """

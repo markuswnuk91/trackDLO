@@ -175,29 +175,6 @@ class StructurePreservedRegistration(NonRigidRegistration):
         """
         return self.diff < self.tolerance
 
-    def estimateCorrespondance(self):
-        """
-        E-step: Compute the expectation step  of the EM algorithm.
-        """
-        P = np.sum((self.Y[None, :, :] - self.T[:, None, :]) ** 2, axis=2)
-
-        c = (2 * np.pi * self.sigma2) ** (self.D / 2)
-        c = c * self.mu / (1 - self.mu)
-        c = c * self.N / self.M
-
-        P = np.exp(-P / (2 * self.sigma2))
-        den = np.sum(P, axis=0)
-        den = np.tile(den, (self.N, 1))
-        den[den == 0] = np.finfo(float).eps
-        den += c
-
-        self.Pden = den[0, :]
-        self.P = np.divide(P, self.Pden)
-        self.Pt1 = np.sum(self.P, axis=0)
-        self.P1 = np.sum(self.P, axis=1)
-        self.Np = np.sum(self.P1)
-        self.PY = np.matmul(self.P, self.Y)
-
     def computeTargets(self, X=None):
         """
         Update the targets using the new estimate of the parameters.

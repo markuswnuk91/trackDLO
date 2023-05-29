@@ -330,7 +330,7 @@ class KinematicsPreservingRegistration(object):
         )
         return dampedPseudoInverse
 
-    def updateParameters(self, method="absolute"):
+    def updateParameters(self, method="iterative"):
         """
         M-step: Calculate a new parameters of the registration.
         """
@@ -557,6 +557,39 @@ class KinematicsPreservingRegistration(object):
             self.q[:3] = self.q_t[:3]
             self.q[3:6] = self.T[0, :]
             self.q[6:] = self.q_t[3:]
+
+        if method == "iterative":
+            q = self.q
+            ik_iterations = 5
+            for i in range(ik_iterations):
+                A = np.zeros((self.Dof, self.Dof))
+                B = np.zeros(self.Dof)
+                dEGrav = np.zeros(self.Dof)
+                for n in range(0, self.N):
+                    J = self.model.getJacobian(q, n)
+                    dEGrav += self.gravity @ J
+                    for m in range(0, self.M):
+                        # A += self.P[n, m] * (self.Gq.T @ J.T @ J @ self.Gq)
+                        # B += self.P[n, m] * (self.Gq.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
+                        A += self.wCorrespondance * self.P[n, m] * (J.T @ J)
+                        B += (
+                            self.wCorrespondance
+                            * self.P[n, m]
+                            * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
+                        )
+                A += wStiffness * stiffnessMatrix
+                B += (
+                    wStiffness * stiffnessMatrix @ (self.q0 - self.q)
+                )  # add stiffness term for right side
+                B += wGravity * dEGrav  # add gravitational term
+                AInvDamped = self.dampedPseudoInverse(A, jacobianDamping)
+                self.dq = AInvDamped @ B
+                q += self.dq
+                self.T = self.computeTargets(q)
+            self.q = q
+            # set the new targets
+            self.computeTargets()
+
         # update objective function
         Lold = self.L
         self.L = (

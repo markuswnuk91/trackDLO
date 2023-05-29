@@ -63,7 +63,7 @@
     },
     "trackingParameters": {
         "max_iterations": 100,
-        "damping": 3,
+        "damping": 10,
         "gravity": [0, 0, 0],
         "mu": 0.1,
         "wCorrespondance": 1,

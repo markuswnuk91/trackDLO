@@ -59,7 +59,7 @@
     },
     "localizationParameters" : {
         "numLocalCoordinateSamples" : 10,
-        "numIter": 1
+        "numIter": 100
     },
     "trackingParameters": {
         "max_iterations": 100,
@@ -78,7 +78,7 @@
         "beta":0.3,
         "tauAnnealing":0.9,
         "lambdaAnnealing":0.9,
-        "ik_iterations":10,
+        "ik_iterations":5,
         "normalize": 0
     }
 }

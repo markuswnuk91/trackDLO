@@ -71,9 +71,7 @@ class StructurePreservedRegistration(NonRigidRegistration):
         self,
         tauFactor=None,
         lambdaFactor=None,
-        sigma2=None,
         beta=None,
-        mu=None,
         knn=None,
         tauAnnealing=None,
         lambdaAnnealing=None,
@@ -103,20 +101,6 @@ class StructurePreservedRegistration(NonRigidRegistration):
             raise ValueError(
                 "Expected a positive value for the width of the coherent Gaussian kernel. Instead got: {}".format(
                     beta
-                )
-            )
-
-        if sigma2 is not None and (
-            not isinstance(sigma2, numbers.Number) or sigma2 <= 0
-        ):
-            raise ValueError(
-                "Expected a positive value for sigma2 instead got: {}".format(sigma2)
-            )
-
-        if mu is not None and (not isinstance(mu, numbers.Number) or mu < 0 or mu >= 1):
-            raise ValueError(
-                "Expected a value between 0 (inclusive) and 1 (exclusive) for mu instead got: {}".format(
-                    mu
                 )
             )
 

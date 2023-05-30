@@ -635,7 +635,7 @@ class BranchedDeformableLinearObject(BDLOTopology):
             sLower = localCoordsJoints[-(indexInBranch + 2)]
             sCenter = sLower + (sUpper - sLower) / 2
             sOffset = (s - sCenter) / (sUpper - sLower)
-            offset = np.array([0, 0, -1 * sOffset * segmentLengths[indexInBranch]])
+            offset = np.array([0, 0, -sOffset * segmentLengths[indexInBranch]])
         else:
             sLower = localCoordsJoints[indexInBranch]
             sUpper = localCoordsJoints[indexInBranch + 1]
@@ -723,6 +723,7 @@ class BranchedDeformableLinearObject(BDLOTopology):
             self.skel.getBodyNode(0).getWorldTransform().rotation()
         )
         jacobian = np.vstack((jacobianRot, transformToWorld @ jacobianTrans))
+
         indexPointer = 0
         paddedJacobian = np.zeros((6, self.skel.getNumDofs()))
         for i in range(0, self.skel.getNumDofs()):

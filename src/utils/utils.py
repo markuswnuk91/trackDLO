@@ -153,3 +153,11 @@ def calculateCorrespondance(X, Y):
     for i in range(0, N):
         C.append(np.where(correspondingIndices == i)[0])
     return C
+
+
+def dampedPseudoInverse(J, dampingFactor):
+    dim = J.shape[0]
+    dampedPseudoInverse = J.T @ np.linalg.inv(
+        J @ J.T + dampingFactor**2 * np.eye(dim)
+    )
+    return dampedPseudoInverse

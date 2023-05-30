@@ -12,6 +12,7 @@ try:
     from src.localization.correspondanceEstimation.topologyBasedCorrespondanceEstimation import (
         TopologyBasedCorrespondanceEstimation,
     )
+    from src.utils.utils import dampedPseudoInverse
 except:
     print("Imports for discrete shape reconstruction failed.")
     raise
@@ -37,7 +38,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         sampled Y positions on the extracted topology which are the target positions for the optimization
     """
 
-    def __init__(self, S, callback=None, *args, **kwargs):
+    def __init__(self, S, callback=None, jacobianDamping=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if np.any(S > 1) or np.any(S < 0):
             raise ValueError(
@@ -53,7 +54,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         self.K = self.bdlo.getNumBranches()
         self.X = np.zeros((self.Ns, self.D))
         (self.N, _) = self.X.shape
-
+        self.jacobianDamping = 1 if jacobianDamping is None else jacobianDamping
         # unlockedDofs = []
         # for i, branch in enumerate(self.bdlo.getBranches()):
         #     branchRootDofIndices = self.bdlo.getBranchRootDofIndices(i)
@@ -68,13 +69,24 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         self.optimVars, self.mappingDict = self.initOptimVars()
         # self.optimVars, self.mappingDict = self.initOptimVars(None)
 
-    def sampleCartesianPositionsFromModel(self):
+    def sampleCartesianPositionsFromModel(self, S=None):
         X = np.zeros((self.Ns * self.K, self.D))
         for b in range(0, self.K):
-            X[
-                b * self.Ns : (b + 1) * self.Ns
-            ] = self.bdlo.getCartesianPositionsFromBranchLocalCoordinates(b, self.S)
+            if b == 0:
+                X[b * self.Ns : (b + 1) * self.Ns] = np.flipud(
+                    self.bdlo.getCartesianPositionsFromBranchLocalCoordinates(b, self.S)
+                )
+            else:
+                X[
+                    b * self.Ns : (b + 1) * self.Ns
+                ] = self.bdlo.getCartesianPositionsFromBranchLocalCoordinates(b, self.S)
         return X
+
+    def getModelPositionAndJacobian(self, b, s, q):
+        self.bdlo.skel.setPositions(q)
+        x = self.bdlo.getCartesianPositionFromBranchLocalCoordinate(b, s)
+        jacobian = self.bdlo.getJacobianFromBranchLocalCoordinate(b, s)
+        return (x, jacobian)
 
     def initOptimVars(self, lockedDofs=None):
         """initializes the optimization variables
@@ -115,7 +127,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         #     errors[i] = np.linalg.norm(y - x)
         #     self.X[i] = x
         error = np.sum(
-            np.square(np.linalg.norm(self.YTarget - self.C @ self.X, axis=1))
+            np.square(np.linalg.norm(self.C.T @ self.YTarget - self.X, axis=1))
         )
         return error
 
@@ -126,8 +138,19 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         # determineJacobians
         jacobians = []
         for b in range(0, self.K):
-            for s in self.S:
-                jacobians.append(self.bdlo.getJacobianFromBranchLocalCoordinate(b, s))
+            if b == 0:
+                jacobians_backwards_ordered = []
+                for s in self.S:
+                    jacobians_backwards_ordered.append(
+                        self.bdlo.getJacobianFromBranchLocalCoordinate(b, s)
+                    )
+                for jacobian in reversed(jacobians_backwards_ordered):
+                    jacobians.append(jacobian)
+            else:
+                for s in self.S:
+                    jacobians.append(
+                        self.bdlo.getJacobianFromBranchLocalCoordinate(b, s)
+                    )
 
         # map jacobian entries to optimVars
         J = np.zeros(len(optimVars))
@@ -154,8 +177,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
             J[i] = np.sum(
                 -2
                 * np.sum(
-                    (self.YTarget - self.C @ self.X)
-                    * (self.C @ jacobianMultiplikatorMatrix),
+                    (self.C.T @ self.YTarget - self.X) * (jacobianMultiplikatorMatrix),
                     axis=1,
                 )
             )
@@ -166,23 +188,49 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
             self.callback()
         return J
 
-    def reconstructShape(self, numIter: int = -1, verbose=0):
-        if numIter == -1:
-            numIter = None
+    def reconstructShape(self, numIter: int = -1, verbose=0, method="IK"):
         if self.extractedTopology is None:
             warn("No topology yet extracted. Extracting topology ...")
             self.extractTopology()
         (self.YTarget, self.X, self.C) = self.findCorrespondancesFromLocalCoordinates(
             self.S
         )
-        res = least_squares(
-            self.costFun,
-            self.optimVars,
-            self.costFunJac,
-            max_nfev=numIter,
-            verbose=verbose,
-        )
-        return res
+        if method == "least_squares":
+            if numIter == -1:
+                numIter = None
+            res = least_squares(
+                self.costFun,
+                self.optimVars,
+                self.costFunJac,
+                max_nfev=numIter,
+                verbose=verbose,
+            )
+            q = res.x
+        elif method == "IK":
+            if numIter == -1:
+                numIter = 100
+            self.X_desired = self.C.T @ self.YTarget
+            # kinematic regularization (solve IK iteratively)
+            dq = np.zeros(self.bdlo.skel.getNumDofs())
+            q = self.q
+            ik_iterations = numIter
+            for i in range(0, ik_iterations):
+                jacobians = []
+                X_error = []
+                X_current = []
+                for b in range(0, self.K):
+                    for s in self.S:
+                        x_current, J_hat = self.getModelPositionAndJacobian(b, s, q)
+                        X_current.append(x_current)
+                        jacobians.append(J_hat[3:6, :])
+                self.X = np.array(X_current)
+                X_error = self.X_desired - self.X
+                J = np.vstack(jacobians)
+                dq = dampedPseudoInverse(J, self.jacobianDamping) @ X_error.flatten()
+                q = q + dq
+                if callable(self.callback):
+                    self.callback()
+        return q
 
     def registerCallback(self, callback):
         self.callback = callback

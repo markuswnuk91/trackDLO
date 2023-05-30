@@ -90,15 +90,7 @@ class CoherentPointDrift(NonRigidRegistration):
     """
 
     def __init__(
-        self,
-        alpha=None,
-        beta=None,
-        sigma2=None,
-        mu=None,
-        low_rank=False,
-        num_eig=100,
-        *args,
-        **kwargs
+        self, alpha=None, beta=None, low_rank=False, num_eig=100, *args, **kwargs
     ):
         super().__init__(*args, **kwargs)
         if alpha is not None and (not isinstance(alpha, numbers.Number) or alpha <= 0):
@@ -115,24 +107,8 @@ class CoherentPointDrift(NonRigidRegistration):
                 )
             )
 
-        if sigma2 is not None and (
-            not isinstance(sigma2, numbers.Number) or sigma2 <= 0
-        ):
-            raise ValueError(
-                "Expected a positive value for sigma2 instead got: {}".format(sigma2)
-            )
-
-        if mu is not None and (not isinstance(mu, numbers.Number) or mu < 0 or mu >= 1):
-            raise ValueError(
-                "Expected a value between 0 (inclusive) and 1 (exclusive) for mu instead got: {}".format(
-                    mu
-                )
-            )
-
         self.alpha = 2 if alpha is None else alpha
         self.beta = 2 if beta is None else beta
-        self.sigma2 = initialize_sigma2(self.X, self.Y) if sigma2 is None else sigma2
-        self.mu = 0.0 if mu is None else mu
         self.diff = np.inf
         self.q = np.inf
         self.P = np.zeros((self.N, self.M))

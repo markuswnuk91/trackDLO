@@ -156,6 +156,11 @@ def visualizationCallback(
             np.concatenate(jointPositions, axis=0)
         )
     )
+
+    U, V, D = preProcessor.inverseStereoProjection(
+        jointPositions_inCameraCoordinates, preProcessor.cameraParameters["qmatrix"]
+    )
+
     U, V, D = preProcessor.inverseStereoProjection(
         jointPositions_inCameraCoordinates, preProcessor.cameraParameters["qmatrix"]
     )
@@ -188,7 +193,7 @@ def visualizationCallback(
     for i, y in enumerate(classHandle.YTarget):
         plotLine(
             ax=ax3D,
-            pointPair=np.vstack(((classHandle.C @ classHandle.X)[i], y)),
+            pointPair=np.vstack(((classHandle.C.T @ classHandle.X)[i], y)),
             color=[1, 0, 0],
             alpha=0.3,
         )
@@ -532,10 +537,9 @@ def initialLocalization(
     if visControl["initialLocalization"]["vis"]:
         visualizationCallback = setupVisualizationCallback(localization)
         localization.registerCallback(visualizationCallback)
-    result = localization.reconstructShape(
+    qInit = localization.reconstructShape(
         numIter=localizationParameters["numIter"], verbose=2
     )
-    qInit = result.x
     return qInit
 
 
@@ -547,7 +551,7 @@ def tracking(Y, bdloModel, qInit, trackingParameters):
         KinematicsPreservingRegistration4BDLO
     kinematicModel.skel.setPositions(qInit)
     Dof = qInit.shape[0]
-    stiffnessMatrix = np.eye(Dof)
+    stiffnessMatrix = 0 * np.eye(Dof)
     # stiffnessMatrix[0:6, 0:6] = np.zeros((6, 6))
     # reg = KinematicsPreservingRegistration4BDLO(
     #     qInit=qInit,
@@ -558,23 +562,24 @@ def tracking(Y, bdloModel, qInit, trackingParameters):
     #     stiffnessMatrix=stiffnessMatrix,
     #     **trackingParameters,
     # )
-    # reg = KinematicsPreservingRegistration(
-    #     qInit=qInit,
-    #     q0=np.zeros(Dof),
-    #     Y=Y,
-    #     model=kinematicModel,
-    #     stiffnessMatrix=stiffnessMatrix,
-    #     **trackingParameters,
-    # )
-    reg = KinematicRegularizedStructurePreservedRegistration(
+    reg = KinematicsPreservingRegistration(
         qInit=qInit,
+        q0=np.zeros(Dof),
         Y=Y,
         model=kinematicModel,
+        stiffnessMatrix=stiffnessMatrix,
         **trackingParameters,
     )
+    # reg = KinematicRegularizedStructurePreservedRegistration(
+    #     qInit=qInit,
+    #     Y=Y,
+    #     model=kinematicModel,
+    #     **trackingParameters,
+    # )
     if visControl["tracking"]["vis"]:
         visualizationCallbackTracking = setupVisualizationCallbackTracking(reg)
-        qHat = reg.register(visualizationCallbackTracking)
+        reg.registerCallback(visualizationCallbackTracking)
+        qHat = reg.register()
     else:
         qHat.register()
     return qHat

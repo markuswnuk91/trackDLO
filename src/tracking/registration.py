@@ -1,6 +1,7 @@
 import numpy as np
 import numbers
 from warnings import warn
+from src.utils.utils import initialize_sigma2
 
 
 class NonRigidRegistration(object):
@@ -39,7 +40,16 @@ class NonRigidRegistration(object):
     """
 
     def __init__(
-        self, X, Y, max_iterations=None, tolerance=None, normalize=0, *args, **kwargs
+        self,
+        X,
+        Y,
+        max_iterations=None,
+        tolerance=None,
+        sigma2=None,
+        mu=None,
+        normalize=0,
+        *args,
+        **kwargs
     ):
         if type(X) is not np.ndarray or X.ndim != 2:
             raise ValueError("The source point cloud (X) must be at a 2D numpy array.")
@@ -81,7 +91,19 @@ class NonRigidRegistration(object):
                     tolerance
                 )
             )
+        if sigma2 is not None and (
+            not isinstance(sigma2, numbers.Number) or sigma2 <= 0
+        ):
+            raise ValueError(
+                "Expected a positive value for sigma2 instead got: {}".format(sigma2)
+            )
 
+        if mu is not None and (not isinstance(mu, numbers.Number) or mu < 0 or mu >= 1):
+            raise ValueError(
+                "Expected a value between 0 (inclusive) and 1 (exclusive) for mu instead got: {}".format(
+                    mu
+                )
+            )
         self.X = X
         self.Y = Y
         self.T = X
@@ -90,9 +112,11 @@ class NonRigidRegistration(object):
         self.tolerance = 10e-5 if tolerance is None else tolerance
         self.max_iterations = 100 if max_iterations is None else max_iterations
         self.iteration = 0
+        self.sigma2 = initialize_sigma2(self.X, self.Y) if sigma2 is None else sigma2
+        self.mu = 0.0 if mu is None else mu
         self.normalize = bool(normalize) if normalize is None else bool(normalize)
 
-    def register(self, callback=lambda **kwargs: None):
+    def register(self):
         """
         Peform the registration
 
@@ -113,15 +137,8 @@ class NonRigidRegistration(object):
         self.computeTargets()
         while self.iteration < self.max_iterations and not self.isConverged():
             self.iterate()
-            if callable(callback):
-                # kwargs = {
-                #     "iteration": self.iteration,
-                #     "error": self.diff,
-                #     "X": self.Y,
-                #     "Y": self.T,
-                # }
-                callback()
-
+            if callable(self.callback):
+                self.callback()
         return self.T, self.getParameters()
 
     def iterate(self):
@@ -215,3 +232,6 @@ class NonRigidRegistration(object):
         raise NotImplementedError(
             "Registration parameters should be defined in child classes."
         )
+
+    def registerCallback(self, callback):
+        self.callback = callback

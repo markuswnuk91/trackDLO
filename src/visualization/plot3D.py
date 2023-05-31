@@ -310,7 +310,7 @@ def plotPointSets(
     yLabel=None,
 ):
     xSize = 20 if xSize is None else xSize
-    ySize = 20 if xSize is None else xSize
+    ySize = 20 if ySize is None else ySize
     xMarkerStyle = "o" if xMarkerStyle is None else xMarkerStyle
     yMarkerStyle = "o" if yMarkerStyle is None else yMarkerStyle
     xAlpha = 1 if xAlpha is None else xAlpha

@@ -203,6 +203,42 @@ def visualizationCallback(
     return
 
 
+def setupVisualizationCallback_SOM(classHandle):
+    fig, ax = setupVisualization(3)
+    return partial(
+        visualizationCallback_SOM,
+        fig,
+        ax,
+        classHandle,
+        savePath="/mnt/c/Users/ac129490/Documents/Dissertation/Software/trackdlo/imgs/bldoReconstruction/test/",
+    )
+
+
+def visualizationCallback_SOM(
+    fig,
+    ax,
+    classHandle,
+    savePath=None,
+    fileName="img",
+):
+    if savePath is not None and type(savePath) is not str:
+        raise ValueError("Error saving 3D plot. The given path should be a string.")
+
+    if fileName is not None and type(fileName) is not str:
+        raise ValueError("Error saving 3D plot. The given filename should be a string.")
+    ax.cla()
+    plotPointSets(
+        ax=ax,
+        X=classHandle.T,
+        Y=classHandle.Y,
+        ySize=3,
+        xSize=10,
+    )
+    set_axes_equal(ax)
+    plt.draw()
+    plt.pause(0.1)
+
+
 def setupVisualizationCallbackTracking(classHandle):
     fig, ax = setupVisualization(classHandle.Y.shape[1])
     return partial(
@@ -390,8 +426,13 @@ def topologyExtraction(pointCloud, topologyExtractionParameters):
         somParameters=topologyExtractionParameters["somParameters"],
         l1Parameters=topologyExtractionParameters["l1Parameters"],
     )
+    visualizationCallback = setupVisualizationCallback_SOM(
+        topologyExtraction.selfOrganizingMap
+    )
+    if visControl["somResult"]["vis"]:
+        topologyExtraction.selfOrganizingMap.registerCallback(visualizationCallback)
     reducedPointSet = Y
-    reducedPointSet = topologyExtraction.reducePointSetL1(reducedPointSet)
+    # reducedPointSet = topologyExtraction.reducePointSetL1(reducedPointSet)
     reducedPointSet = topologyExtraction.reducePointSetSOM(reducedPointSet)
     reducedPointSet = topologyExtraction.pruneDuplicatePoints(
         reducedPointSet, topologyExtractionParameters["pruningThreshold"]
@@ -624,3 +665,4 @@ if __name__ == "__main__":
     # tracking
     qHat = tracking(pointCloud[0], bdloModel, qInit, trackingParameters)
     print(qHat)
+    plt.show(block=True)

@@ -44,7 +44,138 @@ except:
 
 
 class Evaluation(object):
-    def __init__(self, pathToConfigFile, *args, **kwargs):
-        self.evalConfigPath = pathToConfigFile
+    def __init__(self, configFilePath, *args, **kwargs):
+        self.configFilePath = configFilePath
         self.dataHandler = DataHandler()
-        self.evalConfig = self.dataHandler.loadFromJson(self.evalConfigPath)
+        self.config = self.dataHandler.loadFromJson(self.configFilePath)
+        results = {}
+
+    def getDataSet(self, fileIdentifier, dataSetFolderPath):
+        fileIndex = self.dataHandler.getFileIndexFromNameOrIndex(
+            fileIdentifier, dataSetFolderPath
+        )
+        dataSetFileName = self.dataHandler.getDataSetFileNames(dataSetFolderPath)[
+            fileIndex
+        ]
+        dataSet = self.dataHandler.loadStereoDataSet(
+            dataSetFileName, dataSetFolderPath=dataSetFolderPath
+        )
+        return dataSet
+
+    def getPointCloud(
+        self, fileIdentifier, dataSetFolderPath, segmentationMethod="standard"
+    ):
+        if segmentationMethod == "standard":
+            parameters = self.config["preprocessingParameters"]
+            preProcessor = PreProcessing(
+                defaultLoadFolderPath=dataSetFolderPath,
+                hsvFilterParameters=parameters["hsvFilterParameters"],
+                roiFilterParameters=parameters["roiFilterParameters"],
+            )
+            # load data
+            rgbImage, disparityMap = self.getDataSet(fileIdentifier, dataSetFolderPath)
+            # point cloud generation
+            points, colors = preProcessor.calculatePointCloudFiltered_2D_3D(
+                rgbImage, disparityMap
+            )
+            # downsampling
+            points, colors = preProcessor.downsamplePointCloud_nthElement(
+                (points, colors),
+                parameters["downsamplingParameters"]["nthElement"],
+            )
+            # bounding box filter in camera coodinate system
+            inliers, inlierColors = preProcessor.getInliersFromBoundingBox(
+                (points, colors),
+                parameters["cameraCoordinateBoundingBoxParameters"],
+            )
+            # transfrom points in robot coodinate sytem
+            inliers = preProcessor.transformPointsFromCameraToRobotBaseCoordinates(
+                inliers
+            )
+            return (inliers, inlierColors)
+        else:
+            raise NotImplementedError
+
+    def getVisualizationCallback(
+        self,
+        classHandle,
+        visualizationFunction=None,
+        fig=None,
+        ax=None,
+        dim=None,
+        *args,
+        **kwargs
+    ):
+        if dim is None:
+            try:
+                dim = classHandle.Y.shape[1]
+            except:
+                dim = 3
+        fig, ax = self.setupFigure(fig, ax, dim)
+        if visualizationFunction is None:
+            visCallback = self.setupVisualizationCallback(
+                self.standardVisualizationFunctions,
+                fig,
+                ax,
+                classHandle,
+                *args,
+                **kwargs,
+            )
+        else:
+            visCallback = self.setupVisualizationCallback(
+                visualizationFunction,
+                fig,
+                ax,
+                classHandle,
+                *args,
+                **kwargs,
+            )
+        return visCallback
+
+    def setupFigure(self, fig=None, ax=None, dim=None):
+        if dim is None:
+            dim == 3
+        elif dim > 3 or dim < 1:
+            raise ValueError(
+                "Dimension of plots can only be 2D or 3D. Obtained {} for desired number of dimensions".format(
+                    dim
+                )
+            )
+        if fig is None:
+            fig = plt.figure()
+        if ax is None and dim == 3:
+            ax = fig.add_subplot(projection="3d")
+        elif ax is None and dim <= 2:
+            ax = fig.add_subplot()
+        return fig, ax
+
+    def setupVisualizationCallback(
+        self, visFunction, fig, ax, classHandle, *args, **kwargs
+    ):
+        return partial(
+            visFunction,
+            fig,
+            ax,
+            classHandle,
+            *args,
+            **kwargs,
+        )
+
+    def standardVisualizationFunctions(self, fig, ax, classHandle, *args, **kwargs):
+        # determine type of classhandle
+        if type(classHandle) == SelfOrganizingMap:
+            ax.cla()
+            plotPointSets(
+                ax=ax,
+                X=classHandle.T,
+                Y=classHandle.Y,
+                ySize=1,
+                xSize=30,
+                xColor=[1, 0, 0],
+                yColor=[0, 0, 0],
+            )
+            set_axes_equal(ax)
+            plt.draw()
+            plt.pause(0.1)
+        else:
+            raise NotImplementedError

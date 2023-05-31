@@ -38,22 +38,22 @@
     },
     "topologyExtractionParameters" : {
         "somParameters" : {
-            "numSeedPoints": 20,
-            "alpha": 1,
-            "alphaAnnealing": 0.93,
-            "sigma2": 0.1,
-            "sigma2Min": 0.01,
-            "sigma2Annealing": 0.9,
+            "numSeedPoints": 10,
+            "alpha": 0.9,
+            "alphaAnnealing": 1,
+            "sigma2": 0.3,
+            "sigma2Min": 0.001,
+            "sigma2Annealing": 0.87,
             "method": "kernel",
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 100,
+            "numSeedPoints": 300,
             "h": 0.03,
             "hAnnealing": 0.9,
             "hMin": 0.01,
             "mu": 0.35,
-            "max_iterations": 10
+            "max_iterations": 30
         },
         "pruningThreshold": 1e-6
     },

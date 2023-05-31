@@ -114,14 +114,24 @@ class SelfOrganizingMap(DataReduction):
                     H = np.eye(self.N)
                 else:
                     H = alpha * gaussian_kernel(self.T, np.square(sigma2))
+                    H = H - np.diag(np.diag(H)) + np.eye(len(H))
                 winnerIdxs = np.argmin(distanceMatrix, axis=0)
-
+                nearestPointIdxs = np.argmin(distanceMatrix, axis=1)
                 YMean = np.zeros((self.N, self.D))
                 NumCorrespondences = np.zeros(self.N)
                 for j in range(0, self.N):
                     J = np.where(winnerIdxs == j)[0]
-                    YMean[j, :] = self.T[j, :] + np.sum(
-                        self.Y[np.where(winnerIdxs == j)[0], :], axis=0
+                    # YMean[j, :] = self.T[j, :] + np.sum(
+                    #     self.Y[np.where(winnerIdxs == j)[0], :], axis=0
+                    # )
+                    YMean[j, :] = np.mean(
+                        np.vstack(
+                            (
+                                self.Y[nearestPointIdxs[j]],
+                                self.Y[np.where(winnerIdxs == j)[0], :],
+                            ),
+                        ),
+                        axis=0,
                     )
                     NumCorrespondences[j] = len(J) + 1
 
@@ -137,7 +147,15 @@ class SelfOrganizingMap(DataReduction):
                     #         )
                     #     self.T[idx, :] = YMeanWeighted / NumCorrespondencesWeighted
                     # else:
-                self.T = (H @ YMean) / (H @ NumCorrespondences)[:, None]
+                # self.T = (H @ YMean) / (H @ NumCorrespondences)[:, None]
+
+                for i in range(0, self.N):
+                    sum_nj_hji = 0
+                    sum_nj_hji_xmj = np.zeros(self.D)
+                    for j in range(0, self.N):
+                        sum_nj_hji_xmj += NumCorrespondences[j] * H[j, i] * YMean[j]
+                        sum_nj_hji += NumCorrespondences[j] * H[j, i]
+                    self.T[i, :] = sum_nj_hji_xmj / sum_nj_hji
             elif self.method == "knn":
                 for i in range(0, self.N):
                     # find the winning neurons for the dataset

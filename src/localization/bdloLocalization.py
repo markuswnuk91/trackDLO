@@ -188,7 +188,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
             self.callback()
         return J
 
-    def reconstructShape(self, numIter: int = -1, verbose=0, method="IK"):
+    def reconstructShape(self, numIter: int = -1, verbose=0, method="least_squares"):
         if self.extractedTopology is None:
             warn("No topology yet extracted. Extracting topology ...")
             self.extractTopology()

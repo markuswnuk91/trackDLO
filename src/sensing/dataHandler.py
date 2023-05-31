@@ -61,6 +61,14 @@ class DataHandler(object):
                 )
             )
 
+    def getFileIndexFromNameOrIndex(self, fileIdentifier, dataSetFolderPath):
+        if str(fileIdentifier).isnumeric():
+            fileIndex = fileIdentifier
+        else:
+            fileName = fileIdentifier
+            fileIndex = self.getDataSetIndexFromFileName(fileName, dataSetFolderPath)
+        return fileIndex
+
     def jsonifyDictionary(self, inputDict):
         outputDict = inputDict.copy()
         for key in outputDict:
@@ -93,10 +101,13 @@ class DataHandler(object):
         dispartiy_data = cv2.imread(folderPath + fileName, -1)
         return dispartiy_data
 
-    def loadDisparityMapFromTIF(self, fileName, folderPath=None):
-        if folderPath is None:
-            folderPath_Data = self.defaultLoadFolderPath_Data
+    def loadDisparityMapFromTIF(self, fileName, dataSetFolderPath=None):
+        if dataSetFolderPath is None:
             folderPath = self.defaultLoadFolderPath
+            folderPath_Data = self.defaultLoadFolderPath_Data
+        else:
+            folderPath = dataSetFolderPath
+            folderPath_Data = dataSetFolderPath + "data/"
         disparity_data = self.loadDisparityDataFromTIF(fileName, folderPath_Data)
         cameraParameters = self.loadCameraParameters(
             "cameraParameters.json", folderPath
@@ -154,6 +165,29 @@ class DataHandler(object):
         else:
             disparityFileName = fileID + "_" + "map_disparity.npy"
             disparityMap = self.loadNumpyArrayFromBinary(disparityFileName, folderPath)
+        return (rgbImage, disparityMap)
+
+    def loadStereoDataSet(self, fileName, dataSetFolderPath=None):
+        if dataSetFolderPath is None:
+            dataSetFolderPath = self.defaultLoadFolderPath
+            dataFolderPath = self.defaultLoadFolderPath_Data
+        else:
+            dataFolderPath = dataSetFolderPath + "data/"
+        fileID = "_".join(fileName.split("_")[:-2])
+        rgbFileName = fileID + "_" + "image_rgb.png"
+        rgbImage = self.loadNumpyArrayFromPNG(rgbFileName, dataFolderPath)
+        hasTif = self.checkIfDisparityDataIsSavedAsTif(fileID, dataFolderPath)
+
+        if hasTif:
+            disparityFileName = fileID + "_" + "image_disparity.tif"
+            disparityMap = self.loadDisparityMapFromTIF(
+                disparityFileName, dataSetFolderPath=dataSetFolderPath
+            )
+        else:
+            disparityFileName = fileID + "_" + "map_disparity.npy"
+            disparityMap = self.loadNumpyArrayFromBinary(
+                disparityFileName, dataFolderPath
+            )
         return (rgbImage, disparityMap)
 
     def saveRGBImage(self, rgb_image, folderPath, fileName):

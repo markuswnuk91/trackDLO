@@ -36,9 +36,12 @@ class DataHandler(object):
         self.defaultSaveFolderPath = defaultSaveFolderPath
 
     # utility functions
-    def generateIdentifier(self):
+    def generateIdentifier(self, YMD=True, HMS=True, MS=True):
         now = datetime.datetime.now()
-        date_time_string = now.strftime("%Y%m%d_%H%M%S_%f")
+        if YMD and HMS and MS:
+            date_time_string = now.strftime("%Y%m%d_%H%M%S_%f")
+        elif YMD and HMS and not MS:
+            date_time_string = now.strftime("%Y%m%d_%H%M%S")
         return date_time_string
 
     def checkFileExtension(self, file_list, extension):
@@ -66,8 +69,20 @@ class DataHandler(object):
             fileIndex = fileIdentifier
         else:
             fileName = fileIdentifier
-            fileIndex = self.getDataSetIndexFromFileName(fileName, dataSetFolderPath)
+            fileIndex = self.getFileIndexFromFileName(
+                fileName, dataSetFolderPath + "data/"
+            )
         return fileIndex
+
+    def getFileNameFromNameOrIndex(self, fileIdentifier, dataSetFolderPath):
+        if str(fileIdentifier).isnumeric():
+            fileIndex = fileIdentifier
+            fileName = self.getFileNameFromFileIndex(
+                fileIndex, dataSetFolderPath + "data/"
+            )
+        else:
+            fileName = fileIdentifier
+        return fileName
 
     def jsonifyDictionary(self, inputDict):
         outputDict = inputDict.copy()
@@ -77,6 +92,16 @@ class DataHandler(object):
             elif isinstance(outputDict[key], np.float32):
                 outputDict[key] = float(outputDict[key])
         return outputDict
+
+    def convertNumpyToLists(self, data):
+        if isinstance(data, dict):
+            return {key: self.convertNumpyToLists(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return [self.convertNumpyToLists(item) for item in data]
+        elif isinstance(data, np.ndarray):
+            return data.tolist()
+        else:
+            return data
 
     # load functions
     def loadNumpyArrayFromBinary(self, fileName, folderPath=None):
@@ -277,9 +302,9 @@ class DataHandler(object):
         robotState = self.jsonifyDictionary(robotState)
         self.saveDictionaryAsJson(robotState, folderPath, fileName)
 
-    def saveDictionaryAsJson(self, metaData: dict, folderPath, fileName):
+    def saveDictionaryAsJson(self, dict: dict, folderPath, fileName):
         with open(folderPath + fileName + ".json", "w") as fp:
-            json.dump(metaData, fp, indent=4)
+            json.dump(dict, fp, indent=4)
 
     # getter functions
     def getDataSetFileNames(self, dataSetFolderPath=None, type="rgb"):
@@ -332,9 +357,13 @@ class DataHandler(object):
     def getDataSetFileName_RBG(self, index, folderPath=None):
         return self.getDataSetFileNames_RBG(folderPath)[index]
 
-    def getDataSetIndexFromFileName(self, fileName, folderPath=None):
+    def getFileIndexFromFileName(self, fileName, folderPath=None):
         fileNames = self.getDataSetFileNames_RBG(folderPath)
         return fileNames.index(fileName)
+
+    def getFileNameFromFileIndex(self, fileIdex, folderPath=None):
+        fileName = self.getDataSetFileNames_RBG(folderPath)[fileIdex]
+        return fileName
 
     def getDataSetFolderPathFromRelativeFilePath(self, filePath):
         return "/".join(filePath.split("/")[:-2]) + "/"

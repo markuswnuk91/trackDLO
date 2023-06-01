@@ -6,6 +6,7 @@ import numpy as np
 import dartpy as dart
 from scipy.spatial import distance_matrix
 from functools import partial
+import pickle
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation", ""))
@@ -48,7 +49,20 @@ class Evaluation(object):
         self.configFilePath = configFilePath
         self.dataHandler = DataHandler()
         self.config = self.dataHandler.loadFromJson(self.configFilePath)
-        results = {}
+        self.results = []
+
+    def getFileName(self, fileIdentifier, dataSetFolderPath):
+        fileName = self.dataHandler.getFileNameFromNameOrIndex(
+            fileIdentifier, dataSetFolderPath
+        )
+        return fileName
+
+    def getFilePath(self, fileIdentifier, dataSetFolderPath):
+        return (
+            dataSetFolderPath
+            + "data/"
+            + self.getFileName(fileIdentifier, dataSetFolderPath)
+        )
 
     def getDataSet(self, fileIdentifier, dataSetFolderPath):
         fileIndex = self.dataHandler.getFileIndexFromNameOrIndex(
@@ -179,3 +193,39 @@ class Evaluation(object):
             plt.pause(0.1)
         else:
             raise NotImplementedError
+
+    def saveResults(
+        self,
+        folderPath,
+        fileName=None,
+        results=None,
+        generateUniqueID=True,
+        method="pickle",
+    ):
+        results = self.results if results is None else results
+        if fileName is None and generateUniqueID:
+            fileName = self.dataHandler.generateIdentifier(MS=False) + "_" + "results"
+        elif fileName is None and not generateUniqueID:
+            fileName = "results"
+        elif fileName is not None and generateUniqueID:
+            fileName = self.dataHandler.generateIdentifier(MS=False) + "_" + fileName
+
+        if method == "pickle":
+            filePath = folderPath + fileName + ".pkl"
+            with open(filePath, "wb") as f:
+                pickle.dump(results, f)
+
+        if method == "json":
+            filePath = folderPath + fileName + ".pkl"
+            jsonifiedResults = self.dataHandler.convertNumpyToLists(results)
+            self.dataHandler.saveDictionaryAsJson(
+                jsonifiedResults, folderPath, fileName
+            )
+        return filePath
+
+    def loadResults(self, filePath):
+        _, file_extension = os.path.splitext(filePath)
+        if file_extension == ".pkl":
+            with open(filePath, "rb") as f:
+                results = pickle.load(f)
+        return results

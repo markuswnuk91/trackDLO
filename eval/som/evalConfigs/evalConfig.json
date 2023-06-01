@@ -3,8 +3,8 @@
         "data/darus_data_download/data/20230518_roboticwireharnessmounting/20230518_RoboticWireHarnessMounting/20230518_170955_YShape/",
         "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/"
     ],
-    "dataSetsToLoad": [1],
-    "filesToLoad": [300],
+    "dataSetsToLoad": [0],
+    "filesToLoad": [10],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -43,10 +43,10 @@
         }
     },
     "somParameters" : {
-        "numSeedPoints": 10,
+        "numSeedPoints": 20,
         "alpha": 0.9,
         "alphaAnnealing": 0.3,
-        "sigma2": 0.1,
+        "sigma2": 0.3,
         "sigma2Min": 0.01,
         "sigma2Annealing": 0.9,
         "method": "kernel",

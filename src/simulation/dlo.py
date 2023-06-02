@@ -41,10 +41,10 @@ class DeformableLinearObject(object):
         torsionalDampingCoeffs=None,
         color=None,
         rootJointRestPositions=None,
-        gravity=None,
+        gravity=True,
         collidable=None,
         adjacentBodyCheck=None,
-        enableSelfCollisionCheck: bool = True,
+        enableSelfCollisionCheck: bool = None,
         *args,
         **kwargs,
     ):
@@ -75,13 +75,13 @@ class DeformableLinearObject(object):
         self.rootJointRestPositions = (
             np.zeros(6) if rootJointRestPositions is None else rootJointRestPositions
         )
-        self.gravity = True if gravity is None else gravity
-        self.collidable = True if collidable is None else collidable
+        self.gravity = False if gravity is None else gravity
+        self.collidable = False if collidable is None else collidable
         self.adjacentBodyCheck = (
             False if adjacentBodyCheck is None else adjacentBodyCheck
         )
         self.enableSelfCollisionCheck = (
-            True if enableSelfCollisionCheck is None else enableSelfCollisionCheck
+            False if enableSelfCollisionCheck is None else enableSelfCollisionCheck
         )
 
         self.segmentLength = self.length / self.numSegments
@@ -125,11 +125,11 @@ class DeformableLinearObject(object):
         self.skel.setAdjacentBodyCheck(self.adjacentBodyCheck)
 
         # enable selfCollisionChecking by default
-        if self.enableSelfCollisionCheck:
-            self.skel.enableSelfCollisionCheck()
-        else:
-            self.skel.disableSelfCollisionCheck()
-
+        # if self.enableSelfCollisionCheck:
+        #     self.skel.enableSelfCollisionCheck()
+        # else:
+        #     self.skel.disableSelfCollisionCheck()
+        self.skel.setSelfCollisionCheck(self.enableSelfCollisionCheck)
         print("Succesfully created Skeleton: " + self.name)
 
     def makeRootBody(

@@ -21,7 +21,7 @@ except:
     raise
 
 # script control parameters
-saveFig = True
+saveFig = False
 vis = False  # if iterations should be visualized
 savePath = "/mnt/c/Users/ac129490/Documents/Dissertation/Thesis/62bebc3388a16f7dcc7f9153/figures/plots/"
 fileName = "plotExampleSOM"

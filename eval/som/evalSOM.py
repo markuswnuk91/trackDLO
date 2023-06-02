@@ -90,6 +90,7 @@ if __name__ == "__main__":
     # setup result file
     result = {
         "dataSetFilePath": filePath,
+        "evalConfig": eval.config,
         "result": {
             "Y": [],
             "X": [],

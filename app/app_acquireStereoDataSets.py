@@ -13,11 +13,11 @@ except:
 # TO BE CHANGED BEFORE ACQUISITION
 model = "singleDLO" # "singleDLO, partial, modelY, arena"
 fps = 30 # maximum fps the application will display images
-method = 'auto' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
+method = 'manual' # "manual": acqusition on pressing key; "auto": continous acquisiton (video)
 saveRobotPose = False # if robot pose should also be saved
-saveSetupParameters = True
-saveRootDirectory = "data/acquiredData/"
-dataSetFolderName = "ManipulationSequences_mountedWireHarness" + "_" + model
+saveSetupParameters = False # setup parameters (fixture positions, grasping points) should be saved
+saveRootDirectory = "data/acquiredData/Configurations_mounted/"
+dataSetFolderName = model
 # not to be configured
 modelParameterPath = "src/evaluation/bdloDesciptions/" + model + "/"
 graspingPositionsParameterPath = "src/evaluation/setupDesciptions/roboticManipulationScenario/" + model + "/"

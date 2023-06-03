@@ -26,9 +26,6 @@ class TrackingWorldNode(dart.gui.osg.RealTimeWorldNode):
         q = self.skel.getPositions()
         q_dot = self.skel.getVelocities()
         q_ddot = self.skel.getAccelerations()
-        # self.skel.setVelocityUpperLimits(0.01 * np.ones(self.skel.getNumDofs()))
-        # self.skel.setVelocityLowerLimits(0.01 * np.ones(self.skel.getNumDofs()))
-
         qd = np.zeros(self.skel.getNumDofs())
         qd[5] = 0.1
         qd[6] = 1
@@ -38,12 +35,7 @@ class TrackingWorldNode(dart.gui.osg.RealTimeWorldNode):
         tauExt = self.ForceUpdate.computeExternalForceUpdateInGeneralizedCoordinates(
             q, q_dot, q_ddot, qd, qd_dot, qd_ddot
         )
-        # upperLimit = 0.01
-        # for i, t in enumerate(tauExt):
-        #     if np.abs(t) > upperLimit:
-        #         tauExt[i] = np.sign(t) * upperLimit
         self.skel.setForces(tauExt)
-        # self.skel.setForces(tauExt)
         self.skel.computeInverseDynamics()
 
 

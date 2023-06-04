@@ -83,13 +83,10 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         self,
         qInit,
         model: KinematicsModelDart,
-        max_iterations=None,
         ik_iterations=None,
-        tolerance=None,
         damping=None,
         dampingAnnealing=None,
         minDampingFactor=None,
-        normalize=None,
         *args,
         **kwargs
     ):
@@ -120,15 +117,11 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         self.q = qInit.copy()
         self.model = model
         self.Dof = self.q.size
-        self.tolerance = 10e-5 if tolerance is None else tolerance
-        self.max_iterations = 100 if max_iterations is None else max_iterations
         self.ik_iterations = 1 if ik_iterations is None else ik_iterations
-        self.iteration = 0
 
         self.damping = 1 if damping is None else damping
         self.dampingAnnealing = 0.97 if dampingAnnealing is None else dampingAnnealing
         self.minDampingFactor = 1 if minDampingFactor is None else minDampingFactor
-        self.normalize = False if normalize is None else normalize
 
         self.diff = np.inf
         self.L = -np.inf

@@ -1,0 +1,70 @@
+{    
+    "dataSetPaths": [
+        "data/darus_data_download/data/20230518_roboticwireharnessmounting/20230518_RoboticWireHarnessMounting/20230518_170955_YShape/",
+        "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/"
+    ],
+    "dataSetsToLoad": [0],
+    "filesToLoad": [0],
+    "savePaths": ["data/eval/tracking/"],
+    "preprocessingParameters": {
+        "hsvFilterParameters" : {
+            "hueMin": 0,
+            "hueMax": 15,
+            "saturationMin": 150,
+            "saturationMax": 250,
+            "valueMin": 0,
+            "valueMax": 255
+        },
+        "roiFilterParameters" : {
+            "uMin" : 0,
+            "uMax" : 1,
+            "vMin" : 0,
+            "vMax" : 1
+        },
+        
+        "cameraCoordinateBoundingBoxParameters" : {
+            "xMin" : -1,
+            "xMax" : 1,
+            "yMin" : -1,
+            "yMax" : 1,
+            "zMin" : 0,
+            "zMax" : 2
+        },
+        
+        "robotCoordinateBoundingBoxParameters" : {
+            "xMin" : 0.2,
+            "xMax" : 0.63,
+            "yMin" : -0.5,
+            "yMax" : 0.5,
+            "zMin" : 0.25,
+            "zMax" : 0.5
+        },
+        "downsamplingParameters" : {
+            "nthElement" : 1
+        }
+    },
+    "cpdParameters" : {
+        "max_iterations":10,
+        "alpha": 1, 
+        "beta": 1,
+        "normalize": 1
+    },
+    "sprParameters" : {
+        "max_iterations":10,
+        "tauFactor": 1,
+        "lambdaFactor": 1,
+        "beta": 1,
+        "knn":5,
+        "tauAnnealing":0.9,
+        "lambdaAnnealing":0.9,
+        "normalize": 1
+    },
+    "kprParameters" : {
+        "max_iterations":10,
+        "ik_iterations":10,
+        "damping":3 ,
+        "dampingAnnealing":1,
+        "minDampingFactor": 1,
+        "normalize": 1
+    }
+}

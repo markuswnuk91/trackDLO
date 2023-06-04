@@ -136,8 +136,6 @@ class StructurePreservedRegistration(NonRigidRegistration):
         self.tauFactor = 2 if tauFactor is None else tauFactor
         self.lambdaFactor = 2 if lambdaFactor is None else lambdaFactor
         self.beta = 2 if beta is None else beta
-        self.sigma2 = initialize_sigma2(self.X, self.Y) if sigma2 is None else sigma2
-        self.mu = 0.0 if mu is None else mu
         self.tauAnnealing = 0.97 if tauAnnealing is None else tauAnnealing
         self.lambdaAnnealing = 0.97 if lambdaAnnealing is None else lambdaAnnealing
         self.diff = np.inf

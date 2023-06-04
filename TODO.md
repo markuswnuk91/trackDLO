@@ -39,3 +39,21 @@
 
 ## Validation
 - [ ] determine Validation scenarios
+- [ ] implement evaluation 
+    - [ ] comparison of tracking performance of different algorithms (on static configurations and dynamic manipulation sequence)
+    - [ ] evaluation of accuracy and robustness of initial localization (on static configurations)
+    - [ ] comparison of tracking performance with and without inital localization (on static configurations)
+    - [ ] evaluation of overall pipeline (localizaiton + tracking) for robotic manipulation (grasping error)
+
+- [ ] determine performance metrics
+    - [x] Accuracy
+        - overall tracking error (coverage of point cloud by model)
+        - length error (error betwwen known length and measured length)
+        - uniformity error (error betwwen points)
+        - label error (error between label in point cloud and label on model)
+        - translational grasping error (translational error between estimated grasping position and measured grasping position)
+        - angular grasping error (angular error between estimated grasping position and measured grasping position)
+    - [ ] Runtime   
+
+## Data Acquisiton
+- [x] acquire data sets

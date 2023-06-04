@@ -324,6 +324,9 @@ class DataHandler(object):
             )
         return fileNames
 
+    def getNumImageSetsInDataSet(self, dataSetFolderPath=None):
+        return len(self.getDataSetFileNames_RBG(dataSetFolderPath + "data/"))
+
     def getDataSetFileNames_RBG(self, folderPath=None):
         if folderPath is None:
             folderPath = self.defaultLoadFolderPath_Data

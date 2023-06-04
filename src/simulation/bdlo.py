@@ -35,7 +35,6 @@ class BDLOTopology(topologyModel):
     def __init__(
         self,
         branchSpecs: list = None,
-        specInfo: dict = None,
         defaultNumBodyNodes=30,
         defaultRadius=0.01,
         defaultDensity=1000,
@@ -458,6 +457,14 @@ class BranchedDeformableLinearObject(BDLOTopology):
             cartesianJointPositions.append(childJointPosition)
         return np.array(cartesianJointPositions)
 
+    def getCartesianBodyCenterPositions(self):
+        cartesianBodyCenterPositions = []
+        for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
+            cartesianBodyCenterPositions.append(
+                self.skel.getBodyNode(bodyNodeIndex).getTransform().translation()
+            )
+        return np.array(cartesianBodyCenterPositions)
+
     # correspondance functions
     def getBranchCorrespondanceForBodyNode(self, bodyNodeIndex):
         correspondingBranches = []
@@ -750,6 +757,9 @@ class BranchedDeformableLinearObject(BDLOTopology):
             cartesianPosition = self.getCartesianPositionFromBranchLocalCoordinate(i, 0)
             branchNodeCartesiantPositions.append(cartesianPosition)
         return np.vstack(branchNodeCartesiantPositions)
+
+    def getGeneralizedCoordinates(self):
+        return self.skel.getPositions()
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

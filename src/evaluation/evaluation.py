@@ -33,6 +33,9 @@ try:
     )
 
     # tracking
+    from src.tracking.cpd.cpd import CoherentPointDrift
+    from src.tracking.spr.spr import StructurePreservedRegistration
+    from src.tracking.kpr.kpr import KinematicsPreservingRegistration
     from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
     from src.tracking.kpr.kinematicsModel import KinematicsModelDart
 
@@ -50,6 +53,14 @@ class Evaluation(object):
         self.dataHandler = DataHandler()
         self.config = self.dataHandler.loadFromJson(self.configFilePath)
         self.results = []
+        self.currentDataSetLoadPath = None
+        self.currentLoadFileIdentifier = None
+
+    def setDefaultLoadPathDataSet(self, dataSetFolderPath):
+        self.currentDataSetLoadPath = dataSetFolderPath
+
+    def setDefaultLoadFileIdentifier(self, fileIdentifier):
+        self.currentLoadFileIdentifier = fileIdentifier
 
     def getFileName(self, fileIdentifier, dataSetFolderPath):
         fileName = self.dataHandler.getFileNameFromNameOrIndex(
@@ -64,7 +75,25 @@ class Evaluation(object):
             + self.getFileName(fileIdentifier, dataSetFolderPath)
         )
 
-    def getDataSet(self, fileIdentifier, dataSetFolderPath):
+    def getNumImageSetsInDataSet(self, dataSetFolderPath=None):
+        if dataSetFolderPath is None:
+            dataSetFolderPath = self.currentDataSetLoadPath
+        else:
+            self.currentDataSetLoadPath = dataSetFolderPath
+        return self.dataHandler.getNumImageSetsInDataSet(dataSetFolderPath)
+
+    # data loading functions
+    def getDataSet(self, fileIdentifier=None, dataSetFolderPath=None):
+        if fileIdentifier is None:
+            fileIdentifier = self.currentLoadFileIdentifier
+        else:
+            self.currentLoadFileIdentifier = fileIdentifier
+
+        if dataSetFolderPath is None:
+            dataSetFolderPath = self.currentDataSetLoadPath
+        else:
+            self.currentDataSetLoadPath = dataSetFolderPath
+
         fileIndex = self.dataHandler.getFileIndexFromNameOrIndex(
             fileIdentifier, dataSetFolderPath
         )
@@ -79,6 +108,15 @@ class Evaluation(object):
     def getPointCloud(
         self, fileIdentifier, dataSetFolderPath, segmentationMethod="standard"
     ):
+        if fileIdentifier is None:
+            fileIdentifier = self.currentLoadFileIdentifier
+        else:
+            self.currentLoadFileIdentifier = fileIdentifier
+
+        if dataSetFolderPath is None:
+            dataSetFolderPath = self.currentDataSetLoadPath
+        else:
+            self.currentDataSetLoadPath = dataSetFolderPath
         if segmentationMethod == "standard":
             parameters = self.config["preprocessingParameters"]
             preProcessor = PreProcessing(
@@ -191,6 +229,24 @@ class Evaluation(object):
             set_axes_equal(ax)
             plt.draw()
             plt.pause(0.1)
+        elif (
+            (type(classHandle) == CoherentPointDrift)
+            or (type(classHandle) == StructurePreservedRegistration)
+            or (type(classHandle) == KinematicsPreservingRegistration)
+        ):
+            ax.cla()
+            plotPointSets(
+                ax=ax,
+                X=classHandle.T,
+                Y=classHandle.Y,
+                ySize=1,
+                xSize=30,
+                xColor=[1, 0, 0],
+                yColor=[0, 0, 0],
+            )
+            set_axes_equal(ax)
+            plt.draw()
+            plt.pause(0.1)
         else:
             raise NotImplementedError
 
@@ -229,3 +285,26 @@ class Evaluation(object):
             with open(filePath, "rb") as f:
                 results = pickle.load(f)
         return results
+
+    def getLastLoadedDataPath(self):
+        return self.getFilePath(
+            self.currentLoadFileIdentifier, self.currentDataSetLoadPath
+        )
+
+    def getLastLoadedFileIdentifier(self):
+        return self.currentLoadFileIdentifier
+
+    def getLastLoadedDataSetPath(self):
+        return self.currentDataSetLoadPath
+
+    def generateModel(self, dataSetPath, numBodyNodes):
+        modelInfo = self.dataHandler.loadModelParameters("model.json", dataSetPath)
+        branchSpecs = list(modelInfo["branchSpecifications"].values())
+        bdloModel = BranchedDeformableLinearObject(
+            **{
+                "adjacencyMatrix": modelInfo["topologyModel"],
+                "branchSpecs": branchSpecs,
+                "defaultNumBodyNodes": numBodyNodes,
+            }
+        )
+        return bdloModel

@@ -115,6 +115,7 @@ class NonRigidRegistration(object):
         self.sigma2 = initialize_sigma2(self.X, self.Y) if sigma2 is None else sigma2
         self.mu = 0.0 if mu is None else mu
         self.normalize = bool(normalize) if normalize is None else bool(normalize)
+        self.callback = None
 
     def register(self):
         """
@@ -134,6 +135,7 @@ class NonRigidRegistration(object):
         registration_parameters:
             Returned params dependent on registration method used.
         """
+        self.iteration = 0
         self.computeTargets()
         while self.iteration < self.max_iterations and not self.isConverged():
             self.iterate()

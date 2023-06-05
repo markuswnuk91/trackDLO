@@ -308,3 +308,21 @@ class Evaluation(object):
             }
         )
         return bdloModel
+
+    def showImage(self, fileIdentifier=None, dataSetFolderPath=None):
+        if fileIdentifier is None:
+            fileIdentifier = self.currentLoadFileIdentifier
+        else:
+            self.currentLoadFileIdentifier = fileIdentifier
+        if dataSetFolderPath is None:
+            dataSetFolderPath = self.currentDataSetLoadPath
+        else:
+            self.currentDataSetLoadPath = dataSetFolderPath
+
+        rgb_image, _ = self.getDataSet(fileIdentifier, dataSetFolderPath)
+        fileName = self.getFileName(fileIdentifier, dataSetFolderPath)
+        bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)  # convert to bgr for cv2
+        cv2.imshow(
+            "RGB image: " + fileName, cv2.resize(bgr_image, None, fx=0.25, fy=0.25)
+        )
+        cv2.waitKey(0)

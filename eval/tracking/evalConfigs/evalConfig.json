@@ -1,9 +1,10 @@
 {    
     "dataSetPaths": [
         "data/darus_data_download/data/20230518_roboticwireharnessmounting/20230518_RoboticWireHarnessMounting/20230518_170955_YShape/",
-        "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/"
+        "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/",
+        "data/darus_data_download/data/20230517_093927_manipulationsequence_manual_labeled_yshape/"
     ],
-    "dataSetsToLoad": [0],
+    "dataSetsToLoad": [2],
     "filesToLoad": [0],
     "savePaths": ["data/eval/tracking/"],
     "preprocessingParameters": {
@@ -44,24 +45,24 @@
         }
     },
     "cpdParameters" : {
-        "max_iterations":10,
+        "max_iterations":1,
         "alpha": 1, 
-        "beta": 1,
+        "beta": 2,
         "normalize": 1
     },
     "sprParameters" : {
-        "max_iterations":10,
-        "tauFactor": 1,
-        "lambdaFactor": 1,
-        "beta": 1,
+        "max_iterations":1,
+        "tauFactor": 100,
+        "lambdaFactor": 500,
+        "beta": 2,
         "knn":5,
         "tauAnnealing":0.9,
         "lambdaAnnealing":0.9,
         "normalize": 1
     },
     "kprParameters" : {
-        "max_iterations":10,
-        "ik_iterations":10,
+        "max_iterations":1,
+        "ik_iterations":1,
         "damping":3 ,
         "dampingAnnealing":1,
         "minDampingFactor": 1,

@@ -326,6 +326,7 @@ class Evaluation(object):
         numIterations=100,
         verbose=0,
         method="IK",
+        jacobianDamping=None,
         visualizeCorresponanceEstimation=False,
         visualizeIterations=False,
         visualizeResult=False,
@@ -340,6 +341,7 @@ class Evaluation(object):
                 "S": localCoordinateSamples,
                 "templateTopology": bdloModel,
                 "extractedTopology": extractedTopology,
+                "jacobianDamping": jacobianDamping,
             }
         )
         if visualizeIterations:

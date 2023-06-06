@@ -69,7 +69,8 @@
         "numSamples": 10,
         "numIterations": 10,
         "verbose": 0,
-        "method": "IK"
+        "method": "IK",
+        "jacobianDamping":1
     },
 
     "cpdParameters" : {
@@ -91,7 +92,7 @@
     "kprParameters" : {
         "max_iterations":10,
         "ik_iterations":10,
-        "damping":3 ,
+        "damping":10 ,
         "dampingAnnealing":1,
         "minDampingFactor": 1,
         "normalize": 1

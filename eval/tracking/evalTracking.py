@@ -139,10 +139,17 @@ def runEvaluation(dataSetPath):
         pointSet=Y,
         extractedTopology=extractedTopology,
         bdloModel=bdloModel,
+<<<<<<< HEAD
         numSamples=eval.config["localization"]["numSamples"],
         numIterations=eval.config["localization"]["numIterations"],
         verbose=eval.config["localization"]["verbose"],
         method=eval.config["localization"]["method"],
+=======
+        numSamples=10,
+        numIterations=100,
+        verbose=0,
+        method="IK",
+>>>>>>> 32fd012679f672b3434f5137655fdb07a9987a75
         visualizeCorresponanceEstimation=True,
         visualizeIterations=True,
         visualizeResult=True,

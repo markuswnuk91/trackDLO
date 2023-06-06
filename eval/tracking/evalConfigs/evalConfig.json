@@ -41,17 +41,38 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 1
+            "nthElement" : 10
         }
     },
+    "topologyExtraction":{
+        "somParameters" : {
+            "numSeedPoints": 30,
+            "alpha": 0.9,
+            "alphaAnnealing": 1,
+            "sigma2": 0.3,
+            "sigma2Min": 0.001,
+            "sigma2Annealing": 0.87,
+            "method": "kernel",
+            "max_iterations": 30
+        },
+        "l1Parameters" : {
+            "numSeedPoints": 300,
+            "h": 0.03,
+            "hAnnealing": 0.9,
+            "hMin": 0.01,
+            "mu": 0.35,
+            "max_iterations": 10
+        },
+        "pruningThreshold": 1e-6
+    },
     "cpdParameters" : {
-        "max_iterations":1,
+        "max_iterations":10,
         "alpha": 1, 
         "beta": 2,
         "normalize": 1
     },
     "sprParameters" : {
-        "max_iterations":1,
+        "max_iterations":10,
         "tauFactor": 100,
         "lambdaFactor": 500,
         "beta": 2,
@@ -61,11 +82,11 @@
         "normalize": 1
     },
     "kprParameters" : {
-        "max_iterations":1,
-        "ik_iterations":1,
+        "max_iterations":10,
+        "ik_iterations":10,
         "damping":3 ,
-        "dampingAnnealing":1,
-        "minDampingFactor": 1,
+        "dampingAnnealing":0.9,
+        "minDampingFactor": 0.8,
         "normalize": 1
     }
 }

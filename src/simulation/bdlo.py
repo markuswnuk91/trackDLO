@@ -68,8 +68,8 @@ class BDLOTopology(topologyModel):
 
             if "density" not in branchSpec:
                 warn(
-                    "Expected the branch radius to be specified in the branch specification, but specification has no parameter radius for branch {}. Assuming default value for density.".format(
-                        i
+                    "Expected the branch denisty to be specified in the branch specification, but specification has no parameter density for branch {}. Assuming default value of for density ({} kg/m^3).".format(
+                        i, defaultDensity
                     )
                 )
                 newSpec = self.branchSpecs[i].copy()
@@ -724,12 +724,12 @@ class BranchedDeformableLinearObject(BDLOTopology):
         )
         bodyNode = self.skel.getBodyNode(correspondingBodyNode)
         jacobian = bodyNode.getWorldJacobian(offset)
-        jacobianTrans = jacobian[3:6, :]
-        jacobianRot = jacobian[:3, :]
-        transformToWorld = np.linalg.inv(
-            self.skel.getBodyNode(0).getWorldTransform().rotation()
-        )
-        jacobian = np.vstack((jacobianRot, transformToWorld @ jacobianTrans))
+        # jacobianTrans = jacobian[3:6, :]
+        # jacobianRot = jacobian[:3, :]
+        # transformToWorld = np.linalg.inv(
+        #     self.skel.getBodyNode(0).getWorldTransform().rotation()
+        # )
+        # jacobian = np.vstack((jacobianRot, transformToWorld @ jacobianTrans))
 
         indexPointer = 0
         paddedJacobian = np.zeros((6, self.skel.getNumDofs()))

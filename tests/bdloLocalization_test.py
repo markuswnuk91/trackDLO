@@ -65,13 +65,21 @@ def visualizationCallback(
         ySize=10,
         xSize=10,
     )
-    for i, y in enumerate(classHandle.YTarget):
+    # for i, y in enumerate(classHandle.YTarget):
+    #     plotLine(
+    #         ax=ax,
+    #         pointPair=np.vstack(((classHandle.C @ classHandle.X)[i], y)),
+    #         color=[1, 0, 0],
+    #         alpha=0.3,
+    #     )
+    for i, x in enumerate(classHandle.X):
         plotLine(
             ax=ax,
-            pointPair=np.vstack(((classHandle.C @ classHandle.X)[i], y)),
+            pointPair=np.vstack(((x, (classHandle.C.T @ classHandle.YTarget)[i]))),
             color=[1, 0, 0],
             alpha=0.3,
         )
+    set_axes_equal(ax)
     plt.draw()
     plt.pause(0.1)
 
@@ -90,6 +98,7 @@ def runReconstruction():
             "S": S,
             "templateTopology": templateTopologyModel,
             "extractedTopology": extractedTopologyModel,
+            "jacobianDamping": 0.2,
         }
     )
 
@@ -97,7 +106,7 @@ def runReconstruction():
         visualizationCallback = setupVisualizationCallback(testLocalization)
         testLocalization.registerCallback(visualizationCallback)
 
-    testLocalization.reconstructShape()
+    testLocalization.reconstructShape(method="IK")
 
 
 if __name__ == "__main__":

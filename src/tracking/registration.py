@@ -117,7 +117,7 @@ class NonRigidRegistration(object):
         self.normalize = bool(normalize) if normalize is None else bool(normalize)
         self.callback = None
 
-    def register(self):
+    def register(self, checkConvergence=True):
         """
         Peform the registration
 
@@ -137,7 +137,12 @@ class NonRigidRegistration(object):
         """
         self.iteration = 0
         self.computeTargets()
-        while self.iteration < self.max_iterations and not self.isConverged():
+        run = True
+        while run:
+            if self.iteration >= self.max_iterations:
+                run = False
+            if checkConvergence and self.isConverged():
+                run = False
             self.iterate()
             if callable(self.callback):
                 self.callback()

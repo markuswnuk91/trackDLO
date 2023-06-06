@@ -332,5 +332,8 @@ class TopologyExtraction(object):
             tuple(item) for item in map(sorted, tuplesOfPruningIndices)
         }
         unqiquePruningIndices = list(map(list, zip(*uniqueTuplesOfPruningIndices)))
-        prunedPointSet = np.delete(pointSet, unqiquePruningIndices[0], axis=0)
+        if len(unqiquePruningIndices) > 0:
+            prunedPointSet = np.delete(pointSet, unqiquePruningIndices[0], axis=0)
+        else:
+            prunedPointSet = pointSet
         return prunedPointSet

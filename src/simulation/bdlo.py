@@ -761,6 +761,15 @@ class BranchedDeformableLinearObject(BDLOTopology):
     def getGeneralizedCoordinates(self):
         return self.skel.getPositions()
 
+    def computeForwardKinematics(self, q, locations="center"):
+        self.skel.setPositions(q)
+        if locations == "center":
+            return self.getCartesianBodyCenterPositions()
+        elif locations == "joint":
+            return self.getCartesianJointPositions()
+        else:
+            raise NotImplementedError
+
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):
 #     """

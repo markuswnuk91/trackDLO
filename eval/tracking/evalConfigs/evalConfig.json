@@ -61,10 +61,17 @@
             "hAnnealing": 0.9,
             "hMin": 0.01,
             "mu": 0.35,
-            "max_iterations": 10
+            "max_iterations": 3
         },
         "pruningThreshold": 1e-6
     },
+    "localization":{
+        "numSamples": 10,
+        "numIterations": 10,
+        "verbose": 0,
+        "method": "IK"
+    },
+
     "cpdParameters" : {
         "max_iterations":10,
         "alpha": 1, 
@@ -85,8 +92,8 @@
         "max_iterations":10,
         "ik_iterations":10,
         "damping":3 ,
-        "dampingAnnealing":0.9,
-        "minDampingFactor": 0.8,
+        "dampingAnnealing":1,
+        "minDampingFactor": 1,
         "normalize": 1
     }
 }

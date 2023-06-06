@@ -1,6 +1,7 @@
 import sys
 import os
 import matplotlib.pyplot as plt
+import matplotlib
 import cv2
 import numpy as np
 import dartpy as dart
@@ -59,7 +60,30 @@ class Evaluation(object):
         self.currentDataSetLoadPath = None
         self.currentLoadFileIdentifier = None
 
-    # file handling
+        # setup colormaps
+        self.colorMaps = self.setupColorMaps()
+
+    # ---------------------------------------------------------------------------
+    # SETUP FUNCITONS
+    # ---------------------------------------------------------------------------
+    def setupColorMaps(self):
+        colorMapDict = {}
+        # set all colormaps to range from 0 to 1
+        lowerLim = 0
+        upperLim = 1
+        norm = matplotlib.colors.Normalize(vmin=lowerLim, vmax=upperLim)  # Normalizer
+
+        # add viridis colormap
+        colorMap_viridis = matplotlib.colormaps["viridis"]
+        scalarMappable_viridis = plt.cm.ScalarMappable(
+            cmap=colorMap_viridis, norm=norm
+        )  # creating ScalarMappable
+        colorMapDict["viridis"] = scalarMappable_viridis
+        return colorMapDict
+
+    # ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # FILE HANDLING FUNCTIONS
     def setDefaultLoadPathDataSet(self, dataSetFolderPath):
         self.currentDataSetLoadPath = dataSetFolderPath
 
@@ -280,8 +304,9 @@ class Evaluation(object):
             visualizationCallback_SOM(topologyExtraction.selfOrganizingMap)
             plt.show(block=False)
         if visualizeExtractionResult:
-            fix, ax = self.setupFigure()
-            self.standardVisualizationFunction(fix, ax, extractedTopology)
+            self.visualizeTopologyExtractionResult(
+                topologyExtraction=topologyExtraction
+            )
             plt.show(block=False)
         if (
             visualizeL1Result or visualizeSOMResult or visualizeExtractionResult
@@ -289,7 +314,55 @@ class Evaluation(object):
             plt.show(block=True)
         return extractedTopology, topologyExtraction
 
-    # visualization
+    # -------------------------------------------------------------------------
+    # INITIAL LOCALIZATION
+    # -------------------------------------------------------------------------
+    def initialLocalization(
+        self,
+        pointSet,
+        extractedTopology,
+        bdloModel,
+        numSamples=10,
+        numIterations=100,
+        verbose=0,
+        method="IK",
+        visualizeCorresponanceEstimation=False,
+        visualizeIterations=False,
+        visualizeResult=False,
+        visualizationCallback=None,
+        block=False,
+    ):
+        localCoordinateSamples = np.linspace(0, 1, numSamples)
+        Y = pointSet
+        localization = BDLOLocalization(
+            **{
+                "Y": Y,
+                "S": localCoordinateSamples,
+                "templateTopology": bdloModel,
+                "extractedTopology": extractedTopology,
+            }
+        )
+        if visualizeIterations:
+            visualizationCallback = self.getVisualizationCallback(localization)
+            localization.registerCallback(visualizationCallback)
+
+        # run inital localization
+        qInit = localization.reconstructShape(
+            numIter=numIterations, verbose=verbose, method=method
+        )
+        XInit = bdloModel.computeForwardKinematics(qInit, locations="center")
+
+        # visualization
+        if visualizeCorresponanceEstimation:
+            fig, ax = self.setupFigure()
+            self.standardVisualizationFunction(fig, ax, localization)
+            plt.show(block=block)
+
+        return XInit, qInit, localization
+
+    # -------------------------------------------------------------------------
+    # VISUALIZATION FUNCTIONS
+    # -------------------------------------------------------------------------
     def getVisualizationCallback(
         self,
         classHandle,
@@ -397,29 +470,75 @@ class Evaluation(object):
                 yColor=[0, 0, 0],
             )
         elif type(classHandle) == MinimalSpanningTreeTopology:
+            if "color" in kwargs:
+                color = kwargs["color"]
+            else:
+                color = [1, 0, 0]
             pointPairs = classHandle.getAdjacentPointPairs()
-            leafNodeIndices = classHandle.getLeafNodeIndices()
-            branchNodeIndices = classHandle.getBranchNodeIndices()
             for pointPair in pointPairs:
                 stackedPair = np.stack(pointPair)
-                plotPointSet(
+                plotLine(ax, pointPair=stackedPair, color=color)
+        elif type(classHandle) == BranchedDeformableLinearObject:
+            if "color" in kwargs:
+                color = kwargs["color"]
+            else:
+                color = [0, 0, 1]
+            pointPairs = classHandle.getAdjacentPointPairs()
+            for pointPair in pointPairs:
+                stackedPair = np.stack(pointPair)
+                plotLine(ax, pointPair=stackedPair, color=color)
+
+        elif type(classHandle) == BDLOLocalization:
+            templateTopologyColor = list(self.colorMaps["viridis"].to_rgba(0)[:3])
+            extractedTopologyColor = list(self.colorMaps["viridis"].to_rgba(1)[:3])
+            correspondanceColor = list(self.colorMaps["viridis"].to_rgba(0.5)[:3])
+            self.standardVisualizationFunction(
+                fig,
+                ax,
+                classHandle.templateTopology,
+                **{"color": templateTopologyColor},
+            )
+            self.standardVisualizationFunction(
+                fig,
+                ax,
+                classHandle.extractedTopology,
+                **{"color": extractedTopologyColor},
+            )
+            for i, x in enumerate(classHandle.X):
+                plotLine(
                     ax=ax,
-                    X=classHandle.X,
-                    color=[0, 0, 1],
-                    size=30,
-                    alpha=0.4,
-                )
-                plotLine(ax, pointPair=stackedPair, color=[0, 0, 1])
-                plotPointSet(
-                    ax=ax,
-                    X=classHandle.X[leafNodeIndices, :],
-                    color=[1, 0, 0],
-                    size=50,
-                    alpha=0.4,
+                    pointPair=np.vstack(
+                        ((classHandle.C.T @ classHandle.YTarget)[i], x)
+                    ),
+                    color=correspondanceColor,
+                    alpha=0.3,
                 )
         else:
             raise NotImplementedError
         set_axes_equal(ax)
+
+    def visualizeTopologyExtractionResult(self, topologyExtraction, *args, **kwargs):
+        fig, ax = self.setupFigure()
+        self.standardVisualizationFunction(
+            fig, ax, topologyExtraction.extractedTopology
+        )
+        leafNodeIndices = topologyExtraction.extractedTopology.getLeafNodeIndices()
+        branchNodeIndices = topologyExtraction.extractedTopology.getBranchNodeIndices()
+        plotPointSet(
+            ax=ax,
+            X=topologyExtraction.extractedTopology.X,
+            color=[0, 0, 1],
+            size=30,
+            alpha=0.4,
+        )
+        plotPointSet(
+            ax=ax,
+            X=topologyExtraction.extractedTopology.X[leafNodeIndices, :],
+            color=[1, 0, 0],
+            size=50,
+            alpha=1,
+        )
+        plotPointSet(ax=ax, X=topologyExtraction.Y, color=[0, 0, 0], size=1, alpha=0.1)
 
     def showImage(self, fileIdentifier=None, dataSetFolderPath=None):
         if fileIdentifier is None:

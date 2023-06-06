@@ -135,7 +135,20 @@ def runEvaluation(dataSetPath):
     )
 
     # perform initial localization
-
+    Xinit, qInit, _ = eval.initialLocalization(
+        pointSet=Y,
+        extractedTopology=extractedTopology,
+        bdloModel=bdloModel,
+        numSamples=10,
+        numIterations=100,
+        verbose=0,
+        method="IK",
+        visualizeCorresponanceEstimation=True,
+        visualizeIterations=True,
+        visualizeResult=True,
+        visualizationCallback=None,
+        block=False,
+    )
     # setup registrations
     XInit = bdloModel.getCartesianBodyCenterPositions()
     qInit = bdloModel.getGeneralizedCoordinates()

@@ -42,6 +42,9 @@ try:
     from src.tracking.kpr.kpr import KinematicsPreservingRegistration
     from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
     from src.tracking.kpr.kinematicsModel import KinematicsModelDart
+    from src.tracking.krcpd.krcpd import (
+        KinematicRegularizedCoherentPointDrift,
+    )
 
     # visualization
     from src.visualization.plot3D import *
@@ -470,6 +473,22 @@ class Evaluation(object):
                 yColor=[0, 0, 0],
             )
         elif type(classHandle) == KinematicsPreservingRegistration:
+            plotPointSets(
+                ax=ax,
+                X=classHandle.T,
+                Y=classHandle.Y,
+                ySize=1,
+                xSize=30,
+                xColor=[1, 0, 0],
+                yColor=[0, 0, 0],
+            )
+            plotPointSet(
+                ax=ax,
+                X=classHandle.X_desired,
+                size=30,
+                color=[0, 1, 0],
+            )
+        elif type(classHandle) == KinematicRegularizedCoherentPointDrift:
             plotPointSets(
                 ax=ax,
                 X=classHandle.T,

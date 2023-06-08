@@ -17,6 +17,9 @@ try:
     from src.tracking.krspr.krspr import (
         KinematicRegularizedStructurePreservedRegistration,
     )
+    from src.tracking.krcpd.krcpd import (
+        KinematicRegularizedCoherentPointDrift,
+    )
 
     # visualization
     from src.visualization.plot3D import *
@@ -153,37 +156,76 @@ def runEvaluation(dataSetPath):
     # setup registrations
     XInit = bdloModel.getCartesianBodyCenterPositions()
     qInit = bdloModel.getGeneralizedCoordinates()
-    cpd = CoherentPointDrift(Y=Y, X=XInit, **eval.config["cpdParameters"])
-    spr = StructurePreservedRegistration(Y=Y, X=XInit, **eval.config["sprParameters"])
-    kpr = KinematicsPreservingRegistration(
+
+    # # cpd
+    # cpd = CoherentPointDrift(Y=Y, X=XInit, **eval.config["cpdParameters"])
+    # if vis:
+    #     visualizationCallback_cpd = eval.getVisualizationCallback(cpd)
+    #     cpd.registerCallback(visualizationCallback_cpd)
+    # cpd.registerCallback(visualizationCallback_cpd)
+    # for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
+    #     pointCloud = eval.getPointCloud(
+    #         i,
+    #         dataSetPath,
+    #     )
+    #     Y = pointCloud[0]
+    #     cpd.Y = Y
+    #     cpd.register(checkConvergence=False)
+
+    # # spr
+    # spr = StructurePreservedRegistration(Y=Y, X=XInit, **eval.config["sprParameters"])
+    # if vis:
+    #     visualizationCallback_spr = eval.getVisualizationCallback(spr)
+    #     spr.registerCallback(visualizationCallback_spr)
+    # spr.register(checkConvergence=False)
+
+    # for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
+    #     pointCloud = eval.getPointCloud(
+    #         i,
+    #         dataSetPath,
+    #     )
+    #     Y = pointCloud[0]
+    #     spr.Y = Y
+    #     spr.register(checkConvergence=False)
+
+    # # kpr
+    # kpr = KinematicsPreservingRegistration(
+    #     Y=Y,
+    #     qInit=qInit,
+    #     model=KinematicsModelDart(bdloModel.skel.clone()),
+    #     **eval.config["kprParameters"],
+    # )
+    # if vis:
+    #     visualizationCallback_kpr = eval.getVisualizationCallback(kpr)
+    #     kpr.registerCallback(visualizationCallback_kpr)
+    # kpr.register(checkConvergence=False)
+    # for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
+    #     pointCloud = eval.getPointCloud(
+    #         i,
+    #         dataSetPath,
+    #     )
+    #     Y = pointCloud[0]
+    #     kpr.Y = Y
+    #     kpr.register(checkConvergence=False)
+
+    krcpd = KinematicRegularizedCoherentPointDrift(
         Y=Y,
         qInit=qInit,
         model=KinematicsModelDart(bdloModel.skel.clone()),
-        **eval.config["kprParameters"],
+        **eval.config["krcpdParameters"],
     )
     if vis:
-        visualizationCallback_cpd = eval.getVisualizationCallback(cpd)
-        visualizationCallback_spr = eval.getVisualizationCallback(spr)
-        visualizationCallback_kpr = eval.getVisualizationCallback(kpr)
-        cpd.registerCallback(visualizationCallback_cpd)
-        spr.registerCallback(visualizationCallback_spr)
-        kpr.registerCallback(visualizationCallback_kpr)
-    cpd.register(checkConvergence=False)
-    spr.register(checkConvergence=False)
-    kpr.register(checkConvergence=False)
-
+        visualizationCallback_krcpd = eval.getVisualizationCallback(krcpd)
+        krcpd.registerCallback(visualizationCallback_krcpd)
+    krcpd.register(checkConvergence=False)
     for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
         pointCloud = eval.getPointCloud(
             i,
             dataSetPath,
         )
         Y = pointCloud[0]
-        cpd.Y = Y
-        spr.Y = Y
-        kpr.Y = Y
-        cpd.register()
-        spr.register()
-        kpr.register()
+        krcpd.Y = Y
+        krcpd.register(checkConvergence=False)
     return result
 
 

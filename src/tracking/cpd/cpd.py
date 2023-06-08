@@ -110,7 +110,7 @@ class CoherentPointDrift(NonRigidRegistration):
         self.alpha = 2 if alpha is None else alpha
         self.beta = 2 if beta is None else beta
         self.diff = np.inf
-        self.q = np.inf
+        self.L = np.inf
         self.P = np.zeros((self.N, self.M))
         self.Pden = np.zeros((self.M))
         self.Pt1 = np.zeros((self.M,))
@@ -239,13 +239,13 @@ class CoherentPointDrift(NonRigidRegistration):
         # The original CPD paper does not explicitly calculate the objective functional.
         # This functional includes terms from both the negative log-likelihood and
         # the Gaussian kernel used for regularization.
-        qold = self.q
-        self.q = (
+        Lold = self.L
+        self.L = (
             np.sum(-np.log(self.Pden))
             - self.D * self.M * np.log(self.sigma2) / 2
             + self.alpha / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
         )
-        self.diff = np.abs((self.q - qold) / self.q)
+        self.diff = np.abs((self.L - Lold) / self.L)
 
         # Optionally we could use the difference between the current and previous
         # estimate of the variance as a proxy to test for convergence.

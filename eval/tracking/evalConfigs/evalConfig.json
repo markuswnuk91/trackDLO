@@ -41,7 +41,7 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 10
+            "nthElement" : 100
         }
     },
     "topologyExtraction":{
@@ -56,7 +56,7 @@
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 300,
+            "numSeedPoints": 100,
             "h": 0.03,
             "hAnnealing": 0.9,
             "hMin": 0.01,
@@ -67,22 +67,22 @@
     },
     "localization":{
         "numSamples": 10,
-        "numIterations": 10,
+        "numIterations": 20,
         "verbose": 0,
         "method": "IK",
         "jacobianDamping":1
     },
 
     "cpdParameters" : {
-        "max_iterations":10,
+        "max_iterations":1,
         "alpha": 1, 
         "beta": 2,
         "normalize": 1
     },
     "sprParameters" : {
-        "max_iterations":10,
-        "tauFactor": 100,
-        "lambdaFactor": 500,
+        "max_iterations":1,
+        "tauFactor": 3,
+        "lambdaFactor": 100,
         "beta": 2,
         "knn":5,
         "tauAnnealing":0.9,
@@ -90,11 +90,21 @@
         "normalize": 1
     },
     "kprParameters" : {
-        "max_iterations":10,
+        "max_iterations":1,
         "ik_iterations":10,
         "damping":10 ,
         "dampingAnnealing":1,
         "minDampingFactor": 1,
         "normalize": 1
+    },
+    "krcpdParameters" : {
+        "max_iterations":1,
+        "alpha": 1, 
+        "beta": 0.5,
+        "ik_iterations":10,
+        "damping":10,
+        "dampingAnnealing":1,
+        "minDampingFactor": 1,
+        "normalize": 0
     }
 }

@@ -27,30 +27,38 @@ class KinematicsModelDart(object):
         Placeholder for child classes
         """
         self.skel.setPositions(q)
-        J = np.zeros((3, self.Dof))
-        dartJacobian = self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[
-            3:6, :
-        ]
-        # dartJacobian[:, 3:6] = (
-        #     np.linalg.inv(self.skel.getBodyNode(0).getWorldTransform().rotation())
-        #     @ dartJacobian[:, 3:6]
-        # )
+        # J = np.zeros((3, self.Dof))
 
-        # (
-        #     np.linalg.inv(self.skel.getBodyNode(0).getWorldTransform().rotation())
-        #     @ self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[3:6, :]
-        # )
-        if dartJacobian.shape[1] < self.Dof:
-            J = np.pad(
-                dartJacobian,
-                ((0, 0), (0, self.Dof - dartJacobian.shape[1] % self.Dof)),
-                "constant",
-            )
-        elif dartJacobian.shape[1] == self.Dof:
-            J = dartJacobian
-        else:
-            raise ValueError("Dimension of Jacobian seems wrong.")
-        return J
+        # dartJacobian = self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[
+        #     3:6, :
+        # ]
+        # # dartJacobian[:, 3:6] = (
+        # #     np.linalg.inv(self.skel.getBodyNode(0).getWorldTransform().rotation())
+        # #     @ dartJacobian[:, 3:6]
+        # # )
+
+        # # (
+        # #     np.linalg.inv(self.skel.getBodyNode(0).getWorldTransform().rotation())
+        # #     @ self.skel.getBodyNode(n).getWorldJacobian(np.array([0, 0, 0]))[3:6, :]
+        # # )
+        # if dartJacobian.shape[1] < self.Dof:
+        #     #     J = np.pad(
+        #     #         dartJacobian,
+        #     #         ((0, 0), (0, self.Dof - dartJacobian.shape[1] % self.Dof)),
+        #     #         "constant",
+        #     #     )
+        #     indexPointer = 0
+        #     paddedJacobian = np.zeros((3, self.skel.getNumDofs()))
+        #     for i in range(0, self.skel.getNumDofs()):
+        #         if self.skel.getBodyNode(n).dependsOn(i):
+        #             paddedJacobian[:, i] = dartJacobian[:, indexPointer]
+        #             indexPointer += 1
+        #     J = paddedJacobian
+        # elif dartJacobian.shape[1] == self.Dof:
+        #     J = dartJacobian
+        # else:
+        #     raise ValueError("Dimension of Jacobian seems wrong.")
+        return self.skel.getWorldJacobian(self.skel.getBodyNode(n))[3:, :]
 
         # Darts' world jacobian seems wrong for free floating base (translational degrees of freedom are not identity matrix)
         # return np.linalg.inv(

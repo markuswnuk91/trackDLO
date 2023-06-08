@@ -722,22 +722,26 @@ class BranchedDeformableLinearObject(BDLOTopology):
         offset = self.getOffsetInBodyNodeCoordinatesFromBranchLocalCoordiate(
             branchIndex, correspondingBodyNode, s
         )
-        bodyNode = self.skel.getBodyNode(correspondingBodyNode)
-        jacobian = bodyNode.getWorldJacobian(offset)
+        # bodyNode = self.skel.getBodyNode(correspondingBodyNode)
+        # jacobian = bodyNode.getWorldJacobian(offset)
         # jacobianTrans = jacobian[3:6, :]
         # jacobianRot = jacobian[:3, :]
-        # transformToWorld = np.linalg.inv(
-        #     self.skel.getBodyNode(0).getWorldTransform().rotation()
-        # )
-        # jacobian = np.vstack((jacobianRot, transformToWorld @ jacobianTrans))
+        # # transformToWorld = np.linalg.inv(
+        # #     self.skel.getBodyNode(branchIndex).getWorldTransform().rotation()
+        # # )
+        # # jacobian = np.vstack(
+        # #     (transformToWorld @ jacobianRot, transformToWorld @ jacobianTrans)
+        # # )
 
-        indexPointer = 0
-        paddedJacobian = np.zeros((6, self.skel.getNumDofs()))
-        for i in range(0, self.skel.getNumDofs()):
-            if bodyNode.dependsOn(i):
-                paddedJacobian[:, i] = jacobian[:, indexPointer]
-                indexPointer += 1
-        return paddedJacobian
+        # indexPointer = 0
+        # paddedJacobian = np.zeros((6, self.skel.getNumDofs()))
+        # for i in range(0, self.skel.getNumDofs()):
+        #     if bodyNode.dependsOn(i):
+        #         paddedJacobian[:, i] = jacobian[:, indexPointer]
+        #         indexPointer += 1
+        return self.skel.getWorldJacobian(
+            self.skel.getBodyNode(correspondingBodyNode), offset
+        )
 
     def getLeafNodeCartesianPositions(self):
         """returns the cartesian positions for all leafnodes"""

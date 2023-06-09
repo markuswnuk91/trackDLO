@@ -8,6 +8,7 @@ try:
     sys.path.append(os.getcwd().replace("/src/tracking/krcpd", ""))
     from src.tracking.cpd.cpd import CoherentPointDrift
     from src.utils.utils import dampedPseudoInverse
+    from src.utils.utils import gaussian_kernel
 except:
     print("Imports for KR-CPD failed.")
     raise
@@ -36,6 +37,58 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         self.minDampingFactor = 1 if minDampingFactor is None else minDampingFactor
         self.dampingAnnealing = 0.97 if dampingAnnealing is None else dampingAnnealing
         self.ik_iterations = 1 if ik_iterations is None else ik_iterations
+        self.Xreg = self.X
+
+    def estimateCorrespondance(self):
+        """
+        E-step: Compute the expectation step  of the EM algorithm.
+        """
+        if self.normalize:
+            # normalize to 0 mean
+            Y_hat = self.Y - np.mean(self.Y)
+            Xreg_hat = self.Xreg - np.mean(self.Xreg)
+            # normalize to 0 variance
+            scalingFactor_Xreg = np.sqrt(np.sum(self.Xreg**2) / self.N)
+            scalingFactor_Y = np.sqrt(np.sum(self.Y**2) / self.M)
+            Y_hat = Y_hat / scalingFactor_Y
+            Xreg_hat = Xreg_hat / scalingFactor_Xreg
+            P = np.sum((Y_hat[None, :, :] - Xreg_hat[:, None, :]) ** 2, axis=2)
+
+            c = (2 * np.pi * self.sigma2) ** (self.D / 2)
+            c = c * self.mu / (1 - self.mu)
+            c = c * self.N / self.M
+
+            P = np.exp(-P / (2 * self.sigma2))
+            den = np.sum(P, axis=0)
+            den = np.tile(den, (self.N, 1))
+            den[den == 0] = np.finfo(float).eps
+            den += c
+
+            self.Pden = den[0, :]
+            self.P = np.divide(P, self.Pden)
+            self.Pt1 = np.sum(self.P, axis=0)
+            self.P1 = np.sum(self.P, axis=1)
+            self.Np = np.sum(self.P1)
+            self.PY = np.matmul(self.P, self.Y)
+        else:
+            P = np.sum((self.Y[None, :, :] - self.Xreg[:, None, :]) ** 2, axis=2)
+
+            c = (2 * np.pi * self.sigma2) ** (self.D / 2)
+            c = c * self.mu / (1 - self.mu)
+            c = c * self.N / self.M
+
+            P = np.exp(-P / (2 * self.sigma2))
+            den = np.sum(P, axis=0)
+            den = np.tile(den, (self.N, 1))
+            den[den == 0] = np.finfo(float).eps
+            den += c
+
+            self.Pden = den[0, :]
+            self.P = np.divide(P, self.Pden)
+            self.Pt1 = np.sum(self.P, axis=0)
+            self.P1 = np.sum(self.P, axis=1)
+            self.Np = np.sum(self.P1)
+            self.PY = np.matmul(self.P, self.Y)
 
     def updateParameters(self):
         """
@@ -79,15 +132,14 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             self.E = self.E + self.alpha / 2 * np.trace(
                 np.matmul(QtW.T, np.matmul(self.S, QtW))
             )
+        self.computeTargets()
 
         # kinematic regularization
         jacobianDamping = (self.dampingAnnealing) ** (self.iteration) * self.damping
         dq = np.zeros(len(self.q))
-
-        X_desired = self.X + np.dot(self.G, self.W)
-        self.X_desired = X_desired
         q = self.q
         ik_iterations = self.ik_iterations
+        X_desired = self.X + np.dot(self.G, self.W)
         for i in range(0, ik_iterations):
             X_current = self.model.getPositions(q)
             X_error = X_desired - X_current
@@ -98,19 +150,28 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             J = np.vstack(jacobians)
             dq = dampedPseudoInverse(J, jacobianDamping) @ X_error.flatten()
             q = q + dq
-
         # update generalized coordinates
         self.q = q
-        self.computeTargets()
+        self.computeRegularizedConfiguration()
         self.update_variance()
 
-    def computeTargets(self, q=None):
+    def computeRegularizedConfiguration(self, q=None):
+        if q is not None:
+            Xreg = self.model.getPositions(q)
+            return Xreg
+        else:
+            self.Xreg = self.model.getPositions(self.q)
+            return
+
+    def computeTargets(self, X=None):
         """
         Update the targets using the new estimate of the parameters.
         Attributes
         ----------
-        q: numpy array, optional
-            Array of joint positions of the kinematis model
+        X: numpy array, optional
+            Array of points to transform - use to predict on new set of points.
+            Best for predicting on new points not used to run initial registration.
+                If None, self.X used.
 
         Returns
         -------
@@ -118,9 +179,15 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         Otherwise, returns the transformed X.
 
         """
-        if q is not None:
-            T = self.model.getPositions(q)
-            return T
+        if X is not None:
+            G = gaussian_kernel(X=X, beta=self.beta, Y=self.X)
+            return X + np.dot(G, self.W)
         else:
-            self.T = self.model.getPositions(self.q)
-            return
+            if self.low_rank is False:
+                self.T = self.X + np.dot(self.G, self.W)
+
+            elif self.low_rank is True:
+                self.T = self.X + np.matmul(
+                    self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))
+                )
+                return

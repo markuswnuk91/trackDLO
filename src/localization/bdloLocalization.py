@@ -53,6 +53,8 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         self.q = self.bdlo.skel.getPositions()
         self.K = self.bdlo.getNumBranches()
         self.X = np.zeros((self.Ns, self.D))
+        self.XLog = []
+        self.qLog = []
         (self.N, _) = self.X.shape
         self.jacobianDamping = 1 if jacobianDamping is None else jacobianDamping
         # unlockedDofs = []
@@ -184,6 +186,9 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         # update Iteration Number
         self.iter += 1
 
+        # save X and q
+        self.XLog.append(self.X)
+        self.qLog.append(self.q)
         if callable(self.callback):
             self.callback()
         return J
@@ -228,6 +233,9 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
                 J = np.vstack(jacobians)
                 dq = dampedPseudoInverse(J, self.jacobianDamping) @ X_error.flatten()
                 q = q + dq
+                # save X and q
+                self.XLog.append(self.X)
+                self.qLog.append(self.q)
                 if callable(self.callback):
                     self.callback()
         return q

@@ -28,8 +28,13 @@ except:
     raise
 
 global vis
+global result
 vis = True
 save = False
+
+loadInitialStateFromResult = False
+loadResultPath = "data/eval/trackingPerformance"
+
 
 # setup evalulation class
 global eval
@@ -97,35 +102,61 @@ def visualizationCallback(
 # bdloModel.align(Y)
 
 
-def runEvaluation(dataSetPath):
-    global eval
-    # generate a model for the data set
-    bdloModel = eval.generateModel(dataSetPath, 30)
-
+def setupResultTemplate(dataSetPath):
     # setup result file
-    result = {
+    resultTemplate = {
         "dataSetPath": dataSetPath,
         "evalConfig": eval.config,
-        "result": {
-            "Y": [],
-            "X": [],
-            "T": [],
-            "iteration": [],
-            "runtimePerIteration": [],
+        "modelGeneration": {},
+        "initialization": {
+            "pointCloud": None,
+            "topologyExtraction": {},
+            "localization": {},
         },
+        "tracking": {},
     }
-    eval.results.append(result)
+    return resultTemplate
 
-    # load first point cloud from data set
+
+def setupTrackingResultTemplate():
+    trackingResultTemplate = {
+        "method": "",
+        "results": [],
+    }
+
+
+def setupRegistrationResultTemplate():
+    # setup tracking result
+    registrationResultTemplate = {
+        "Y": None,
+        "X": None,
+        "T": [],
+        "iteration": [],
+        "runtimePerIteration": [],
+    }
+    return registrationResultTemplate
+
+
+def runModelGeneration(dataSetPath):
+    bdloModel = eval.generateModel(
+        dataSetPath, eval.config["modelGeneration"]["numSegments"]
+    )
+    eval.results[0]["modelGeneration"]["model"] = bdloModel
+    return bdloModel
+
+
+def loadPointCloud(dataSetPath, fileNumber):
     pointCloud = eval.getPointCloud(
-        0,
+        fileNumber,
         dataSetPath,
     )
-    Y = pointCloud[0]
+    return pointCloud
 
+
+def runTopologyExtraction(pointSet):
     # extract topology
-    extractedTopology, _ = eval.extractTopology(
-        Y,
+    extractedTopology, topologyExtraction = eval.extractTopology(
+        pointSet,
         somParameters=eval.config["topologyExtraction"]["somParameters"],
         l1Parameters=eval.config["topologyExtraction"]["l1Parameters"],
         pruningThreshold=eval.config["topologyExtraction"]["pruningThreshold"],
@@ -136,9 +167,31 @@ def runEvaluation(dataSetPath):
         visualizeL1Result=True,
         visualizeExtractionResult=True,
     )
+    eval.results[0]["initialization"]["topologyExtraction"][
+        "topologyExtraction"
+    ] = topologyExtraction
+    eval.results[0]["initialization"]["topologyExtraction"][
+        "extractedTopology"
+    ] = extractedTopology
+    eval.results[0]["initialization"]["topologyExtraction"][
+        "som"
+    ] = topologyExtraction.selfOrganizingMap
+    eval.results[0]["initialization"]["topologyExtraction"][
+        "l1"
+    ] = topologyExtraction.l1Median
+    return extractedTopology
 
+
+def runInitialLocalization(dataSetPath):
+    # load first point cloud of the data set
+    pointCloud = loadPointCloud(dataSetPath, 0)
+    eval.results[0]["initialization"]["pointCloud"] = pointCloud
+    Y = pointCloud[0]
+    extractedTopology = runTopologyExtraction(Y)
+    # get the model
+    bdloModel = eval.results[0]["modelGeneration"]["model"]
     # perform initial localization
-    Xinit, qInit, _ = eval.initialLocalization(
+    XResult, qResult, localization = eval.initialLocalization(
         pointSet=Y,
         extractedTopology=extractedTopology,
         bdloModel=bdloModel,
@@ -153,10 +206,24 @@ def runEvaluation(dataSetPath):
         visualizationCallback=None,
         block=False,
     )
-    # setup registrations
-    XInit = bdloModel.getCartesianBodyCenterPositions()
-    qInit = bdloModel.getGeneralizedCoordinates()
+    eval.results[0]["initialization"]["localization"]["localization"] = localization
+    eval.results[0]["initialization"]["localization"]["S"] = localization.S
+    eval.results[0]["initialization"]["localization"]["C"] = localization.C
+    eval.results[0]["initialization"]["localization"]["XLog"] = localization.XLog
+    eval.results[0]["initialization"]["localization"]["qLog"] = localization.qLog
+    eval.results[0]["initialization"]["localization"]["XResult"] = XResult
+    eval.results[0]["initialization"]["localization"]["qResult"] = qResult
+    return
 
+
+def runEvaluation(dataSetPath):
+    # get the model
+    bdloModel = eval.results[0]["modelGeneration"]["model"]
+
+    # setup registrations
+    XInit = eval.results[0]["initialization"]["localization"]["XResult"]
+    qInit = eval.results[0]["initialization"]["localization"]["qResult"]
+    Y = eval.results[0]["initialization"]["pointCloud"][0]
     # # cpd
     # cpd = CoherentPointDrift(Y=Y, X=XInit, **eval.config["cpdParameters"])
     # if vis:
@@ -218,7 +285,8 @@ def runEvaluation(dataSetPath):
         visualizationCallback_krcpd = eval.getVisualizationCallback(krcpd)
         krcpd.registerCallback(visualizationCallback_krcpd)
     krcpd.register(checkConvergence=False)
-    for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
+    # for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
+    for i in range(1, 3):
         pointCloud = eval.getPointCloud(
             i,
             dataSetPath,
@@ -226,16 +294,24 @@ def runEvaluation(dataSetPath):
         Y = pointCloud[0]
         krcpd.Y = Y
         krcpd.register(checkConvergence=False)
-    return result
+    return
 
 
 if __name__ == "__main__":
+    # setup result file
+    result = setupResultTemplate(dataSetPath)
+    eval.results.append(result)
+    if not loadInitialStateFromResult:
+        runModelGeneration(dataSetPath)
+        runInitialLocalization(dataSetPath)
     # run evaluation
-    runEvaluation(dataSetPath)
-
-    # if save:
-    #     # save evaluation data
-    #     filePathToSaved = eval.saveResults(saveFolderPath)
+    trackingResult = runEvaluation(dataSetPath)
+    # save results
+    if save:
+        filePathToSaved = eval.saveResults(
+            folderPath=saveFolderPath,
+            generateUniqueID=True,
+        )
 
     # # load last result for evaluation
     # if save:

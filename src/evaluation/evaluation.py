@@ -498,12 +498,7 @@ class Evaluation(object):
                 xColor=[1, 0, 0],
                 yColor=[0, 0, 0],
             )
-            plotPointSet(
-                ax=ax,
-                X=classHandle.X_desired,
-                size=30,
-                color=[0, 1, 0],
-            )
+            plotPointSet(ax=ax, X=classHandle.Xreg, size=30, color=[1, 0, 0], alpha=0.1)
         elif type(classHandle) == MinimalSpanningTreeTopology:
             if "color" in kwargs:
                 color = kwargs["color"]

@@ -146,7 +146,7 @@ class TopologyBasedCorrespondanceEstimation(object):
             if topology.isLeafNode(adjacentBranch.getStartNode()):
                 numAdjacentLeafNodes += 1
             if topology.isLeafNode(adjacentBranch.getEndNode()):
-                numAdjacentBranchNodes += 1
+                numAdjacentLeafNodes += 1
         featureList.append(numAdjacentLeafNodes)
 
         # combined features

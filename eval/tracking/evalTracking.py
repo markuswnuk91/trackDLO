@@ -30,11 +30,8 @@ except:
 global vis
 global result
 vis = True
-save = False
-
-loadInitialStateFromResult = False
-loadResultPath = "data/eval/trackingPerformance"
-
+save = True
+loadInitialStateFromResult = True
 
 # setup evalulation class
 global eval
@@ -44,9 +41,11 @@ pathToConfigFile = (
 eval = Evaluation(configFilePath=pathToConfigFile)
 # set file paths
 dataSetPath = eval.config["dataSetPaths"][eval.config["dataSetsToLoad"][0]]
+dataSetName = eval.config["dataSetPaths"][0].split("/")[-2]
 fileIdentifier = eval.config["filesToLoad"][0]
-saveFolderPath = "data/eval/tracking/"
-
+resultFolderPath = "data/eval/tracking/" + dataSetName + "/"
+resultFileName = "result"
+resultFilePath = resultFolderPath + resultFileName
 fileName = eval.getFileName(fileIdentifier, dataSetPath)
 filePath = eval.getFilePath(fileIdentifier, dataSetPath)
 
@@ -141,7 +140,6 @@ def runModelGeneration(dataSetPath):
     bdloModel = eval.generateModel(
         dataSetPath, eval.config["modelGeneration"]["numSegments"]
     )
-    eval.results[0]["modelGeneration"]["model"] = bdloModel
     return bdloModel
 
 
@@ -167,18 +165,24 @@ def runTopologyExtraction(pointSet):
         visualizeL1Result=True,
         visualizeExtractionResult=True,
     )
-    eval.results[0]["initialization"]["topologyExtraction"][
-        "topologyExtraction"
-    ] = topologyExtraction
+    # eval.results[0]["initialization"]["topologyExtraction"][
+    #     "topologyExtraction"
+    # ] = topologyExtraction
     eval.results[0]["initialization"]["topologyExtraction"][
         "extractedTopology"
     ] = extractedTopology
-    eval.results[0]["initialization"]["topologyExtraction"][
-        "som"
-    ] = topologyExtraction.selfOrganizingMap
-    eval.results[0]["initialization"]["topologyExtraction"][
-        "l1"
-    ] = topologyExtraction.l1Median
+    somResult = {
+        "X": topologyExtraction.selfOrganizingMap.X,
+        "Y": topologyExtraction.selfOrganizingMap.Y,
+        "T": topologyExtraction.selfOrganizingMap.T,
+    }
+    l1Result = {
+        "X": topologyExtraction.l1Median.X,
+        "Y": topologyExtraction.l1Median.Y,
+        "T": topologyExtraction.l1Median.T,
+    }
+    eval.results[0]["initialization"]["topologyExtraction"]["som"] = somResult
+    eval.results[0]["initialization"]["topologyExtraction"]["l1"] = l1Result
     return extractedTopology
 
 
@@ -189,7 +193,8 @@ def runInitialLocalization(dataSetPath):
     Y = pointCloud[0]
     extractedTopology = runTopologyExtraction(Y)
     # get the model
-    bdloModel = eval.results[0]["modelGeneration"]["model"]
+    # bdloModel = eval.results[0]["modelGeneration"]["model"]
+    bdloModel = runModelGeneration(dataSetPath)
     # perform initial localization
     XResult, qResult, localization = eval.initialLocalization(
         pointSet=Y,
@@ -206,7 +211,7 @@ def runInitialLocalization(dataSetPath):
         visualizationCallback=None,
         block=False,
     )
-    eval.results[0]["initialization"]["localization"]["localization"] = localization
+    # eval.results[0]["initialization"]["localization"]["localization"] = localization
     eval.results[0]["initialization"]["localization"]["S"] = localization.S
     eval.results[0]["initialization"]["localization"]["C"] = localization.C
     eval.results[0]["initialization"]["localization"]["XLog"] = localization.XLog
@@ -218,8 +223,8 @@ def runInitialLocalization(dataSetPath):
 
 def runEvaluation(dataSetPath):
     # get the model
-    bdloModel = eval.results[0]["modelGeneration"]["model"]
-
+    # bdloModel = eval.results[0]["modelGeneration"]["model"]
+    bdloModel = runModelGeneration(dataSetPath)
     # setup registrations
     XInit = eval.results[0]["initialization"]["localization"]["XResult"]
     qInit = eval.results[0]["initialization"]["localization"]["qResult"]
@@ -285,8 +290,7 @@ def runEvaluation(dataSetPath):
         visualizationCallback_krcpd = eval.getVisualizationCallback(krcpd)
         krcpd.registerCallback(visualizationCallback_krcpd)
     krcpd.register(checkConvergence=False)
-    # for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
-    for i in range(1, 3):
+    for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
         pointCloud = eval.getPointCloud(
             i,
             dataSetPath,
@@ -298,19 +302,21 @@ def runEvaluation(dataSetPath):
 
 
 if __name__ == "__main__":
-    # setup result file
-    result = setupResultTemplate(dataSetPath)
-    eval.results.append(result)
     if not loadInitialStateFromResult:
+        # setup result file
+        result = setupResultTemplate(dataSetPath)
+        eval.results.append(result)
         runModelGeneration(dataSetPath)
         runInitialLocalization(dataSetPath)
-    # run evaluation
+    else:
+        results = eval.loadResults(resultFilePath + ".pkl")
+        eval.results = results
+    # run tracking evaluation
     trackingResult = runEvaluation(dataSetPath)
     # save results
     if save:
         filePathToSaved = eval.saveResults(
-            folderPath=saveFolderPath,
-            generateUniqueID=True,
+            folderPath=resultFolderPath, generateUniqueID=False, fileName=resultFileName
         )
 
     # # load last result for evaluation

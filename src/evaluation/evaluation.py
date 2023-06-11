@@ -129,6 +129,9 @@ class Evaluation(object):
         elif fileName is not None and generateUniqueID:
             fileName = self.dataHandler.generateIdentifier(MS=False) + "_" + fileName
 
+        # create directory if it does not exist
+        if not os.path.exists(folderPath):
+            os.makedirs(folderPath)
         if method == "pickle":
             filePath = folderPath + fileName + ".pkl"
             with open(filePath, "wb") as f:

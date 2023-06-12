@@ -31,7 +31,7 @@ global vis
 global result
 vis = True
 save = True
-loadInitialStateFromResult = True
+loadInitialStateFromResult = False
 runExperiment = True
 registrationsToRun = ["cpd", "spr", "krcpd"]
 # setup evalulation class

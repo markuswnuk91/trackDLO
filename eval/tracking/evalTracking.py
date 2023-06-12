@@ -47,26 +47,6 @@ resultFolderPath = "data/eval/tracking/" + dataSetName + "/"
 resultFileName = "result"
 resultFilePath = resultFolderPath + resultFileName + ".pkl"
 
-# def initialLocalization(bdloModel, pointSet):
-# align the inital pose of the model
-# extract inital pose
-# localCoordinateSamples = np.linspace(
-#     0,
-#     1,
-#     localizationParameters["numLocalCoordinateSamples"],
-# )
-# localization = BDLOLocalization(
-#     **{
-#         "Y": Y,
-#         "S": localCoordinateSamples,
-#         "templateTopology": bdloModel,
-#         "extractedTopology": extractedTopology,
-#     }
-# qInit = localization.reconstructShape(
-#     numIter=localizationParameters["numIter"], verbose=2
-# )
-# bdloModel.align(Y)
-
 
 def setupResultTemplate(dataSetPath):
     # setup result file

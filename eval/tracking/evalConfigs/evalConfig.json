@@ -4,8 +4,10 @@
         "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/",
         "data/darus_data_download/data/20230517_093927_manipulationsequence_manual_labeled_yshape/"
     ],
-    "dataSetsToLoad": [2],
-    "filesToLoad": [0],
+    "dataSetToLoad": 2,
+    "initialFrame": 0,
+    "finalFrame": 100,
+    "frameStep": 3,
     "savePaths": ["data/eval/tracking/"],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
@@ -41,7 +43,7 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 100
+            "nthElement" : 10
         }
     },
     "modelGeneration":{

@@ -33,7 +33,7 @@ vis = True
 save = True
 loadInitialStateFromResult = True
 runExperiment = True
-
+registrationsToRun = ["cpd", "spr", "krcpd"]
 # setup evalulation class
 global eval
 pathToConfigFile = (
@@ -41,45 +41,11 @@ pathToConfigFile = (
 )
 eval = Evaluation(configFilePath=pathToConfigFile)
 # set file paths
-dataSetPath = eval.config["dataSetPaths"][eval.config["dataSetsToLoad"][0]]
+dataSetPath = eval.config["dataSetPaths"][eval.config["dataSetToLoad"]]
 dataSetName = eval.config["dataSetPaths"][0].split("/")[-2]
-fileIdentifier = eval.config["filesToLoad"][0]
 resultFolderPath = "data/eval/tracking/" + dataSetName + "/"
 resultFileName = "result"
 resultFilePath = resultFolderPath + resultFileName + ".pkl"
-fileName = eval.getFileName(fileIdentifier, dataSetPath)
-filePath = eval.getFilePath(fileIdentifier, dataSetPath)
-
-
-def visualizationCallback(
-    fig,
-    ax,
-    classHandle,
-    savePath=None,
-    fileName="img",
-):
-    global eval
-    if savePath is not None and type(savePath) is not str:
-        raise ValueError("Error saving 3D plot. The given path should be a string.")
-
-    if fileName is not None and type(fileName) is not str:
-        raise ValueError("Error saving 3D plot. The given filename should be a string.")
-    ax.cla()
-    plotPointSets(
-        ax=ax,
-        X=classHandle.T,
-        Y=classHandle.Y,
-        ySize=1,
-        xSize=30,
-        xColor=[0, 0, 1],
-        yColor=[1, 0, 0],
-    )
-    set_axes_equal(ax)
-    plt.draw()
-    plt.pause(0.1)
-    eval.results[0]["result"]["T"].append(classHandle.T.copy())
-    eval.results[0]["result"]["iteration"].append(classHandle.iteration)
-
 
 # def initialLocalization(bdloModel, pointSet):
 # align the inital pose of the model
@@ -188,9 +154,9 @@ def runTopologyExtraction(pointSet):
     return extractedTopology
 
 
-def runInitialLocalization(dataSetPath):
+def runInitialLocalization(dataSetPath, initialFrame):
     # load first point cloud of the data set
-    pointCloud = loadPointCloud(dataSetPath, 0)
+    pointCloud = loadPointCloud(dataSetPath, initialFrame)
     eval.results[0]["initialization"]["pointCloud"] = pointCloud
     Y = pointCloud[0]
     extractedTopology = runTopologyExtraction(Y)
@@ -214,6 +180,7 @@ def runInitialLocalization(dataSetPath):
         block=False,
     )
     # eval.results[0]["initialization"]["localization"]["localization"] = localization
+    eval.results[0]["initialization"]["initialFrame"] = initialFrame
     eval.results[0]["initialization"]["localization"]["S"] = localization.S
     eval.results[0]["initialization"]["localization"]["C"] = localization.C
     eval.results[0]["initialization"]["localization"]["XLog"] = localization.XLog
@@ -223,7 +190,7 @@ def runInitialLocalization(dataSetPath):
     return
 
 
-def runExperiment(dataSetPath):
+def runExperiment(dataSetPath, startFrame, endFrame):
     # get the model
     # bdloModel = eval.results[0]["modelGeneration"]["model"]
     bdloModel = runModelGeneration(dataSetPath)
@@ -231,103 +198,146 @@ def runExperiment(dataSetPath):
     XInit = eval.results[0]["initialization"]["localization"]["XResult"]
     qInit = eval.results[0]["initialization"]["localization"]["qResult"]
     Y = eval.results[0]["initialization"]["pointCloud"][0]
-    # # cpd
-    # cpd = CoherentPointDrift(Y=Y, X=XInit, **eval.config["cpdParameters"])
-    # if vis:
-    #     visualizationCallback_cpd = eval.getVisualizationCallback(cpd)
-    #     cpd.registerCallback(visualizationCallback_cpd)
-    # cpd.registerCallback(visualizationCallback_cpd)
-    # for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
-    #     pointCloud = eval.getPointCloud(
-    #         i,
-    #         dataSetPath,
-    #     )
-    #     Y = pointCloud[0]
-    #     cpd.Y = Y
-    #     cpd.register(checkConvergence=False)
+    framesToTrack = list(range(startFrame, endFrame, eval.config["frameStep"]))
 
+    # cpd
+    if "cpd" in registrationsToRun:
+        cpd = CoherentPointDrift(Y=Y, X=XInit, **eval.config["cpdParameters"])
+        if vis:
+            visualizationCallback_cpd = eval.getVisualizationCallback(cpd)
+            cpd.registerCallback(visualizationCallback_cpd)
+        # setup result files
+        trackingResult = setupTrackingResultTemplate()
+        trackingResult["method"] = "cpd"
+        eval.results[0]["tracking"]["cpd"] = trackingResult
+        for frame in framesToTrack:
+            pointCloud = eval.getPointCloud(
+                frame,
+                dataSetPath,
+            )
+            Y = pointCloud[0]
+            cpd.Y = Y
+            cpd.X = cpd.T.copy()
+            # setup result callback
+            logTargets = lambda: registrationResult["T"].append(cpd.T.copy())
+            registrationResult = setupRegistrationResultTemplate()
+
+            # run registration
+            cpd.register(checkConvergence=False, customCallback=logTargets)
+            # save results
+            registrationResult["X"] = cpd.X.copy()
+            registrationResult["Y"] = cpd.Y.copy()
+            registrationResult["W"] = cpd.W.copy()
+            registrationResult["G"] = cpd.G.copy()
+            eval.results[0]["tracking"]["cpd"]["results"].append(registrationResult)
     # # spr
-    # spr = StructurePreservedRegistration(Y=Y, X=XInit, **eval.config["sprParameters"])
-    # if vis:
-    #     visualizationCallback_spr = eval.getVisualizationCallback(spr)
-    #     spr.registerCallback(visualizationCallback_spr)
-    # spr.register(checkConvergence=False)
-
-    # for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
-    #     pointCloud = eval.getPointCloud(
-    #         i,
-    #         dataSetPath,
-    #     )
-    #     Y = pointCloud[0]
-    #     spr.Y = Y
-    #     spr.register(checkConvergence=False)
-
-    # # kpr
-    # kpr = KinematicsPreservingRegistration(
-    #     Y=Y,
-    #     qInit=qInit,
-    #     model=KinematicsModelDart(bdloModel.skel.clone()),
-    #     **eval.config["kprParameters"],
-    # )
-    # if vis:
-    #     visualizationCallback_kpr = eval.getVisualizationCallback(kpr)
-    #     kpr.registerCallback(visualizationCallback_kpr)
-    # kpr.register(checkConvergence=False)
-    # for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
-    #     pointCloud = eval.getPointCloud(
-    #         i,
-    #         dataSetPath,
-    #     )
-    #     Y = pointCloud[0]
-    #     kpr.Y = Y
-    #     kpr.register(checkConvergence=False)
-
-    krcpd = KinematicRegularizedCoherentPointDrift(
-        Y=Y,
-        qInit=qInit,
-        model=KinematicsModelDart(bdloModel.skel.clone()),
-        **eval.config["krcpdParameters"],
-    )
-    if vis:
-        visualizationCallback_krcpd = eval.getVisualizationCallback(krcpd)
-        krcpd.registerCallback(visualizationCallback_krcpd)
-    # setup result files
-    trackingResult = setupTrackingResultTemplate()
-    trackingResult["method"] = "krcpd"
-    eval.results[0]["tracking"]["krcpd"] = trackingResult
-    # for i in range(0, eval.getNumImageSetsInDataSet(dataSetPath)):
-    startFrame = 0
-    # endFrame = eval.getNumImageSetsInDataSet(dataSetPath)
-    endFrame = 10
-    for i in range(startFrame, endFrame):
-        pointCloud = eval.getPointCloud(
-            i,
-            dataSetPath,
+    if "spr" in registrationsToRun:
+        spr = StructurePreservedRegistration(
+            Y=Y, X=XInit, **eval.config["sprParameters"]
         )
-        Y = pointCloud[0]
-        krcpd.Y = Y
+        if vis:
+            visualizationCallback_spr = eval.getVisualizationCallback(spr)
+            spr.registerCallback(visualizationCallback_spr)
+        spr.register(checkConvergence=False)
+        # setup result files
+        trackingResult = setupTrackingResultTemplate()
+        trackingResult["method"] = "spr"
+        eval.results[0]["tracking"]["spr"] = trackingResult
+        for frame in framesToTrack:
+            pointCloud = eval.getPointCloud(
+                frame,
+                dataSetPath,
+            )
+            Y = pointCloud[0]
+            spr.Y = Y
 
-        # setup result callback
-        logTargets = lambda: registrationResult["T"].append(krcpd.T.copy())
-        registrationResult = setupRegistrationResultTemplate()
-        # run registration
-        krcpd.register(checkConvergence=False, customCallback=logTargets)
-        # save results
-        registrationResult["X"] = krcpd.X.copy()
-        registrationResult["Xreg"] = krcpd.Xreg.copy()
-        registrationResult["Y"] = krcpd.Y.copy()
-        registrationResult["W"] = krcpd.W.copy()
-        registrationResult["G"] = krcpd.G.copy()
-        eval.results[0]["tracking"]["krcpd"]["results"].append(registrationResult)
-    return
+            # setup result callback
+            logTargets = lambda: registrationResult["T"].append(spr.T.copy())
+            registrationResult = setupRegistrationResultTemplate()
+
+            # run registration
+            spr.register(checkConvergence=False, customCallback=logTargets)
+            spr.X = spr.T.copy()
+            # save results
+            registrationResult["X"] = spr.X.copy()
+            registrationResult["Y"] = spr.Y.copy()
+            registrationResult["W"] = spr.W.copy()
+            registrationResult["G"] = spr.G.copy()
+            eval.results[0]["tracking"]["spr"]["results"].append(registrationResult)
+    # kpr
+    if "kpr" in registrationsToRun:
+        kpr = KinematicsPreservingRegistration(
+            Y=Y,
+            qInit=qInit,
+            model=KinematicsModelDart(bdloModel.skel.clone()),
+            **eval.config["kprParameters"],
+        )
+        if vis:
+            visualizationCallback_kpr = eval.getVisualizationCallback(kpr)
+            kpr.registerCallback(visualizationCallback_kpr)
+        # setup result files
+        trackingResult = setupTrackingResultTemplate()
+        trackingResult["method"] = "kpr"
+        eval.results[0]["tracking"]["kpr"] = trackingResult
+        for frame in framesToTrack:
+            pointCloud = eval.getPointCloud(
+                frame,
+                dataSetPath,
+            )
+            Y = pointCloud[0]
+            kpr.Y = Y
+            # setup result callback
+            logTargets = lambda: registrationResult["T"].append(kpr.T.copy())
+            registrationResult = setupRegistrationResultTemplate()
+
+            # run registration
+            spr.register(checkConvergence=False, customCallback=logTargets)
+            kpr.X = kpr.T.copy()
+            # save results
+            registrationResult["X"] = kpr.X.copy()
+            registrationResult["Y"] = kpr.Y.copy()
+            registrationResult["W"] = kpr.W.copy()
+            registrationResult["G"] = kpr.G.copy()
+            eval.results[0]["tracking"]["spr"]["results"].append(registrationResult)
+
+    if "krcpd" in registrationsToRun:
+        krcpd = KinematicRegularizedCoherentPointDrift(
+            Y=Y,
+            qInit=qInit,
+            model=KinematicsModelDart(bdloModel.skel.clone()),
+            **eval.config["krcpdParameters"],
+        )
+        if vis:
+            visualizationCallback_krcpd = eval.getVisualizationCallback(krcpd)
+            krcpd.registerCallback(visualizationCallback_krcpd)
+        # setup result files
+        trackingResult = setupTrackingResultTemplate()
+        trackingResult["method"] = "krcpd"
+        eval.results[0]["tracking"]["krcpd"] = trackingResult
+        for frame in framesToTrack:
+            pointCloud = eval.getPointCloud(
+                frame,
+                dataSetPath,
+            )
+            Y = pointCloud[0]
+            krcpd.Y = Y
+            # setup result callback
+            logTargets = lambda: registrationResult["T"].append(krcpd.T.copy())
+            registrationResult = setupRegistrationResultTemplate()
+            # run registration
+            krcpd.register(checkConvergence=False, customCallback=logTargets)
+            krcpd.X = krcpd.T.copy()
+            # save results
+            registrationResult["X"] = krcpd.X.copy()
+            registrationResult["Xreg"] = krcpd.Xreg.copy()
+            registrationResult["Y"] = krcpd.Y.copy()
+            registrationResult["W"] = krcpd.W.copy()
+            registrationResult["G"] = krcpd.G.copy()
+            eval.results[0]["tracking"]["krcpd"]["results"].append(registrationResult)
+        return
 
 
-def evaluateResults(resultFilePath):
-    # load results from result file for evaluation
-    results = eval.loadResults(resultFilePath)
-    eval.results = results
-    result = results[0]
-
+def evaluateResults(result):
     # compute tracking errors
     for key in result["tracking"]:
         trackingResults = result["tracking"][key]["results"]
@@ -350,18 +360,25 @@ def evaluateResults(resultFilePath):
 
 
 if __name__ == "__main__":
+    # determine initial and final frame for tracking
+    initialFrame = eval.config["initialFrame"]
+    if eval.config["finalFrame"] == -1:
+        finalFrame = eval.getNumImageSetsInDataSet(dataSetPath)
+    else:
+        finalFrame = eval.config["finalFrame"]
+
     if runExperiment:
         if not loadInitialStateFromResult:
             # setup result file
             result = setupResultTemplate(dataSetPath)
             eval.results.append(result)
             runModelGeneration(dataSetPath)
-            runInitialLocalization(dataSetPath)
+            runInitialLocalization(dataSetPath, initialFrame)
         else:
             results = eval.loadResults(resultFilePath)
             eval.results = results
         # run tracking evaluation
-        trackingResult = runExperiment(dataSetPath)
+        trackingResult = runExperiment(dataSetPath, initialFrame, finalFrame)
         # save results
         if save:
             resultFilePath = eval.saveResults(
@@ -371,31 +388,11 @@ if __name__ == "__main__":
             )
 
     # evaluate results
-    evaluateResults(resultFilePath)
-
-    # # load last result for evaluation
-    # if save:
-    #     result = eval.loadResults(filePathToSaved)
-    # else:
-    #     result = eval.results[0]
-    # # plot evaluation
-    # somResult = result[0]["result"]
-    # # tracking error
-    # trackingErrors = []
-    # Y = somResult["Y"][0]
-    # for T in somResult["T"]:
-    #     distanceMatrix = distance_matrix(T, Y)
-    #     if Y.shape[0] >= T.shape[0]:
-    #         correspodingIndices = np.argmin(distanceMatrix, axis=0)
-    #         trackingError = 0
-    #         for m in range(len(Y)):
-    #             trackingError += distanceMatrix[correspodingIndices[m], m]
-    #     else:
-    #         correspodingIndices = np.argmin(distanceMatrix, axis=1)
-    #         for n in range(len(T)):
-    #             trackingError += np.sum(distanceMatrix[n, correspodingIndices[n]])
-    #     trackingErrors.append(trackingError)
-    # fig = plt.figure()
-    # ax = plt.axes()
-    # ax.plot(list(range(len(trackingErrors))), trackingErrors)
-    # plt.show(block=True)
+    if save:
+        # load results from result file for evaluation
+        results = eval.loadResults(resultFilePath)
+        eval.results = results
+        result = results[0]
+    else:
+        result = eval.results[0]
+    evaluateResults(result)

@@ -32,6 +32,7 @@ global result
 vis = True
 save = True
 loadInitialStateFromResult = True
+runExperiment = True
 
 # setup evalulation class
 global eval
@@ -45,7 +46,7 @@ dataSetName = eval.config["dataSetPaths"][0].split("/")[-2]
 fileIdentifier = eval.config["filesToLoad"][0]
 resultFolderPath = "data/eval/tracking/" + dataSetName + "/"
 resultFileName = "result"
-resultFilePath = resultFolderPath + resultFileName
+resultFilePath = resultFolderPath + resultFileName + ".pkl"
 fileName = eval.getFileName(fileIdentifier, dataSetPath)
 filePath = eval.getFilePath(fileIdentifier, dataSetPath)
 
@@ -122,6 +123,7 @@ def setupTrackingResultTemplate():
         "method": "",
         "results": [],
     }
+    return trackingResultTemplate
 
 
 def setupRegistrationResultTemplate():
@@ -221,7 +223,7 @@ def runInitialLocalization(dataSetPath):
     return
 
 
-def runEvaluation(dataSetPath):
+def runExperiment(dataSetPath):
     # get the model
     # bdloModel = eval.results[0]["modelGeneration"]["model"]
     bdloModel = runModelGeneration(dataSetPath)
@@ -289,35 +291,87 @@ def runEvaluation(dataSetPath):
     if vis:
         visualizationCallback_krcpd = eval.getVisualizationCallback(krcpd)
         krcpd.registerCallback(visualizationCallback_krcpd)
-    krcpd.register(checkConvergence=False)
-    for i in range(1, eval.getNumImageSetsInDataSet(dataSetPath)):
+    # setup result files
+    trackingResult = setupTrackingResultTemplate()
+    trackingResult["method"] = "krcpd"
+    eval.results[0]["tracking"]["krcpd"] = trackingResult
+    # for i in range(0, eval.getNumImageSetsInDataSet(dataSetPath)):
+    startFrame = 0
+    # endFrame = eval.getNumImageSetsInDataSet(dataSetPath)
+    endFrame = 10
+    for i in range(startFrame, endFrame):
         pointCloud = eval.getPointCloud(
             i,
             dataSetPath,
         )
         Y = pointCloud[0]
         krcpd.Y = Y
-        krcpd.register(checkConvergence=False)
+
+        # setup result callback
+        logTargets = lambda: registrationResult["T"].append(krcpd.T.copy())
+        registrationResult = setupRegistrationResultTemplate()
+        # run registration
+        krcpd.register(checkConvergence=False, customCallback=logTargets)
+        # save results
+        registrationResult["X"] = krcpd.X.copy()
+        registrationResult["Xreg"] = krcpd.Xreg.copy()
+        registrationResult["Y"] = krcpd.Y.copy()
+        registrationResult["W"] = krcpd.W.copy()
+        registrationResult["G"] = krcpd.G.copy()
+        eval.results[0]["tracking"]["krcpd"]["results"].append(registrationResult)
     return
 
 
+def evaluateResults(resultFilePath):
+    # load results from result file for evaluation
+    results = eval.loadResults(resultFilePath)
+    eval.results = results
+    result = results[0]
+
+    # compute tracking errors
+    for key in result["tracking"]:
+        trackingResults = result["tracking"][key]["results"]
+        trackingErrors = []
+        for trackingResult in trackingResults:
+            T = trackingResult["T"][-1]
+            Y = trackingResult["Y"]
+            trackingError = np.sum(distance_matrix(T, Y))
+            trackingErrors.append(trackingError)
+        # add to error to result file
+        result["tracking"][key]["trackingError"] = trackingErrors.copy()
+
+    # plot tracking errors
+    fig = plt.figure()
+    ax = plt.axes()
+    for key in result["tracking"]:
+        trackingErrors = result["tracking"][key]["trackingError"]
+        ax.plot(list(range(len(trackingErrors))), trackingErrors)
+    plt.show(block=True)
+
+
 if __name__ == "__main__":
-    if not loadInitialStateFromResult:
-        # setup result file
-        result = setupResultTemplate(dataSetPath)
-        eval.results.append(result)
-        runModelGeneration(dataSetPath)
-        runInitialLocalization(dataSetPath)
-    else:
-        results = eval.loadResults(resultFilePath + ".pkl")
-        eval.results = results
-    # run tracking evaluation
-    trackingResult = runEvaluation(dataSetPath)
-    # save results
-    if save:
-        filePathToSaved = eval.saveResults(
-            folderPath=resultFolderPath, generateUniqueID=False, fileName=resultFileName
-        )
+    if runExperiment:
+        if not loadInitialStateFromResult:
+            # setup result file
+            result = setupResultTemplate(dataSetPath)
+            eval.results.append(result)
+            runModelGeneration(dataSetPath)
+            runInitialLocalization(dataSetPath)
+        else:
+            results = eval.loadResults(resultFilePath)
+            eval.results = results
+        # run tracking evaluation
+        trackingResult = runExperiment(dataSetPath)
+        # save results
+        if save:
+            resultFilePath = eval.saveResults(
+                folderPath=resultFolderPath,
+                generateUniqueID=False,
+                fileName=resultFileName,
+            )
+
+    # evaluate results
+    evaluateResults(resultFilePath)
 
     # # load last result for evaluation
     # if save:

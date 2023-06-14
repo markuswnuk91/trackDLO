@@ -113,10 +113,10 @@ def runTopologyExtraction(pointSet):
         visualizeL1Result=True,
         visualizeExtractionResult=True,
     )
-    # eval.results[0]["initialization"]["topologyExtraction"][
+    # eval.results["initialization"]["topologyExtraction"][
     #     "topologyExtraction"
     # ] = topologyExtraction
-    eval.results[0]["initialization"]["topologyExtraction"][
+    eval.results["initialization"]["topologyExtraction"][
         "extractedTopology"
     ] = extractedTopology
     somResult = {
@@ -129,19 +129,19 @@ def runTopologyExtraction(pointSet):
         "Y": topologyExtraction.l1Median.Y,
         "T": topologyExtraction.l1Median.T,
     }
-    eval.results[0]["initialization"]["topologyExtraction"]["som"] = somResult
-    eval.results[0]["initialization"]["topologyExtraction"]["l1"] = l1Result
+    eval.results["initialization"]["topologyExtraction"]["som"] = somResult
+    eval.results["initialization"]["topologyExtraction"]["l1"] = l1Result
     return extractedTopology
 
 
 def runInitialLocalization(dataSetPath, initialFrame):
     # load first point cloud of the data set
     pointCloud = loadPointCloud(dataSetPath, initialFrame)
-    eval.results[0]["initialization"]["pointCloud"] = pointCloud
+    eval.results["initialization"]["pointCloud"] = pointCloud
     Y = pointCloud[0]
     extractedTopology = runTopologyExtraction(Y)
     # get the model
-    # bdloModel = eval.results[0]["modelGeneration"]["model"]
+    # bdloModel = eval.results["modelGeneration"]["model"]
     bdloModel = runModelGeneration(dataSetPath)
     # perform initial localization
     XResult, qResult, localization = eval.initialLocalization(
@@ -159,25 +159,25 @@ def runInitialLocalization(dataSetPath, initialFrame):
         visualizationCallback=None,
         block=False,
     )
-    # eval.results[0]["initialization"]["localization"]["localization"] = localization
-    eval.results[0]["initialization"]["initialFrame"] = initialFrame
-    eval.results[0]["initialization"]["localization"]["S"] = localization.S
-    eval.results[0]["initialization"]["localization"]["C"] = localization.C
-    eval.results[0]["initialization"]["localization"]["XLog"] = localization.XLog
-    eval.results[0]["initialization"]["localization"]["qLog"] = localization.qLog
-    eval.results[0]["initialization"]["localization"]["XResult"] = XResult
-    eval.results[0]["initialization"]["localization"]["qResult"] = qResult
+    # eval.results["initialization"]["localization"]["localization"] = localization
+    eval.results["initialization"]["initialFrame"] = initialFrame
+    eval.results["initialization"]["localization"]["S"] = localization.S
+    eval.results["initialization"]["localization"]["C"] = localization.C
+    eval.results["initialization"]["localization"]["XLog"] = localization.XLog
+    eval.results["initialization"]["localization"]["qLog"] = localization.qLog
+    eval.results["initialization"]["localization"]["XResult"] = XResult
+    eval.results["initialization"]["localization"]["qResult"] = qResult
     return
 
 
 def runExperiment(dataSetPath, startFrame, endFrame):
     # get the model
-    # bdloModel = eval.results[0]["modelGeneration"]["model"]
+    # bdloModel = eval.results["modelGeneration"]["model"]
     bdloModel = runModelGeneration(dataSetPath)
     # setup registrations
-    XInit = eval.results[0]["initialization"]["localization"]["XResult"]
-    qInit = eval.results[0]["initialization"]["localization"]["qResult"]
-    Y = eval.results[0]["initialization"]["pointCloud"][0]
+    XInit = eval.results["initialization"]["localization"]["XResult"]
+    qInit = eval.results["initialization"]["localization"]["qResult"]
+    Y = eval.results["initialization"]["pointCloud"][0]
     framesToTrack = list(range(startFrame, endFrame, eval.config["frameStep"]))
 
     # cpd
@@ -189,7 +189,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
         # setup result files
         trackingResult = setupTrackingResultTemplate()
         trackingResult["method"] = "cpd"
-        eval.results[0]["tracking"]["cpd"] = trackingResult
+        eval.results["tracking"]["cpd"] = trackingResult
         for frame in framesToTrack:
             pointCloud = eval.getPointCloud(
                 frame,
@@ -209,7 +209,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
             registrationResult["Y"] = cpd.Y.copy()
             registrationResult["W"] = cpd.W.copy()
             registrationResult["G"] = cpd.G.copy()
-            eval.results[0]["tracking"]["cpd"]["results"].append(registrationResult)
+            eval.results["tracking"]["cpd"]["results"].append(registrationResult)
     # # spr
     if "spr" in registrationsToRun:
         spr = StructurePreservedRegistration(
@@ -222,7 +222,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
         # setup result files
         trackingResult = setupTrackingResultTemplate()
         trackingResult["method"] = "spr"
-        eval.results[0]["tracking"]["spr"] = trackingResult
+        eval.results["tracking"]["spr"] = trackingResult
         for frame in framesToTrack:
             pointCloud = eval.getPointCloud(
                 frame,
@@ -243,7 +243,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
             registrationResult["Y"] = spr.Y.copy()
             registrationResult["W"] = spr.W.copy()
             registrationResult["G"] = spr.G.copy()
-            eval.results[0]["tracking"]["spr"]["results"].append(registrationResult)
+            eval.results["tracking"]["spr"]["results"].append(registrationResult)
     # kpr
     if "kpr" in registrationsToRun:
         kpr = KinematicsPreservingRegistration(
@@ -258,7 +258,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
         # setup result files
         trackingResult = setupTrackingResultTemplate()
         trackingResult["method"] = "kpr"
-        eval.results[0]["tracking"]["kpr"] = trackingResult
+        eval.results["tracking"]["kpr"] = trackingResult
         for frame in framesToTrack:
             pointCloud = eval.getPointCloud(
                 frame,
@@ -278,7 +278,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
             registrationResult["Y"] = kpr.Y.copy()
             registrationResult["W"] = kpr.W.copy()
             registrationResult["G"] = kpr.G.copy()
-            eval.results[0]["tracking"]["spr"]["results"].append(registrationResult)
+            eval.results["tracking"]["spr"]["results"].append(registrationResult)
 
     if "krcpd" in registrationsToRun:
         krcpd = KinematicRegularizedCoherentPointDrift(
@@ -293,7 +293,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
         # setup result files
         trackingResult = setupTrackingResultTemplate()
         trackingResult["method"] = "krcpd"
-        eval.results[0]["tracking"]["krcpd"] = trackingResult
+        eval.results["tracking"]["krcpd"] = trackingResult
         for frame in framesToTrack:
             pointCloud = eval.getPointCloud(
                 frame,
@@ -313,7 +313,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
             registrationResult["Y"] = krcpd.Y.copy()
             registrationResult["W"] = krcpd.W.copy()
             registrationResult["G"] = krcpd.G.copy()
-            eval.results[0]["tracking"]["krcpd"]["results"].append(registrationResult)
+            eval.results["tracking"]["krcpd"]["results"].append(registrationResult)
         return
 
 
@@ -350,8 +350,8 @@ if __name__ == "__main__":
     if runExperiment:
         if not loadInitialStateFromResult:
             # setup result file
-            result = setupResultTemplate(dataSetPath)
-            eval.results.append(result)
+            results = setupResultTemplate(dataSetPath)
+            eval.results = results
             runModelGeneration(dataSetPath)
             runInitialLocalization(dataSetPath, initialFrame)
         else:
@@ -372,7 +372,7 @@ if __name__ == "__main__":
         # load results from result file for evaluation
         results = eval.loadResults(resultFilePath)
         eval.results = results
-        result = results[0]
+        result = results
     else:
-        result = eval.results[0]
+        result = eval.results
     evaluateResults(result)

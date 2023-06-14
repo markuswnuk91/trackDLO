@@ -59,7 +59,8 @@ class Evaluation(object):
         self.configFilePath = configFilePath
         self.dataHandler = DataHandler()
         self.config = self.dataHandler.loadFromJson(self.configFilePath)
-        self.results = []
+        self.results = {}
+        self.resultLog = {"topologyExtraction": [], "localization": []}
         self.currentDataSetLoadPath = None
         self.currentLoadFileIdentifier = None
 
@@ -320,8 +321,81 @@ class Evaluation(object):
             plt.show(block=True)
         return extractedTopology, topologyExtraction
 
-    # -------------------------------------------------------------------------
-    # INITIAL LOCALIZATION
+    def runTopologyExtraction(
+        self,
+        pointSet,
+        somParameters=None,
+        l1Parameters=None,
+        pruningThreshold=None,
+        skeletonize=True,
+        visualizeSOMIteration=False,
+        visualizeSOMResult=False,
+        visualizeL1Iterations=False,
+        visualizeL1Result=False,
+        visualizeExtractionResult=False,
+        somCallback=None,
+        l1Callback=None,
+        block=False,
+        logResults=True,
+    ):
+        somParameters = (
+            self.config["topologyExtraction"]["somParameters"]
+            if somParameters is None
+            else somParameters
+        )
+        l1Parameters = (
+            self.config["topologyExtraction"]["l1Parameters"]
+            if l1Parameters is None
+            else l1Parameters
+        )
+        pruningThreshold = (
+            self.config["topologyExtraction"]["pruningThreshold"]
+            if pruningThreshold is None
+            else pruningThreshold
+        )
+        # extract topology
+        extractedTopology, topologyExtraction = self.extractTopology(
+            pointSet,
+            somParameters=somParameters,
+            l1Parameters=l1Parameters,
+            pruningThreshold=pruningThreshold,
+            skeletonize=skeletonize,
+            visualizeSOMIteration=visualizeSOMIteration,
+            visualizeSOMResult=visualizeSOMResult,
+            visualizeL1Iterations=visualizeL1Iterations,
+            visualizeL1Result=visualizeL1Result,
+            visualizeExtractionResult=visualizeExtractionResult,
+            somCallback=somCallback,
+            l1Callback=l1Callback,
+            block=block,
+        )
+        somResult = {
+            "X": topologyExtraction.selfOrganizingMap.X,
+            "Y": topologyExtraction.selfOrganizingMap.Y,
+            "T": topologyExtraction.selfOrganizingMap.T,
+        }
+        l1Result = {
+            "X": topologyExtraction.l1Median.X,
+            "Y": topologyExtraction.l1Median.Y,
+            "T": topologyExtraction.l1Median.T,
+        }
+        extractedTopologyResult = {
+            "X": extractedTopology.X,
+            "featureMatrix": extractedTopology.featureMatrix,
+        }
+        topologyExtractionResult = {
+            "som": somResult,
+            "l1": l1Result,
+            "extractedTopology": extractedTopologyResult,
+        }
+
+        if logResults:
+            self.resultLog["topologyExtraction"].append(topologyExtractionResult)
+
+        return topologyExtractionResult
+        # -------------------------------------------------------------------------
+
+    # Initial Localization
     # -------------------------------------------------------------------------
     def initialLocalization(
         self,
@@ -367,6 +441,69 @@ class Evaluation(object):
             plt.show(block=block)
 
         return XInit, qInit, localization
+
+    def runInitialLocalization(
+        self,
+        pointSet,
+        extractedTopology,
+        bdloModel,
+        numSamples=None,
+        numIterations=None,
+        verbose=None,
+        method=None,
+        jacobianDamping=None,
+        visualizeCorresponanceEstimation=True,
+        visualizeIterations=True,
+        visualizeResult=True,
+        visualizationCallback=None,
+        block=False,
+        logResults=True,
+    ):
+        numSamples = (
+            eval.config["localization"]["numSamples"]
+            if numSamples is None
+            else numSamples
+        )
+        numIterations = (
+            eval.config["localization"]["numIterations"]
+            if numIterations is None
+            else numIterations
+        )
+        verbose = eval.config["localization"]["verbose"] if verbose is None else verbose
+        method = eval.config["localization"]["method"] if method is None else method
+        jacobianDamping = (
+            eval.config["localization"]["jacobianDamping"]
+            if jacobianDamping is None
+            else jacobianDamping
+        )
+
+        XInit, qInit, localization = eval.initialLocalization(
+            pointSet=pointSet,
+            extractedTopology=extractedTopology,
+            bdloModel=bdloModel,
+            numSamples=numSamples,
+            numIterations=numIterations,
+            verbose=verbose,
+            method=method,
+            jacobianDamping=jacobianDamping,
+            visualizeCorresponanceEstimation=visualizeCorresponanceEstimation,
+            visualizeIterations=visualizeIterations,
+            visualizeResult=visualizeResult,
+            visualizationCallback=visualizationCallback,
+            block=block,
+        )
+        localizationResult = {
+            "S": localization.S,
+            "C": localization.C,
+            "Y": localization.Y,
+            "XLog": localization.XLog,
+            "qLog": localization.qLog,
+            "XInit": XInit,
+            "qInit": qInit,
+        }
+        if logResults:
+            self.resultLog["localization"].append(localizationResult)
+        return localizationResult
 
     # -------------------------------------------------------------------------
     # VISUALIZATION FUNCTIONS

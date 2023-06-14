@@ -8,8 +8,8 @@
     ],
     "dataSetToLoad": 2,
     "initialFrame": 0,
-    "finalFrame": 100,
-    "frameStep": 3,
+    "finalFrame": 200,
+    "frameStep": 5,
     "savePaths": ["data/eval/tracking/"],
     "preprocessingParameters": {
         "hsvFilterParameters" : {

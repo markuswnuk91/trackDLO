@@ -38,14 +38,16 @@ def difference_Matrix(X, Y):
     return K
 
 
-def visualize(iteration, error, X, Y, ax):
+def visualize(ax, classHandle):
     plt.cla()
-    ax.scatter(X[:, 0], X[:, 1], color="red", label="Target")
-    ax.scatter(Y[:, 0], Y[:, 1], color="blue", label="Source")
+    ax.scatter(classHandle.T[:, 0], classHandle.T[:, 1], color="red", label="Target")
+    ax.scatter(classHandle.Y[:, 0], classHandle.Y[:, 1], color="blue", label="Source")
     plt.text(
         0.7,
         0.92,
-        "Iteration: {:d}, error{:.4f}".format(iteration, error),
+        "Iteration: {:d}, Likelyhood{:.4f}".format(
+            classHandle.iteration, classHandle.L
+        ),
         horizontalalignment="center",
         verticalalignment="center",
         transform=ax.transAxes,
@@ -66,8 +68,8 @@ def runSPR():
     if vis:
         fig = plt.figure()
         fig.add_axes([0, 0, 1, 1])
-        callback = partial(visualize, ax=fig.axes[0])
-        reg.register(callback)
+        callback = partial(visualize, ax=fig.axes[0], classHandle=reg)
+        reg.register(customCallback=callback)
         # plt.show()
     else:
         reg.register()
@@ -85,8 +87,8 @@ def runSPRvsCPD():
     if vis:
         fig = plt.figure()
         fig.add_axes([0, 0, 1, 1])
-        callback = partial(visualize, ax=fig.axes[0])
-        sprreg.register(callback)
+        callback = partial(visualize, ax=fig.axes[0], classHandle=sprreg)
+        sprreg.register(customCallback=callback)
         # plt.show()
     else:
         sprreg.register()
@@ -103,8 +105,8 @@ def runSPR3D():
     if vis:
         fig = plt.figure()
         fig.add_axes([0, 0, 1, 1])
-        callback = partial(visualize, ax=fig.axes[0])
-        reg3D.register(callback)
+        callback = partial(visualize, ax=fig.axes[0], classHandle=reg3D)
+        reg3D.register(customCallback=callback)
         # plt.show()
     else:
         reg3D.register()

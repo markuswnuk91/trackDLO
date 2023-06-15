@@ -485,24 +485,24 @@ class Evaluation(object):
         #     bdloModel = self.generateModel(dataSetPath)
         #     _, extractedTopology = self.runTopologyExtraction(pointSet)
         numSamples = (
-            eval.config["localization"]["numSamples"]
+            self.config["localization"]["numSamples"]
             if numSamples is None
             else numSamples
         )
         numIterations = (
-            eval.config["localization"]["numIterations"]
+            self.config["localization"]["numIterations"]
             if numIterations is None
             else numIterations
         )
-        verbose = eval.config["localization"]["verbose"] if verbose is None else verbose
-        method = eval.config["localization"]["method"] if method is None else method
+        verbose = self.config["localization"]["verbose"] if verbose is None else verbose
+        method = self.config["localization"]["method"] if method is None else method
         jacobianDamping = (
-            eval.config["localization"]["jacobianDamping"]
+            self.config["localization"]["jacobianDamping"]
             if jacobianDamping is None
             else jacobianDamping
         )
 
-        XInit, qInit, localization = eval.initialLocalization(
+        XInit, qInit, localization = self.initialLocalization(
             pointSet=pointSet,
             extractedTopology=extractedTopology,
             bdloModel=bdloModel,
@@ -528,7 +528,7 @@ class Evaluation(object):
         }
         if logResults:
             self.resultLog["localization"].append(localizationResult)
-        return localizationResult
+        return localizationResult, localization
 
     def runInitialization(
         self,
@@ -558,7 +558,8 @@ class Evaluation(object):
         block=False,
         logResults=True,
     ):
-        pointSet = self.getPointCloud(frame, dataSetPath)
+        pointCloud = self.getPointCloud(frame, dataSetPath)
+        pointSet = pointCloud[0]
         bdloModel = self.generateModel(dataSetPath, numBodyNodes)
         topologyExtractionResult, extractedTopology = self.runTopologyExtraction(
             pointSet,
@@ -567,11 +568,7 @@ class Evaluation(object):
             pruningThreshold,
             skeletonize,
             visualizeSOMIteration,
-            visualizeSOMIteration,
             visualizeSOMResult,
-            visualizeSOMResult,
-            visualizeL1Iterations,
-            visualizeL1Iterations,
             visualizeL1Iterations,
             visualizeL1Result,
             visualizeExtractionResult,
@@ -579,7 +576,7 @@ class Evaluation(object):
             l1Callback,
             block,
         )
-        initialLocalizationResult, _ = self.runLocalization(
+        initialLocalizationResult, _ = self.runInitialLocalization(
             pointSet,
             extractedTopology,
             bdloModel,
@@ -596,6 +593,7 @@ class Evaluation(object):
             logResults,
         )
         initializationResult = {
+            "pointCloud": pointCloud,
             "topologyExtraction": topologyExtractionResult,
             "localization": initialLocalizationResult,
         }

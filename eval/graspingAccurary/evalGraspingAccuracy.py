@@ -29,6 +29,7 @@ global vis
 global result
 vis = True
 save = True
+runExperiment = True
 
 # setup evalulation class
 global eval
@@ -50,17 +51,12 @@ if __name__ == "__main__":
     )
     # determine initial configuration
     if runExperiment:
-        if not loadInitialStateFromResult:
-            # setup result file
-            result = setupResultTemplate(dataSetPath)
-            eval.results.append(result)
-            runInitialization(dataSetPath, frame)
-            runModelGeneration(dataSetPath)
-            runInitialLocalization(dataSetPath, initialFrame)
-        else:
-            results = eval.loadResults(resultFilePath)
-            eval.results = results
-        
-    # run tracking
-    trackingResults = eval.(initalState)
+        initializationResult = eval.runInitialization(
+            dataSetPath, eval.config["initialFrame"]
+        )
+
+    # else:
+    #     results = eval.loadResults(resultFilePath)
+    #     eval.results = results
+
     # evaluate results

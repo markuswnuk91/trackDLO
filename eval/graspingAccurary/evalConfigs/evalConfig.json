@@ -1,0 +1,111 @@
+{    
+    "dataSetPaths": [
+        "data/darus_data_download/data/20230523_mountedconfigurations_occlusion/20230523_134842_modelY/"
+    ],
+    "dataSetToLoad": 0,
+    "initialFrame": 0,
+    "savePaths": ["data/eval/tracking/"],
+    "preprocessingParameters": {
+        "hsvFilterParameters" : {
+            "hueMin": 0,
+            "hueMax": 15,
+            "saturationMin": 150,
+            "saturationMax": 250,
+            "valueMin": 0,
+            "valueMax": 255
+        },
+        "roiFilterParameters" : {
+            "uMin" : 0,
+            "uMax" : 1,
+            "vMin" : 0,
+            "vMax" : 1
+        },
+        
+        "cameraCoordinateBoundingBoxParameters" : {
+            "xMin" : -1,
+            "xMax" : 1,
+            "yMin" : -1,
+            "yMax" : 1,
+            "zMin" : 0,
+            "zMax" : 2
+        },
+        
+        "robotCoordinateBoundingBoxParameters" : {
+            "xMin" : 0.2,
+            "xMax" : 0.63,
+            "yMin" : -0.5,
+            "yMax" : 0.5,
+            "zMin" : 0.25,
+            "zMax" : 0.5
+        },
+        "downsamplingParameters" : {
+            "nthElement" : 10
+        }
+    },
+    "modelGeneration":{
+        "numSegments": 30
+    },
+    "topologyExtraction":{
+        "somParameters" : {
+            "numSeedPoints": 30,
+            "alpha": 0.9,
+            "alphaAnnealing": 1,
+            "sigma2": 0.3,
+            "sigma2Min": 0.001,
+            "sigma2Annealing": 0.87,
+            "method": "kernel",
+            "max_iterations": 30
+        },
+        "l1Parameters" : {
+            "numSeedPoints": 100,
+            "h": 0.03,
+            "hAnnealing": 0.9,
+            "hMin": 0.01,
+            "mu": 0.35,
+            "max_iterations": 3
+        },
+        "pruningThreshold": 1e-6
+    },
+    "localization":{
+        "numSamples": 10,
+        "numIterations": 20,
+        "verbose": 0,
+        "method": "IK",
+        "jacobianDamping":1
+    },
+
+    "cpdParameters" : {
+        "max_iterations":1,
+        "alpha": 1, 
+        "beta": 2,
+        "normalize": 1
+    },
+    "sprParameters" : {
+        "max_iterations":1,
+        "tauFactor": 3,
+        "lambdaFactor": 100,
+        "beta": 2,
+        "knn":5,
+        "tauAnnealing":0.9,
+        "lambdaAnnealing":0.9,
+        "normalize": 1
+    },
+    "kprParameters" : {
+        "max_iterations":1,
+        "ik_iterations":10,
+        "damping":10 ,
+        "dampingAnnealing":1,
+        "minDampingFactor": 1,
+        "normalize": 1
+    },
+    "krcpdParameters" : {
+        "max_iterations":1,
+        "alpha": 1, 
+        "beta": 0.5,
+        "ik_iterations":10,
+        "damping":8,
+        "dampingAnnealing":1,
+        "minDampingFactor": 1,
+        "normalize": 0
+    }
+}

@@ -60,7 +60,11 @@ class Evaluation(object):
         self.dataHandler = DataHandler()
         self.config = self.dataHandler.loadFromJson(self.configFilePath)
         self.results = {}
-        self.resultLog = {"topologyExtraction": [], "localization": []}
+        self.resultLog = {
+            "topologyExtraction": [],
+            "localization": [],
+            "initialization": [],
+        }
         self.currentDataSetLoadPath = None
         self.currentLoadFileIdentifier = None
 
@@ -231,7 +235,12 @@ class Evaluation(object):
             raise NotImplementedError
 
     # model generation
-    def generateModel(self, dataSetPath, numBodyNodes):
+    def generateModel(self, dataSetPath, numBodyNodes=None):
+        numBodyNodes = (
+            self.config["modelGeneration"]["numSegments"]
+            if numBodyNodes is None
+            else numBodyNodes
+        )
         modelInfo = self.dataHandler.loadModelParameters("model.json", dataSetPath)
         branchSpecs = list(modelInfo["branchSpecifications"].values())
         bdloModel = BranchedDeformableLinearObject(
@@ -392,7 +401,7 @@ class Evaluation(object):
         if logResults:
             self.resultLog["topologyExtraction"].append(topologyExtractionResult)
 
-        return topologyExtractionResult
+        return topologyExtractionResult, extractedTopology
         # -------------------------------------------------------------------------
 
     # Initial Localization
@@ -459,6 +468,22 @@ class Evaluation(object):
         block=False,
         logResults=True,
     ):
+        # if (dataSetPath is None and frame is None) and pointSet is None:
+        #     raise ValueError(
+        #         "Provide a path to a data set and the frame or a point cloud for which the initial localization should be performed."
+        #     )
+        # elif (dataSetPath is None and frame is None) and extractedTopology is None:
+        #     raise ValueError(
+        #         "Provide a path to a data set and the frame or a extracted topology for which the initial localization should be performed."
+        #     )
+        # elif (dataSetPath is None and frame is None) and bdloModel is None:
+        #     raise ValueError(
+        #         "Provide a path to a data set and the frame or a bdloModel for which the initial localization should be performed."
+        #     )
+        # elif dataSetPath is not None and frame is not None:
+        #     pointSet = self.getPointCloud(frame, dataSetPath)
+        #     bdloModel = self.generateModel(dataSetPath)
+        #     _, extractedTopology = self.runTopologyExtraction(pointSet)
         numSamples = (
             eval.config["localization"]["numSamples"]
             if numSamples is None
@@ -504,6 +529,80 @@ class Evaluation(object):
         if logResults:
             self.resultLog["localization"].append(localizationResult)
         return localizationResult
+
+    def runInitialization(
+        self,
+        dataSetPath,
+        frame,
+        numBodyNodes=None,
+        somParameters=None,
+        l1Parameters=None,
+        pruningThreshold=None,
+        skeletonize=True,
+        visualizeSOMIteration=False,
+        visualizeSOMResult=False,
+        visualizeL1Iterations=False,
+        visualizeL1Result=False,
+        visualizeExtractionResult=False,
+        somCallback=None,
+        l1Callback=None,
+        numSamples=None,
+        numIterations=None,
+        verbose=None,
+        method=None,
+        jacobianDamping=None,
+        visualizeCorresponanceEstimation=True,
+        visualizeIterations=True,
+        visualizeResult=True,
+        visualizationCallback=None,
+        block=False,
+        logResults=True,
+    ):
+        pointSet = self.getPointCloud(frame, dataSetPath)
+        bdloModel = self.generateModel(dataSetPath, numBodyNodes)
+        topologyExtractionResult, extractedTopology = self.runTopologyExtraction(
+            pointSet,
+            somParameters,
+            l1Parameters,
+            pruningThreshold,
+            skeletonize,
+            visualizeSOMIteration,
+            visualizeSOMIteration,
+            visualizeSOMResult,
+            visualizeSOMResult,
+            visualizeL1Iterations,
+            visualizeL1Iterations,
+            visualizeL1Iterations,
+            visualizeL1Result,
+            visualizeExtractionResult,
+            somCallback,
+            l1Callback,
+            block,
+        )
+        initialLocalizationResult, _ = self.runLocalization(
+            pointSet,
+            extractedTopology,
+            bdloModel,
+            numSamples,
+            numIterations,
+            verbose,
+            method,
+            jacobianDamping,
+            visualizeCorresponanceEstimation,
+            visualizeIterations,
+            visualizeResult,
+            visualizationCallback,
+            block,
+            logResults,
+        )
+        initializationResult = {
+            "topologyExtraction": topologyExtractionResult,
+            "localization": initialLocalizationResult,
+        }
+        if logResults:
+            self.resultLog["initialization"].append(initializationResult)
+        self.resultLog["initialization"].append(initializationResult)
+        return initializationResult
 
     # -------------------------------------------------------------------------
     # VISUALIZATION FUNCTIONS

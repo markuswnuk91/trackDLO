@@ -44,16 +44,33 @@ resultFolderPath = "data/eval/tracking/" + dataSetName + "/"
 resultFileName = "result"
 resultFilePath = resultFolderPath + resultFileName + ".pkl"
 
-if __name__ == "__main__":
-    # load model
-    bdloModel = eval.generateModel(
-        dataSetPath, eval.config["modelGeneration"]["numSegments"]
+
+def evaluateGraspingAccuracy(dataSetPath, frame):
+    graspingAccuracyResult = {}
+
+    # run different tracking algorithms
+    trackingResult = eval.runTracking(
+        dataSetPath=dataSetPath,
+        method="cpd",
+        startFrame=frame,
+        endFrame=frame,
+        checkConvergence=True,
     )
-    # determine initial configuration
+    print(trackingResult)
+    return graspingAccuracyResult
+
+
+if __name__ == "__main__":
+    initializationFrame = eval.config["initialFrame"]
+    evaluationFrame = initializationFrame + 5
+    # initialize on the first frame of the data set
     if runExperiment:
         initializationResult = eval.runInitialization(
-            dataSetPath, eval.config["initialFrame"]
+            dataSetPath, initializationFrame, visualize=False
         )
+
+    # evaluate grasping accuracy for different algorithms
+    graspingAccuracyResult = evaluateGraspingAccuracy(dataSetPath, evaluationFrame)
 
     # else:
     #     results = eval.loadResults(resultFilePath)

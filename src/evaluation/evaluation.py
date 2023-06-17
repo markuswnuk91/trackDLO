@@ -8,6 +8,7 @@ import dartpy as dart
 from scipy.spatial import distance_matrix
 from functools import partial
 import pickle
+from warnings import warn
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation", ""))
@@ -539,6 +540,7 @@ class Evaluation(object):
         l1Parameters=None,
         pruningThreshold=None,
         skeletonize=True,
+        visualize=True,
         visualizeSOMIteration=False,
         visualizeSOMResult=False,
         visualizeL1Iterations=False,
@@ -558,6 +560,16 @@ class Evaluation(object):
         block=False,
         logResults=True,
     ):
+        if visualize is False:
+            visualizeSOMIteration = False
+            visualizeSOMResult = False
+            visualizeL1Iterations = False
+            visualizeL1Result = False
+            visualizeExtractionResult = False
+            visualizeCorresponanceEstimation = False
+            visualizeIterations = False
+            visualizeResult = False
+
         pointCloud = self.getPointCloud(frame, dataSetPath)
         pointSet = pointCloud[0]
         bdloModel = self.generateModel(dataSetPath, numBodyNodes)
@@ -599,8 +611,132 @@ class Evaluation(object):
         }
         if logResults:
             self.resultLog["initialization"].append(initializationResult)
-        self.resultLog["initialization"].append(initializationResult)
         return initializationResult
+
+    # -------------------------------------------------------------------------
+    # TRACKING FUNCTIONS
+    # -------------------------------------------------------------------------
+    def runRegistration(
+        self,
+        registration,
+        Y=None,
+        X=None,
+        T=None,
+        checkConvergence=True,
+        logTargets=True,
+    ):
+        if Y is not None:
+            registration.Y = Y
+        if X is not None:
+            registration.X = X
+        if T is not None:
+            registration.T = T
+
+        registrationResult = {}
+        if logTargets:
+            registrationResult["TLog"] = []
+            # setup result callback
+            logTargetsCallback = lambda: registrationResult["TLog"].append(
+                registration.T.copy()
+            )
+        registration.register(
+            checkConvergence=checkConvergence, customCallback=logTargetsCallback
+        )
+
+        # gather results
+        registrationResult["X"] = registration.X.copy()
+        registrationResult["Y"] = registration.Y.copy()
+        registrationResult["T"] = registration.T.copy()
+
+        # gather registration specific results
+        if type(registration) == CoherentPointDrift:
+            registrationResult["W"] = registration.W.copy()
+            registrationResult["G"] = registration.G.copy()
+        return registrationResult
+
+    def runTracking(
+        self,
+        dataSetPath,
+        method,
+        startFrame=None,
+        endFrame=None,
+        frameStep=None,
+        Y=None,
+        XInit=None,
+        qInit=None,
+        trackingParameters=None,
+        visualize=True,
+        visualizationCallback=None,
+        checkConvergence=True,
+        logTargets=True,
+    ):
+        # setup tracking problem
+        if startFrame is None and Y is None:
+            warn(
+                "Provided neither frame nor point cloud to perform tracking on. Trying to use last localization result."
+            )
+            try:
+                Y = self.resultLog["initialization"][-1]["pointCloud"][0]
+            except:
+                raise ValueError("No point set to perfrom registration on")
+        if startFrame is not None and Y is None:
+            Y = self.getPointCloud(startFrame, dataSetPath)[0]
+        if startFrame is None and Y is not None:
+            Y = Y
+        if startFrame is not None and Y is not None:
+            warn(
+                "Provided point cloud and frame. Using provided point cloud to continue"
+            )
+            Y = Y
+        XInit = (
+            self.resultLog["initialization"][-1]["localization"]["XInit"]
+            if XInit is None
+            else XInit
+        )
+        qInit = (
+            self.resultLog["initialization"][-1]["localization"]["qInit"]
+            if qInit is None
+            else qInit
+        )
+        endFrame = (
+            self.getNumImageSetsInDataSet(dataSetPath) if endFrame is None else endFrame
+        )
+        frameStep = 1 if frameStep is None else frameStep
+        if startFrame is not None and endFrame is not None:
+            framesToTrack = list(range(startFrame, endFrame, frameStep))
+        else:
+            framesToTrack = []
+
+        # setup results
+        trackingResult = {}
+        trackingResult["method"] = method
+        trackingResult["registrations"] = []
+
+        if method == "cpd":
+            trackingParameters = (
+                self.config["cpdParameters"]
+                if trackingParameters is None
+                else trackingParameters
+            )
+            reg = CoherentPointDrift(Y=Y, X=XInit, **trackingParameters)
+            if visualize:
+                if visualizationCallback is None:
+                    visualizationCallback = self.getVisualizationCallback(reg)
+                reg.registerCallback(visualizationCallback)
+
+            registrationResult = self.runRegistration(
+                reg, checkConvergence=checkConvergence, logTargets=logTargets
+            )
+            trackingResult["registrations"].append(registrationResult)
+            for frame in framesToTrack:
+                pointCloud = self.getPointCloud(
+                    frame,
+                    dataSetPath,
+                )
+                Y = pointCloud[0]
+                registrationResult = self.runRegistration(reg)
+                trackingResult["registrations"].append(registrationResult)
+        return trackingResult
 
     # -------------------------------------------------------------------------
     # VISUALIZATION FUNCTIONS

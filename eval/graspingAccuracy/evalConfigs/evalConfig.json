@@ -75,7 +75,7 @@
     },
 
     "cpdParameters" : {
-        "max_iterations":1,
+        "max_iterations":100,
         "alpha": 1, 
         "beta": 2,
         "normalize": 1

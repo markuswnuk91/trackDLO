@@ -422,6 +422,33 @@ class BranchedDeformableLinearObject(BDLOTopology):
     def _getBodyNodeIndicesFromBranch(self, branch):
         return branch.getBranchInfo()["correspondingBodyNodeIndices"]
 
+    def getJointLocalCoordinatesFromBranch(self, branchIndex):
+        branchLength = self.branches[branchIndex].getBranchInfo()["length"]
+        segmentLengths = self.branches[branchIndex].getBranchInfo()["segmentLengths"]
+        if self.getBranch(branchIndex) == self.rootBranch:
+            segmentLengths = segmentLengths[::-1]
+        localCoordinates = np.insert(
+            np.cumsum(np.array(segmentLengths)) / branchLength, 0, 0
+        )
+        return localCoordinates
+
+    # cartesian to local space conversion functions
+    def getBodyNodeCenterLocalCoordinates(self, bodyNodeIndex):
+        correspondingBranchIndex = self.getBranchCorrespondanceForBodyNode(
+            bodyNodeIndex
+        )
+        SJoint = self.getJointLocalCoordinatesFromBranch(correspondingBranchIndex)
+        bodyNodeIndicesInBranch = self.getBranch(
+            correspondingBranchIndex
+        ).getBranchInfo()["correspondingBodyNodeIndices"]
+        indexInBranch = np.where(np.array(bodyNodeIndicesInBranch) == bodyNodeIndex)[0][
+            0
+        ]
+        SCenter = SJoint[:-1] + np.diff(SJoint) / 2
+        if self.getBranch(correspondingBranchIndex) == self.rootBranch:
+            SCenter = SCenter[::-1]
+        return SCenter[indexInBranch]
+
     def getCartesianJointPositions(self):
         """returns the cartesian positions of all joints (including start and end joint)"""
         cartesianJointPositions = []
@@ -457,13 +484,22 @@ class BranchedDeformableLinearObject(BDLOTopology):
             cartesianJointPositions.append(childJointPosition)
         return np.array(cartesianJointPositions)
 
-    def getCartesianBodyCenterPositions(self):
+    def getCartesianBodyCenterPositions(self, returnBranchLocalCoordinates=False):
         cartesianBodyCenterPositions = []
+        branchCorrespondance = []
+        S = []
         for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
             cartesianBodyCenterPositions.append(
                 self.skel.getBodyNode(bodyNodeIndex).getTransform().translation()
             )
-        return np.array(cartesianBodyCenterPositions)
+            branchCorrespondance.append(
+                self.getBranchCorrespondanceForBodyNode(bodyNodeIndex)
+            )
+            S.append(self.getBodyNodeCenterLocalCoordinates(bodyNodeIndex))
+        if returnBranchLocalCoordinates:
+            return np.array(cartesianBodyCenterPositions), branchCorrespondance, S
+        else:
+            return np.array(cartesianBodyCenterPositions)
 
     # correspondance functions
     def getBranchCorrespondanceForBodyNode(self, bodyNodeIndex):
@@ -565,16 +601,6 @@ class BranchedDeformableLinearObject(BDLOTopology):
         # reverse direction to go to end of segment
         relativeTransformToParentJoint[:3, 3] = -relativeTransformToParentJoint[:3, 3]
         return (bodyNodeTransform @ relativeTransformToParentJoint)[:3, 3]
-
-    def getJointLocalCoordinatesFromBranch(self, branchIndex):
-        branchLength = self.branches[branchIndex].getBranchInfo()["length"]
-        segmentLengths = self.branches[branchIndex].getBranchInfo()["segmentLengths"]
-        if self.getBranch(branchIndex) == self.rootBranch:
-            segmentLengths = segmentLengths[::-1]
-        localCoordinates = np.insert(
-            np.cumsum(np.array(segmentLengths)) / branchLength, 0, 0
-        )
-        return localCoordinates
 
     def getBodyNodeIndexFromBranchLocalCoodinate(self, branchIndex: int, s: float):
         """returns the bodyNode index corresponding to the local coordinate running along a branch. Local coordinate runs from branch startNode to branch end node, except for rootBranch where it runs from end node to start node, because rootBranch starts with a leafnode.
@@ -765,10 +791,13 @@ class BranchedDeformableLinearObject(BDLOTopology):
     def getGeneralizedCoordinates(self):
         return self.skel.getPositions()
 
-    def computeForwardKinematics(self, q, locations="center"):
+    def computeForwardKinematics(
+        self, q, locations="center", returnBranchLocalCoordinates=True
+    ):
         self.skel.setPositions(q)
+
         if locations == "center":
-            return self.getCartesianBodyCenterPositions()
+            return self.getCartesianBodyCenterPositions(returnBranchLocalCoordinates)
         elif locations == "joint":
             return self.getCartesianJointPositions()
         else:

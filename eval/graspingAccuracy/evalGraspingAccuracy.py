@@ -6,6 +6,9 @@ import numpy as np
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
     from src.evaluation.evaluation import Evaluation
+    from src.evaluation.graspingAccuracy.graspingAccuracyEvaluation import (
+        GraspingAccuracyEvaluation,
+    )
 
     # tracking algorithms
     from src.tracking.cpd.cpd import CoherentPointDrift
@@ -30,22 +33,31 @@ global result
 vis = True
 save = True
 runExperiment = True
+loadInitializationFromResult = False
 
 # setup evalulation class
 global eval
 pathToConfigFile = (
     os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/evalConfig.json"
 )
-eval = Evaluation(configFilePath=pathToConfigFile)
+eval = GraspingAccuracyEvaluation(configFilePath=pathToConfigFile)
 # set file paths
 dataSetPath = eval.config["dataSetPaths"][eval.config["dataSetToLoad"]]
 dataSetName = eval.config["dataSetPaths"][0].split("/")[-2]
-resultFolderPath = "data/eval/tracking/" + dataSetName + "/"
+resultFolderPath = "data/eval/graspingAccuracy/" + dataSetName + "/"
 resultFileName = "result"
 resultFilePath = resultFolderPath + resultFileName + ".pkl"
 
+# setup results
+eval.results = {
+    "dataSetPath": dataSetPath,
+    "dataSetName": dataSetName,
+    "pathToConfigFile": pathToConfigFile,
+    "evalConfig": eval.config,
+}
 
-def evaluateGraspingAccuracy(dataSetPath, frame):
+
+def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
     graspingAccuracyResult = {}
 
     # run different tracking algorithms
@@ -55,23 +67,47 @@ def evaluateGraspingAccuracy(dataSetPath, frame):
         startFrame=frame,
         endFrame=frame,
         checkConvergence=True,
+        XInit=initializationResult["localization"]["XInit"],
+        qInit=initializationResult["localization"]["qInit"],
     )
+
+    # get grasping positions from desciption
+    graspingLocalCoordinates = eval.loadGraspingLocalCoordinates(dataSetPath)
+    # get grasping positions from registered model
+    # TBD: graspingPositionsRegistered =
+    # get grasping ground truth grasping poistions from robot measurement
+    graspingPositions_groundTruth = eval.loadGroundTruthGraspingPositions(
+        dataSetPath, frame
+    )
+    # compare registered positions to ground truth positions
+
+    # compare registrered angle to ground truth positions
     print(trackingResult)
     return graspingAccuracyResult
 
 
 if __name__ == "__main__":
     initializationFrame = eval.config["initialFrame"]
-    evaluationFrame = initializationFrame + 5
+    evaluationFrame = initializationFrame
     # initialize on the first frame of the data set
     if runExperiment:
-        initializationResult = eval.runInitialization(
-            dataSetPath, initializationFrame, visualize=False
+        if loadInitializationFromResult:
+            initializationResult = eval.loadResults(resultFilePath)["initialization"]
+        else:
+            initializationResult = eval.runInitialization(
+                dataSetPath, initializationFrame, visualize=False
+            )
+            eval.results["initialization"] = initializationResult
+            if save:
+                eval.saveResults(
+                    folderPath=resultFolderPath,
+                    generateUniqueID=False,
+                    fileName=resultFileName,
+                )
+        # evaluate grasping accuracy for different algorithms
+        graspingAccuracyResult = evaluateGraspingAccuracy(
+            dataSetPath, evaluationFrame, initializationResult
         )
-
-    # evaluate grasping accuracy for different algorithms
-    graspingAccuracyResult = evaluateGraspingAccuracy(dataSetPath, evaluationFrame)
-
     # else:
     #     results = eval.loadResults(resultFilePath)
     #     eval.results = results

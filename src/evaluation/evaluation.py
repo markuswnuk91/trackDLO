@@ -126,30 +126,46 @@ class Evaluation(object):
         results=None,
         generateUniqueID=True,
         method="pickle",
+        promtOnSave=True,
     ):
-        results = self.results if results is None else results
-        if fileName is None and generateUniqueID:
-            fileName = self.dataHandler.generateIdentifier(MS=False) + "_" + "results"
-        elif fileName is None and not generateUniqueID:
-            fileName = "results"
-        elif fileName is not None and generateUniqueID:
-            fileName = self.dataHandler.generateIdentifier(MS=False) + "_" + fileName
-
-        # create directory if it does not exist
-        if not os.path.exists(folderPath):
-            os.makedirs(folderPath)
-        if method == "pickle":
-            filePath = folderPath + fileName + ".pkl"
-            with open(filePath, "wb") as f:
-                pickle.dump(results, f)
-
-        if method == "json":
-            filePath = folderPath + fileName + ".pkl"
-            jsonifiedResults = self.dataHandler.convertNumpyToLists(results)
-            self.dataHandler.saveDictionaryAsJson(
-                jsonifiedResults, folderPath, fileName
+        if promtOnSave:
+            key = input(
+                'Saving results to: {}, with name {} as type {}.\n Press "y" to continue saving: '.format(
+                    folderPath, fileName, method
+                )
             )
-        return filePath
+        else:
+            key = "y"
+        if key == "y":
+            results = self.results if results is None else results
+            if fileName is None and generateUniqueID:
+                fileName = (
+                    self.dataHandler.generateIdentifier(MS=False) + "_" + "results"
+                )
+            elif fileName is None and not generateUniqueID:
+                fileName = "results"
+            elif fileName is not None and generateUniqueID:
+                fileName = (
+                    self.dataHandler.generateIdentifier(MS=False) + "_" + fileName
+                )
+
+            # create directory if it does not exist
+            if not os.path.exists(folderPath):
+                os.makedirs(folderPath)
+            if method == "pickle":
+                filePath = folderPath + fileName + ".pkl"
+                with open(filePath, "wb") as f:
+                    pickle.dump(results, f)
+
+            if method == "json":
+                filePath = folderPath + fileName + ".pkl"
+                jsonifiedResults = self.dataHandler.convertNumpyToLists(results)
+                self.dataHandler.saveDictionaryAsJson(
+                    jsonifiedResults, folderPath, fileName
+                )
+            return filePath
+        else:
+            print("Results were not saved.")
 
     def loadResults(self, filePath):
         _, file_extension = os.path.splitext(filePath)
@@ -442,15 +458,16 @@ class Evaluation(object):
         qInit = localization.reconstructShape(
             numIter=numIterations, verbose=verbose, method=method
         )
-        XInit = bdloModel.computeForwardKinematics(qInit, locations="center")
-
+        XInit, BInit, SInit = bdloModel.computeForwardKinematics(
+            qInit, locations="center", returnBranchLocalCoordinates=True
+        )
         # visualization
         if visualizeCorresponanceEstimation:
             fig, ax = self.setupFigure()
             self.standardVisualizationFunction(fig, ax, localization)
             plt.show(block=block)
 
-        return XInit, qInit, localization
+        return XInit, BInit, SInit, qInit, localization
 
     def runInitialLocalization(
         self,
@@ -503,7 +520,7 @@ class Evaluation(object):
             else jacobianDamping
         )
 
-        XInit, qInit, localization = self.initialLocalization(
+        XInit, BInit, SInit, qInit, localization = self.initialLocalization(
             pointSet=pointSet,
             extractedTopology=extractedTopology,
             bdloModel=bdloModel,
@@ -526,6 +543,8 @@ class Evaluation(object):
             "qLog": localization.qLog,
             "XInit": XInit,
             "qInit": qInit,
+            "BInit": BInit,
+            "SInit": SInit,
         }
         if logResults:
             self.resultLog["localization"].append(localizationResult)

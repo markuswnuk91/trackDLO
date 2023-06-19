@@ -1,5 +1,6 @@
 import sys
 import os
+import numpy as np
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation/graspingAccuracy", ""))
@@ -30,3 +31,15 @@ class GraspingAccuracyEvaluation(Evaluation):
                 (graspingPosition["branch"], graspingPosition["s"])
             )
         return graspingLocalCoordinates
+
+    def loadGroundTruthGraspingPositions(self, dataSetFolderPath, fileNumber):
+        filePath = self.dataHandler.getFilePath(
+            fileNumber, dataSetFolderPath, fileType="json"
+        )
+        robotState = self.dataHandler.loadFromJson(filePath)
+        transform_BaseToEE = np.reshape(
+            np.array(robotState["O_T_EE"]), (4, -1), order="F"
+        )
+        robotEEPosition = transform_BaseToEE[:3, 3]
+        robotEERotationMatrix = transform_BaseToEE[:3, :3]
+        return transform_BaseToEE, robotEEPosition, robotEERotationMatrix

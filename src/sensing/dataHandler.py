@@ -64,26 +64,6 @@ class DataHandler(object):
                 )
             )
 
-    def getFileIndexFromNameOrIndex(self, fileIdentifier, dataSetFolderPath):
-        if str(fileIdentifier).isnumeric():
-            fileIndex = fileIdentifier
-        else:
-            fileName = fileIdentifier
-            fileIndex = self.getFileIndexFromFileName(
-                fileName, dataSetFolderPath + "data/"
-            )
-        return fileIndex
-
-    def getFileNameFromNameOrIndex(self, fileIdentifier, dataSetFolderPath):
-        if str(fileIdentifier).isnumeric():
-            fileIndex = fileIdentifier
-            fileName = self.getFileNameFromFileIndex(
-                fileIndex, dataSetFolderPath + "data/"
-            )
-        else:
-            fileName = fileIdentifier
-        return fileName
-
     def jsonifyDictionary(self, inputDict):
         outputDict = inputDict.copy()
         for key in outputDict:
@@ -318,6 +298,8 @@ class DataHandler(object):
             fileNames = self.getDataSetFileNames_NPY(dataFolderPath)
         elif type == "tif":
             fileNames = self.getDataSetFileNames_TIF(dataFolderPath)
+        elif type == "json":
+            fileNames = self.getDataSetFileNames_JSON(dataFolderPath)
         else:
             raise ValueError(
                 "File type expected to be rgb, npy, or tif. Other file types are currently not supported."
@@ -357,6 +339,16 @@ class DataHandler(object):
         dataSetFileNames.sort()
         return dataSetFileNames
 
+    def getDataSetFileNames_JSON(self, folderPath=None):
+        if folderPath is None:
+            folderPath = self.defaultLoadFolderPath_Data
+        dataSetFileNames = []
+        for fileName in os.listdir(folderPath):
+            if fileName.endswith(".json"):
+                dataSetFileNames.append(fileName)
+        dataSetFileNames.sort()
+        return dataSetFileNames
+
     def getDataSetFileName_RBG(self, index, folderPath=None):
         return self.getDataSetFileNames_RBG(folderPath)[index]
 
@@ -364,8 +356,13 @@ class DataHandler(object):
         fileNames = self.getDataSetFileNames_RBG(folderPath)
         return fileNames.index(fileName)
 
-    def getFileNameFromFileIndex(self, fileIdex, folderPath=None):
-        fileName = self.getDataSetFileNames_RBG(folderPath)[fileIdex]
+    def getFileNameFromFileIndex(self, fileIdex, folderPath=None, fileType="rgb"):
+        if fileType == "rgb":
+            fileName = self.getDataSetFileNames_RBG(folderPath)[fileIdex]
+        elif fileType == "json":
+            fileName = self.getDataSetFileNames_JSON(folderPath)[fileIdex]
+        else:
+            raise NotImplementedError
         return fileName
 
     def getDataSetFolderPathFromRelativeFilePath(self, filePath):
@@ -376,6 +373,35 @@ class DataHandler(object):
 
     def getFileNameFromRelativeFilePath(self, filePath):
         return filePath.split("/")[-1]
+
+    def getFileIndexFromNameOrIndex(self, fileIdentifier, dataSetFolderPath):
+        if str(fileIdentifier).isnumeric():
+            fileIndex = fileIdentifier
+        else:
+            fileName = fileIdentifier
+            fileIndex = self.getFileIndexFromFileName(
+                fileName, dataSetFolderPath + "data/"
+            )
+        return fileIndex
+
+    def getFileNameFromNameOrIndex(
+        self, fileIdentifier, dataSetFolderPath, fileType="rgb"
+    ):
+        if str(fileIdentifier).isnumeric():
+            fileIndex = fileIdentifier
+            fileName = self.getFileNameFromFileIndex(
+                fileIndex, dataSetFolderPath + "data/", fileType
+            )
+        else:
+            fileName = fileIdentifier
+        return fileName
+
+    def getFilePath(self, fileIdentifier, dataSetFolderPath, fileType="rgb"):
+        fileName = self.getFileNameFromNameOrIndex(
+            fileIdentifier, dataSetFolderPath, fileType
+        )
+        filePath = dataSetFolderPath + "data/" + fileName
+        return filePath
 
     # setter functions
     def setDefaultLoadFolderPathFromFullFilePath(self, filePath):

@@ -31,9 +31,9 @@ except:
 global vis
 global result
 vis = True
-save = True
+save = False
 runExperiment = True
-loadInitializationFromResult = False
+loadInitializationFromResult = True
 
 # setup evalulation class
 global eval
@@ -75,10 +75,20 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
     graspingLocalCoordinates = eval.loadGraspingLocalCoordinates(dataSetPath)
     # get grasping positions from registered model
     # TBD: graspingPositionsRegistered =
+    numMarkerGraspingPositions = len(graspingLocalCoordinates)
     # get grasping ground truth grasping poistions from robot measurement
-    graspingPositions_groundTruth = eval.loadGroundTruthGraspingPositions(
-        dataSetPath, frame
-    )
+    robotEETransformsGT = []
+    robotEEPositionsGT = []
+    robotEERotationMatricesGT = []
+    for i in range(1, numMarkerGraspingPositions + 1):
+        (
+            robotEETransformGT,
+            robotEEPositionGT,
+            robotEERotationMatrixGT,
+        ) = eval.loadGroundTruthGraspingPositions(dataSetPath, i)
+        robotEETransformsGT.append(robotEETransformGT)
+        robotEEPositionsGT.append(robotEEPositionGT)
+        robotEERotationMatricesGT.append(robotEERotationMatrixGT)
     # compare registered positions to ground truth positions
 
     # compare registrered angle to ground truth positions

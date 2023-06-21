@@ -2,6 +2,7 @@ import sys
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.interpolate import interp1d
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -73,8 +74,28 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
 
     # get grasping positions from desciption
     graspingLocalCoordinates = eval.loadGraspingLocalCoordinates(dataSetPath)
-    # get grasping positions from registered model
-    # TBD: graspingPositionsRegistered =
+    # predict the grasping positions from the registration result
+    graspingPositionsPredicted = []
+    for graspingLocalCoordinate in graspingLocalCoordinates:
+        correspondingIndices = [
+            index
+            for index, value in enumerate(initializationResult["localization"]["BInit"])
+            if value
+            == graspingLocalCoordinate[0]
+            - 1  # account for branch indexing starting @ 1 in model desciption
+        ]
+        TCorresponding = trackingResult["registrations"][0]["T"][correspondingIndices]
+        sCorresponding = np.array(initializationResult["localization"]["SInit"])[
+            correspondingIndices
+        ]
+        sSortedIndices = np.argsort(sCorresponding)
+        TSorted = TCorresponding[sSortedIndices]
+        sSorted = sCorresponding[sSortedIndices]
+        sGrasp = graspingLocalCoordinate[1]
+        branchInterpoationFun = interp1d(sSorted, TSorted.T)
+        graspingPositionPredicted = branchInterpoationFun(sGrasp)
+        graspingPositionsPredicted.append(graspingPositionPredicted)
+
     numMarkerGraspingPositions = len(graspingLocalCoordinates)
     # get grasping ground truth grasping poistions from robot measurement
     robotEETransformsGT = []
@@ -89,10 +110,27 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
         robotEETransformsGT.append(robotEETransformGT)
         robotEEPositionsGT.append(robotEEPositionGT)
         robotEERotationMatricesGT.append(robotEERotationMatrixGT)
-    # compare registered positions to ground truth positions
 
-    # compare registrered angle to ground truth positions
-    print(trackingResult)
+    # compare registered positions to ground truth positions
+    graspingPositionErrors = np.array(robotEEPositionsGT) - np.array(
+        graspingPositionsPredicted
+    )
+    gaspingPositionErrorDistances = np.linalg.norm(graspingPositionErrors, axis=1)
+
+    # compare registrered angle to ground truth angle
+
+    # gather results
+    graspingAccuracyResult["graspingLocalCoordinates"] = graspingLocalCoordinates
+    graspingAccuracyResult["graspingPositions"] = {}
+    graspingAccuracyResult["graspingPositions"][
+        "predicted"
+    ] = graspingPositionsPredicted
+    graspingAccuracyResult["graspingPositions"]["groundTruth"] = robotEEPositionsGT
+    graspingAccuracyResult["graspingPositions"]["errors"] = graspingPositionErrors
+    graspingAccuracyResult["graspingPositions"][
+        "errorDistances"
+    ] = gaspingPositionErrorDistances
+    graspingAccuracyResult["trackinResult"] = trackingResult
     return graspingAccuracyResult
 
 

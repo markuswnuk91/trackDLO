@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.spatial.transform import Rotation as R
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -76,6 +77,7 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
     graspingLocalCoordinates = eval.loadGraspingLocalCoordinates(dataSetPath)
     # predict the grasping positions from the registration result
     graspingPositionsPredicted = []
+    graspingAxesPredicted = []
     for graspingLocalCoordinate in graspingLocalCoordinates:
         correspondingIndices = [
             index
@@ -93,15 +95,25 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
         sSorted = sCorresponding[sSortedIndices]
         sGrasp = graspingLocalCoordinate[1]
         branchInterpoationFun = interp1d(sSorted, TSorted.T)
+        # compute the predicted positons
         graspingPositionPredicted = branchInterpoationFun(sGrasp)
         graspingPositionsPredicted.append(graspingPositionPredicted)
-
-    numMarkerGraspingPositions = len(graspingLocalCoordinates)
+        # compute the predicted axis
+        # get the local coordniate of the closest point to the grasping position
+        sNext = min(sSorted, key=lambda s: abs(s - sGrasp))
+        graspingAxis = branchInterpoationFun(sNext) - branchInterpoationFun(sGrasp)
+        if sNext < sGrasp:
+            # revert direction if the next postition is before the grasp position
+            graspingAxis = -graspingAxis
+        # normalize axis
+        graspingAxis = 1 / np.linalg.norm(graspingAxis) * graspingAxis
+        graspingAxesPredicted.append(graspingAxis)
+    numGroundTruthGraspingPositions = len(graspingLocalCoordinates)
     # get grasping ground truth grasping poistions from robot measurement
     robotEETransformsGT = []
     robotEEPositionsGT = []
     robotEERotationMatricesGT = []
-    for i in range(1, numMarkerGraspingPositions + 1):
+    for i in range(1, numGroundTruthGraspingPositions + 1):
         (
             robotEETransformGT,
             robotEEPositionGT,
@@ -118,6 +130,23 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
     gaspingPositionErrorDistances = np.linalg.norm(graspingPositionErrors, axis=1)
 
     # compare registrered angle to ground truth angle
+    graspingAngularErrors_grad = []
+    graspingAngularErrors_rad = []
+    graspingAxesGT = []
+    for i in range(0, numGroundTruthGraspingPositions):
+        robotGripperAxis_X = robotEERotationMatricesGT[i][:, 0]
+        robotGripperAxis_Y = robotEERotationMatricesGT[i][:, 1]
+        robotGripperAxis_Z = robotEERotationMatricesGT[i][:, 2]
+        graspingAxesGT.append(robotGripperAxis_X)
+        # compute the angular error as deviation between predicted and measured grasping axis
+        dotProduct = np.dot(robotGripperAxis_X, graspingAxesPredicted[i])
+        # aligtn the direction if direction is inverted
+        if dotProduct < 0:
+            dotProduct = -dotProduct
+        graspingAngularErrorInRad = np.arccos(dotProduct)
+        graspingAngularErrorInDegree = np.degrees(graspingAngularErrorInRad)
+        graspingAngularErrors_rad.append(graspingAngularErrorInRad)
+        graspingAngularErrors_grad.append(graspingAngularErrorInDegree)
 
     # gather results
     graspingAccuracyResult["graspingLocalCoordinates"] = graspingLocalCoordinates
@@ -131,6 +160,15 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
         "errorDistances"
     ] = gaspingPositionErrorDistances
     graspingAccuracyResult["trackinResult"] = trackingResult
+    graspingAccuracyResult["graspingAxis"]["predicted"] = graspingAxesPredicted
+    graspingAccuracyResult["graspingAxis"]["groundTruth"] = graspingAxesGT
+    graspingAccuracyResult["graspingAxis"][
+        "graspingAngularErrorsInRad"
+    ] = graspingAngularErrors_rad
+    graspingAccuracyResult["graspingAxis"][
+        "graspingAngularErrorsInGrad"
+    ] = graspingAngularErrors_grad
+    graspingAccuracyResult["groundTruth"]["transforms"] = robotEETransformsGT
     return graspingAccuracyResult
 
 

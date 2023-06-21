@@ -528,3 +528,19 @@ def plotCube(ax, x_Min, x_Max, y_Min, y_Max, z_Min, z_Max, color="r", alpha=0.2)
     ax.plot_surface(xx, y_range[0] * np.ones(4).reshape(2, 2), zz, color="r", alpha=0.2)
     ax.plot_wireframe(xx, y_range[1] * np.ones(4).reshape(2, 2), zz, color="r")
     ax.plot_surface(xx, y_range[1] * np.ones(4).reshape(2, 2), zz, color="r", alpha=0.2)
+
+
+def plotVector(ax, origin, direction, length=None, color=None):
+    length = np.linalg.norm(direction) if length is None else length
+    color = [0, 0, 1] if color is None else color
+
+    direction = length / np.linalg.norm(direction) * direction
+    ax.quiver(
+        origin[0],
+        origin[1],
+        origin[2],
+        direction[0],
+        direction[1],
+        direction[2],
+        color=color,
+    )

@@ -108,6 +108,7 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
         # normalize axis
         graspingAxis = 1 / np.linalg.norm(graspingAxis) * graspingAxis
         graspingAxesPredicted.append(graspingAxis)
+
     numGroundTruthGraspingPositions = len(graspingLocalCoordinates)
     # get grasping ground truth grasping poistions from robot measurement
     robotEETransformsGT = []
@@ -132,6 +133,12 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
     # compare registrered angle to ground truth angle
     graspingAngularErrors_grad = []
     graspingAngularErrors_rad = []
+    graspingAngularErrorsProjected_X_rad = []
+    graspingAngularErrorsProjected_X_grad = []
+    graspingAngularErrorsProjected_Y_rad = []
+    graspingAngularErrorsProjected_Y_grad = []
+    graspingAngularErrorsProjected_Z_rad = []
+    graspingAngularErrorsProjected_Z_grad = []
     graspingAxesGT = []
     for i in range(0, numGroundTruthGraspingPositions):
         robotGripperAxis_X = robotEERotationMatricesGT[i][:, 0]
@@ -147,28 +154,65 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
         graspingAngularErrorInDegree = np.degrees(graspingAngularErrorInRad)
         graspingAngularErrors_rad.append(graspingAngularErrorInRad)
         graspingAngularErrors_grad.append(graspingAngularErrorInDegree)
-
+        # project angular error onto the individual gripper axes
+        rotAxis = np.cross(robotGripperAxis_X, graspingAxesPredicted[i])
+        rotAxisNorm = 1 / np.linalg.norm(rotAxis) * rotAxis
+        rotVec = graspingAngularErrorInDegree * rotAxisNorm
+        r = R.from_rotvec(rotVec, degrees=True)
+        # X
+        projectedError_X = np.dot(r.as_rotvec(), robotGripperAxis_X)
+        graspingAngularErrorInRad_X = np.linalg.norm(projectedError_X)
+        graspingAngularErrorInDegree_X = np.degrees(graspingAngularErrorInRad_X)
+        graspingAngularErrorsProjected_X_grad.append(graspingAngularErrorInDegree_X)
+        graspingAngularErrorsProjected_X_rad.append(graspingAngularErrorInRad_X)
+        # Y
+        projectedError_Y = np.dot(r.as_rotvec(), robotGripperAxis_Y)
+        graspingAngularErrorInRad_Y = np.linalg.norm(projectedError_Y)
+        graspingAngularErrorInDegree_Y = np.degrees(graspingAngularErrorInRad_Y)
+        graspingAngularErrorsProjected_Y_grad.append(graspingAngularErrorInDegree_Y)
+        graspingAngularErrorsProjected_Y_rad.append(graspingAngularErrorInDegree_Y)
+        # Z
+        projectedError_Z = np.dot(r.as_rotvec(), robotGripperAxis_Z)
+        graspingAngularErrorInRad_Z = np.linalg.norm(projectedError_Z)
+        graspingAngularErrorInDegree_Z = np.degrees(graspingAngularErrorInRad_Z)
+        graspingAngularErrorsProjected_Z_grad.append(graspingAngularErrorInDegree_Z)
+        graspingAngularErrorsProjected_Z_rad.append(graspingAngularErrorInRad_Z)
     # gather results
+    graspingAccuracyResult["trackinResult"] = trackingResult
     graspingAccuracyResult["graspingLocalCoordinates"] = graspingLocalCoordinates
+    # grasping position eval results
     graspingAccuracyResult["graspingPositions"] = {}
     graspingAccuracyResult["graspingPositions"][
         "predicted"
     ] = graspingPositionsPredicted
     graspingAccuracyResult["graspingPositions"]["groundTruth"] = robotEEPositionsGT
-    graspingAccuracyResult["graspingPositions"]["errors"] = graspingPositionErrors
-    graspingAccuracyResult["graspingPositions"][
-        "errorDistances"
-    ] = gaspingPositionErrorDistances
-    graspingAccuracyResult["trackinResult"] = trackingResult
-    graspingAccuracyResult["graspingAxis"]["predicted"] = graspingAxesPredicted
-    graspingAccuracyResult["graspingAxis"]["groundTruth"] = graspingAxesGT
-    graspingAccuracyResult["graspingAxis"][
-        "graspingAngularErrorsInRad"
-    ] = graspingAngularErrors_rad
-    graspingAccuracyResult["graspingAxis"][
-        "graspingAngularErrorsInGrad"
-    ] = graspingAngularErrors_grad
-    graspingAccuracyResult["groundTruth"]["transforms"] = robotEETransformsGT
+    graspingAccuracyResult["graspingPositionErrors"] = {
+        "errorVectors": graspingPositionErrors,
+        "euclideanDistances": gaspingPositionErrorDistances,
+    }
+    graspingAccuracyResult["graspingAxes"] = {
+        "predicted": graspingAxesPredicted,
+        "groundTruth": graspingAxesGT,
+    }
+    graspingAccuracyResult["graspingAngularErrors"] = {
+        "rad": graspingAngularErrors_rad,
+        "grad": graspingAngularErrors_grad,
+        "projected": {
+            "X": {
+                "rad": graspingAngularErrorsProjected_X_rad,
+                "grad": graspingAngularErrorsProjected_X_grad,
+            },
+            "Y": {
+                "rad": graspingAngularErrorsProjected_Y_rad,
+                "grad": graspingAngularErrorsProjected_Y_grad,
+            },
+            "Z": {
+                "rad": graspingAngularErrorsProjected_Z_rad,
+                "grad": graspingAngularErrorsProjected_Z_grad,
+            },
+        },
+    }
+    graspingAccuracyResult["gripperPoses"] = robotEETransformsGT
     return graspingAccuracyResult
 
 

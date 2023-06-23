@@ -126,7 +126,8 @@ class Evaluation(object):
         results=None,
         generateUniqueID=True,
         method="pickle",
-        promtOnSave=True,
+        promtOnSave=False,
+        overwrite=True,
     ):
         if promtOnSave:
             key = input(
@@ -152,13 +153,20 @@ class Evaluation(object):
             # create directory if it does not exist
             if not os.path.exists(folderPath):
                 os.makedirs(folderPath)
+
             if method == "pickle":
                 filePath = folderPath + fileName + ".pkl"
+                # check if file already exists
+                if not overwrite and os.path.exists(filePath):
+                    return None
                 with open(filePath, "wb") as f:
                     pickle.dump(results, f)
 
             if method == "json":
-                filePath = folderPath + fileName + ".pkl"
+                filePath = folderPath + fileName + ".json"
+                # check if file already exists
+                if not overwrite and os.path.exists(filePath):
+                    return None
                 jsonifiedResults = self.dataHandler.convertNumpyToLists(results)
                 self.dataHandler.saveDictionaryAsJson(
                     jsonifiedResults, folderPath, fileName
@@ -252,7 +260,7 @@ class Evaluation(object):
             raise NotImplementedError
 
     # model generation
-    def generateModel(self, dataSetPath, numBodyNodes=None):
+    def getModelParameters(self, dataSetPath, numBodyNodes=None):
         numBodyNodes = (
             self.config["modelGeneration"]["numSegments"]
             if numBodyNodes is None
@@ -260,14 +268,29 @@ class Evaluation(object):
         )
         modelInfo = self.dataHandler.loadModelParameters("model.json", dataSetPath)
         branchSpecs = list(modelInfo["branchSpecifications"].values())
+        adjacencyMatrix = modelInfo["topologyModel"]
+        modelParameters = {
+            "modelInfo": modelInfo,
+            "adjacencyMatrix": adjacencyMatrix,
+            "branchSpecs": branchSpecs,
+            "numBodyNodes": numBodyNodes,
+        }
+        return modelParameters
+
+    def generateModel(self, modelParameters):
         bdloModel = BranchedDeformableLinearObject(
             **{
-                "adjacencyMatrix": modelInfo["topologyModel"],
-                "branchSpecs": branchSpecs,
-                "defaultNumBodyNodes": numBodyNodes,
+                "adjacencyMatrix": modelParameters["adjacencyMatrix"],
+                "branchSpecs": modelParameters["branchSpecs"],
+                "defaultNumBodyNodes": modelParameters["numBodyNodes"],
             }
         )
         return bdloModel
+
+    def getModel(self, dataSetPath, numBodyNodes=None):
+        modelParameters = self.getModelParameters(dataSetPath, numBodyNodes=None)
+        model = self.generateModel(modelParameters)
+        return model, modelParameters
 
     # topology extraction
     def extractTopology(
@@ -412,7 +435,9 @@ class Evaluation(object):
         topologyExtractionResult = {
             "som": somResult,
             "l1": l1Result,
-            "extractedTopology": extractedTopologyResult,
+            "result": extractedTopologyResult,
+            "extractedTopology": extractedTopology,
+            "topologyExtraction": topologyExtraction,
         }
 
         if logResults:
@@ -427,7 +452,7 @@ class Evaluation(object):
         self,
         pointSet,
         extractedTopology,
-        bdloModel,
+        bdloModelParameters,
         numSamples=10,
         numIterations=100,
         verbose=0,
@@ -441,6 +466,8 @@ class Evaluation(object):
     ):
         localCoordinateSamples = np.linspace(0, 1, numSamples)
         Y = pointSet
+        bdloModel = self.generateModel(bdloModelParameters)
+
         localization = BDLOLocalization(
             **{
                 "Y": Y,
@@ -473,7 +500,7 @@ class Evaluation(object):
         self,
         pointSet,
         extractedTopology,
-        bdloModel,
+        bdloModelParameters,
         numSamples=None,
         numIterations=None,
         verbose=None,
@@ -523,7 +550,7 @@ class Evaluation(object):
         XInit, BInit, SInit, qInit, localization = self.initialLocalization(
             pointSet=pointSet,
             extractedTopology=extractedTopology,
-            bdloModel=bdloModel,
+            bdloModelParameters=bdloModelParameters,
             numSamples=numSamples,
             numIterations=numIterations,
             verbose=verbose,
@@ -545,6 +572,8 @@ class Evaluation(object):
             "qInit": qInit,
             "BInit": BInit,
             "SInit": SInit,
+            "modelParameters": bdloModelParameters,
+            "extractedTopology": localization.extractedTopology,
         }
         if logResults:
             self.resultLog["localization"].append(localizationResult)
@@ -554,7 +583,7 @@ class Evaluation(object):
         self,
         dataSetPath,
         frame,
-        numBodyNodes=None,
+        bdloModelParameters=None,
         somParameters=None,
         l1Parameters=None,
         pruningThreshold=None,
@@ -590,8 +619,12 @@ class Evaluation(object):
             visualizeResult = False
 
         pointCloud = self.getPointCloud(frame, dataSetPath)
+        bdloModelParameters = (
+            self.getModelParameters(dataSetPath)
+            if bdloModelParameters is None
+            else bdloModelParameters
+        )
         pointSet = pointCloud[0]
-        bdloModel = self.generateModel(dataSetPath, numBodyNodes)
         topologyExtractionResult, extractedTopology = self.runTopologyExtraction(
             pointSet,
             somParameters,
@@ -610,7 +643,7 @@ class Evaluation(object):
         initialLocalizationResult, _ = self.runInitialLocalization(
             pointSet,
             extractedTopology,
-            bdloModel,
+            bdloModelParameters,
             numSamples,
             numIterations,
             verbose,
@@ -625,6 +658,7 @@ class Evaluation(object):
         )
         initializationResult = {
             "pointCloud": pointCloud,
+            "modelParameters": bdloModelParameters,
             "topologyExtraction": topologyExtractionResult,
             "localization": initialLocalizationResult,
         }
@@ -677,6 +711,7 @@ class Evaluation(object):
         self,
         dataSetPath,
         method,
+        bdloModelParameters=None,
         startFrame=None,
         endFrame=None,
         frameStep=None,
@@ -698,6 +733,11 @@ class Evaluation(object):
                 Y = self.resultLog["initialization"][-1]["pointCloud"][0]
             except:
                 raise ValueError("No point set to perfrom registration on")
+        bdloModelParameters = (
+            self.getModelParameters(dataSetPath)
+            if bdloModelParameters is None
+            else bdloModelParameters
+        )
         if startFrame is not None and Y is None:
             Y = self.getPointCloud(startFrame, dataSetPath)[0]
         if startFrame is None and Y is not None:
@@ -730,7 +770,7 @@ class Evaluation(object):
         trackingResult = {}
         trackingResult["method"] = method
         trackingResult["registrations"] = []
-
+        trackingResult["modelParameters"] = bdloModelParameters
         if method == "cpd":
             trackingParameters = (
                 self.config["cpdParameters"]

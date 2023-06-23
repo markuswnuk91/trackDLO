@@ -33,7 +33,7 @@ except:
 global vis
 global result
 vis = True
-save = False
+save = True
 runExperiment = True
 loadInitializationFromResult = True
 
@@ -59,7 +59,7 @@ eval.results = {
 }
 
 
-def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
+def determineGraspingAccuracy(dataSetPath, frame, initializationResult):
     graspingAccuracyResult = {}
 
     # run different tracking algorithms
@@ -178,7 +178,10 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
         graspingAngularErrorsProjected_Z_grad.append(graspingAngularErrorInDegree_Z)
         graspingAngularErrorsProjected_Z_rad.append(graspingAngularErrorInRad_Z)
     # gather results
-    graspingAccuracyResult["trackinResult"] = trackingResult
+    graspingAccuracyResult["dataSetPath"] = dataSetPath
+    graspingAccuracyResult["frame"] = frame
+    graspingAccuracyResult["fileName"] = eval.getFileName(frame, dataSetPath)
+    graspingAccuracyResult["trackingResult"] = trackingResult
     graspingAccuracyResult["graspingLocalCoordinates"] = graspingLocalCoordinates
     # grasping position eval results
     graspingAccuracyResult["graspingPositions"] = {}
@@ -216,6 +219,16 @@ def evaluateGraspingAccuracy(dataSetPath, frame, initializationResult):
     return graspingAccuracyResult
 
 
+def evaluateGraspingAccuracyResult(graspingAccuracyResult):
+    # plot results
+
+    # bar diagram of linear grasping error for each grasping position
+
+    # bar diagram of angular grasping error for each grasping position
+
+    raise NotImplementedError
+
+
 if __name__ == "__main__":
     initializationFrame = eval.config["initialFrame"]
     evaluationFrame = initializationFrame
@@ -223,6 +236,7 @@ if __name__ == "__main__":
     if runExperiment:
         if loadInitializationFromResult:
             initializationResult = eval.loadResults(resultFilePath)["initialization"]
+            eval.results["initialization"] = initializationResult
         else:
             initializationResult = eval.runInitialization(
                 dataSetPath, initializationFrame, visualize=False
@@ -233,13 +247,24 @@ if __name__ == "__main__":
                     folderPath=resultFolderPath,
                     generateUniqueID=False,
                     fileName=resultFileName,
+                    promtOnSave=True,
                 )
         # evaluate grasping accuracy for different algorithms
-        graspingAccuracyResult = evaluateGraspingAccuracy(
+        eval.results["graspingAccuracyResults"] = []
+        graspingAccuracyResult = determineGraspingAccuracy(
             dataSetPath, evaluationFrame, initializationResult
         )
-    # else:
-    #     results = eval.loadResults(resultFilePath)
-    #     eval.results = results
+        eval.results["graspingAccuracyResults"].append(graspingAccuracyResult)
+        if save:
+            eval.saveResults(
+                folderPath=resultFolderPath,
+                generateUniqueID=False,
+                fileName=resultFileName,
+                promtOnSave=False,
+                overwrite=True,
+            )
+    else:
+        results = eval.loadResults(resultFilePath)
 
     # evaluate results
+    evaluateGraspingAccuracyResult()

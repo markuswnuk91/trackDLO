@@ -85,7 +85,7 @@ def setupRegistrationResultTemplate():
 
 
 def runModelGeneration(dataSetPath):
-    bdloModel = eval.generateModel(
+    bdloModel, _ = eval.getModel(
         dataSetPath, eval.config["modelGeneration"]["numSegments"]
     )
     return bdloModel

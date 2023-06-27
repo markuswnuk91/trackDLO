@@ -3,8 +3,11 @@
         "data/darus_data_download/data/20230523_mountedconfigurations_occlusion/20230523_134842_modelY/"
     ],
     "dataSetToLoad": 0,
-    "initialFrame": 0,
+    "frameForInitialization": 0,
+    "frameForStartingExperiments": 0,
+    "frameStep":1,
     "savePaths": ["data/eval/tracking/"],
+    "registrationMethodsToEvaluate": ["cpd", "spr", "krcpd"],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -75,13 +78,13 @@
     },
 
     "cpdParameters" : {
-        "max_iterations":100,
+        "max_iterations":10,
         "alpha": 1, 
         "beta": 2,
         "normalize": 1
     },
     "sprParameters" : {
-        "max_iterations":1,
+        "max_iterations":10,
         "tauFactor": 3,
         "lambdaFactor": 100,
         "beta": 2,
@@ -99,7 +102,7 @@
         "normalize": 1
     },
     "krcpdParameters" : {
-        "max_iterations":1,
+        "max_iterations":10,
         "alpha": 1, 
         "beta": 0.5,
         "ik_iterations":10,

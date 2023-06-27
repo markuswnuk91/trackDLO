@@ -702,7 +702,10 @@ class Evaluation(object):
         registrationResult["T"] = registration.T.copy()
 
         # gather registration specific results
-        if type(registration) == CoherentPointDrift:
+        if (
+            type(registration) == CoherentPointDrift
+            or type(registration) == StructurePreservedRegistration
+        ):
             registrationResult["W"] = registration.W.copy()
             registrationResult["G"] = registration.G.copy()
         return registrationResult
@@ -718,6 +721,9 @@ class Evaluation(object):
         Y=None,
         XInit=None,
         qInit=None,
+        S=None,
+        B=None,
+        locations="center",
         trackingParameters=None,
         visualize=True,
         visualizationCallback=None,
@@ -747,16 +753,26 @@ class Evaluation(object):
                 "Provided point cloud and frame. Using provided point cloud to continue"
             )
             Y = Y
-        XInit = (
-            self.resultLog["initialization"][-1]["localization"]["XInit"]
-            if XInit is None
-            else XInit
-        )
+        # XInit = (
+        #     self.resultLog["initialization"][-1]["localization"]["XInit"]
+        #     if XInit is None
+        #     else XInit
+        # )
         qInit = (
             self.resultLog["initialization"][-1]["localization"]["qInit"]
             if qInit is None
             else qInit
         )
+        if XInit is None:
+            bdloModel = self.generateModel(bdloModelParameters)
+            XInit, B, S = bdloModel.computeForwardKinematics(
+                qInit, locations=locations, returnBranchLocalCoordinates=True
+            )
+        else:
+            if S is None or B is None:
+                ValueError(
+                    "Branch coordinates not specified for tracking. Please provide the branch coordinates corresponding to the initial confiugration."
+                )
         endFrame = (
             self.getNumImageSetsInDataSet(dataSetPath) if endFrame is None else endFrame
         )
@@ -771,6 +787,8 @@ class Evaluation(object):
         trackingResult["method"] = method
         trackingResult["registrations"] = []
         trackingResult["modelParameters"] = bdloModelParameters
+        trackingResult["B"] = B
+        trackingResult["S"] = S
         if method == "cpd":
             trackingParameters = (
                 self.config["cpdParameters"]
@@ -782,19 +800,47 @@ class Evaluation(object):
                 if visualizationCallback is None:
                     visualizationCallback = self.getVisualizationCallback(reg)
                 reg.registerCallback(visualizationCallback)
-
-            registrationResult = self.runRegistration(
-                reg, checkConvergence=checkConvergence, logTargets=logTargets
+        elif method == "spr":
+            trackingParameters = (
+                self.config["sprParameters"]
+                if trackingParameters is None
+                else trackingParameters
             )
+            reg = StructurePreservedRegistration(Y=Y, X=XInit, **trackingParameters)
+            if visualize:
+                if visualizationCallback is None:
+                    visualizationCallback = self.getVisualizationCallback(reg)
+                reg.registerCallback(visualizationCallback)
+        elif method == "krcpd":
+            trackingParameters = (
+                self.config["krcpdParameters"]
+                if trackingParameters is None
+                else trackingParameters
+            )
+            bdloModel = self.generateModel(bdloModelParameters)
+            kinematicsModel = KinematicsModelDart(bdloModel.skel.clone())
+            reg = KinematicRegularizedCoherentPointDrift(
+                Y=Y,
+                model=kinematicsModel,
+                qInit=qInit,
+                **trackingParameters,
+            )
+            if visualize:
+                if visualizationCallback is None:
+                    visualizationCallback = self.getVisualizationCallback(reg)
+                reg.registerCallback(visualizationCallback)
+        registrationResult = self.runRegistration(
+            reg, checkConvergence=checkConvergence, logTargets=logTargets
+        )
+        trackingResult["registrations"].append(registrationResult)
+        for frame in framesToTrack:
+            pointCloud = self.getPointCloud(
+                frame,
+                dataSetPath,
+            )
+            Y = pointCloud[0]
+            registrationResult = self.runRegistration(reg)
             trackingResult["registrations"].append(registrationResult)
-            for frame in framesToTrack:
-                pointCloud = self.getPointCloud(
-                    frame,
-                    dataSetPath,
-                )
-                Y = pointCloud[0]
-                registrationResult = self.runRegistration(reg)
-                trackingResult["registrations"].append(registrationResult)
         return trackingResult
 
     # -------------------------------------------------------------------------

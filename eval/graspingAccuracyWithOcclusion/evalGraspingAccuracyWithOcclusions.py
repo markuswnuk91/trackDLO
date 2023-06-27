@@ -59,17 +59,52 @@ eval.results = {
 }
 
 
-def determineGraspingAccuracy(dataSetPath, frame, initializationResult):
-    graspingAccuracyResult = {}
+def runExperiments(dataSetPath, initializationResult, startFrame):
+    results = []
+    numFramesInDataSet = eval.getNumImageSetsInDataSet(dataSetPath)
+    framesToEvaluate = list(
+        range(startFrame, numFramesInDataSet, eval.config["frameStep"])
+    )
+    for frame in framesToEvaluate:
+        graspingAccuracyResults = determineGraspingAccuracyResults(
+            dataSetPath,
+            frame,
+            initializationResult,
+            registrationMethods=eval.config["registrationMethodsToEvaluate"],
+        )
+        results.append(graspingAccuracyResults)
+    return results
 
+
+def determineGraspingAccuracyResults(
+    dataSetPath,
+    frame,
+    initializationResult,
+    registrationMethods,
+):
+    graspingAccuracyResults = {}
+    for registrationMethod in registrationMethods:
+        graspingAccuracyResult = determineGraspingAccuracy(
+            dataSetPath, frame, initializationResult, registrationMethod
+        )
+        graspingAccuracyResults[registrationMethod] = graspingAccuracyResult
+    return graspingAccuracyResult
+
+
+def determineGraspingAccuracy(
+    dataSetPath, frame, initializationResult, registrationMethod
+):
+    graspingAccuracyResult = {}
     # run different tracking algorithms
     trackingResult = eval.runTracking(
         dataSetPath=dataSetPath,
-        method="cpd",
+        method=registrationMethod,
         startFrame=frame,
         endFrame=frame,
-        checkConvergence=True,
+        checkConvergence=False,
         XInit=initializationResult["localization"]["XInit"],
+        B=initializationResult["localization"]["BInit"],
+        S=initializationResult["localization"]["SInit"],
         qInit=initializationResult["localization"]["qInit"],
     )
 
@@ -178,6 +213,7 @@ def determineGraspingAccuracy(dataSetPath, frame, initializationResult):
         graspingAngularErrorsProjected_Z_grad.append(graspingAngularErrorInDegree_Z)
         graspingAngularErrorsProjected_Z_rad.append(graspingAngularErrorInRad_Z)
     # gather results
+    graspingAccuracyResult["method"] = registrationMethod
     graspingAccuracyResult["dataSetPath"] = dataSetPath
     graspingAccuracyResult["frame"] = frame
     graspingAccuracyResult["fileName"] = eval.getFileName(frame, dataSetPath)
@@ -230,7 +266,7 @@ def evaluateGraspingAccuracyResult(graspingAccuracyResult):
 
 
 if __name__ == "__main__":
-    initializationFrame = eval.config["initialFrame"]
+    initializationFrame = eval.config["frameForInitialization"]
     evaluationFrame = initializationFrame
     # initialize on the first frame of the data set
     if runExperiment:
@@ -239,7 +275,7 @@ if __name__ == "__main__":
             eval.results["initialization"] = initializationResult
         else:
             initializationResult = eval.runInitialization(
-                dataSetPath, initializationFrame, visualize=False
+                dataSetPath, ö, visualize=False
             )
             eval.results["initialization"] = initializationResult
             if save:
@@ -251,10 +287,12 @@ if __name__ == "__main__":
                 )
         # evaluate grasping accuracy for different algorithms
         eval.results["graspingAccuracyResults"] = []
-        graspingAccuracyResult = determineGraspingAccuracy(
-            dataSetPath, evaluationFrame, initializationResult
+        results = runExperiments(
+            dataSetPath,
+            initializationResult,
+            eval.config["frameForStartingExperiments"],
         )
-        eval.results["graspingAccuracyResults"].append(graspingAccuracyResult)
+        eval.results["graspingAccuracyResults"] = results
         if save:
             eval.saveResults(
                 folderPath=resultFolderPath,

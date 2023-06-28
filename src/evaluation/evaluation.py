@@ -255,6 +255,11 @@ class Evaluation(object):
             inliers = preProcessor.transformPointsFromCameraToRobotBaseCoordinates(
                 inliers
             )
+            # bounding box filter in robot coodinate system
+            inliers, inlierColors = preProcessor.getInliersFromBoundingBox(
+                (inliers, inlierColors),
+                parameters["robotCoordinateBoundingBoxParameters"],
+            )
             return (inliers, inlierColors)
         else:
             raise NotImplementedError

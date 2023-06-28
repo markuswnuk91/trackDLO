@@ -33,7 +33,7 @@ except:
 global vis
 global result
 vis = True
-save = True
+save = False
 runExperiment = True
 loadInitializationFromResult = True
 
@@ -275,7 +275,7 @@ if __name__ == "__main__":
             eval.results["initialization"] = initializationResult
         else:
             initializationResult = eval.runInitialization(
-                dataSetPath, ö, visualize=False
+                dataSetPath, initializationFrame, visualize=False
             )
             eval.results["initialization"] = initializationResult
             if save:

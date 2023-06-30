@@ -132,7 +132,6 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             self.E = self.E + self.alpha / 2 * np.trace(
                 np.matmul(QtW.T, np.matmul(self.S, QtW))
             )
-        self.computeTargets()
 
         # kinematic regularization
         jacobianDamping = (self.dampingAnnealing) ** (self.iteration) * self.damping
@@ -153,6 +152,12 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         # update generalized coordinates
         self.q = q
         self.computeRegularizedConfiguration()
+        # self.W = (1 - (self.P1 / np.max(self.P1)))[:, None] * np.linalg.inv(self.G) @ (
+        #     self.Xreg - self.X
+        # ) + (self.P1 / np.max(self.P1))[:, None] * self.W
+
+        self.computeTargets()
+
         self.update_variance()
 
     def computeRegularizedConfiguration(self, q=None):
@@ -184,8 +189,10 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             return X + np.dot(G, self.W)
         else:
             if self.low_rank is False:
-                self.T = self.X + np.dot(self.G, self.W)
-
+                # self.T = self.X + np.dot(self.G, self.W)
+                self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
+                    :, None
+                ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
             elif self.low_rank is True:
                 self.T = self.X + np.matmul(
                     self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))

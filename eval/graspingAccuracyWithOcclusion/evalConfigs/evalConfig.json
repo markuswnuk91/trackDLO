@@ -85,10 +85,10 @@
     },
     "sprParameters" : {
         "max_iterations":10,
-        "tauFactor": 1000,
+        "tauFactor": 100,
         "lambdaFactor": 1,
         "beta": 0.5,
-        "knn":5,
+        "knn":7,
         "tauAnnealing":0.9,
         "lambdaAnnealing":0.9,
         "normalize": 0
@@ -104,7 +104,7 @@
     "krcpdParameters" : {
         "max_iterations":10,
         "alpha": 1, 
-        "beta": 2,
+        "beta": 0.5,
         "ik_iterations":10,
         "damping":8,
         "dampingAnnealing":1,

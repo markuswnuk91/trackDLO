@@ -72,6 +72,9 @@ class Evaluation(object):
         # setup colormaps
         self.colorMaps = self.setupColorMaps()
 
+        # variable to store loaded models
+        self.generatedModels = []
+
     # ---------------------------------------------------------------------------
     # SETUP FUNCITONS
     # ---------------------------------------------------------------------------
@@ -282,7 +285,7 @@ class Evaluation(object):
         }
         return modelParameters
 
-    def generateModel(self, modelParameters):
+    def generateModel(self, modelParameters, cacheModel=False):
         bdloModel = BranchedDeformableLinearObject(
             **{
                 "adjacencyMatrix": modelParameters["adjacencyMatrix"],
@@ -290,6 +293,10 @@ class Evaluation(object):
                 "defaultNumBodyNodes": modelParameters["numBodyNodes"],
             }
         )
+        if cacheModel:
+            self.generatedModels.append(
+                {"model": bdloModel, "parameters": modelParameters}
+            )
         return bdloModel
 
     def getModel(self, dataSetPath, numBodyNodes=None):
@@ -720,6 +727,7 @@ class Evaluation(object):
         dataSetPath,
         method,
         bdloModelParameters=None,
+        model=None,
         startFrame=None,
         endFrame=None,
         frameStep=None,
@@ -749,6 +757,10 @@ class Evaluation(object):
             if bdloModelParameters is None
             else bdloModelParameters
         )
+        # setup the model model
+        bdloModel = self.generateModel(bdloModelParameters) if model is None else model
+        kinematicsModel = KinematicsModelDart(bdloModel.skel.clone())
+
         if startFrame is not None and Y is None:
             Y = self.getPointCloud(startFrame, dataSetPath)[0]
         if startFrame is None and Y is not None:
@@ -769,7 +781,6 @@ class Evaluation(object):
             else qInit
         )
         if XInit is None:
-            bdloModel = self.generateModel(bdloModelParameters)
             XInit, B, S = bdloModel.computeForwardKinematics(
                 qInit, locations=locations, returnBranchLocalCoordinates=True
             )
@@ -822,8 +833,9 @@ class Evaluation(object):
                 if trackingParameters is None
                 else trackingParameters
             )
-            bdloModel = self.generateModel(bdloModelParameters)
-            kinematicsModel = KinematicsModelDart(bdloModel.skel.clone())
+            # bdloModel = self.generateModel(bdloModelParameters)
+            kinematicsModel.skel.setPositions(bdloModel.getGeneralizedCoordinates())
+            # resetModel
             branchCorrespondances = []
             for branch in bdloModel.getBranches():
                 branchCorrespondances.append(

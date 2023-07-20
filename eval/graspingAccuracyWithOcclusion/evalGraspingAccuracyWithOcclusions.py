@@ -65,39 +65,41 @@ def runExperiments(dataSetPath, initializationResult, startFrame):
     framesToEvaluate = list(
         range(startFrame, numFramesInDataSet, eval.config["frameStep"])
     )
+    bdloModelParameters = eval.getModelParameters(dataSetPath)
+    bdloModel = eval.generateModel(bdloModelParameters)
+
     for frame in framesToEvaluate:
         graspingAccuracyResults = determineGraspingAccuracyResults(
             dataSetPath,
             frame,
             initializationResult,
             registrationMethods=eval.config["registrationMethodsToEvaluate"],
+            bdloModel=bdloModel,
         )
         results.append(graspingAccuracyResults)
     return results
 
 
 def determineGraspingAccuracyResults(
-    dataSetPath,
-    frame,
-    initializationResult,
-    registrationMethods,
+    dataSetPath, frame, initializationResult, registrationMethods, bdloModel
 ):
     graspingAccuracyResults = {}
     for registrationMethod in registrationMethods:
         graspingAccuracyResult = determineGraspingAccuracy(
-            dataSetPath, frame, initializationResult, registrationMethod
+            dataSetPath, frame, initializationResult, registrationMethod, bdloModel
         )
         graspingAccuracyResults[registrationMethod] = graspingAccuracyResult
     return graspingAccuracyResult
 
 
 def determineGraspingAccuracy(
-    dataSetPath, frame, initializationResult, registrationMethod
+    dataSetPath, frame, initializationResult, registrationMethod, bdloModel
 ):
     graspingAccuracyResult = {}
     # run different tracking algorithms
     trackingResult = eval.runTracking(
         dataSetPath=dataSetPath,
+        model=bdloModel,
         method=registrationMethod,
         startFrame=frame,
         endFrame=frame,

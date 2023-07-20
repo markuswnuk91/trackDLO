@@ -4,8 +4,8 @@
 - [x] Setup callback: set assignment of variables to input arguments outside of base class
 - [ ] Make nice looking design for DLO plots for thesis
 - [x] Make Plot for discretization criteria: Continous DLO and corresponding discrete DLO
-- [ ] Plot for model generation / BDLO Topologies
-- [ ] Plot for Localization (Raw point coud --> random sample --> SOM --> L1 --> MinSpanTree)
+- [x] Plot for model generation / BDLO Topologies
+- [x] Plot for Localization (Raw point coud --> random sample --> SOM --> L1 --> MinSpanTree)
 
 ## Modelling
 - [x] Code discrete DLO class
@@ -15,7 +15,7 @@
 ## Reconstruction
 - [x] reconstuction for continous DLO representation
 - [x] reconstuction for discrete DLO representation
-- [ ] reconstruction for BDLO representation
+- [x] reconstruction for BDLO representation
 
 ## Simulation
 - [x] DLO model generation
@@ -25,7 +25,8 @@
 - [x] implement cpd
 - [x] implement spr
 - [x] implement bspr
-- [x] implement jacobian based structure preserving registration (jspr)
+- [x] implement jacobian based registration methods
+- [ ] implement branched based correspondance estimation 
 
 ## Localization
 - [x] transfer Self Organizing Map algorithm
@@ -38,7 +39,7 @@
 - [ ] localization based on reconstruction for BDLO
 
 ## Validation
-- [ ] determine Validation scenarios
+- [x] determine Validation scenarios
 - [ ] implement evaluation 
     - [ ] comparison of tracking performance of different algorithms (on static configurations and dynamic manipulation sequence)
     - [ ] evaluation of accuracy and robustness of initial localization (on static configurations)

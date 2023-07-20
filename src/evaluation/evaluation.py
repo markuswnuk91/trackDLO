@@ -824,10 +824,16 @@ class Evaluation(object):
             )
             bdloModel = self.generateModel(bdloModelParameters)
             kinematicsModel = KinematicsModelDart(bdloModel.skel.clone())
+            branchCorrespondances = []
+            for branch in bdloModel.getBranches():
+                branchCorrespondances.append(
+                    branch.getBranchInfo()["correspondingBodyNodeIndices"]
+                )
             reg = KinematicRegularizedCoherentPointDrift(
                 Y=Y,
                 model=kinematicsModel,
                 qInit=qInit,
+                B=branchCorrespondances,
                 **trackingParameters,
             )
             if visualize:

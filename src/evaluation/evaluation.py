@@ -447,8 +447,7 @@ class Evaluation(object):
             "som": somResult,
             "l1": l1Result,
             "result": extractedTopologyResult,
-            "extractedTopology": extractedTopology,
-            "topologyExtraction": topologyExtraction,
+            "minimalSpanningTree": extractedTopology,
         }
 
         if logResults:
@@ -670,6 +669,10 @@ class Evaluation(object):
             logResults,
         )
         initializationResult = {
+            "dataSetPath": dataSetPath,
+            "fileName": self.getFileName(frame, dataSetPath),
+            "filePath": self.getFilePath(frame, dataSetPath),
+            "frame": frame,
             "pointCloud": pointCloud,
             "modelParameters": bdloModelParameters,
             "topologyExtraction": topologyExtractionResult,

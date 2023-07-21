@@ -3,7 +3,7 @@
         "data/darus_data_download/data/202230603_Configurations_mounted/20230603_143937_modelY/",
         "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/"
     ],
-    "dataSetToLoad": 1,
+    "dataSetToLoad": 0,
     "resultFolderPath":"data/eval/initialLocalization/",
     "preprocessingParameters": {
         "hsvFilterParameters" : {
@@ -39,7 +39,7 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 1
+            "nthElement" : 3
         }
     },
     "modelGeneration":{

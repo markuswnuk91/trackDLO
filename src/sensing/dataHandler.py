@@ -371,9 +371,6 @@ class DataHandler(object):
     def getDataFolderPathFromRelativeFilePath(self, filePath):
         return "/".join(filePath.split("/")[:-1]) + "/"
 
-    def getFileNameFromRelativeFilePath(self, filePath):
-        return filePath.split("/")[-1]
-
     def getFileIndexFromNameOrIndex(self, fileIdentifier, dataSetFolderPath):
         if str(fileIdentifier).isnumeric():
             fileIndex = fileIdentifier
@@ -384,6 +381,7 @@ class DataHandler(object):
             )
         return fileIndex
 
+    # getFileName methods
     def getFileNameFromNameOrIndex(
         self, fileIdentifier, dataSetFolderPath, fileType="rgb"
     ):
@@ -395,6 +393,9 @@ class DataHandler(object):
         else:
             fileName = fileIdentifier
         return fileName
+
+    def getFileNameFromRelativeFilePath(self, filePath):
+        return filePath.split("/")[-1]
 
     def getFilePath(self, fileIdentifier, dataSetFolderPath, fileType="rgb"):
         fileName = self.getFileNameFromNameOrIndex(

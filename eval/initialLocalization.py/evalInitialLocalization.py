@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
-    from src.evaluation.evaluation import Evaluation
+    from src.evaluation.initialLocalization.initialLocalizationEvaluation import (
+        InitialLocalizationEvaluation,
+    )
 
     # visualization
     from src.visualization.plot3D import *
@@ -13,8 +15,12 @@ except:
     raise
 
 global save
-save = False
 global vis
+global eval
+
+save = False
+runExperiment = False  # if localization should be run or loaded from data
+runExperimentsForFrames = 1  # options: -1 for all frames, else nuber of frames
 vis = {
     "som": True,
     "somIterations": True,
@@ -25,14 +31,13 @@ vis = {
     "correspondances": False,
     "initializationResult": True,
 }
-runExperiment = True
+
 
 # setup evalulation class
-global eval
 pathToConfigFile = (
     os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/evalConfig.json"
 )
-eval = Evaluation(configFilePath=pathToConfigFile)
+eval = InitialLocalizationEvaluation(configFilePath=pathToConfigFile)
 # set file paths
 dataSetPath = eval.config["dataSetPaths"][eval.config["dataSetToLoad"]]
 dataSetName = eval.config["dataSetPaths"][0].split("/")[-2]
@@ -40,20 +45,12 @@ resultFolderPath = eval.config["resultFolderPath"] + dataSetName + "/"
 resultFileName = "result"
 resultFilePath = resultFolderPath + resultFileName + ".pkl"
 
-# setup results
-eval.results = {
-    "dataSetPath": dataSetPath,
-    "dataSetName": dataSetName,
-    "pathToConfigFile": pathToConfigFile,
-    "evalConfig": eval.config,
-}
 
-
-def runExperiments(dataSetPath, framesIndices):
+def runExperiments(dataSetPath, frameIndices):
     results = []
     failedFrames = []
     failCounter = 0
-    for frameIdx in framesIndices:
+    for frameIdx in frameIndices:
         try:
             initializationResult = eval.runInitialization(
                 dataSetPath,
@@ -67,6 +64,7 @@ def runExperiments(dataSetPath, framesIndices):
                 visualizeResult=vis["initializationResult"],
             )
             results.append(initializationResult)
+            plt.show(block=False)
             plt.pause(0.01)
         except:
             failCounter += 1
@@ -74,8 +72,18 @@ def runExperiments(dataSetPath, framesIndices):
     return results, failCounter, failedFrames
 
 
-def evaluateExperiment():
-    raise NotImplementedError
+def evaluateExperiment(localizationResult):
+    dataSetFilePath = localizationResult["filePath"]
+
+    # get the file name corresponding to this result
+    groundTruthLabelCoordinates = eval.loadGroundTruthLabelPixelCoordinates(
+        dataSetFilePath
+    )
+
+    # load the corresponding labels
+
+    # evaluate reporejection error
+    print(groundTruthLabelCoordinates)
 
 
 if __name__ == "__main__":
@@ -83,27 +91,41 @@ if __name__ == "__main__":
 
     if runExperiment:
         # run experiments
-        numImagesInDataSet = eval.getNumImageSetsInDataSet(
-            dataSetFolderPath=dataSetPath
-        )
+        if runExperimentsForFrames == -1:
+            numImagesInDataSet = eval.getNumImageSetsInDataSet(
+                dataSetFolderPath=dataSetPath
+            )
+        else:
+            numImagesInDataSet = runExperimentsForFrames
         frameIndices = list(range(0, numImagesInDataSet))
         # frameIndices = [0]
-        results, numFailures, failedFrames = runExperiments(dataSetPath, frameIndices)
-        eval.results["results"] = results
-        eval.results["numFailures"] = numFailures
-        eval.results["FailedFrames"] = failedFrames
+        initializationResults, numFailures, failedFrames = runExperiments(
+            dataSetPath, frameIndices
+        )
+
+        # setup results
+        results = {
+            "dataSetPath": dataSetPath,
+            "dataSetName": dataSetName,
+            "pathToConfigFile": pathToConfigFile,
+            "evalConfig": eval.config,
+        }
+        results["initializationResult"] = initializationResults
+        results["numFailures"] = numFailures
+        results["FailedFrames"] = failedFrames
     else:
         results = eval.loadResults(resultFilePath)
-
-    # evaluate experiments
 
     # save results
     if save:
         eval.saveResults(
             folderPath=resultFolderPath,
+            results=results,
             generateUniqueID=False,
             fileName=resultFileName,
             promtOnSave=False,
             overwrite=True,
         )
-    print("Failures: {}".format(results["numFailures"]))
+
+    # evaluate experiments
+    evaluateExperiment(results["initializationResult"][0])

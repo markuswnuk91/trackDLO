@@ -312,7 +312,7 @@ class Evaluation(object):
         l1Parameters=None,
         pruningThreshold=None,
         skeletonize=True,
-        visualizeSOMIteration=False,
+        visualizeSOMIterations=False,
         visualizeSOMResult=False,
         visualizeL1Iterations=False,
         visualizeL1Result=False,
@@ -329,23 +329,28 @@ class Evaluation(object):
             l1Parameters=l1Parameters,
         )
 
-        # setup visualization callbacks
-        if visualizeSOMIteration and somCallback is not None:
-            topologyExtraction.selfOrganizingMap.registerCallback(somCallback)
-        elif visualizeSOMIteration and somCallback is None:
+        if (visualizeSOMResult or visualizeSOMIterations) and somCallback is None:
             visualizationCallback_SOM = self.getVisualizationCallback(
                 topologyExtraction.selfOrganizingMap
             )
+        else:
+            visualizationCallback_SOM = somCallback
+
+        # setup visualization callbacks
+        # som
+        if visualizeSOMIterations:
             topologyExtraction.selfOrganizingMap.registerCallback(
                 visualizationCallback_SOM
             )
-        if visualizeL1Iterations and l1Callback is not None:
-            topologyExtraction.l1Median.registerCallback(l1Callback)
-        elif visualizeL1Iterations and l1Callback is None:
+        # l1
+        if (visualizeL1Result or visualizeL1Iterations) and l1Callback is None:
             visualizationCallback_L1 = self.getVisualizationCallback(
                 topologyExtraction.l1Median
             )
-            topologyExtraction.l1Median.registerCallback(visualizationCallback_L1)
+        else:
+            visualizationCallback_L1 = l1Callback
+        if visualizeL1Iterations:
+            topologyExtraction.l1Median.registerCallback(l1Callback)
 
         # run data reduction
         reducedPointSet = Y
@@ -359,17 +364,11 @@ class Evaluation(object):
         extractedTopology = topologyExtraction.extractTopology(reducedPointSet)
 
         # visualize results
-        if visualizeSOMResult and somCallback is not None:
-            somCallback(topologyExtraction.selfOrganizingMap)
-            plt.show(block=False)
-        elif visualizeSOMResult and somCallback is None:
+        if visualizeSOMResult:
             visualizationCallback_SOM(topologyExtraction.selfOrganizingMap)
             plt.show(block=False)
-        if visualizeSOMResult and somCallback is not None:
-            somCallback(topologyExtraction.selfOrganizingMap)
-            plt.show(block=False)
-        elif visualizeSOMResult and somCallback is None:
-            visualizationCallback_SOM(topologyExtraction.selfOrganizingMap)
+        if visualizeL1Result:
+            visualizationCallback_L1(topologyExtraction.l1Median)
             plt.show(block=False)
         if visualizeExtractionResult:
             self.visualizeTopologyExtractionResult(
@@ -389,7 +388,7 @@ class Evaluation(object):
         l1Parameters=None,
         pruningThreshold=None,
         skeletonize=True,
-        visualizeSOMIteration=False,
+        visualizeSOMIterations=False,
         visualizeSOMResult=False,
         visualizeL1Iterations=False,
         visualizeL1Result=False,
@@ -421,7 +420,7 @@ class Evaluation(object):
             l1Parameters=l1Parameters,
             pruningThreshold=pruningThreshold,
             skeletonize=skeletonize,
-            visualizeSOMIteration=visualizeSOMIteration,
+            visualizeSOMIterations=visualizeSOMIterations,
             visualizeSOMResult=visualizeSOMResult,
             visualizeL1Iterations=visualizeL1Iterations,
             visualizeL1Result=visualizeL1Result,
@@ -578,6 +577,8 @@ class Evaluation(object):
             "S": localization.S,
             "C": localization.C,
             "Y": localization.Y,
+            "X": localization.X,
+            "q": localization.q,
             "XLog": localization.XLog,
             "qLog": localization.qLog,
             "XInit": XInit,
@@ -601,7 +602,7 @@ class Evaluation(object):
         pruningThreshold=None,
         skeletonize=True,
         visualize=True,
-        visualizeSOMIteration=False,
+        visualizeSOMIterations=False,
         visualizeSOMResult=False,
         visualizeL1Iterations=False,
         visualizeL1Result=False,
@@ -621,7 +622,7 @@ class Evaluation(object):
         logResults=True,
     ):
         if visualize is False:
-            visualizeSOMIteration = False
+            visualizeSOMIterations = False
             visualizeSOMResult = False
             visualizeL1Iterations = False
             visualizeL1Result = False
@@ -643,7 +644,7 @@ class Evaluation(object):
             l1Parameters,
             pruningThreshold,
             skeletonize,
-            visualizeSOMIteration,
+            visualizeSOMIterations,
             visualizeSOMResult,
             visualizeL1Iterations,
             visualizeL1Result,
@@ -720,6 +721,12 @@ class Evaluation(object):
         ):
             registrationResult["W"] = registration.W.copy()
             registrationResult["G"] = registration.G.copy()
+        elif type(registration) == KinematicRegularizedCoherentPointDrift:
+            registrationResult["W"] = registration.W.copy()
+            registrationResult["G"] = registration.G.copy()
+            registrationResult["q"] = registration.q.copy()
+            registrationResult["Xreg"] = registration.Xreg.copy()
+
         return registrationResult
 
     def runTracking(

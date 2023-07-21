@@ -225,20 +225,22 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
                 X_current = []
                 for b in range(0, self.K):
                     for s in self.S:
-                        x_current, J_hat = self.getModelPositionAndJacobian(b, s, q)
+                        x_current, J_hat = self.getModelPositionAndJacobian(
+                            b, s, self.q
+                        )
                         X_current.append(x_current)
                         jacobians.append(J_hat[3:6, :])
                 self.X = np.array(X_current)
                 X_error = self.X_desired - self.X
                 J = np.vstack(jacobians)
                 dq = dampedPseudoInverse(J, self.jacobianDamping) @ X_error.flatten()
-                q = q + dq
+                self.q = self.q + dq
                 # save X and q
                 self.XLog.append(self.X)
                 self.qLog.append(self.q)
                 if callable(self.callback):
                     self.callback()
-        return q
+        return self.q
 
     def registerCallback(self, callback):
         self.callback = callback

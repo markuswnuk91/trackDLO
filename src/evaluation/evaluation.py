@@ -267,6 +267,29 @@ class Evaluation(object):
         else:
             raise NotImplementedError
 
+    def getLabelInformation(self, dataSetPath):
+        modelInfo = self.dataHandler.loadModelParameters("model.json", dataSetPath)
+        labelInformation = modelInfo["labels"]
+        return labelInformation
+
+    def getLabelBranchLocalCoordinates(self, dataSetPath):
+        labelInformation = self.getLabelInformation(dataSetPath)
+
+        branchLocalCoordinates = []
+        for i, labelInfo in enumerate(labelInformation):
+            # make sure labels are provided in correct order
+            if i != (labelInfo["number"] - 1):
+                raise ValueError(
+                    "Labels not in correct order. Expected label: {} but got label: {}.".format(
+                        i, labelInfo["number"] - 1
+                    )
+                )
+            else:
+                branchIdx = labelInfo["branch"]
+                s = labelInfo["lengthFromBranchRootNode"] / labelInfo["branchLength"]
+                branchLocalCoordinates.append((branchIdx, s))
+        return branchLocalCoordinates
+
     # model generation
     def getModelParameters(self, dataSetPath, numBodyNodes=None):
         numBodyNodes = (

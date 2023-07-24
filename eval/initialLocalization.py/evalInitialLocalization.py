@@ -72,17 +72,25 @@ def runExperiments(dataSetPath, frameIndices):
     return results, failCounter, failedFrames
 
 
-def evaluateExperiment(localizationResult):
-    dataSetFilePath = localizationResult["filePath"]
-
+def evaluateExperiment(initializationResult):
     # get the file name corresponding to this result
+    dataSetFilePath = initializationResult["filePath"]
+    dataSetPath = initializationResult["dataSetPath"]
+    # load the corresponding ground trtuh label coordinates
     groundTruthLabelCoordinates = eval.loadGroundTruthLabelPixelCoordinates(
         dataSetFilePath
     )
 
-    # load the corresponding labels
+    # get the local branch coordinates for the labels
 
-    # evaluate reporejection error
+    # evaluate reprojection error
+    model = eval.generateModel(initializationResult["modelParameters"])
+    modelInfo = eval.dataHandler.loadModelParameters("model.json", dataSetPath)
+    labelBranchCoordinates = (modelInfo["labels"][0]["branch"],)
+    # reprojectedCoordinates =
+    # project solution in 2D space
+    # projectedCoordinates =
+
     print(groundTruthLabelCoordinates)
 
 

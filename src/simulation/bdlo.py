@@ -402,6 +402,9 @@ class BranchedDeformableLinearObject(BDLOTopology):
             branchRootDofIndices.append(brachRootJoint.getIndexInSkeleton(i))
         return np.array(branchRootDofIndices)
 
+    def setGeneralizedCoordinates(self, q):
+        self.skel.setPositions(q)
+
     def setBranchRootDof(self, branchIndex, dofIndex, dofValue):
         """sets a root Dof of a branch to the specified value
 

@@ -90,6 +90,15 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         jacobian = self.bdlo.getJacobianFromBranchLocalCoordinate(b, s)
         return (x, jacobian)
 
+    def forwardKinematics(self, q, S):
+        X = np.zeros((self.K * len(self.S), 3))
+        self.bdlo.skel.setPositions(q)
+        for k in range(self.bdlo.getNumBranches()):
+            X[
+                k * len(self.S) : (k + 1) * len(self.S)
+            ] = self.bdlo.getCartesianPositionsFromBranchLocalCoordinates(k, S)
+        return X
+
     def initOptimVars(self, lockedDofs=None):
         """initializes the optimization variables
 
@@ -240,6 +249,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
                 self.qLog.append(self.q)
                 if callable(self.callback):
                     self.callback()
+            self.X = self.forwardKinematics(self.q, self.S)
         return self.q
 
     def registerCallback(self, callback):

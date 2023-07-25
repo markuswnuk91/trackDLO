@@ -32,6 +32,7 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
             if calibrationParameters is None
             else calibrationParameters
         )
+
         self.cameraParameters = (
             self.loadCameraParameters("cameraParameters.json")
             if cameraParameters is None

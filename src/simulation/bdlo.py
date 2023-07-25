@@ -517,7 +517,9 @@ class BranchedDeformableLinearObject(BDLOTopology):
         return correspondingBranches[0]
 
     # custom functions for plotting
-    def getAdjacentPointPairs(self):
+    def getAdjacentPointPairs(self, q=None):
+        if q is not None:
+            self.setGeneralizedCoordinates(q)
         pointPairs = []
         for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
             jointPositions = self.getCartesianJointPositionsForBodyNode(bodyNodeIndex)
@@ -805,6 +807,24 @@ class BranchedDeformableLinearObject(BDLOTopology):
             return self.getCartesianJointPositions()
         else:
             raise NotImplementedError
+
+    def computeForwardKinematicsFromBranchLocalCoordinates(
+        self, q, branchLocalCoordinates
+    ):
+        """computes the forward kinematics for given joint angel vector q at locations specified by a list of branch local coordinates
+
+        Args:
+            q (Nx1 np.array): generalized coordinates of the skeleton
+            branchLocalCoordinates (list of tuple): branch local coordinates as tuples of (branchIndex, s)
+        """
+        self.setGeneralizedCoordinates(q)
+        X = []
+        for branchLocalCoordinate in branchLocalCoordinates:
+            x = self.getCartesianPositionFromBranchLocalCoordinate(
+                branchLocalCoordinate[0], branchLocalCoordinate[1]
+            )
+            X.append(x)
+        return np.array(X)
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

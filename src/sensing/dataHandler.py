@@ -140,6 +140,13 @@ class DataHandler(object):
         f.close()
         return calibrationParameters
 
+    def loadModelInformation(self, fileName, folderPath=None):
+        if folderPath is None:
+            folderPath = self.defaultLoadFolderPath
+        with open(folderPath + fileName, "r") as f:
+            modelInfo = json.load(f)
+        return modelInfo
+
     def loadModelParameters(self, fileName, folderPath=None):
         if folderPath is None:
             folderPath = self.defaultLoadFolderPath
@@ -149,6 +156,12 @@ class DataHandler(object):
                 modelParameters["topologyModel"]
             )
         return modelParameters
+
+    def loadMarkerInformation(self, fileName, folderPath=None):
+        if folderPath is None:
+            folderPath = self.defaultLoadFolderPath
+        modelInfo = self.loadModelInformation(fileName, folderPath)
+        return modelInfo["labels"]
 
     def loadFromJson(self, filePath):
         with open(filePath, "r") as f:

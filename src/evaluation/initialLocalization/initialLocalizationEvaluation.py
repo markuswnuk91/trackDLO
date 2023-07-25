@@ -28,7 +28,7 @@ class InitialLocalizationEvaluation(Evaluation):
         return labelEntry["file_upload"].split("-")[1]
 
     def findCorrespondingLabelEntry(self, fileName, labelsDict):
-        for labelInfo in labelsDict:  #
+        for labelInfo in labelsDict:
             if self.getFileNameFromLabelEntry(labelInfo) == fileName:
                 return labelInfo
         return None
@@ -71,4 +71,4 @@ class InitialLocalizationEvaluation(Evaluation):
             groundTruthLabels_inPixelCoordiantes.append(
                 (xInPixelCoords, yInPixelCoords)
             )
-        return groundTruthLabels_inPixelCoordiantes
+        return np.array(groundTruthLabels_inPixelCoordiantes)

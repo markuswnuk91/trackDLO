@@ -108,6 +108,9 @@ class Evaluation(object):
         )
         return fileName
 
+    def getFileIdentifierFromFilePath(self, filePath):
+        return filePath.split("/")[-1]
+
     def getFilePath(self, fileIdentifier, dataSetFolderPath):
         return (
             dataSetFolderPath
@@ -196,6 +199,12 @@ class Evaluation(object):
     def getLastLoadedDataSetPath(self):
         return self.currentDataSetLoadPath
 
+    def findCorrespondingEntryFromKeyValuePair(self, inputListOfDict, key, value):
+        for entry in inputListOfDict:
+            if entry[key] == value:
+                return entry
+        return None
+    
     # data loading
     def getDataSet(self, fileIdentifier=None, dataSetFolderPath=None):
         if fileIdentifier is None:
@@ -267,26 +276,37 @@ class Evaluation(object):
         else:
             raise NotImplementedError
 
-    def getLabelInformation(self, dataSetPath):
-        modelInfo = self.dataHandler.loadModelParameters("model.json", dataSetPath)
-        labelInformation = modelInfo["labels"]
-        return labelInformation
+    def reprojectFrom3DRobotBase(self, coordinates3D, dataSetFolderPath):
+        preProcessor = PreProcessing(defaultLoadFolderPath=dataSetFolderPath)
+        coordinates3D_inCamera = (
+            preProcessor.transformPointsFromRobotBaseToCameraCoordinates(coordinates3D)
+        )
+        U, V, D = preProcessor.inverseStereoProjection(
+            coordinates3D_inCamera, preProcessor.cameraParameters["qmatrix"]
+        )
+        coordinates2D = np.vstack((U, V)).T
+        return coordinates2D
 
-    def getLabelBranchLocalCoordinates(self, dataSetPath):
-        labelInformation = self.getLabelInformation(dataSetPath)
+    def getMarkerInformation(self, dataSetPath):
+        markerInformation = self.dataHandler.loadMarkerInformation(
+            fileName="model.json", folderPath=dataSetPath
+        )
+        return markerInformation
 
+    def getMarkerBranchLocalCoordinates(self, dataSetPath):
+        markerInformation = self.getMarkerInformation(dataSetPath)
         branchLocalCoordinates = []
-        for i, labelInfo in enumerate(labelInformation):
+        for i, markerInfo in enumerate(markerInformation):
             # make sure labels are provided in correct order
-            if i != (labelInfo["number"] - 1):
+            if i != (markerInfo["number"] - 1):
                 raise ValueError(
                     "Labels not in correct order. Expected label: {} but got label: {}.".format(
-                        i, labelInfo["number"] - 1
+                        i, markerInfo["number"] - 1
                     )
                 )
             else:
-                branchIdx = labelInfo["branch"]
-                s = labelInfo["lengthFromBranchRootNode"] / labelInfo["branchLength"]
+                branchIdx = markerInfo["branch"] - 1
+                s = markerInfo["lenthFromBranchRootNode"] / markerInfo["branchLength"]
                 branchLocalCoordinates.append((branchIdx, s))
         return branchLocalCoordinates
 
@@ -343,6 +363,7 @@ class Evaluation(object):
         somCallback=None,
         l1Callback=None,
         block=False,
+        closeAfterRunning=True,
     ):
         # setup topology extraction
         Y = pointSet
@@ -352,19 +373,7 @@ class Evaluation(object):
             l1Parameters=l1Parameters,
         )
 
-        if (visualizeSOMResult or visualizeSOMIterations) and somCallback is None:
-            visualizationCallback_SOM = self.getVisualizationCallback(
-                topologyExtraction.selfOrganizingMap
-            )
-        else:
-            visualizationCallback_SOM = somCallback
-
         # setup visualization callbacks
-        # som
-        if visualizeSOMIterations:
-            topologyExtraction.selfOrganizingMap.registerCallback(
-                visualizationCallback_SOM
-            )
         # l1
         if (visualizeL1Result or visualizeL1Iterations) and l1Callback is None:
             visualizationCallback_L1 = self.getVisualizationCallback(
@@ -373,8 +382,18 @@ class Evaluation(object):
         else:
             visualizationCallback_L1 = l1Callback
         if visualizeL1Iterations:
-            topologyExtraction.l1Median.registerCallback(l1Callback)
-
+            topologyExtraction.l1Median.registerCallback(visualizationCallback_L1)
+        # som
+        if (visualizeSOMResult or visualizeSOMIterations) and somCallback is None:
+            visualizationCallback_SOM = self.getVisualizationCallback(
+                topologyExtraction.selfOrganizingMap
+            )
+        else:
+            visualizationCallback_SOM = somCallback
+        if visualizeSOMIterations:
+            topologyExtraction.selfOrganizingMap.registerCallback(
+                visualizationCallback_SOM
+            )
         # run data reduction
         reducedPointSet = Y
         if skeletonize:
@@ -402,6 +421,8 @@ class Evaluation(object):
             visualizeL1Result or visualizeSOMResult or visualizeExtractionResult
         ) and block:
             plt.show(block=True)
+        if closeAfterRunning:
+            plt.close("all")
         return extractedTopology, topologyExtraction
 
     def runTopologyExtraction(
@@ -419,6 +440,7 @@ class Evaluation(object):
         somCallback=None,
         l1Callback=None,
         block=False,
+        closeAfterRunning=True,
         logResults=True,
     ):
         somParameters = (
@@ -450,6 +472,7 @@ class Evaluation(object):
             visualizeExtractionResult=visualizeExtractionResult,
             somCallback=somCallback,
             l1Callback=l1Callback,
+            closeAfterRunning=closeAfterRunning,
             block=block,
         )
         somResult = {
@@ -496,6 +519,7 @@ class Evaluation(object):
         visualizeResult=False,
         visualizationCallback=None,
         block=False,
+        closeAfterRunning=True,
     ):
         localCoordinateSamples = np.linspace(0, 1, numSamples)
         Y = pointSet
@@ -526,7 +550,8 @@ class Evaluation(object):
             fig, ax = self.setupFigure()
             self.standardVisualizationFunction(fig, ax, localization)
             plt.show(block=block)
-
+        if closeAfterRunning:
+            plt.close("all")
         return XInit, BInit, SInit, qInit, localization
 
     def runInitialLocalization(
@@ -544,6 +569,7 @@ class Evaluation(object):
         visualizeResult=True,
         visualizationCallback=None,
         block=False,
+        closeAfterRunning=True,
         logResults=True,
     ):
         # if (dataSetPath is None and frame is None) and pointSet is None:
@@ -594,6 +620,7 @@ class Evaluation(object):
             visualizeResult=visualizeResult,
             visualizationCallback=visualizationCallback,
             block=block,
+            closeAfterRunning=closeAfterRunning,
         )
         localizationResult = {
             "S": localization.S,
@@ -641,6 +668,8 @@ class Evaluation(object):
         visualizeResult=True,
         visualizationCallback=None,
         block=False,
+        closeAfterRunningTopologyExtraction=False,
+        closeAfterRunningLocalization=True,
         logResults=True,
     ):
         if visualize is False:
@@ -674,6 +703,7 @@ class Evaluation(object):
             somCallback,
             l1Callback,
             block,
+            closeAfterRunningTopologyExtraction,
         )
         initialLocalizationResult, _ = self.runInitialLocalization(
             pointSet,
@@ -689,6 +719,7 @@ class Evaluation(object):
             visualizeResult,
             visualizationCallback,
             block,
+            closeAfterRunningLocalization,
             logResults,
         )
         initializationResult = {

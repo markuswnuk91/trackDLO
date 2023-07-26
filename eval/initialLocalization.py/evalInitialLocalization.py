@@ -11,6 +11,8 @@ try:
 
     # visualization
     from src.visualization.plot3D import *
+    from src.visualization.plot2D import *
+
 except:
     print("Imports for testing image processing class failed.")
     raise
@@ -32,6 +34,8 @@ vis = {
     "iterations": True,
     "correspondances": False,
     "initializationResult": False,
+    "reprojectionErrorEvaluation": True,
+    "reprojectionErrorTimeSeries": True,
 }
 
 
@@ -84,9 +88,65 @@ def evaluateExperiments(initializationResults):
         # reprojection error evaluation
         reprojectionErrorResult = evaluateReprojectionError(initializationResult)
         evaluationResult["reprojectionErrorEvaluation"] = reprojectionErrorResult
-        evaluationResults.append(evaluationResult)
 
+        # reprojection error time series evaluation
+        reprojectionErrorTimeSeriesResult = evaluateReprojectionErrorTimeSeries(
+            initializationResult
+        )
+        evaluationResult[
+            "reprojectionErrorTimeSeriesEvaluation"
+        ] = reprojectionErrorTimeSeriesResult
+
+        evaluationResults.append(evaluationResult)
     return evaluationResults
+
+
+def evaluateReprojectionErrorTimeSeries(initializationResult):
+    evalResult = {}
+    # get the file name corresponding to this result
+    dataSetFilePath = initializationResult["filePath"]
+    dataSetPath = initializationResult["dataSetPath"]
+    # load the corresponding ground trtuh label coordinates
+    groundTruthLabelCoordinates_2D = eval.loadGroundTruthLabelPixelCoordinates(
+        dataSetFilePath
+    )
+    # get the local branch coordinates
+    markerBranchLocalCoordinates = eval.getMarkerBranchLocalCoordinates(dataSetPath)
+    # get predicted 3D coordinates
+    model = eval.generateModel(initializationResult["modelParameters"])
+
+    reprojectionErrorTimeSeries = []
+    meanReprojectionErrorTimeSeries = []
+    markerCoordinates3DTimeSeries = []
+    markerCoordinates2DTimeSeries = []
+    for q in initializationResult["localization"]["qLog"]:
+        markerCoordinates_3D = model.computeForwardKinematicsFromBranchLocalCoordinates(
+            q=q,
+            branchLocalCoordinates=markerBranchLocalCoordinates,
+        )
+        # reproject in 2D pixel coordinates
+        markerCoordinates_2D = eval.reprojectFrom3DRobotBase(
+            markerCoordinates_3D, dataSetPath
+        )
+        # evaluate reprojection error
+        reprojectionErrors = groundTruthLabelCoordinates_2D - markerCoordinates_2D
+        meanReprojectionError = np.mean(np.linalg.norm(reprojectionErrors, axis=1))
+
+        reprojectionErrorTimeSeries.append(reprojectionErrors)
+        meanReprojectionErrorTimeSeries.append(meanReprojectionError)
+        markerCoordinates3DTimeSeries.append(markerCoordinates_3D)
+        markerCoordinates2DTimeSeries.append(markerCoordinates2DTimeSeries)
+
+    evalResult["filePath"] = dataSetFilePath
+    evalResult["dataSetPath"] = dataSetPath
+    evalResult["groundTruthLabelCoordinates2D"] = groundTruthLabelCoordinates_2D
+    evalResult["markerBranchLocalCoordinates"] = markerBranchLocalCoordinates
+    evalResult["markerCoordinates3DTimeSeries"] = markerCoordinates3DTimeSeries
+    evalResult["markerCoordinates2DTimeSeries"] = markerCoordinates2DTimeSeries
+    evalResult["reprojectionErrorsTimeSeries"] = reprojectionErrorTimeSeries
+    evalResult["meanReprojectionErrorTimeSeries"] = meanReprojectionErrorTimeSeries
+    evalResult["initializationResult"] = initializationResult
+    return evalResult
 
 
 def evaluateReprojectionError(initializationResult):
@@ -136,42 +196,49 @@ def visualizeReprojectionError(reprojectionErrorResult):
     # load image
     rgbImg = eval.getDataSet(fileName, dataSetPath)[0]
 
-    # plot model
-    model = eval.generateModel(
-        reprojectionErrorResult["initializationResult"]["modelParameters"]
+    eval.visualizeReprojectionError(
+        fileName=fileName,
+        dataSetPath=reprojectionErrorResult["dataSetPath"],
+        modelParameters=reprojectionErrorResult["initializationResult"][
+            "modelParameters"
+        ],
+        q=reprojectionErrorResult["initializationResult"]["localization"]["q"],
+        markerBranchCoordinates=eval.getMarkerBranchLocalCoordinates(dataSetPath),
+        groundTruthLabelCoordinates=reprojectionErrorResult[
+            "groundTruthLabelCoordinates_2D"
+        ],
+        plotGrayScale=False,
+        save=True,
+        savePath=resultFolderPath,
+        block=False,
     )
-    modelInfo = eval.dataHandler.loadModelParameters("model.json", dataSetPath)
 
-    jointPositions3D = np.concatenate(
-        model.getAdjacentPointPairs(
-            q=reprojectionErrorResult["initializationResult"]["localization"]["q"]
-        ),
-        axis=0,
-    )
-    jointPositions2D = eval.reprojectFrom3DRobotBase(jointPositions3D, dataSetPath)
 
-    markerCoordinates_2D = reprojectionErrorResult["markerCoordinates_2D"]
-    groundTruthLabelCoordinates_2D = reprojectionErrorResult[
-        "groundTruthLabelCoordinates_2D"
+def plotReprojectionErrorTimeSeries(results):
+    # collect all time series data in a list
+    reprojectionErrorTimeSeriesData = [
+        result["reprojectionErrorTimeSeriesEvaluation"][
+            "meanReprojectionErrorTimeSeries"
+        ]
+        for result in results["evaluationResults"]
     ]
-    # draw image
-    i = 0
-    while i <= len(jointPositions2D[:, 0]) - 1:
-        cv2.line(
-            rgbImg,
-            (jointPositions2D[:, 0][i], jointPositions2D[:, 1][i]),
-            (jointPositions2D[:, 0][i + 1], jointPositions2D[:, 1][i + 1]),
-            (0, 255, 0),
-            5,
-        )
-        i += 2
-    for markerPosition in markerCoordinates_2D:
-        cv2.circle(rgbImg, markerPosition, 5, [255, 0, 0], -1)
-    for labelPosition in groundTruthLabelCoordinates_2D:
-        cv2.circle(rgbImg, labelPosition, 5, [0, 0, 255], -1)
-    cv2.imshow("RGB image", cv2.resize(rgbImg, None, fx=0.8, fy=0.8))
-    key = cv2.waitKey()
-    print("Done")
+    eval.plotTimeSeries(reprojectionErrorTimeSeriesData)
+
+
+# fig = plt.figure()
+# ax = fig.add_subplot()
+# numResults = len(reprojectionErrorTimeSeriesResults)
+# for i, reprojectionErrorTimeSeriesResult in enumerate(
+#     reprojectionErrorTimeSeriesResults
+# ):
+#     meanReprojectionErrorTimeSeries = reprojectionErrorTimeSeriesResult[
+#         "meanReprojectionErrorTimeSeries"
+#     ]
+#     X = np.array(list(range(len(meanReprojectionErrorTimeSeries))))
+#     Y = meanReprojectionErrorTimeSeries
+#     color = eval.colorMaps["viridis"].to_rgba(i / (numResults - 1))
+#     ax.plot(X, Y, color=color)
+# plt.show(block=True)
 
 
 if __name__ == "__main__":
@@ -219,10 +286,12 @@ if __name__ == "__main__":
         results["evaluationResults"] = evaluateExperiments(
             results["initializationResults"]
         )
+    if vis["reprojectionErrorEvaluation"]:
+        for evaluationResult in results["evaluationResults"]:
+            visualizeReprojectionError(evaluationResult["reprojectionErrorEvaluation"])
 
-    visualizeReprojectionError(
-        results["evaluationResults"][0]["reprojectionErrorEvaluation"]
-    )
+    if vis["reprojectionErrorTimeSeries"]:
+        plotReprojectionErrorTimeSeries(results)
 
     # save results
     if save:

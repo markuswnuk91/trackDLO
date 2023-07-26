@@ -22,9 +22,9 @@ global vis
 global eval
 
 save = False
-runExperiment = False  # if localization should be run or loaded from data
+runExperiment = True  # if localization should be run or loaded from data
 runEvaluation = True
-runExperimentsForFrames = 3  # options: -1 for all frames, else nuber of frames
+runExperimentsForFrames = 1  # options: -1 for all frames, else nuber of frames
 vis = {
     "som": False,
     "somIterations": True,

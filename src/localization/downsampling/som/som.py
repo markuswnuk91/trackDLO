@@ -5,6 +5,7 @@ from scipy.spatial import distance_matrix
 from sklearn.neighbors import NearestNeighbors
 import numbers
 from warnings import warn
+import time
 
 try:
     sys.path.append(os.getcwd().replace("/src/localization/downsampling/som", ""))
@@ -13,7 +14,7 @@ try:
         DataReduction,
     )
 except:
-    print("Imports for JSPR failed.")
+    print("Imports for SOM failed.")
     raise
 
 
@@ -78,11 +79,13 @@ class SelfOrganizingMap(DataReduction):
             0 if minNumNearestNeighbors is None else minNumNearestNeighbors
         )
         self.sigma2Min = np.finfo(float).eps if sigma2Min is None else sigma2Min
+        self.runTimes["runtimePerIteration"] = []
 
     def calculateReducedRepresentation(self, Y=None, X=None):
         """
         Function to perform Self Organizing Map training (estimation of weights).
         """
+        runTimeSOM_start = time.time()
         if Y is not None:
             self.Y = Y
             (self.M, _) = self.Y.shape
@@ -94,6 +97,7 @@ class SelfOrganizingMap(DataReduction):
         self.T = self.X
 
         while self.iteration < self.max_iterations:
+            runtimePerInteration_start = time.time()
             # anneling of update parameter
             alpha = (self.alphaAnnealing) ** (self.iteration) * self.alpha
             # alpha = self.alpha * (1 - self.iteration / self.max_iterations)
@@ -242,8 +246,15 @@ class SelfOrganizingMap(DataReduction):
                         )
 
             self.iteration += 1
+            runtimePerInteration_end = time.time()
 
+            self.runTimes["perIteration"].append(
+                runtimePerInteration_end - runtimePerInteration_start
+            )
             if callable(self.callback):
                 self.callback()
 
+        runTimeSOM_end = time.time()
+        self.runTimes["withVisualization"] = runTimeSOM_end - runTimeSOM_start
+        self.runTimes["withoutVisualization"] = np.sum(self.runTimes["perIteration"])
         return self.T

@@ -36,6 +36,7 @@ class Downsampling(object):
         else:
             self.Y = None
         self.callback = None
+        self.runTimes = {}
 
     def calculateReducedRepresentation(self):
         """

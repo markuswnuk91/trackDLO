@@ -9,6 +9,7 @@ from scipy.spatial import distance_matrix
 from functools import partial
 import pickle
 from warnings import warn
+import time
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation", ""))
@@ -479,6 +480,7 @@ class Evaluation(object):
             "X": topologyExtraction.selfOrganizingMap.X,
             "Y": topologyExtraction.selfOrganizingMap.Y,
             "T": topologyExtraction.selfOrganizingMap.T,
+            "runtimes": topologyExtraction.selfOrganizingMap.runTimes,
         }
         l1Result = {
             "X": topologyExtraction.l1Median.X,
@@ -494,6 +496,7 @@ class Evaluation(object):
             "l1": l1Result,
             "result": extractedTopologyResult,
             "minimalSpanningTree": extractedTopology,
+            "runtimes": topologyExtraction.runTimes,
         }
 
         if logResults:

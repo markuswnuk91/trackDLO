@@ -4,6 +4,7 @@ import numpy as np
 import numbers
 from warnings import warn
 from scipy.optimize import least_squares
+import time
 
 try:
     sys.path.append(os.getcwd().replace("/src/reconstruction", ""))
@@ -70,6 +71,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         lockedDofs = None
         self.optimVars, self.mappingDict = self.initOptimVars()
         # self.optimVars, self.mappingDict = self.initOptimVars(None)
+        self.runTimes["inverseKinematicsIterations"] = []
 
     def sampleCartesianPositionsFromModel(self, S=None):
         X = np.zeros((self.Ns * self.K, self.D))
@@ -195,6 +197,21 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         # update Iteration Number
         self.iter += 1
 
+        # measure runtime
+        runtimeInverseKinematicsIteration_end = time.time()
+        self.currentInverseKinematicsTimeStamp = time.time
+        if self.iter == 1:
+            runtimePerIteration = (
+                runtimeInverseKinematicsIteration_end
+                - self.runtimeInverseKinematics_start
+            )
+        else:
+            runtimePerIteration = (
+                runtimeInverseKinematicsIteration_end
+                - self.currentInverseKinematicsTimeStamp
+            )
+        self.runTimes["inverseKinematicsIterations"].append(runtimePerIteration)
+
         # save X and q
         self.XLog.append(self.X)
         self.qLog.append(self.q)
@@ -203,6 +220,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         return J
 
     def reconstructShape(self, numIter: int = -1, verbose=0, method="least_squares"):
+        runTimeLocalization_start = time.time()
         if self.extractedTopology is None:
             warn("No topology yet extracted. Extracting topology ...")
             self.extractTopology()
@@ -210,6 +228,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
             self.S
         )
         if method == "least_squares":
+            self.runtimeInverseKinematics_start = time.time()
             if numIter == -1:
                 numIter = None
             res = least_squares(
@@ -221,6 +240,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
             )
             q = res.x
         elif method == "IK":
+            runtimeInverseKinematics_start = time.time()
             if numIter == -1:
                 numIter = 100
             self.X_desired = self.C.T @ self.YTarget
@@ -229,6 +249,7 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
             q = self.q
             ik_iterations = numIter
             for i in range(0, ik_iterations):
+                runTimeInverseKinematicsIteration_start = time.time()
                 jacobians = []
                 X_error = []
                 X_current = []
@@ -249,7 +270,21 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
                 self.qLog.append(self.q)
                 if callable(self.callback):
                     self.callback()
+
+                runTimeInverseKinematicsIteration_end = time.time()
+                self.runTimes["inverseKinematicsIterations"].append(
+                    runTimeInverseKinematicsIteration_end
+                    - runTimeInverseKinematicsIteration_start
+                )
             self.X = self.forwardKinematics(self.q, self.S)
+
+        runtimeInverseKinematics_end = time.time()
+        self.runTimes["inverseKinematics"] = (
+            runtimeInverseKinematics_end - runtimeInverseKinematics_start
+        )
+        self.runTimes["localization"] = (
+            runtimeInverseKinematics_end - runTimeLocalization_start
+        )
         return self.q
 
     def registerCallback(self, callback):

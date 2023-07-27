@@ -22,8 +22,8 @@ global vis
 global eval
 
 save = False
-runExperiment = True  # if localization should be run or loaded from data
-runEvaluation = True
+runExperiment = False  # if localization should be run or loaded from data
+runEvaluation = False
 runExperimentsForFrames = 1  # options: -1 for all frames, else nuber of frames
 vis = {
     "som": False,
@@ -34,8 +34,8 @@ vis = {
     "iterations": True,
     "correspondances": False,
     "initializationResult": False,
-    "reprojectionErrorEvaluation": True,
-    "reprojectionErrorTimeSeries": True,
+    "reprojectionErrorEvaluation": False,
+    "reprojectionErrorTimeSeries": False,
 }
 
 
@@ -85,6 +85,9 @@ def evaluateExperiments(initializationResults):
     for initializationResult in initializationResults:
         evaluationResult = {}
 
+        # corresponding initialization result
+        evaluationResult["initializationResult"] = initializationResult
+
         # reprojection error evaluation
         reprojectionErrorResult = evaluateReprojectionError(initializationResult)
         evaluationResult["reprojectionErrorEvaluation"] = reprojectionErrorResult
@@ -97,8 +100,92 @@ def evaluateExperiments(initializationResults):
             "reprojectionErrorTimeSeriesEvaluation"
         ] = reprojectionErrorTimeSeriesResult
 
+        # runtime evaluation
+        runTimeEvaluationResult = evaluateRuntime(initializationResult)
+        evaluationResult["runtimeEvaluation"] = runTimeEvaluationResult
+
         evaluationResults.append(evaluationResult)
     return evaluationResults
+
+
+def evaluateRuntime(initializationResult):
+    """Gathers relevant runtime measurement in a result structure"""
+    evalResult = {}
+
+    # number of points in the data set
+    evalResult["numberOfPoints"] = len(initializationResult["localization"]["Y"])
+
+    # preprocessing
+    evalResult["pointCloudProcessing"] = initializationResult["runtimes"][
+        "pointCloudProcessing"
+    ]
+    evalResult["modelGeneration"] = initializationResult["runtimes"]["modelGeneration"]
+
+    evalResult["preprocessing"] = (
+        evalResult["pointCloudProcessing"] + evalResult["modelGeneration"]
+    )
+
+    # som
+    # total
+    evalResult["runtime_som"] = initializationResult["runtimes"]["topologyExtraction"][
+        "som"
+    ]["withoutVisualization"]
+    # iterations
+    evalResult["meanRuntimePerIteration_som"] = np.mean(
+        initializationResult["runtimes"]["topologyExtraction"]["som"]["perIteration"]
+    )
+    evalResult["stdRuntimePerIteration_som"] = np.std(
+        initializationResult["runtimes"]["topologyExtraction"]["som"]["perIteration"]
+    )
+    evalResult["numberOfIterations_som"] = len(
+        initializationResult["runtimes"]["topologyExtraction"]["som"]["perIteration"]
+    )
+
+    # l1
+    # total
+    evalResult["runtime_l1"] = initializationResult["runtimes"]["topologyExtraction"][
+        "l1"
+    ]["withoutVisualization"]
+    # iterations
+    evalResult["meanRuntimePerIteration_l1"] = np.mean(
+        initializationResult["runtimes"]["topologyExtraction"]["l1"]["perIteration"]
+    )
+    evalResult["stdRuntimePerIteration_l1"] = np.std(
+        initializationResult["runtimes"]["topologyExtraction"]["l1"]["perIteration"]
+    )
+    evalResult["numberOfIterations_l1"] = len(
+        initializationResult["runtimes"]["topologyExtraction"]["l1"]["perIteration"]
+    )
+
+    # mst-topologyReconstruction
+    evalResult["runtime_mstTopologyReconstruction"] = initializationResult["runtimes"][
+        "topologyExtraction"
+    ]["topologyExtraction"]["topologyExtraction"]
+
+    # correspondance estimation
+    evalResult["runtime_correspondanceEstimation"] = initializationResult["runtimes"][
+        "localization"
+    ]["correspondanceEstimation"]
+
+    # inverse kinematics
+    evalResult["runtime_inverseKinematics"] = initializationResult["runtimes"][
+        "localization"
+    ]["inverseKinematics"]
+    evalResult["meanRuntimePerIteration_inverseKinematics"] = np.mean(
+        initializationResult["runtimes"]["localization"]["inverseKinematicsIterations"]
+    )
+    evalResult["stdRuntimePerIteration_inverseKinematics"] = np.std(
+        initializationResult["runtimes"]["localization"]["inverseKinematicsIterations"]
+    )
+    evalResult["runtime_total"] = (
+        evalResult["preprocessing"]
+        + evalResult["runtime_som"]
+        + evalResult["runtime_l1"]
+        + evalResult["runtime_mstTopologyReconstruction"]
+        + evalResult["runtime_correspondanceEstimation"]
+        + evalResult["runtime_inverseKinematics"]
+    )
+    return evalResult
 
 
 def evaluateReprojectionErrorTimeSeries(initializationResult):
@@ -177,6 +264,8 @@ def evaluateReprojectionError(initializationResult):
 
     evalResult["filePath"] = dataSetFilePath
     evalResult["dataSetPath"] = dataSetPath
+    evalResult["q"] = initializationResult["localization"]["q"]
+    evalResult["modelParameters"] = initializationResult["modelParameters"]
     evalResult["groundTruthLabelCoordinates_2D"] = groundTruthLabelCoordinates_2D
     evalResult["markerBranchLocalCoordinates"] = markerBranchLocalCoordinates
     evalResult["markerCoordinates_3D"] = markerCoordinates_3D
@@ -199,10 +288,8 @@ def visualizeReprojectionError(reprojectionErrorResult):
     eval.visualizeReprojectionError(
         fileName=fileName,
         dataSetPath=reprojectionErrorResult["dataSetPath"],
-        modelParameters=reprojectionErrorResult["initializationResult"][
-            "modelParameters"
-        ],
-        q=reprojectionErrorResult["initializationResult"]["localization"]["q"],
+        modelParameters=reprojectionErrorResult["modelParameters"],
+        q=reprojectionErrorResult["q"],
         markerBranchCoordinates=eval.getMarkerBranchLocalCoordinates(dataSetPath),
         groundTruthLabelCoordinates=reprojectionErrorResult[
             "groundTruthLabelCoordinates_2D"
@@ -212,6 +299,63 @@ def visualizeReprojectionError(reprojectionErrorResult):
         savePath=resultFolderPath,
         block=False,
     )
+
+
+def tabularizeRuntimeResults(evaluationResults):
+    runtimeResults = {
+        "model": eval.getModelID(
+            evaluationResults[0]["initializationResult"]["modelParameters"][
+                "modelInfo"
+            ]["name"]
+        ),
+        "n_config": len(evaluationResults),
+        "t_preprocessing": 0.0,
+        "t_l1_skel": 0.0,
+        "t_som": 0.0,
+        "t_mst": 0.0,
+        "t_corresp": 0.0,
+        "t_ik": 0.0,
+        "t_total": 0.0,
+    }
+
+    runtimesPreprocessing = []
+    runtimesL1 = []
+    runtimesSOM = []
+    runtimesMST = []
+    runtimesCorrespEst = []
+    runtimesIK = []
+
+    for result in evaluationResults:
+        runtimeResult = result["runtimeEvaluation"]
+        runtimesPreprocessing.append(runtimeResult["preprocessing"])
+        runtimesL1.append(runtimeResult["runtime_l1"])
+        runtimesSOM.append(runtimeResult["runtime_som"])
+        runtimesMST.append(runtimeResult["runtime_mstTopologyReconstruction"])
+        runtimesCorrespEst.append(runtimeResult["runtime_correspondanceEstimation"])
+        runtimesIK.append(runtimeResult["runtime_inverseKinematics"])
+
+    runtimeResults["t_preprocessing"] = np.mean(runtimesPreprocessing)
+    runtimeResults["t_l1_skel"] = np.mean(runtimesL1)
+    runtimeResults["t_som"] = np.mean(runtimesSOM)
+    runtimeResults["t_mst"] = np.mean(runtimesMST)
+    runtimeResults["t_corresp"] = np.mean(runtimesCorrespEst)
+    runtimeResults["t_ik"] = np.mean(runtimesIK)
+    runtimeResults["t_total"] = (
+        runtimeResults["t_preprocessing"]
+        + runtimeResults["t_l1_skel"]
+        + runtimeResults["t_som"]
+        + runtimeResults["t_mst"]
+        + runtimeResults["t_corresp"]
+        + runtimeResults["t_ik"]
+        + runtimeResults["t_total"]
+    )
+
+    latex_table_column = f"""
+        {runtimeResults['model']} & {runtimeResults['n_config']} & {runtimeResults['t_preprocessing']:.2f} & {runtimeResults['t_l1_skel']:.2f} & {runtimeResults['t_som']:.2f} & {runtimeResults['t_mst']:.2f} & {runtimeResults['t_corresp']:.2f} & {runtimeResults['t_ik']:.2f} & \\mathbf{{{runtimeResults['t_total']:.2f}}} \\\\
+    """
+    # meanTotalRuntimeForInitialization =
+    print(latex_table_column)
+    return runtimeResults
 
 
 def plotReprojectionErrorTimeSeries(results):
@@ -292,7 +436,8 @@ if __name__ == "__main__":
 
     if vis["reprojectionErrorTimeSeries"]:
         plotReprojectionErrorTimeSeries(results)
-
+    plt.show(block=True)
+    tabularizeRuntimeResults(results["evaluationResults"])
     # save results
     if save:
         eval.saveResults(

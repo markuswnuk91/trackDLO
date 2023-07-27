@@ -142,6 +142,7 @@ class TopologyExtraction(object):
         return self.extractedTopology
 
     def determineGeodesicDistance(self, reducedPointSet, densePointSet):
+        runTimeGeodesicDistance_start = time.time()
         combinedPointSet = np.vstack((reducedPointSet, densePointSet))
         AdjMinSpan = minimalSpanningTree(
             distance_matrix(combinedPointSet, combinedPointSet)
@@ -156,6 +157,10 @@ class TopologyExtraction(object):
             indices=list(range(0, len(reducedPointSet))),
         )
         pathDistanceMatrix = pathDistanceMatrix[:, : len(reducedPointSet)]
+        runTimeGeodesicDistance_end = time.time()
+        self.runTimes["geodesicDistance"] = (
+            runTimeGeodesicDistance_end - runTimeGeodesicDistance_start
+        )
         return pathDistanceMatrix
 
     def extractTopology(self, reducedPointSet, densePointSet=None, method="combined"):

@@ -4,6 +4,7 @@ import numpy as np
 from scipy.spatial import distance_matrix
 import numbers
 from warnings import warn
+import time
 
 try:
     sys.path.append(os.getcwd().replace("/src/localization/downsampling/l1median", ""))
@@ -58,6 +59,8 @@ class L1Median(DataReduction):
         )
         self.h_d = self.h / 2 if h_d is None else h_d
         self.iteration = 0
+        self.runTimes = {}
+        self.runTimes["perIteration"] = []
 
     def get_h0(self, points):
         diagonal = 0
@@ -150,6 +153,7 @@ class L1Median(DataReduction):
         """
         Function to perform L1 Median estimation.
         """
+        runTime_start = time.time()
         if Y is not None:
             self.Y = Y
         if X is not None:
@@ -167,6 +171,7 @@ class L1Median(DataReduction):
         beta_matrix = np.zeros((I, I))
 
         while self.iteration < self.max_iterations:
+            runtimePerInteration_start = time.time()
             h = self.h * self.hAnnealing**self.iteration
             if h <= self.hMin:
                 h = self.hMin
@@ -219,7 +224,14 @@ class L1Median(DataReduction):
             # update iteration
             self.iteration += 1
 
+            runtimePerInteration_end = time.time()
+            self.runTimes["perIteration"].append(
+                runtimePerInteration_end - runtimePerInteration_start
+            )
             if callable(self.callback):
                 self.callback()
 
+        runTime_end = time.time()
+        self.runTimes["withVisualization"] = runTime_end - runTime_start
+        self.runTimes["withoutVisualization"] = np.sum(self.runTimes["perIteration"])
         return self.T

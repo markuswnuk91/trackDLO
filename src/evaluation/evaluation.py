@@ -486,6 +486,7 @@ class Evaluation(object):
             "X": topologyExtraction.l1Median.X,
             "Y": topologyExtraction.l1Median.Y,
             "T": topologyExtraction.l1Median.T,
+            "runtimes": topologyExtraction.l1Median.runTimes,
         }
         extractedTopologyResult = {
             "X": extractedTopology.X,
@@ -496,7 +497,11 @@ class Evaluation(object):
             "l1": l1Result,
             "result": extractedTopologyResult,
             "minimalSpanningTree": extractedTopology,
-            "runtimes": topologyExtraction.runTimes,
+            "runtimes": {
+                "topologyExtraction": topologyExtraction.runTimes,
+                "l1": topologyExtraction.l1Median.runTimes,
+                "som": topologyExtraction.selfOrganizingMap.runTimes,
+            },
         }
 
         if logResults:
@@ -639,6 +644,7 @@ class Evaluation(object):
             "SInit": SInit,
             "modelParameters": bdloModelParameters,
             "extractedTopology": localization.extractedTopology,
+            "runtimes": localization.runTimes,
         }
         if logResults:
             self.resultLog["localization"].append(localizationResult)
@@ -685,12 +691,18 @@ class Evaluation(object):
             visualizeIterations = False
             visualizeResult = False
 
+        pointCloudProcessingRuntime_start = time.time()
         pointCloud = self.getPointCloud(frame, dataSetPath)
+        pointCloudProcessingRuntime_end = time.time()
+
+        modelGenerationRuntime_start = time.time()
         bdloModelParameters = (
             self.getModelParameters(dataSetPath)
             if bdloModelParameters is None
             else bdloModelParameters
         )
+        modelGenerationRuntime_end = time.time()
+
         pointSet = pointCloud[0]
         topologyExtractionResult, extractedTopology = self.runTopologyExtraction(
             pointSet,
@@ -734,6 +746,14 @@ class Evaluation(object):
             "modelParameters": bdloModelParameters,
             "topologyExtraction": topologyExtractionResult,
             "localization": initialLocalizationResult,
+            "runtimes": {
+                "pointCloudProcessing": pointCloudProcessingRuntime_end
+                - pointCloudProcessingRuntime_start,
+                "modelGeneration": modelGenerationRuntime_end
+                - modelGenerationRuntime_start,
+                "topologyExtraction": topologyExtractionResult["runtimes"],
+                "localization": initialLocalizationResult["runtimes"],
+            },
         }
         if logResults:
             self.resultLog["initialization"].append(initializationResult)
@@ -1286,6 +1306,21 @@ class Evaluation(object):
         for i, Y in enumerate(timeSeriesDataY):
             if timeSeriesDataX is None:
                 X = np.array(list(range(len(Y))))
-            color = self.colorMaps["viridis"].to_rgba(i / (numTimeSeries - 1))
+            if numTimeSeries > 1:
+                color = self.colorMaps["viridis"].to_rgba(i / (numTimeSeries - 1))
+            else:
+                color = [0, 0, 1]
             ax.plot(X, Y, color=color)
         plt.show(block=block)
+
+    def getModelID(self, modelName: str):
+        mappingDict = {
+            "singleDLO": 0,
+            "modelY": 1,
+            "partialWireHarness": 2,
+            "arenaWireHarness": 3,
+        }
+        for entry in mappingDict:
+            if entry == modelName:
+                return mappingDict[entry]
+        return None

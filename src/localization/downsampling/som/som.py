@@ -79,13 +79,14 @@ class SelfOrganizingMap(DataReduction):
             0 if minNumNearestNeighbors is None else minNumNearestNeighbors
         )
         self.sigma2Min = np.finfo(float).eps if sigma2Min is None else sigma2Min
-        self.runTimes["runtimePerIteration"] = []
+        self.runTimes = {}
+        self.runTimes["perIteration"] = []
 
     def calculateReducedRepresentation(self, Y=None, X=None):
         """
         Function to perform Self Organizing Map training (estimation of weights).
         """
-        runTimeSOM_start = time.time()
+        runTime_start = time.time()
         if Y is not None:
             self.Y = Y
             (self.M, _) = self.Y.shape
@@ -254,7 +255,7 @@ class SelfOrganizingMap(DataReduction):
             if callable(self.callback):
                 self.callback()
 
-        runTimeSOM_end = time.time()
-        self.runTimes["withVisualization"] = runTimeSOM_end - runTimeSOM_start
+        runTime_end = time.time()
+        self.runTimes["withVisualization"] = runTime_end - runTime_start
         self.runTimes["withoutVisualization"] = np.sum(self.runTimes["perIteration"])
         return self.T

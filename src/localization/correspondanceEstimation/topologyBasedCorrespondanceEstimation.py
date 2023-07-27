@@ -5,6 +5,7 @@ from warnings import warn
 from scipy.spatial import distance_matrix
 from scipy.optimize import linear_sum_assignment
 from sklearn.preprocessing import MinMaxScaler
+import time
 
 try:
     sys.path.append(
@@ -69,6 +70,7 @@ class TopologyBasedCorrespondanceEstimation(object):
         self.numSeedPoints = numSeedPoints
         self.templateTopology = templateTopology
         self.extractedTopology = extractedTopology
+        self.runTimes = {}
 
     def extractTopology(self):
         if self.extractedTopology is None:
@@ -98,6 +100,7 @@ class TopologyBasedCorrespondanceEstimation(object):
         return self.extractedTopology
 
     def getBranchFeatures(self, topology, branch):
+        calculateBranchFeaturesRuntime_start = time.time()
         """Determines a feature vector used for correspondance estimation between individual branches
 
         Args:
@@ -175,6 +178,11 @@ class TopologyBasedCorrespondanceEstimation(object):
         featureList.append(adjacentBranchLengthWithLeafnode)
 
         branchFeatures = np.array(featureList)
+
+        calculateBranchFeaturesRuntime_end = time.time()
+        self.runTimes["calculateBranchFeatures"] = (
+            calculateBranchFeaturesRuntime_end - calculateBranchFeaturesRuntime_start
+        )
         return branchFeatures
 
     def getCorrespondingBranches(self, templateTopology=None, otherTopology=None):
@@ -184,6 +192,7 @@ class TopologyBasedCorrespondanceEstimation(object):
         branchCorrespondence (np.array):
             array of correspondances such that branchCorrespondence[i] is the branch index of the otherTopology matching branch i of the template topology
         """
+        calculateBranchCorrespondanceRuntime_start = time.time()
         correspondingBranchIndices = []
         if templateTopology is None:
             templateTopology = self.templateTopology
@@ -221,10 +230,22 @@ class TopologyBasedCorrespondanceEstimation(object):
             templateTopologyBranchFeatureVectorNormalized,
             otherTopologyBranchFeatureVectorNormalized,
         )
+
+        linearSumAssignmentRuntime_start = time.time()
         _, branchCorrespondence = linear_sum_assignment(correspondenceMatrix)
         # for i, index in enumerate(templateBranchIndices):
         #     correspondingBranchPair = (index, otherBranchIndices[i])
         #     correspondingBranchIndices.append(correspondingBranchPair)
+        linearSumAssignmentRuntime_end = time.time()
+        self.runTimes["branchwiseLinearSumAssignment"] = (
+            linearSumAssignmentRuntime_end - linearSumAssignmentRuntime_start
+        )
+
+        calculateBranchCorrespondanceRuntime_end = time.time()
+        self.runTimes["calculateBranchCorrespondance"] = (
+            calculateBranchCorrespondanceRuntime_end
+            - calculateBranchCorrespondanceRuntime_start
+        )
         return branchCorrespondence
 
     def mapBranchIndexFromExtractedToTemplate(self, branchIndex: int):
@@ -391,6 +412,7 @@ class TopologyBasedCorrespondanceEstimation(object):
         Xsample: sample points on the branches of the template topology at the local coordinate s
         C: correspondance matrix such that gives to correspondance betwwen Ysample and Xsample, such that Ysample ~ C @ Xsample.
         """
+        correspondanceEstimationRuntime_start = time.time()
         if self.extractedTopology is None:
             raise ValueError("No topology extracted yet.")
         cartesianPositionsTemplate = []
@@ -442,10 +464,12 @@ class TopologyBasedCorrespondanceEstimation(object):
             pointFeatureMatrixExtractedNormalized,
             pointFeatureMatrixTemplateNormalized,
         )
+        linearSumAssignmentRuntime_start = time.time()
         (
             pointIndicesExtracted,
             correspondingPointIndicesTemplate,
         ) = linear_sum_assignment(correspondenceMatrix)
+        linearSumAssignmentRuntime_end = time.time()
         Ysample = np.array(cartesianPositionsExtracted)
         Xsample = np.array(cartesianPositionsTemplate)
         C = np.zeros(
@@ -457,4 +481,13 @@ class TopologyBasedCorrespondanceEstimation(object):
         for i in pointIndicesExtracted:
             j = correspondingPointIndicesTemplate[i]
             C[i, j] = 1
+
+        self.runTimes["pointwiseLinearSumAssignment"] = (
+            linearSumAssignmentRuntime_end - linearSumAssignmentRuntime_start
+        )
+        correspondanceEstimationRuntime_end = time.time()
+        self.runTimes["correspondanceEstimation"] = (
+            correspondanceEstimationRuntime_end - correspondanceEstimationRuntime_start
+        )
+
         return Ysample, Xsample, C

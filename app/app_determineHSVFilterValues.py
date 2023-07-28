@@ -11,7 +11,7 @@ except:
     print("Imports for Application determineHSVFilterValues failed.")
     raise
 
-relFilePath = "data/darus_data_download/data/20230524_152039_manipulationsequences_mountedwireharness_arena/data/20230524_152143_314549_image_rgb.png"
+relFilePath = "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/data/20230603_140411_535868_image_rgb.png"
 
 fileName = os.path.basename(relFilePath)
 dataSetFolderPath = os.path.dirname(os.path.dirname(relFilePath)) + "/"

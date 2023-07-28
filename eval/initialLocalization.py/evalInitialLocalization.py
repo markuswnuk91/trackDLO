@@ -21,27 +21,31 @@ global save
 global vis
 global eval
 
+configFile = "arena"  # sigleDLO, modelY, partial, arena
 save = False
 runExperiment = False  # if localization should be run or loaded from data
-runEvaluation = False
-runExperimentsForFrames = 1  # options: -1 for all frames, else nuber of frames
+runEvaluation = True
+runExperimentsForFrames = 1  # options: -1 for all frames, else number of frames
 vis = {
     "som": False,
     "somIterations": True,
     "l1": False,
     "l1Iterations": True,
-    "extraction": False,
+    "extraction": True,
     "iterations": True,
     "correspondances": False,
     "initializationResult": False,
-    "reprojectionErrorEvaluation": False,
-    "reprojectionErrorTimeSeries": False,
+    "reprojectionErrorEvaluation": True,
+    "reprojectionErrorTimeSeries": True,
 }
 
 
 # setup evalulation class
 pathToConfigFile = (
-    os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/evalConfig.json"
+    os.path.dirname(os.path.abspath(__file__))
+    + "/evalConfigs/evalConfig_"
+    + configFile
+    + ".json"
 )
 eval = InitialLocalizationEvaluation(configFilePath=pathToConfigFile)
 # set file paths
@@ -85,6 +89,14 @@ def evaluateExperiments(initializationResults):
     for initializationResult in initializationResults:
         evaluationResult = {}
 
+        # check if we have ground truth labels
+        fileName = initializationResult["fileName"]
+        labelsDict = eval.loadLabelInfo(initializationResult["dataSetPath"])
+        labelInfo = eval.findCorrespondingLabelEntry(fileName, labelsDict)
+        if labelInfo is not None:
+            pass
+        else:
+            break
         # corresponding initialization result
         evaluationResult["initializationResult"] = initializationResult
 
@@ -168,9 +180,9 @@ def evaluateRuntime(initializationResult):
     ]["correspondanceEstimation"]
 
     # inverse kinematics
-    evalResult["runtime_inverseKinematics"] = initializationResult["runtimes"][
-        "localization"
-    ]["inverseKinematics"]
+    evalResult["runtime_inverseKinematics"] = np.sum(
+        initializationResult["runtimes"]["localization"]["inverseKinematicsIterations"]
+    )
     evalResult["meanRuntimePerIteration_inverseKinematics"] = np.mean(
         initializationResult["runtimes"]["localization"]["inverseKinematicsIterations"]
     )
@@ -351,7 +363,7 @@ def tabularizeRuntimeResults(evaluationResults):
     )
 
     latex_table_column = f"""
-        {runtimeResults['model']} & {runtimeResults['n_config']} & {runtimeResults['t_preprocessing']:.2f} & {runtimeResults['t_l1_skel']:.2f} & {runtimeResults['t_som']:.2f} & {runtimeResults['t_mst']:.2f} & {runtimeResults['t_corresp']:.2f} & {runtimeResults['t_ik']:.2f} & \\mathbf{{{runtimeResults['t_total']:.2f}}} \\\\
+        ${runtimeResults['model']}$ & ${runtimeResults['n_config']}$ & ${runtimeResults['t_preprocessing']:.2f}$ & ${runtimeResults['t_l1_skel']:.2f}$ & ${runtimeResults['t_som']:.2f}$ & ${runtimeResults['t_mst']:.2f}$ & ${runtimeResults['t_corresp']:.2f}$ & ${runtimeResults['t_ik']:.2f}$ & $\\mathbf{{{runtimeResults['t_total']:.2f}}}$ \\\\
     """
     # meanTotalRuntimeForInitialization =
     print(latex_table_column)

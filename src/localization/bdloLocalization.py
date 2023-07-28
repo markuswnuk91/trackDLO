@@ -268,10 +268,9 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
                 # save X and q
                 self.XLog.append(self.X)
                 self.qLog.append(self.q)
+                runTimeInverseKinematicsIteration_end = time.time()
                 if callable(self.callback):
                     self.callback()
-
-                runTimeInverseKinematicsIteration_end = time.time()
                 self.runTimes["inverseKinematicsIterations"].append(
                     runTimeInverseKinematicsIteration_end
                     - runTimeInverseKinematicsIteration_start

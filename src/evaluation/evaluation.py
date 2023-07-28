@@ -247,6 +247,7 @@ class Evaluation(object):
                 defaultLoadFolderPath=dataSetFolderPath,
                 hsvFilterParameters=parameters["hsvFilterParameters"],
                 roiFilterParameters=parameters["roiFilterParameters"],
+                hsvPassThroughFilters=parameters["hsvPassThroughFilters"],
             )
             # load data
             rgbImage, disparityMap = self.getDataSet(fileIdentifier, dataSetFolderPath)

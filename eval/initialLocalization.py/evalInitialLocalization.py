@@ -21,11 +21,11 @@ global save
 global vis
 global eval
 
-configFile = "arena"  # sigleDLO, modelY, partial, arena
+configFile = "partial"  # sigleDLO, modelY, partial, arena
 save = False
-runExperiment = False  # if localization should be run or loaded from data
+runExperiment = True  # if localization should be run or loaded from data
 runEvaluation = True
-runExperimentsForFrames = 1  # options: -1 for all frames, else number of frames
+runExperimentsForFrames = [1]  # options: -1 for all frames, else number of frames
 vis = {
     "som": False,
     "somIterations": True,
@@ -407,8 +407,8 @@ if __name__ == "__main__":
                 dataSetFolderPath=dataSetPath
             )
         else:
-            numImagesInDataSet = runExperimentsForFrames
-        frameIndices = list(range(0, numImagesInDataSet))
+            frameIndices = runExperimentsForFrames
+        # frameIndices = list(range(0, numImagesInDataSet))
         # frameIndices = [0]
         initializationResults, numFailures, failedFrames = runExperiments(
             dataSetPath, frameIndices

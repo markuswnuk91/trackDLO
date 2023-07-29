@@ -9,7 +9,7 @@ from functools import partial
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
-    from src.localization.downsampling.som.som import SelfOrganizingMap
+    from src.localization.downsampling.l1median.l1Median import L1Median
     from src.evaluation.evaluation import Evaluation
 
     # visualization
@@ -52,21 +52,24 @@ def visualizationCallback(
     set_axes_equal(ax)
     plt.draw()
     plt.pause(0.1)
-    eval.results[0]["result"]["T"].append(classHandle.T.copy())
-    eval.results[0]["result"]["iteration"].append(classHandle.iteration)
+    eval.results["result"]["T"].append(classHandle.T.copy())
+    eval.results["result"]["iteration"].append(classHandle.iteration)
 
 
 def runEvaluation(points, parameters):
     global eval
-    som = SelfOrganizingMap(**parameters)
-    seedPoints = som.sampleRandom(points)
+    l1Median = L1Median(**parameters)
+    if parameters["numSeedPoints"] == -1:
+        seedPoints = points
+    else:
+        seedPoints = l1Median.sampleRandom(points)
     # add inital state to result file
-    eval.results[0]["result"]["X"].append(seedPoints)
-    eval.results[0]["result"]["Y"].append(points)
+    eval.results["result"]["X"].append(seedPoints)
+    eval.results["result"]["Y"].append(points)
     if vis:
-        callback = eval.getVisualizationCallback(som, visualizationCallback)
-        som.registerCallback(callback)
-    resultingPoints = som.calculateReducedRepresentation(points, seedPoints)
+        callback = eval.getVisualizationCallback(l1Median, visualizationCallback)
+        l1Median.registerCallback(callback)
+    resultingPoints = l1Median.calculateReducedRepresentation(points, seedPoints)
     return resultingPoints
 
 
@@ -100,11 +103,10 @@ if __name__ == "__main__":
             "runtimePerIteration": [],
         },
     }
-    eval.results = []
-    eval.results.append(result)
+    eval.results = result
 
     # run evaluation
-    runEvaluation(pointCloud[0], eval.config["somParameters"])
+    runEvaluation(pointCloud[0], eval.config["l1Parameters"])
 
     if save:
         # save evaluation data
@@ -114,13 +116,13 @@ if __name__ == "__main__":
     if save:
         result = eval.loadResults(filePathToSaved)
     else:
-        result = eval.results[0]
+        result = eval.results
     # plot evaluation
-    somResult = result[0]["result"]
+    l1Result = result["result"]
     # tracking error
     trackingErrors = []
-    Y = somResult["Y"][0]
-    for T in somResult["T"]:
+    Y = l1Result["Y"][0]
+    for T in l1Result["T"]:
         distanceMatrix = distance_matrix(T, Y)
         if Y.shape[0] >= T.shape[0]:
             correspodingIndices = np.argmin(distanceMatrix, axis=0)

@@ -93,7 +93,10 @@ class SelfOrganizingMap(DataReduction):
         if X is not None:
             self.X = X
         else:
-            self.X = self.sampleRandom(self.Y, self.numSeedPoints)
+            if self.numSeedPoints == -1:
+                self.X = self.Y.copy()
+            else:
+                self.X = self.sampleRandom(self.Y, self.numSeedPoints)
         (self.N, self.D) = self.X.shape
         self.T = self.X
 

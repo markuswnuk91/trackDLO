@@ -58,17 +58,15 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 5
+            "nthElement" : 10
         }
     },
-    "somParameters" : {
-        "numSeedPoints": 800,
-        "alpha": 0.9,
-        "alphaAnnealing": 0.95,
-        "sigma2": 0.3,
-        "sigma2Min": 0.008,
-        "sigma2Annealing": 0.95,
-        "method": "kernel",
-        "max_iterations": 100
+    "l1Parameters" : {
+        "numSeedPoints": 1000,
+        "h": 0.001,
+        "hAnnealing": 0.8,
+        "hMin": 0.0008,
+        "mu": 0.35,
+        "max_iterations": 10
     }
 }

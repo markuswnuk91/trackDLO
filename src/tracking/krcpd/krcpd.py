@@ -65,14 +65,16 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
 
             if self.B is not None:
                 # calculate branch probabilites
+                pB = np.zeros(self.K)
+                PB = np.zeros((self.N, self.M))
                 for i, indices in enumerate(self.B):
-                    self.pB[i] = (
-                        1 / self.M * 1 / self.Nk[i] * np.sum(self.P[indices, :])
-                    )
-                    self.PB[indices, :] = self.pB[i]
+                    pB[i] = 1 / self.M * 1 / self.Nk[i] * np.sum(self.P[indices, :])
+                    PB[indices, :] = pB[i]
+                self.PB = PB
+                self.pB = pB
 
                 # mulitply by branch wise probability
-                self.P *= self.PB
+                P *= self.PB
 
             c = (2 * np.pi * self.sigma2) ** (self.D / 2)
             c = c * self.mu / (1 - self.mu)
@@ -96,14 +98,16 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
 
             if self.B is not None:
                 # calculate branch probabilites
+                pB = np.zeros(self.K)
+                PB = np.zeros((self.N, self.M))
                 for i, indices in enumerate(self.B):
-                    self.pB[i] = (
-                        1 / self.M * 1 / self.Nk[i] * np.sum(self.P[indices, :])
-                    )
-                    self.PB[indices, :] = self.pB[i]
+                    pB[i] = 1 / self.M * 1 / self.Nk[i] * np.sum(P[indices, :])
+                    PB[indices, :] = pB[i]
+                self.PB = PB
+                self.pB = pB
 
                 # mulitply by branch wise probability
-                self.P *= self.PB
+                P *= self.PB
 
             c = (2 * np.pi * self.sigma2) ** (self.D / 2)
             c = c * self.mu / (1 - self.mu)

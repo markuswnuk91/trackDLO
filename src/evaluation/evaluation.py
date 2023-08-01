@@ -949,7 +949,7 @@ class Evaluation(object):
                 frame,
                 dataSetPath,
             )
-            Y = pointCloud[0]
+            reg.setTargetPointCloud(Y=pointCloud[0])
             registrationResult = self.runRegistration(reg)
             trackingResult["registrations"].append(registrationResult)
         return trackingResult

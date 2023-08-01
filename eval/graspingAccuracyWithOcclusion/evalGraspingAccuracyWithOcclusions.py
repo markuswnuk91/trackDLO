@@ -27,7 +27,7 @@ try:
     # visualization
     from src.visualization.plot3D import *
 except:
-    print("Imports for testing image processing class failed.")
+    print("Imports for evaluation Grasping Accuracy With Occlusions failed.")
     raise
 
 global vis
@@ -46,7 +46,7 @@ eval = GraspingAccuracyEvaluation(configFilePath=pathToConfigFile)
 # set file paths
 dataSetPath = eval.config["dataSetPaths"][eval.config["dataSetToLoad"]]
 dataSetName = eval.config["dataSetPaths"][0].split("/")[-2]
-resultFolderPath = "data/eval/graspingAccuracy/" + dataSetName + "/"
+resultFolderPath = "data/eval/graspingAccuracyUnderOcclusions/" + dataSetName + "/"
 resultFileName = "result"
 resultFilePath = resultFolderPath + resultFileName + ".pkl"
 

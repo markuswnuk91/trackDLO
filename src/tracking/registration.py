@@ -244,3 +244,7 @@ class NonRigidRegistration(object):
 
     def registerCallback(self, callback):
         self.callback = callback
+
+    def setTargetPointCloud(self, Y):
+        (self.M, _) = Y.shape
+        self.Y = Y

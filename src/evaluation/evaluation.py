@@ -822,7 +822,6 @@ class Evaluation(object):
         startFrame=None,
         endFrame=None,
         frameStep=None,
-        Y=None,
         XInit=None,
         qInit=None,
         S=None,
@@ -834,15 +833,19 @@ class Evaluation(object):
         checkConvergence=True,
         logTargets=True,
     ):
-        # setup tracking problem
-        if startFrame is None and Y is None:
-            warn(
-                "Provided neither frame nor point cloud to perform tracking on. Trying to use last localization result."
-            )
-            try:
-                Y = self.resultLog["initialization"][-1]["pointCloud"][0]
-            except:
-                raise ValueError("No point set to perfrom registration on")
+        # # setup tracking problem
+        # if startFrame is None and Y is None:
+        #     warn(
+        #         "Provided neither frame nor point cloud to perform tracking on. Trying to use last localization result."
+        #     )
+        #     try:
+        #         Y = self.resultLog["initialization"][-1]["pointCloud"][0]
+        #     except:
+        #         raise ValueError("No point set to perfrom registration on")
+
+        if startFrame is None:
+            raise ValueError("Expected Frame to perform tracking on.")
+
         bdloModelParameters = (
             self.getModelParameters(dataSetPath)
             if bdloModelParameters is None
@@ -852,15 +855,17 @@ class Evaluation(object):
         bdloModel = self.generateModel(bdloModelParameters) if model is None else model
         kinematicsModel = KinematicsModelDart(bdloModel.skel.clone())
 
-        if startFrame is not None and Y is None:
-            Y = self.getPointCloud(startFrame, dataSetPath)[0]
-        if startFrame is None and Y is not None:
-            Y = Y
-        if startFrame is not None and Y is not None:
-            warn(
-                "Provided point cloud and frame. Using provided point cloud to continue"
-            )
-            Y = Y
+        # if startFrame is not None and Y is None:
+        #     Y = self.getPointCloud(startFrame, dataSetPath)[0]
+        # if startFrame is None and Y is not None:
+        #     Y = Y
+        # if startFrame is not None and Y is not None:
+        #     warn(
+        #         "Provided point cloud and frame. Using provided point cloud to continue"
+        #     )
+        #     Y = Y
+
+        Y = self.getPointCloud(startFrame, dataSetPath)[0]
         # XInit = (
         #     self.resultLog["initialization"][-1]["localization"]["XInit"]
         #     if XInit is None
@@ -965,14 +970,22 @@ class Evaluation(object):
         registrationResult = self.runRegistration(
             reg, checkConvergence=checkConvergence, logTargets=logTargets
         )
+        registrationResult["dataSetPath"] = dataSetPath
+        registrationResult["fileName"] = self.getFileName(startFrame, dataSetPath)
+        registrationResult["filePath"] = self.getFilePath(startFrame, dataSetPath)
+        registrationResult["frame"] = startFrame
         trackingResult["registrations"].append(registrationResult)
-        for frame in framesToTrack:
+        for frame in framesToTrack[1:]:
             pointCloud = self.getPointCloud(
                 frame,
                 dataSetPath,
             )
             reg.setTargetPointCloud(Y=pointCloud[0])
             registrationResult = self.runRegistration(reg)
+            registrationResult["dataSetPath"] = dataSetPath
+            registrationResult["fileName"] = self.getFileName(frame, dataSetPath)
+            registrationResult["filePath"] = self.getFilePath(frame, dataSetPath)
+            registrationResult["frame"] = frame
             trackingResult["registrations"].append(registrationResult)
         return trackingResult
 

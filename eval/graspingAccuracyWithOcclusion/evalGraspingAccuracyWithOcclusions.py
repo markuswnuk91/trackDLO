@@ -119,9 +119,7 @@ def determineGraspingAccuracy(
         correspondingIndices = [
             index
             for index, value in enumerate(initializationResult["localization"]["BInit"])
-            if value
-            == graspingLocalCoordinate[0]
-            - 1  # account for branch indexing starting @ 1 in model desciption
+            if value == graspingLocalCoordinate[0]
         ]
         TCorresponding = trackingResult["registrations"][0]["T"][correspondingIndices]
         sCorresponding = np.array(initializationResult["localization"]["SInit"])[

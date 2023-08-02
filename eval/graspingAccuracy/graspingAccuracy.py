@@ -118,7 +118,7 @@ def trackConfigurations(dataSetPath, initializationResult, registrationMethod):
 
 # def predictGraspingPose(dataSetPath, previousConfiguration):
 def evaluateGraspingAccuracy(experimentResults):
-    graspingAccuracyResults = {}
+    graspingAccuracyResults = []
 
     # gather required informatio
     dataSetPath = experimentResults["dataSetPath"]
@@ -127,22 +127,110 @@ def evaluateGraspingAccuracy(experimentResults):
     graspingLocalCoordinates = eval.loadGraspingLocalCoordinates(dataSetPath)
 
     for trackingResult in experimentResults["trackingResults"]:
-        groundTruthGraspingPoses = []
-        for i, registrationResult in enumerate(trackingResult["registrationResults"]):
-            correspondingGraspingPoseFileIndex = i + 1
+        graspingAccuracyResult = {}
 
-            # groud truth grasping pose
+        B = trackingResult["registrationResults"]["B"]
+        S = trackingResult["registrationResults"]["S"]
+
+        groundTruthGraspingPoses = []
+        groundTruthGraspingPositions = []
+        groundTruthGraspingRotationMatrices = []
+        groundTruthGraspingAxes = []
+        predictedGraspingPositions = []
+        predictedGraspingAxes = []
+        predictedFrames = []
+        groundTruthFrames = []
+        for i, graspingLocalCoordinate in enumerate(graspingLocalCoordinates):
+            registrationResult = trackingResult["registrationResults"]["registrations"][
+                i
+            ]
+            frame = registrationResult["frame"]
+            predictedFrames.append(frame)
+            T = registrationResult["T"]
+
+            # ground truth grasping pose
+            groundTruthFrame = frame + 1
+            groundTruthFrames.append(groundTruthFrame)
             (
                 groundTruthGraspingPose,
                 groundTruthGraspingPosition,
-                groundTruthGraspingRotMat,
+                groundTruthGraspingRotationMatrix,
             ) = eval.loadGroundTruthGraspingPose(
-                dataSetPath, correspondingGraspingPoseFileIndex
-            )
+                dataSetPath, groundTruthFrame
+            )  # get ground truth from the follwing frame
             groundTruthGraspingPoses.append(groundTruthGraspingPose)
-
+            groundTruthGraspingPositions.append(groundTruthGraspingPosition)
+            groundTruthGraspingRotationMatrices.append(
+                groundTruthGraspingRotationMatrix
+            )
+            groundTruthGraspingAxes.append(groundTruthGraspingRotationMatrix[:3, 0])
             # predict the estimated grasping pose from the registration result
+            (
+                predictedGraspingPosition,
+                predictedGraspingAxis,
+            ) = eval.predictGraspingPositionAndAxisFromRegistrationTargets(
+                T=T, B=B, S=S, graspingLocalCoordinate=graspingLocalCoordinate
+            )
+            predictedGraspingPositions.append(predictedGraspingPosition)
+            predictedGraspingAxes.append(predictedGraspingAxis)
 
+        # eval grasping error
+        (
+            graspingPositionErrors,
+            graspingAngularErrorsInRad,
+            graspingAngularErrorsInGrad,
+            projectedGraspingAngularErrorsOnXInRad,
+            projectedGraspingAngularErrorsOnXInGrad,
+            projectedGraspingAngularErrorsOnYInRad,
+            projectedGraspingAngularErrorsOnYInGrad,
+            projectedGraspingAngularErrorsOnZInRad,
+            projectedGraspingAngularErrorsOnZInGrad,
+        ) = eval.calculateGraspingAccuracyError(
+            predictedGraspingPositions=predictedGraspingPositions,
+            predictedGraspingAxes=predictedGraspingAxes,
+            groundTruthGraspingPoses=groundTruthGraspingPoses,
+        )
+
+        # gather results
+        graspingAccuracyResult["method"] = trackingResult["registrationMethod"]
+        graspingAccuracyResult["dataSetPath"] = dataSetPath
+        graspingAccuracyResult["predictedFrames"] = predictedFrames
+        graspingAccuracyResult["groundTruthFrames"] = groundTruthFrames
+        graspingAccuracyResult["trackingResult"] = trackingResult
+        graspingAccuracyResult["graspingLocalCoordinates"] = graspingLocalCoordinates
+        # grasping position eval results
+        graspingAccuracyResult["graspingPositions"] = {}
+        graspingAccuracyResult["graspingPositions"][
+            "predicted"
+        ] = predictedGraspingPositions
+        graspingAccuracyResult["graspingPositions"][
+            "groundTruth"
+        ] = groundTruthGraspingPositions
+        graspingAccuracyResult["graspingPositionErrors"] = graspingPositionErrors
+        graspingAccuracyResult["graspingAxes"] = {
+            "predicted": predictedGraspingAxes,
+            "groundTruth": groundTruthGraspingAxes,
+        }
+        graspingAccuracyResult["graspingAngularErrors"] = {
+            "rad": graspingAngularErrorsInRad,
+            "grad": graspingAngularErrorsInGrad,
+            "projected": {
+                "X": {
+                    "rad": projectedGraspingAngularErrorsOnXInRad,
+                    "grad": projectedGraspingAngularErrorsOnXInGrad,
+                },
+                "Y": {
+                    "rad": projectedGraspingAngularErrorsOnYInRad,
+                    "grad": projectedGraspingAngularErrorsOnYInGrad,
+                },
+                "Z": {
+                    "rad": projectedGraspingAngularErrorsOnZInRad,
+                    "grad": projectedGraspingAngularErrorsOnZInGrad,
+                },
+            },
+        }
+        graspingAccuracyResult["gripperPoses"] = groundTruthGraspingPoses
+        graspingAccuracyResults.append(graspingAccuracyResult)
     return graspingAccuracyResults
 
 

@@ -7,7 +7,7 @@
     "frameForStartingExperiments": 0,
     "frameStep":1,
     "savePaths": ["data/eval/tracking/"],
-    "registrationMethodsToEvaluate": ["krcpd"],
+    "registrationMethodsToEvaluate": ["krcpd4BDLO"],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -119,6 +119,16 @@
         "normalize": 1
     },
     "krcpdParameters" : {
+        "max_iterations":10,
+        "alpha": 1, 
+        "beta": 0.5,
+        "ik_iterations":10,
+        "damping":8,
+        "dampingAnnealing":1,
+        "minDampingFactor": 1,
+        "normalize": 0
+    },
+    "krcpd4BDLOParameters" : {
         "max_iterations":10,
         "alpha": 1, 
         "beta": 0.5,

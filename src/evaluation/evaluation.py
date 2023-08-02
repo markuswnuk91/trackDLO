@@ -47,6 +47,9 @@ try:
     from src.tracking.krcpd.krcpd import (
         KinematicRegularizedCoherentPointDrift,
     )
+    from src.tracking.krcpd.krcpd4BDLO import (
+        KinematicRegularizedCoherentPointDrift4BDLO,
+    )
 
     # visualization
     from src.visualization.plot3D import *
@@ -924,12 +927,31 @@ class Evaluation(object):
             # bdloModel = self.generateModel(bdloModelParameters)
             kinematicsModel.skel.setPositions(bdloModel.getGeneralizedCoordinates())
             # resetModel
+            reg = KinematicRegularizedCoherentPointDrift(
+                Y=Y,
+                model=kinematicsModel,
+                qInit=qInit,
+                **trackingParameters,
+            )
+            if visualize:
+                if visualizationCallback is None:
+                    visualizationCallback = self.getVisualizationCallback(reg)
+                reg.registerCallback(visualizationCallback)
+        elif method == "krcpd4BDLO":
+            trackingParameters = (
+                self.config["krcpd4BDLOParameters"]
+                if trackingParameters is None
+                else trackingParameters
+            )
+            # bdloModel = self.generateModel(bdloModelParameters)
+            kinematicsModel.skel.setPositions(bdloModel.getGeneralizedCoordinates())
+            # resetModel
             branchCorrespondances = []
             for branch in bdloModel.getBranches():
                 branchCorrespondances.append(
                     branch.getBranchInfo()["correspondingBodyNodeIndices"]
                 )
-            reg = KinematicRegularizedCoherentPointDrift(
+            reg = KinematicRegularizedCoherentPointDrift4BDLO(
                 Y=Y,
                 model=kinematicsModel,
                 qInit=qInit,
@@ -1077,7 +1099,9 @@ class Evaluation(object):
                 size=30,
                 color=[0, 1, 0],
             )
-        elif type(classHandle) == KinematicRegularizedCoherentPointDrift:
+        elif (type(classHandle) == KinematicRegularizedCoherentPointDrift) or (
+            type(classHandle) == KinematicRegularizedCoherentPointDrift4BDLO
+        ):
             plotPointSets(
                 ax=ax,
                 X=classHandle.T,

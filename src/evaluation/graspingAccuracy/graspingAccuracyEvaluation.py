@@ -32,7 +32,7 @@ class GraspingAccuracyEvaluation(Evaluation):
             )
         return graspingLocalCoordinates
 
-    def loadGroundTruthGraspingPositions(self, dataSetFolderPath, fileNumber):
+    def loadGroundTruthGraspingPose(self, dataSetFolderPath, fileNumber):
         filePath = self.dataHandler.getFilePath(
             fileNumber, dataSetFolderPath, fileType="json"
         )
@@ -43,3 +43,21 @@ class GraspingAccuracyEvaluation(Evaluation):
         robotEEPosition = transform_BaseToEE[:3, 3]
         robotEERotationMatrix = transform_BaseToEE[:3, :3]
         return transform_BaseToEE, robotEEPosition, robotEERotationMatrix
+
+    def predictGraspingPositionAndAxisFromRegistrationTargets(
+        self, T, graspingLocalCoordinates: tuple
+    ):
+        """Predict the grasping position and axis from registered target positions
+
+        Args:
+            T (np.array): Registered target positions
+            B ()
+            graspingLocalCoordinates (tuple): local branch coordinates as (b,s) where b is the branch index and s is the local coordiante along the branch.
+        """
+        correspondingIndices = [
+            index
+            for index, value in enumerate(initializationResult["localization"]["BInit"])
+            if value
+            == graspingLocalCoordinate[0]
+            - 1  # account for branch indexing starting @ 1 in model desciption
+        ]

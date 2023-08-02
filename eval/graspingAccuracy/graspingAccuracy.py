@@ -18,9 +18,9 @@ except:
 global vis
 global saveOpt
 global runOptx
-runOpt = {"localization": False, "tracking": True}
+runOpt = {"localization": False, "tracking": False}
 saveOpt = {
-    "localizationResults": True,
+    "localizationResults": False,
     "trackingResults": True,
     "evaluationResults": False,
 }
@@ -104,7 +104,7 @@ def trackConfigurations(dataSetPath, initializationResult, registrationMethod):
         "dataSetPath": dataSetPath,
         "initializationResult": initializationResult,
         "registrationMethod": registrationMethod,
-        "trackingResults": trackingResult,
+        "registrationResults": trackingResult,
     }
     return result
     # for grasping pose in dataSet
@@ -117,6 +117,33 @@ def trackConfigurations(dataSetPath, initializationResult, registrationMethod):
 
 
 # def predictGraspingPose(dataSetPath, previousConfiguration):
+def evaluateGraspingAccuracy(experimentResults):
+    graspingAccuracyResults = {}
+
+    # gather required informatio
+    dataSetPath = experimentResults["dataSetPath"]
+
+    # get grasping label positions
+    graspingLocalCoordinates = eval.loadGraspingLocalCoordinates(dataSetPath)
+
+    for trackingResult in experimentResults["trackingResults"]:
+        groundTruthGraspingPoses = []
+        for i, registrationResult in enumerate(trackingResult["registrationResults"]):
+            correspondingGraspingPoseFileIndex = i + 1
+
+            # groud truth grasping pose
+            (
+                groundTruthGraspingPose,
+                groundTruthGraspingPosition,
+                groundTruthGraspingRotMat,
+            ) = eval.loadGroundTruthGraspingPose(
+                dataSetPath, correspondingGraspingPoseFileIndex
+            )
+            groundTruthGraspingPoses.append(groundTruthGraspingPose)
+
+            # predict the estimated grasping pose from the registration result
+
+    return graspingAccuracyResults
 
 
 # def predictGraspingPoses_Backward():
@@ -160,6 +187,8 @@ if __name__ == "__main__":
     else:
         results["trackingResults"] = eval.loadResults(resultFilePath)["trackingResults"]
 
+    experimentResults = results
+    graspingAccuracyResults = evaluateGraspingAccuracy(experimentResults)
     # run evaluation
     # evaluationResult = evaluateGraspingPose
 

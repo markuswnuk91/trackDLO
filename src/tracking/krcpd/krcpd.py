@@ -23,7 +23,6 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         minDampingFactor=None,
         dampingAnnealing=None,
         ik_iterations=None,
-        B=None,
         *args,
         **kwargs
     ):
@@ -39,14 +38,6 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         self.dampingAnnealing = 0.97 if dampingAnnealing is None else dampingAnnealing
         self.ik_iterations = 1 if ik_iterations is None else ik_iterations
         self.Xreg = self.X
-        self.B = B
-        if self.B is not None:
-            self.K = len(self.B)
-            self.PB = np.zeros((self.N, self.M))
-            self.pB = np.zeros(self.K)
-            self.Nk = np.zeros(self.K)
-            for i, indices in enumerate(self.B):
-                self.Nk[i] = len(indices)
 
     def estimateCorrespondance(self):
         """
@@ -62,19 +53,6 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             Y_hat = Y_hat / scalingFactor_Y
             Xreg_hat = Xreg_hat / scalingFactor_Xreg
             P = np.sum((Y_hat[None, :, :] - Xreg_hat[:, None, :]) ** 2, axis=2)
-
-            if self.B is not None:
-                # calculate branch probabilites
-                pB = np.zeros(self.K)
-                PB = np.zeros((self.N, self.M))
-                for i, indices in enumerate(self.B):
-                    pB[i] = 1 / self.M * 1 / self.Nk[i] * np.sum(self.P[indices, :])
-                    PB[indices, :] = pB[i]
-                self.PB = PB
-                self.pB = pB
-
-                # mulitply by branch wise probability
-                P *= self.PB
 
             c = (2 * np.pi * self.sigma2) ** (self.D / 2)
             c = c * self.mu / (1 - self.mu)
@@ -92,22 +70,8 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             self.P1 = np.sum(self.P, axis=1)
             self.Np = np.sum(self.P1)
             self.PY = np.matmul(self.P, self.Y)
-
         else:
             P = np.sum((self.Y[None, :, :] - self.Xreg[:, None, :]) ** 2, axis=2)
-
-            if self.B is not None:
-                # calculate branch probabilites
-                pB = np.zeros(self.K)
-                PB = np.zeros((self.N, self.M))
-                for i, indices in enumerate(self.B):
-                    pB[i] = 1 / self.M * 1 / self.Nk[i] * np.sum(P[indices, :])
-                    PB[indices, :] = pB[i]
-                self.PB = PB
-                self.pB = pB
-
-                # mulitply by branch wise probability
-                P *= self.PB
 
             c = (2 * np.pi * self.sigma2) ** (self.D / 2)
             c = c * self.mu / (1 - self.mu)
@@ -225,13 +189,13 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             return X + np.dot(G, self.W)
         else:
             if self.low_rank is False:
-                # self.T = self.X + np.dot(self.G, self.W)
-                if np.any(self.P1 > 0):
-                    self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
-                        :, None
-                    ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
-                else:
-                    self.T = self.Xreg
+                self.T = self.X + np.dot(self.G, self.W)
+                # if np.any(self.P1 > 0):
+                #     self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
+                #         :, None
+                #     ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
+                # else:
+                #     self.T = self.Xreg
             elif self.low_rank is True:
                 self.T = self.X + np.matmul(
                     self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))

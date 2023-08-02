@@ -156,7 +156,7 @@ def determineGraspingAccuracy(
             robotEETransformGT,
             robotEEPositionGT,
             robotEERotationMatrixGT,
-        ) = eval.loadGroundTruthGraspingPositions(dataSetPath, i)
+        ) = eval.loadGroundTruthGraspingPose(dataSetPath, i)
         robotEETransformsGT.append(robotEETransformGT)
         robotEEPositionsGT.append(robotEEPositionGT)
         robotEERotationMatricesGT.append(robotEERotationMatrixGT)

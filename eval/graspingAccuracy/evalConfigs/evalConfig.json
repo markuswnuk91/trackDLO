@@ -7,7 +7,7 @@
     "frameForStartingExperiments": 0,
     "frameStep":1,
     "savePaths": ["data/eval/tracking/"],
-    "registrationMethodsToEvaluate": ["krcpd4BDLO"],
+    "registrationMethodsToEvaluate": ["cpd","cpd","krcpd4BDLO"],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,

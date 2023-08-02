@@ -18,7 +18,7 @@ except:
 global vis
 global saveOpt
 global runOptx
-runOpt = {"localization": False, "tracking": False}
+runOpt = {"localization": False, "tracking": True}
 saveOpt = {
     "localizationResults": False,
     "trackingResults": True,

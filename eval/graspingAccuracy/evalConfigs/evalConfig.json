@@ -10,7 +10,7 @@
         "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_141025_arena/",
         "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_142058_arena/"
     ],
-    "dataSetsToLoad": [8],
+    "dataSetsToLoad": [1, 2,6,7],
     "frameForInitialization": 0,
     "frameForStartingExperiments": 0,
     "frameStep":1,

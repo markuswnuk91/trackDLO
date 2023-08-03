@@ -23,7 +23,7 @@ global runOpt
 
 runExperiment = True
 loadInitializationFromResult = True
-runOpt = {"localization": False, "tracking": False}
+runOpt = {"localization": True, "tracking": True}
 saveOpt = {
     "localizationResults": False,
     "trackingResults": False,

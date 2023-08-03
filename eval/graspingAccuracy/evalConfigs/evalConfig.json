@@ -1,13 +1,21 @@
 {    
     "dataSetPaths": [
-        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_130903_modelY/"
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_130903_modelY/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_131545_modelY/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_154903_modelY/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_145818_partial/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_150601_partial/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_151226_partial/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_140014_arena/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_141025_arena/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_142058_arena"
     ],
-    "dataSetToLoad": 0,
+    "dataSetsToLoad": "all",
     "frameForInitialization": 0,
     "frameForStartingExperiments": 0,
     "frameStep":1,
     "savePaths": ["data/eval/tracking/"],
-    "registrationMethodsToEvaluate": ["cpd","cpd","krcpd4BDLO"],
+    "registrationMethodsToEvaluate": ["cpd","spr","krcpd","krcpd4BDLO"],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,

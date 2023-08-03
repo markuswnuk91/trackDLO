@@ -10,6 +10,7 @@ from functools import partial
 import pickle
 from warnings import warn
 import time
+import gc
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation", ""))
@@ -511,7 +512,7 @@ class Evaluation(object):
         if logResults:
             self.resultLog["topologyExtraction"].append(topologyExtractionResult)
 
-        return topologyExtractionResult, extractedTopology
+        return topologyExtractionResult, extractedTopology, topologyExtraction
         # -------------------------------------------------------------------------
 
     # Initial Localization
@@ -652,6 +653,7 @@ class Evaluation(object):
         }
         if logResults:
             self.resultLog["localization"].append(localizationResult)
+
         return localizationResult, localization
 
     def runInitialization(
@@ -684,6 +686,7 @@ class Evaluation(object):
         closeAfterRunningTopologyExtraction=False,
         closeAfterRunningLocalization=True,
         logResults=True,
+        cleanUpMemory=True,
     ):
         if visualize is False:
             visualizeSOMIterations = False
@@ -708,7 +711,11 @@ class Evaluation(object):
         modelGenerationRuntime_end = time.time()
 
         pointSet = pointCloud[0]
-        topologyExtractionResult, extractedTopology = self.runTopologyExtraction(
+        (
+            topologyExtractionResult,
+            extractedTopology,
+            topologyExtraction,
+        ) = self.runTopologyExtraction(
             pointSet,
             somParameters,
             l1Parameters,
@@ -724,7 +731,7 @@ class Evaluation(object):
             block,
             closeAfterRunningTopologyExtraction,
         )
-        initialLocalizationResult, _ = self.runInitialLocalization(
+        initialLocalizationResult, localization = self.runInitialLocalization(
             pointSet,
             extractedTopology,
             bdloModelParameters,
@@ -761,6 +768,11 @@ class Evaluation(object):
         }
         if logResults:
             self.resultLog["initialization"].append(initializationResult)
+
+        if cleanUpMemory:
+            del localization
+            del topologyExtraction
+            gc.collect()
         return initializationResult
 
     # -------------------------------------------------------------------------
@@ -774,6 +786,7 @@ class Evaluation(object):
         T=None,
         checkConvergence=True,
         logTargets=True,
+        closeAfterRunning=True,
     ):
         if Y is not None:
             registration.Y = Y
@@ -811,6 +824,8 @@ class Evaluation(object):
             registrationResult["q"] = registration.q.copy()
             registrationResult["Xreg"] = registration.Xreg.copy()
 
+        if closeAfterRunning:
+            closeAfterRunning
         return registrationResult
 
     def runTracking(
@@ -832,6 +847,8 @@ class Evaluation(object):
         visualizationCallback=None,
         checkConvergence=True,
         logTargets=True,
+        closeVisAfterRunning=True,
+        cleanUpMemory=True,
     ):
         # # setup tracking problem
         # if startFrame is None and Y is None:
@@ -987,6 +1004,15 @@ class Evaluation(object):
             registrationResult["filePath"] = self.getFilePath(frame, dataSetPath)
             registrationResult["frame"] = frame
             trackingResult["registrations"].append(registrationResult)
+
+        if closeVisAfterRunning:
+            plt.close("all")
+
+        if cleanUpMemory:
+            del kinematicsModel
+            del reg
+            del visualizationCallback
+            gc.collect()
         return trackingResult
 
     # -------------------------------------------------------------------------

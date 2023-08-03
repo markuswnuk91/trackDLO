@@ -18,11 +18,11 @@ except:
 global vis
 global saveOpt
 global runOptx
-runOpt = {"localization": False, "tracking": True}
+runOpt = {"localization": True, "tracking": True}
 saveOpt = {
-    "localizationResults": False,
+    "localizationResults": True,
     "trackingResults": True,
-    "evaluationResults": False,
+    "evaluationResults": True,
 }
 runExperiment = True
 loadInitializationFromResult = True
@@ -34,12 +34,6 @@ pathToConfigFile = (
 )
 eval = GraspingAccuracyEvaluation(configFilePath=pathToConfigFile)
 
-# set file paths
-dataSetPath = eval.config["dataSetPaths"][eval.config["dataSetToLoad"]]
-dataSetName = eval.config["dataSetPaths"][0].split("/")[-2]
-resultFolderPath = "data/eval/graspingAccuracy/" + dataSetName + "/"
-resultFileName = "result"
-resultFilePath = resultFolderPath + resultFileName + ".pkl"
 vis = {
     "som": False,
     "somIterations": True,
@@ -237,49 +231,77 @@ def evaluateGraspingAccuracy(experimentResults):
 # def predictGraspingPoses_Backward():
 
 if __name__ == "__main__":
-    results = {}
-    results["dataSetPath"] = dataSetPath
-    # run experiments
-    if runOpt["localization"]:
-        initializationResult = runInitialization(dataSetPath)
-        results["initializationResult"] = initializationResult
-        if saveOpt["localizationResults"]:
-            eval.saveResults(
-                folderPath=resultFolderPath,
-                generateUniqueID=False,
-                fileName=resultFileName,
-                results=results,
-                promtOnSave=False,
-                overwrite=True,
-            )
+    if eval.config["dataSetsToLoad"] == "all":
+        dataSetPaths = eval.config["dataSetPaths"]
     else:
-        results["initializationResult"] = eval.loadResults(resultFilePath)[
-            "initializationResult"
+        dataSetPaths = [
+            dataSetPath
+            for i, dataSetPath in enumerate(eval.config["dataSetPaths"])
+            if i in eval.config["dataSetsToLoad"]
         ]
-    if runOpt["tracking"]:
-        results["trackingResults"] = []
-        for registrationMethod in eval.config["registrationMethodsToEvaluate"]:
-            trackingResult = trackConfigurations(
-                dataSetPath, results["initializationResult"], registrationMethod
-            )
-            results["trackingResults"].append(trackingResult)
-        if saveOpt["trackingResults"]:
-            eval.saveResults(
-                folderPath=resultFolderPath,
-                generateUniqueID=False,
-                fileName=resultFileName,
-                results=results,
-                promtOnSave=False,
-                overwrite=True,
-            )
-    else:
-        results["trackingResults"] = eval.loadResults(resultFilePath)["trackingResults"]
 
-    experimentResults = results
-    graspingAccuracyResults = evaluateGraspingAccuracy(experimentResults)
-    # run evaluation
-    # evaluationResult = evaluateGraspingPose
+    for dataSetPath in dataSetPaths:
+        try:
+            results = {}
+            results["dataSetPath"] = dataSetPath
+            # run experiments
+            # set file paths
+            dataSetName = dataSetPath.split("/")[-2]
+            resultFolderPath = "data/eval/graspingAccuracy/" + dataSetName + "/"
+            resultFileName = "result"
+            resultFilePath = resultFolderPath + resultFileName + ".pkl"
+            if runOpt["localization"]:
+                initializationResult = runInitialization(dataSetPath)
+                results["initializationResult"] = initializationResult
+                if saveOpt["localizationResults"]:
+                    eval.saveResults(
+                        folderPath=resultFolderPath,
+                        generateUniqueID=False,
+                        fileName=resultFileName,
+                        results=results,
+                        promtOnSave=False,
+                        overwrite=True,
+                    )
+            else:
+                results["initializationResult"] = eval.loadResults(resultFilePath)[
+                    "initializationResult"
+                ]
+            if runOpt["tracking"]:
+                results["trackingResults"] = []
+                for registrationMethod in eval.config["registrationMethodsToEvaluate"]:
+                    trackingResult = trackConfigurations(
+                        dataSetPath, results["initializationResult"], registrationMethod
+                    )
+                    results["trackingResults"].append(trackingResult)
+                if saveOpt["trackingResults"]:
+                    eval.saveResults(
+                        folderPath=resultFolderPath,
+                        generateUniqueID=False,
+                        fileName=resultFileName,
+                        results=results,
+                        promtOnSave=False,
+                        overwrite=True,
+                    )
+            else:
+                results["trackingResults"] = eval.loadResults(resultFilePath)[
+                    "trackingResults"
+                ]
 
-    # save evaluation results
+            experimentResults = results
+            graspingAccuracyResults = evaluateGraspingAccuracy(experimentResults)
 
-    print("Done.")
+            # save evaluation results
+            if saveOpt["evaluationResults"]:
+                eval.saveResults(
+                    folderPath=resultFolderPath,
+                    generateUniqueID=False,
+                    fileName=resultFileName,
+                    results=results,
+                    promtOnSave=False,
+                    overwrite=True,
+                )
+
+            print('Evaluated data set: "{}"'.format(dataSetPath))
+        except:
+            print('Failed on data set: "{}"'.format(dataSetPath))
+    print("Finised grasping accuracy evaluation".format(dataSetPath))

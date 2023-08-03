@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.spatial.transform import Rotation as R
+import logging
+import traceback
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -17,23 +19,16 @@ except:
 # script control parameters
 global vis
 global saveOpt
-global runOptx
-runOpt = {"localization": True, "tracking": True}
-saveOpt = {
-    "localizationResults": True,
-    "trackingResults": True,
-    "evaluationResults": True,
-}
+global runOpt
+
 runExperiment = True
 loadInitializationFromResult = True
-
-# script starts here
-global eval
-pathToConfigFile = (
-    os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/evalConfig.json"
-)
-eval = GraspingAccuracyEvaluation(configFilePath=pathToConfigFile)
-
+runOpt = {"localization": False, "tracking": False}
+saveOpt = {
+    "localizationResults": False,
+    "trackingResults": False,
+    "evaluationResults": True,
+}
 vis = {
     "som": False,
     "somIterations": True,
@@ -45,6 +40,22 @@ vis = {
     "initializationResult": False,
     "trackingIterations": True,
 }
+
+# path configurations
+evaluationDataFolderPath = "data/eval/graspingAccuracy/"
+logFileName = "graspingAccuracy.log"
+
+# configure logging
+logFile = evaluationDataFolderPath + logFileName
+logLevel = logging.INFO
+logFormat = "%(asctime)s - %(levelname)s - %(message)s"
+logging.basicConfig(filename=logFile, level=logLevel, format=logFormat)
+# script starts here
+global eval
+pathToConfigFile = (
+    os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/evalConfig.json"
+)
+eval = GraspingAccuracyEvaluation(configFilePath=pathToConfigFile)
 
 
 def runExperiments():
@@ -247,7 +258,7 @@ if __name__ == "__main__":
             # run experiments
             # set file paths
             dataSetName = dataSetPath.split("/")[-2]
-            resultFolderPath = "data/eval/graspingAccuracy/" + dataSetName + "/"
+            resultFolderPath = evaluationDataFolderPath + dataSetName + "/"
             resultFileName = "result"
             resultFilePath = resultFolderPath + resultFileName + ".pkl"
             if runOpt["localization"]:
@@ -303,5 +314,8 @@ if __name__ == "__main__":
 
             print('Evaluated data set: "{}"'.format(dataSetPath))
         except:
+            traceback.print_exc()
             print('Failed on data set: "{}"'.format(dataSetPath))
+            logging.info('Failed on data set: "{}"'.format(dataSetPath))
+            raise
     print("Finised grasping accuracy evaluation".format(dataSetPath))

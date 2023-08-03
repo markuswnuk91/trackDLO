@@ -43,13 +43,17 @@ class BDLOTopology(topologyModel):
         defaultTorsionalStiffness=1,
         defaultBendingDampingCoeff=0.1,
         defaultTorsionalDampingCoeff=0.1,
+        verbose=None,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
+        self.verbose = False if verbose is None else verbose
+
         if branchSpecs is None:
-            warn("No branch specifications provided. Using default values.")
+            if self.verbose:
+                warn("No branch specifications provided. Using default values.")
             self.branchSpecs = [{}] * len(self.branches)
         else:
             self.branchSpecs = branchSpecs
@@ -57,31 +61,34 @@ class BDLOTopology(topologyModel):
         # make sure specification contains all necessary information
         for i, branchSpec in enumerate(self.branchSpecs):
             if "radius" not in branchSpec:
-                warn(
-                    "Expected the branch radius to be specified in the branch specification, but specification has no parameter radius for branch {}. Assuming default value for radius.".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "Expected the branch radius to be specified in the branch specification, but specification has no parameter radius for branch {}. Assuming default value for radius.".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["radius"] = defaultRadius
                 self.branchSpecs[i] = newSpec
 
             if "density" not in branchSpec:
-                warn(
-                    "Expected the branch denisty to be specified in the branch specification, but specification has no parameter density for branch {}. Assuming default value of for density ({} kg/m^3).".format(
-                        i, defaultDensity
+                if self.verbose:
+                    warn(
+                        "Expected the branch denisty to be specified in the branch specification, but specification has no parameter density for branch {}. Assuming default value of for density ({} kg/m^3).".format(
+                            i, defaultDensity
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["density"] = defaultDensity
                 self.branchSpecs[i] = newSpec
 
             if "numSegments" not in branchSpec:
-                warn(
-                    "Expected the desired number of segments to be specified in the branch specification, but specification has no parameter numSegments for branch {}.".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "Expected the desired number of segments to be specified in the branch specification, but specification has no parameter numSegments for branch {}.".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["numSegments"] = int(
                     math.ceil(
@@ -93,61 +100,67 @@ class BDLOTopology(topologyModel):
                 self.branchSpecs[i] = newSpec
 
             if "color" not in branchSpec:
-                warn(
-                    "No color information given for branch {} using default color blue ([0,0,1]).".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No color information given for branch {} using default color blue ([0,0,1]).".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["color"] = defaultColor
                 self.branchSpecs[i] = newSpec
 
             if "bendingStiffness" not in branchSpec:
-                warn(
-                    "No bending stiffness information given for branch {} using default stiffness (1 N/rad).".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No bending stiffness information given for branch {} using default stiffness (1 N/rad).".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["bendingStiffness"] = defaultBendingStiffness
                 self.branchSpecs[i] = newSpec
 
             if "torsionalStiffness" not in branchSpec:
-                warn(
-                    "No torsional stiffness information given for branch {} using default stiffness (1 N/rad).".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No torsional stiffness information given for branch {} using default stiffness (1 N/rad).".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["torsionalStiffness"] = defaultTorsionalStiffness
                 self.branchSpecs[i] = newSpec
 
             if "bendingDampingCoeffs" not in branchSpec:
-                warn(
-                    "No bending damping coefficient information given for branch {} using default stiffness (0.1 N/rad).".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No bending damping coefficient information given for branch {} using default stiffness (0.1 N/rad).".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["bendingDampingCoeffs"] = defaultBendingDampingCoeff
                 self.branchSpecs[i] = newSpec
 
             if "torsionalDampingCoeffs" not in branchSpec:
-                warn(
-                    "No torsional damping coefficient information given for branch {} using default stiffness (0.1 N/rad).".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No torsional damping coefficient information given for branch {} using default stiffness (0.1 N/rad).".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["torsionalDampingCoeffs"] = defaultTorsionalDampingCoeff
                 self.branchSpecs[i] = newSpec
 
             if "rootJointRestPositions" not in branchSpec:
-                warn(
-                    "No rootJointRestPositions information given for branch {} using default rest position.".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No rootJointRestPositions information given for branch {} using default rest position.".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
 
                 if self.branches[i] == self.rootBranch:

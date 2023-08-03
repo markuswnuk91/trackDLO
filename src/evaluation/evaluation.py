@@ -824,8 +824,6 @@ class Evaluation(object):
             registrationResult["q"] = registration.q.copy()
             registrationResult["Xreg"] = registration.Xreg.copy()
 
-        if closeAfterRunning:
-            closeAfterRunning
         return registrationResult
 
     def runTracking(

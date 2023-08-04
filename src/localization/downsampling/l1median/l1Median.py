@@ -55,7 +55,7 @@ class L1Median(DataReduction):
         self.hAnnealing = 1 if hAnnealing is None else hAnnealing
         self.muAnnealing = 1 if muAnnealing is None else muAnnealing
         self.densityCompensation = (
-            False if densityCompensation is None else densityCompensation
+            False if densityCompensation is None else bool(densityCompensation)
         )
         self.h_d = self.h / 2 if h_d is None else h_d
         self.iteration = 0

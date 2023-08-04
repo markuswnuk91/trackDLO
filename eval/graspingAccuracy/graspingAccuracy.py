@@ -20,13 +20,14 @@ except:
 global vis
 global saveOpt
 global runOpt
+global eval
 
 runExperiment = True
 loadInitializationFromResult = True
-runOpt = {"localization": True, "tracking": True}
+runOpt = {"localization": False, "tracking": True}
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": False,
+    "trackingResults": True,
     "evaluationResults": True,
 }
 vis = {
@@ -42,6 +43,9 @@ vis = {
 }
 
 # path configurations
+pathToConfigFile = (
+    os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/evalConfig_partial.json"
+)
 evaluationDataFolderPath = "data/eval/graspingAccuracy/"
 logFileName = "graspingAccuracy.log"
 
@@ -50,11 +54,8 @@ logFile = evaluationDataFolderPath + logFileName
 logLevel = logging.INFO
 logFormat = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(filename=logFile, level=logLevel, format=logFormat)
+
 # script starts here
-global eval
-pathToConfigFile = (
-    os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/evalConfig.json"
-)
 eval = GraspingAccuracyEvaluation(configFilePath=pathToConfigFile)
 
 
@@ -242,7 +243,7 @@ def evaluateGraspingAccuracy(experimentResults):
 # def predictGraspingPoses_Backward():
 
 if __name__ == "__main__":
-    if eval.config["dataSetsToLoad"] == "all":
+    if eval.config["dataSetsToLoad"][0] == "all":
         dataSetPaths = eval.config["dataSetPaths"]
     else:
         dataSetPaths = [
@@ -300,7 +301,7 @@ if __name__ == "__main__":
 
             experimentResults = results
             graspingAccuracyResults = evaluateGraspingAccuracy(experimentResults)
-
+            results["graspingAccuracyResults"] = graspingAccuracyResults
             # save evaluation results
             if saveOpt["evaluationResults"]:
                 eval.saveResults(

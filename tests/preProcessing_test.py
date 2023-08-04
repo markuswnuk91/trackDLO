@@ -14,7 +14,7 @@ except:
 
 # script control parameters
 vis = True
-relFilePath = "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/data/20230603_140411_535868_image_rgb.png"
+relFilePath = "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_145818_partial/data/20230522_145859_546428_image_rgb.png"
 
 
 # scipt starts here

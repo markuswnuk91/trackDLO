@@ -1,13 +1,10 @@
 {    
     "dataSetPaths": [
-        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_130903_modelY/",
-        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_131545_modelY/",
-        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_154903_modelY/",
-        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_140014_arena/",
-        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_141025_arena/",
-        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_142058_arena/"
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_145818_partial/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_150601_partial/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_151226_partial/"
     ],
-    "dataSetsToLoad": [3,4,5],
+    "dataSetsToLoad": [1],
     "frameForInitialization": 0,
     "frameForStartingExperiments": 0,
     "frameStep":1,
@@ -60,11 +57,11 @@
             "xMax" : 0.63,
             "yMin" : -0.5,
             "yMax" : 0.5,
-            "zMin" : 0.25,
+            "zMin" : 0.27,
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 10
+            "nthElement" : 5
         }
     },
     "modelGeneration":{
@@ -75,7 +72,7 @@
             "numSeedPoints": 30,
             "alpha": 0.9,
             "alphaAnnealing": 1,
-            "sigma2": 0.3,
+            "sigma2": 0.001,
             "sigma2Min": 0.001,
             "sigma2Annealing": 0.87,
             "method": "kernel",
@@ -83,17 +80,18 @@
         },
         "l1Parameters" : {
             "numSeedPoints": 100,
-            "h": 0.03,
+            "h": 0.01,
             "hAnnealing": 0.9,
-            "hMin": 0.01,
-            "mu": 0.35,
-            "max_iterations": 3
+            "hMin": 0.001,
+            "mu": 0.4,
+            "max_iterations": 30,
+            "densityCompensation": 1
         },
-        "pruningThreshold": 1e-6
+        "pruningThreshold": 0.003
     },
     "localization":{
         "numSamples": 10,
-        "numIterations": 20,
+        "numIterations": 100,
         "verbose": 0,
         "method": "IK",
         "jacobianDamping":1

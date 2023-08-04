@@ -243,7 +243,7 @@ def evaluateGraspingAccuracy(experimentResults):
 # def predictGraspingPoses_Backward():
 
 if __name__ == "__main__":
-    if eval.config["dataSetsToLoad"][0] == "all":
+    if eval.config["dataSetsToLoad"][0] == -1:
         dataSetPaths = eval.config["dataSetPaths"]
     else:
         dataSetPaths = [

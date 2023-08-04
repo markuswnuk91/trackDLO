@@ -4,12 +4,12 @@
         "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_150601_partial/",
         "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_151226_partial/"
     ],
-    "dataSetsToLoad": [1],
+    "dataSetsToLoad": [-1],
     "frameForInitialization": 0,
     "frameForStartingExperiments": 0,
     "frameStep":1,
     "savePaths": ["data/eval/tracking/"],
-    "registrationMethodsToEvaluate": ["cpd","spr","krcpd","krcpd4BDLO"],
+    "registrationMethodsToEvaluate": ["krcpd"],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -124,7 +124,7 @@
     "krcpdParameters" : {
         "max_iterations":10,
         "alpha": 1, 
-        "beta": 0.5,
+        "beta": 0.3,
         "ik_iterations":10,
         "damping":8,
         "dampingAnnealing":1,
@@ -134,7 +134,7 @@
     "krcpd4BDLOParameters" : {
         "max_iterations":10,
         "alpha": 1, 
-        "beta": 0.5,
+        "beta": 0.3,
         "ik_iterations":10,
         "damping":8,
         "dampingAnnealing":1,

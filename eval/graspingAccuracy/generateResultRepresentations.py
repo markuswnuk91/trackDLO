@@ -51,7 +51,7 @@ def loadResults(resultRootFolderPath):
 
 
 def scatterPlotGraspingErrors(results):
-    alpha = 0.5
+    alpha = 0.3
     translationalGraspingErrors = []
     rotationalGraspingErrors = []
     correspondingMethods = []
@@ -71,6 +71,8 @@ def scatterPlotGraspingErrors(results):
                 ][registrationMethodIndex]["graspingPositionErrors"][graspingIndex]
                 translationalGraspingErrors.append(translationalGraspingError)
 
+                if translationalGraspingError > 1.5:
+                    print("Here")
                 # get rotational grasping error
                 rotationalGraspingError = results[dataSetIndex][
                     "graspingAccuracyResults"

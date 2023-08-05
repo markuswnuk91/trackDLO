@@ -97,15 +97,15 @@ def scatterPlotGraspingErrors(results):
     colors = []
     for method in correspondingMethods:
         if method == "cpd":
-            colors.append([1, 0, 0])
+            colors.append([1, 0, 0, alpha])
         elif method == "spr":
-            colors.append([0, 0, 1])
+            colors.append([0, 0, 1, alpha])
         elif method == "krcpd":
-            colors.append([0, 1, 0])
+            colors.append([0, 1, 0, alpha])
         elif method == "krcpd4BDLO":
-            colors.append([1, 1, 0])
+            colors.append([1, 1, 0, alpha])
         else:
-            colors.append([0.7, 0.7, 0.7])
+            colors.append([0.7, 0.7, 0.7, alpha])
     # for model in correspondingModelNames:
     #     if model == "modelY":
     #         colors.append([1, 0, 0, alpha])
@@ -152,13 +152,77 @@ def scatterPlotGraspingErrors(results):
     return
 
 
-def tabularizeResults(results):
+def visualizeGraspingError2D(graspingAccuracyResult):
+    frames = graspingAccuracyResult["predictedFrames"]
+    dataSetPath = graspingAccuracyResult["dataSetPath"]
+    rgbImages = []
+    for frame in frames:
+        # load 2D images
+        fileName = eval.getFileName(frame, dataSetPath)
+        rgbImage, _ = eval.getDataSet(frame, dataSetPath)
+        rgbImages.append(rgbImage)
+
+    # reproject ground truth positions in image
+    groundTruthGraspingPositions3D = np.array(
+        graspingAccuracyResult["graspingPositions"]["groundTruth"]
+    )
+    groundTruthGraspingPositions2D = eval.reprojectFrom3DRobotBase(
+        groundTruthGraspingPositions3D, dataSetPath
+    )
+    # reporject predictd grasping pose in 2D image
+    predictedGraspingPositions3D = np.array(
+        graspingAccuracyResult["graspingPositions"]["predicted"]
+    )
+    predictedGraspingPositions2D = eval.reprojectFrom3DRobotBase(
+        predictedGraspingPositions3D, dataSetPath
+    )
+
+    # plot everything
+    import cv2
+
+    markerThickness = 10
+    groundTruthColor = [0, 255, 0]
+    predictionColor = [0, 0, 255]
+    markerFill = -1
+
+    for i, graspingPosition in enumerate(groundTruthGraspingPositions2D):
+        rgbImages[i] = cv2.circle(
+            rgbImages[i],
+            graspingPosition,
+            markerThickness,
+            groundTruthColor,
+            markerFill,
+        )
+        rgbImages[i] = cv2.circle(
+            rgbImages[i],
+            predictedGraspingPositions2D[i],
+            markerThickness,
+            predictionColor,
+            markerFill,
+        )
+
+    for rgbImage in rgbImages:
+        fig = plt.figure(frameon=False)
+        # fig.set_size_inches(imageWitdthInInches, imageHeightInInches)
+        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
+        ax.set_axis_off()
+        fig.add_axes(ax)
+        ax.imshow(rgbImage, aspect="auto")
+    plt.show(block=True)
     return
+
+
+def tabularizeResults(results):
+    raise NotImplementedError
 
 
 if __name__ == "__main__":
     # load all results
     results = loadResults(resultRootFolderPath)
+
+    visualizeGraspingError2D(
+        graspingAccuracyResult=results[0]["graspingAccuracyResults"][0]
+    )
 
     # plot result representations
     scatterPlotGraspingErrors(results)

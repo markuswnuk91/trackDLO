@@ -153,6 +153,9 @@ def scatterPlotGraspingErrors(results):
 
 
 def visualizeGraspingError2D(graspingAccuracyResult):
+    # parameters
+    gripperWidth = 0.1
+    fingerWidth = 0.3
     frames = graspingAccuracyResult["predictedFrames"]
     dataSetPath = graspingAccuracyResult["dataSetPath"]
     rgbImages = []
@@ -177,6 +180,89 @@ def visualizeGraspingError2D(graspingAccuracyResult):
         predictedGraspingPositions3D, dataSetPath
     )
 
+    # reproject grasping axis
+    groundTruthGraspingAxes3D = np.array(
+        graspingAccuracyResult["graspingAxes"]["groundTruth"]
+    )
+    predictedGraspingAxes3D = np.array(
+        graspingAccuracyResult["graspingAxes"]["predicted"]
+    )
+    groundTruthGraspingAxesStartPoints3D = (
+        groundTruthGraspingPositions3D - gripperWidth / 2 * groundTruthGraspingAxes3D
+    )
+    groundTruthGraspingAxesEndPoints3D = (
+        groundTruthGraspingPositions3D + gripperWidth / 2 * groundTruthGraspingAxes3D
+    )
+    predictedGraspingAxesStartPoints3D = (
+        predictedGraspingPositions3D - gripperWidth / 2 * predictedGraspingAxes3D
+    )
+    predictedGraspingAxesEndPoints3D = (
+        predictedGraspingPositions3D + gripperWidth / 2 * predictedGraspingAxes3D
+    )
+
+    groundTruthGraspingAxesStartPoints2D = eval.reprojectFrom3DRobotBase(
+        groundTruthGraspingAxesStartPoints3D, dataSetPath
+    )
+    groundTruthGraspingAxesEndPoints2D = eval.reprojectFrom3DRobotBase(
+        groundTruthGraspingAxesEndPoints3D, dataSetPath
+    )
+
+    predictedGraspingAxesEndPoints2D = eval.reprojectFrom3DRobotBase(
+        predictedGraspingAxesEndPoints3D, dataSetPath
+    )
+    predictedGraspingAxesStartPoints2D = eval.reprojectFrom3DRobotBase(
+        predictedGraspingAxesStartPoints3D, dataSetPath
+    )
+
+    # 2D grasping axes
+    groundTruthGraspingAxes2D = (
+        groundTruthGraspingAxesEndPoints2D - groundTruthGraspingAxesStartPoints2D
+    )
+    predictedGraspingAxes2D = (
+        predictedGraspingAxesEndPoints2D - predictedGraspingAxesStartPoints2D
+    )
+    # orthogonal 2D gripper axis
+    groundTruthGripperAxes2D = (
+        np.array(([0, 1], [-1, 0])) @ groundTruthGraspingAxes2D.T
+    ).T
+    groundTruthGripperStartPoints2D = np.around(
+        (groundTruthGraspingPositions2D - 0.5 * groundTruthGripperAxes2D)
+    ).astype(int)
+    groundTruthGripperEndPoints2D = np.around(
+        groundTruthGraspingPositions2D + 0.5 * groundTruthGripperAxes2D
+    ).astype(int)
+    predictedGripperAxes2D = (np.array(([0, 1], [-1, 0])) @ predictedGraspingAxes2D.T).T
+    predictedGripperStartPoints2D = np.around(
+        (predictedGraspingPositions2D - 0.5 * predictedGripperAxes2D)
+    ).astype(int)
+    predictedGripperEndPoints2D = np.around(
+        predictedGraspingPositions2D + 0.5 * predictedGripperAxes2D
+    ).astype(int)
+    # gripper fingers
+    groundTruthGripperEndFingerStartPoints = np.around(
+        groundTruthGripperEndPoints2D - 0.5 * fingerWidth * groundTruthGraspingAxes2D
+    ).astype(int)
+    groundTruthGripperEndFingerEndPoints = np.around(
+        groundTruthGripperEndPoints2D + 0.5 * fingerWidth * groundTruthGraspingAxes2D
+    ).astype(int)
+    groundTruthGripperStartFingerStartPoints = np.around(
+        groundTruthGripperStartPoints2D - 0.5 * fingerWidth * groundTruthGraspingAxes2D
+    ).astype(int)
+    groundTruthGripperStartFingerEndPoints = np.around(
+        groundTruthGripperStartPoints2D + 0.5 * fingerWidth * groundTruthGraspingAxes2D
+    ).astype(int)
+    predictedGripperEndFingerStartPoints = np.around(
+        predictedGripperEndPoints2D - 0.5 * fingerWidth * predictedGraspingAxes2D
+    ).astype(int)
+    predictedGripperEndFingerEndPoints = np.around(
+        predictedGripperEndPoints2D + 0.5 * fingerWidth * predictedGraspingAxes2D
+    ).astype(int)
+    predictedGripperStartFingerStartPoints = np.around(
+        predictedGripperStartPoints2D - 0.5 * fingerWidth * predictedGraspingAxes2D
+    ).astype(int)
+    predictedGripperStartFingerEndPoints = np.around(
+        predictedGripperStartPoints2D + 0.5 * fingerWidth * predictedGraspingAxes2D
+    ).astype(int)
     # plot everything
     import cv2
 
@@ -200,7 +286,110 @@ def visualizeGraspingError2D(graspingAccuracyResult):
             predictionColor,
             markerFill,
         )
+        # rgbImages[i] = cv2.line(
+        #     rgbImages[i],
+        #     (
+        #         groundTruthGraspingAxesStartPoints2D[i][0],
+        #         groundTruthGraspingAxesStartPoints2D[i][1],
+        #     ),
+        #     (
+        #         groundTruthGraspingAxesEndPoints2D[i][0],
+        #         groundTruthGraspingAxesEndPoints2D[i][1],
+        #     ),
+        #     groundTruthColor,
+        #     5,
+        # )
+        # rgbImages[i] = cv2.line(
+        #     rgbImages[i],
+        #     (
+        #         predictedGraspingAxesStartPoints2D[i][0],
+        #         predictedGraspingAxesStartPoints2D[i][1],
+        #     ),
+        #     (
+        #         predictedGraspingAxesEndPoints2D[i][0],
+        #         predictedGraspingAxesEndPoints2D[i][1],
+        #     ),
+        #     predictionColor,
+        #     5,
+        # )
 
+        # ground truth
+        # gripper axis
+        rgbImages[i] = cv2.line(
+            rgbImages[i],
+            (
+                groundTruthGripperStartPoints2D[i][0],
+                groundTruthGripperStartPoints2D[i][1],
+            ),
+            (groundTruthGripperEndPoints2D[i][0], groundTruthGripperEndPoints2D[i][1]),
+            groundTruthColor,
+            5,
+        )
+        # finger at end
+        rgbImages[i] = cv2.line(
+            rgbImages[i],
+            (
+                groundTruthGripperEndFingerStartPoints[i][0],
+                groundTruthGripperEndFingerStartPoints[i][1],
+            ),
+            (
+                groundTruthGripperEndFingerEndPoints[i][0],
+                groundTruthGripperEndFingerEndPoints[i][1],
+            ),
+            groundTruthColor,
+            5,
+        )
+        # finger at start
+        rgbImages[i] = cv2.line(
+            rgbImages[i],
+            (
+                groundTruthGripperStartFingerStartPoints[i][0],
+                groundTruthGripperStartFingerStartPoints[i][1],
+            ),
+            (
+                groundTruthGripperStartFingerEndPoints[i][0],
+                groundTruthGripperStartFingerEndPoints[i][1],
+            ),
+            groundTruthColor,
+            5,
+        )
+
+        # predicted
+        rgbImages[i] = cv2.line(
+            rgbImages[i],
+            (predictedGripperStartPoints2D[i][0], predictedGripperStartPoints2D[i][1]),
+            (predictedGripperEndPoints2D[i][0], predictedGripperEndPoints2D[i][1]),
+            predictionColor,
+            5,
+        )
+        # finger at end
+        rgbImages[i] = cv2.line(
+            rgbImages[i],
+            (
+                predictedGripperEndFingerStartPoints[i][0],
+                predictedGripperEndFingerStartPoints[i][1],
+            ),
+            (
+                predictedGripperEndFingerEndPoints[i][0],
+                predictedGripperEndFingerEndPoints[i][1],
+            ),
+            predictionColor,
+            5,
+        )
+        # finger at start
+        rgbImages[i] = cv2.line(
+            rgbImages[i],
+            (
+                predictedGripperStartFingerStartPoints[i][0],
+                predictedGripperStartFingerStartPoints[i][1],
+            ),
+            (
+                predictedGripperStartFingerEndPoints[i][0],
+                predictedGripperStartFingerEndPoints[i][1],
+            ),
+            predictionColor,
+            5,
+        )
     for rgbImage in rgbImages:
         fig = plt.figure(frameon=False)
         # fig.set_size_inches(imageWitdthInInches, imageHeightInInches)

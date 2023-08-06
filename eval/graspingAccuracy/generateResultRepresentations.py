@@ -50,8 +50,7 @@ def loadResults(resultRootFolderPath):
     return results
 
 
-def scatterPlotGraspingErrors(results):
-    alpha = 0.3
+def accumulateGraspingErrors(results):
     translationalGraspingErrors = []
     rotationalGraspingErrors = []
     correspondingMethods = []
@@ -93,6 +92,22 @@ def scatterPlotGraspingErrors(results):
 
                 # get corresponding method
                 correspondingMethods.append(registrationMethod)
+    return (
+        translationalGraspingErrors,
+        rotationalGraspingErrors,
+        correspondingMethods,
+        correspondingModelNames,
+    )
+
+
+def scatterPlotGraspingErrors(results):
+    alpha = 0.3
+    (
+        translationalGraspingErrors,
+        rotationalGraspingErrors,
+        correspondingMethods,
+        correspondingModelNames,
+    ) = accumulateGraspingErrors(results)
 
     colors = []
     for method in correspondingMethods:
@@ -402,6 +417,106 @@ def visualizeGraspingError2D(graspingAccuracyResult):
 
 
 def tabularizeResults(results):
+    (
+        translationalGraspingErrors,
+        rotationalGraspingErrors,
+        correspondingMethods,
+        correspondingModels,
+    ) = accumulateGraspingErrors(results)
+
+    evaluationResults = {
+        "translationalError": {},
+        "translationalStdDev": {},
+        "rotationalError": {},
+        "rotationalStdDev": {},
+    }
+    models = list(set(correspondingModels))
+    methods = list(set(correspondingMethods))
+
+    for i, model in enumerate(models):
+        for j, method in enumerate(methods):
+            # gather all errors for the combination of model and method
+            translationalIndices = [
+                index
+                for index, value in enumerate(translationalGraspingErrors)
+                if correspondingModels[index] == model
+                and correspondingMethods[index] == method
+            ]
+            evaluationResults["translationalError"][model] = {}
+            evaluationResults["translationalError"][model][method] = np.mean(
+                np.array(translationalGraspingErrors)[translationalIndices]
+            )
+            evaluationResults["translationalStdDev"][model] = {}
+            evaluationResults["translationalStdDev"][model][method] = np.std(
+                np.array(translationalGraspingErrors)[translationalIndices]
+            )
+
+            rotationalIndices = [
+                index
+                for index, value in enumerate(rotationalGraspingErrors)
+                if correspondingModels[index] == model
+                and correspondingMethods[index] == method
+            ]
+            evaluationResults["rotationalError"][model] = {}
+            evaluationResults["rotationalError"][model][method] = np.mean(
+                np.array(rotationalGraspingErrors)[rotationalIndices]
+            )
+            evaluationResults["rotationalStdDev"][model] = {}
+            evaluationResults["rotationalStdDev"][model][method] = np.std(
+                np.array(rotationalGraspingErrors)[rotationalIndices]
+            )
+
+    #     f"""
+    #     \begin{tabular}{lccccccc}\toprule
+    # 	& & \multicolumn{2}{c}{\acs{CPD}} & \multicolumn{2}{c}{\acs{SPR}} & \multicolumn{2}{c}{\acs{KPR}}
+    # 	\\\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+    # 	model		& $n_{\text{grasp}}$  & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ \\\midrule
+    # 	\acs{TCL}-0  & x & x & x & x & x& x& x  \\
+    # 	\acs{TCL}-1. & x & x & x & x & x& x& x  \\
+    # 	\acs{TCL}-2 	& x & x & x & x & x& x& x  \\
+    # 	\acs{TCL}-3  & x & x & x & x & x& x& x \\\bottomrule
+    # \end{tabular}
+    #     latex_table_column = f"""
+    #             ${translationalErrorResults['model']}$ & ${translationalErrorResults["model"]['n_config']}$ & ${runtimeResults['t_preprocessing']:.2f}$ & ${runtimeResults['t_l1_skel']:.2f}$ & ${runtimeResults['t_som']:.2f}$ & ${runtimeResults['t_mst']:.2f}$ & ${runtimeResults['t_corresp']:.2f}$ & ${runtimeResults['t_ik']:.2f}$ & $\\mathbf{{{runtimeResults['t_total']:.2f}}}$ \\\\
+    #             """"
+
+    # translationalErrorResult["model"]["method"]
+
+    # meanRotationalError["model"]["method"]
+    #         translationalErrorResult = {
+    #         "model":
+    #     }
+
+    # for i, translationalGraspingError in enumerate(translationalGraspingErrors):
+    #     translationalErrorResult = {
+    #         "model":
+    #     }
+    # translationalErrorResults = [
+    #     {
+
+    #     }
+    # ]
+
+    # {
+    #     "model": eval.getModelID(
+    #         evaluationResults[0]["initializationResult"]["modelParameters"][
+    #             "modelInfo"
+    #         ]["name"]
+    #     ),
+    #     "n_grasps": sdf,
+    #     "t_preprocessing": 0.0,
+    #     "t_l1_skel": 0.0,
+    #     "t_som": 0.0,
+    #     "t_mst": 0.0,
+    #     "t_corresp": 0.0,
+    #     "t_ik": 0.0,
+    #     "t_total": 0.0,
+    # }
+
+    # latex_table_column = f"""
+    #         ${translationalErrorResults['model']}$ & ${translationalErrorResults["model"]['n_config']}$ & ${runtimeResults['t_preprocessing']:.2f}$ & ${runtimeResults['t_l1_skel']:.2f}$ & ${runtimeResults['t_som']:.2f}$ & ${runtimeResults['t_mst']:.2f}$ & ${runtimeResults['t_corresp']:.2f}$ & ${runtimeResults['t_ik']:.2f}$ & $\\mathbf{{{runtimeResults['t_total']:.2f}}}$ \\\\
+    #         """"
+
     raise NotImplementedError
 
 
@@ -409,6 +524,7 @@ if __name__ == "__main__":
     # load all results
     results = loadResults(resultRootFolderPath)
 
+    tabularizeResults(results)
     visualizeGraspingError2D(
         graspingAccuracyResult=results[0]["graspingAccuracyResults"][0]
     )

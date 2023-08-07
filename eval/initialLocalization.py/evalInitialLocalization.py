@@ -23,6 +23,7 @@ global eval
 
 configFile = "partial"  # sigleDLO, modelY, partial, arena
 save = False
+saveImgs = False
 runExperiment = True  # if localization should be run or loaded from data
 runEvaluation = True
 runExperimentsForFrames = [1]  # options: -1 for all frames, else number of frames
@@ -307,7 +308,7 @@ def visualizeReprojectionError(reprojectionErrorResult):
             "groundTruthLabelCoordinates_2D"
         ],
         plotGrayScale=False,
-        save=True,
+        save=saveImgs,
         savePath=resultFolderPath,
         block=False,
     )

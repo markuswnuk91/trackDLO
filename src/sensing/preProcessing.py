@@ -212,6 +212,7 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         hsvFilterParameters: dict = None,
         roiFilterParameters: dict = None,
         boundingBoxParameters: dict = None,
+        hsvPassThroughFilters: list = None,
     ):
         if boundingBoxParameters is None:
             boundingBoxParameters = self.boundingBoxParameters
@@ -219,7 +220,12 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
             qmatrix = self.cameraParameters["qmatrix"]
         # PointCloud
         points, colors = self.calculatePointCloudFiltered_2D(
-            rgbImage, disparityMap, qmatrix, hsvFilterParameters, roiFilterParameters
+            rgbImage,
+            disparityMap,
+            qmatrix,
+            hsvFilterParameters,
+            roiFilterParameters,
+            hsvPassThroughFilters,
         )
         # Bounding Box Filter
         (xMin, xMax, yMin, yMax, zMin, zMax) = self.getParametersFromDict_BoundingBox(

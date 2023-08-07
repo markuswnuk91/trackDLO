@@ -71,7 +71,7 @@
             "branch": 1,
             "branchRootNode":2,
             "branchLength": 0.51,
-            "lenthFromBranchRootNode": 0.51,
+            "lenthFromBranchRootNode": 0.0,
             "s": 0.0,
             "type": "BranchNode"
         },

@@ -5,9 +5,9 @@
         [0.00, 0.51, 0.00, 0.00, 0.00, 0.00],
         [0.51, 0.00, 0.37, 0.20, 0.00, 0.00],
         [0.00, 0.37, 0.00, 0.00, 0.00, 0.00],
-        [0.00, 0.20, 0.00, 0.00, 0.08, 0.38],
-        [0.00, 0.00, 0.00, 0.08, 0.00, 0.00],
-        [0.00, 0.00, 0.00, 0.38, 0.00, 0.00]
+        [0.00, 0.20, 0.00, 0.00, 0.12, 0.40],
+        [0.00, 0.00, 0.00, 0.12, 0.00, 0.00],
+        [0.00, 0.00, 0.00, 0.40, 0.00, 0.00]
     ],
     
     "branchSpecifications" : {
@@ -124,36 +124,36 @@
             "number": 10,
             "branch": 4,
             "branchRootNode":4,
-            "branchLength": 0.08,
-            "lenthFromBranchRootNode": 0.07,
-            "s": 0.875,
+            "branchLength": 0.12,
+            "lenthFromBranchRootNode": 0.11,
+            "s": 0.916,
             "type": "LeafNode"
         },
         {
             "number": 11,
             "branch": 5,
             "branchRootNode":4,
-            "branchLength": 0.38,
+            "branchLength": 0.40,
             "lenthFromBranchRootNode": 0.135,
-            "s": 0.355,
+            "s": 0.3375,
             "type": "Wire"
         },
         {
             "number": 12,
             "branch": 5,
             "branchRootNode":4,
-            "branchLength": 0.38,
+            "branchLength": 0.40,
             "lenthFromBranchRootNode": 0.24,
-            "s": 0.632,
+            "s": 0.60,
             "type": "Wire"
         },
         {
             "number": 13,
             "branch": 5,
             "branchRootNode":4,
-            "branchLength": 0.38,
-            "lenthFromBranchRootNode": 0.37,
-            "s": 0.974,
+            "branchLength": 0.40,
+            "lenthFromBranchRootNode": 0.38,
+            "s": 0.95,
             "type": "LeafNode"
         }
     ]

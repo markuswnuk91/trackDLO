@@ -33,9 +33,9 @@
             "number": 4,
             "branch": 4,
             "branchRootNode":4,
-            "branchLength": 0.08,
+            "branchLength": 0.12,
             "lenthFromBranchRootNode": 0.03,
-            "s": 0.375,
+            "s": 0.25,
             "correspondingFixture": 5
         },
         {

@@ -434,6 +434,10 @@ def tabularizeResults(results):
     methods = list(set(correspondingMethods))
 
     for i, model in enumerate(models):
+        evaluationResults["translationalError"][model] = {}
+        evaluationResults["translationalStdDev"][model] = {}
+        evaluationResults["rotationalError"][model] = {}
+        evaluationResults["rotationalStdDev"][model] = {}
         for j, method in enumerate(methods):
             # gather all errors for the combination of model and method
             translationalIndices = [
@@ -442,11 +446,9 @@ def tabularizeResults(results):
                 if correspondingModels[index] == model
                 and correspondingMethods[index] == method
             ]
-            evaluationResults["translationalError"][model] = {}
             evaluationResults["translationalError"][model][method] = np.mean(
                 np.array(translationalGraspingErrors)[translationalIndices]
             )
-            evaluationResults["translationalStdDev"][model] = {}
             evaluationResults["translationalStdDev"][model][method] = np.std(
                 np.array(translationalGraspingErrors)[translationalIndices]
             )
@@ -457,28 +459,62 @@ def tabularizeResults(results):
                 if correspondingModels[index] == model
                 and correspondingMethods[index] == method
             ]
-            evaluationResults["rotationalError"][model] = {}
             evaluationResults["rotationalError"][model][method] = np.mean(
                 np.array(rotationalGraspingErrors)[rotationalIndices]
             )
-            evaluationResults["rotationalStdDev"][model] = {}
             evaluationResults["rotationalStdDev"][model][method] = np.std(
                 np.array(rotationalGraspingErrors)[rotationalIndices]
             )
 
-    #     f"""
-    #     \begin{tabular}{lccccccc}\toprule
-    # 	& & \multicolumn{2}{c}{\acs{CPD}} & \multicolumn{2}{c}{\acs{SPR}} & \multicolumn{2}{c}{\acs{KPR}}
-    # 	\\\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
-    # 	model		& $n_{\text{grasp}}$  & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ \\\midrule
-    # 	\acs{TCL}-0  & x & x & x & x & x& x& x  \\
-    # 	\acs{TCL}-1. & x & x & x & x & x& x& x  \\
-    # 	\acs{TCL}-2 	& x & x & x & x & x& x& x  \\
-    # 	\acs{TCL}-3  & x & x & x & x & x& x& x \\\bottomrule
+    # generate results
+
+    table = r"""
+        \begin{tabular}{lccccccc}\toprule	
+        & & \multicolumn{2}{c}{\acs{CPD}} & \multicolumn{2}{c}{\acs{SPR}} & \multicolumn{2}{c}{\acs{KPR}}
+        \\\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+        model		& $n_{\text{grasp}}$  & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ \\\midrule
+    """
+
+    translationalTabelResults = []
+    for model in models:
+        resultRow = []
+        for method in methods:
+            resultRow.append(evaluationResults["translationalError"][model][method])
+            resultRow.append(evaluationResults["translationalStdDev"][model][method])
+        translationalTabelResults.append(resultRow)
+
+    rotationalTableResults = []
+    for model in models:
+        resultRow = []
+        for method in methods:
+            resultRow.append(evaluationResults["rotationalError"][model][method])
+            resultRow.append(evaluationResults["rotationalStdDev"][model][method])
+        rotationalTableResults.append(resultRow)
+
+    for model, tableRow in zip(models, translationalTabelResults):
+        modelID = eval.getModelID(model)
+        formatted_table_row = [format(r, ".2f") for r in tableRow]
+        table += f"\t{modelID} & {' & '.join(map(str, formatted_table_row))} \\\\\n"
+
+    table += r"""\end{tabular}"""
+
+    print(table)
+    #     """"
+    # table = r"""
+    # \begin{tabular}{lccccccc}\toprule \n
+    # & & \multicolumn{2}{c}{\acs{CPD}} & \multicolumn{2}{c}{\acs{SPR}} & \multicolumn{2}{c}{\acs{KPR}}
+    # \\\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
+    # model		& $n_{\text{grasp}}$  & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ \\\midrule
+    # \acs{TCL}-0  & x & x & x & x & x& x& x  \\
+    # \acs{TCL}-1. & x & x & x & x & x& x& x  \\
+    # \acs{TCL}-2 	& x & x & x & x & x& x& x  \\
+    # \acs{TCL}-3  & x & x & x & x & x& x& x \\\bottomrule
     # \end{tabular}
-    #     latex_table_column = f"""
-    #             ${translationalErrorResults['model']}$ & ${translationalErrorResults["model"]['n_config']}$ & ${runtimeResults['t_preprocessing']:.2f}$ & ${runtimeResults['t_l1_skel']:.2f}$ & ${runtimeResults['t_som']:.2f}$ & ${runtimeResults['t_mst']:.2f}$ & ${runtimeResults['t_corresp']:.2f}$ & ${runtimeResults['t_ik']:.2f}$ & $\\mathbf{{{runtimeResults['t_total']:.2f}}}$ \\\\
-    #             """"
+    # """
+
+    # # latex_table_column = f"""
+    #         ${translationalErrorResults['model']}$ & ${translationalErrorResults["model"]['n_config']}$ & ${runtimeResults['t_preprocessing']:.2f}$ & ${runtimeResults['t_l1_skel']:.2f}$ & ${runtimeResults['t_som']:.2f}$ & ${runtimeResults['t_mst']:.2f}$ & ${runtimeResults['t_corresp']:.2f}$ & ${runtimeResults['t_ik']:.2f}$ & $\\mathbf{{{runtimeResults['t_total']:.2f}}}$ \\\\
+    # """"
 
     # translationalErrorResult["model"]["method"]
 

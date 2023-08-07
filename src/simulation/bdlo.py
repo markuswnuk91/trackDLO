@@ -43,13 +43,17 @@ class BDLOTopology(topologyModel):
         defaultTorsionalStiffness=1,
         defaultBendingDampingCoeff=0.1,
         defaultTorsionalDampingCoeff=0.1,
+        verbose=None,
         *args,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
+        self.verbose = False if verbose is None else verbose
+
         if branchSpecs is None:
-            warn("No branch specifications provided. Using default values.")
+            if self.verbose:
+                warn("No branch specifications provided. Using default values.")
             self.branchSpecs = [{}] * len(self.branches)
         else:
             self.branchSpecs = branchSpecs
@@ -57,31 +61,34 @@ class BDLOTopology(topologyModel):
         # make sure specification contains all necessary information
         for i, branchSpec in enumerate(self.branchSpecs):
             if "radius" not in branchSpec:
-                warn(
-                    "Expected the branch radius to be specified in the branch specification, but specification has no parameter radius for branch {}. Assuming default value for radius.".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "Expected the branch radius to be specified in the branch specification, but specification has no parameter radius for branch {}. Assuming default value for radius.".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["radius"] = defaultRadius
                 self.branchSpecs[i] = newSpec
 
             if "density" not in branchSpec:
-                warn(
-                    "Expected the branch radius to be specified in the branch specification, but specification has no parameter radius for branch {}. Assuming default value for density.".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "Expected the branch denisty to be specified in the branch specification, but specification has no parameter density for branch {}. Assuming default value of for density ({} kg/m^3).".format(
+                            i, defaultDensity
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["density"] = defaultDensity
                 self.branchSpecs[i] = newSpec
 
             if "numSegments" not in branchSpec:
-                warn(
-                    "Expected the desired number of segments to be specified in the branch specification, but specification has no parameter numSegments for branch {}.".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "Expected the desired number of segments to be specified in the branch specification, but specification has no parameter numSegments for branch {}.".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["numSegments"] = int(
                     math.ceil(
@@ -93,61 +100,67 @@ class BDLOTopology(topologyModel):
                 self.branchSpecs[i] = newSpec
 
             if "color" not in branchSpec:
-                warn(
-                    "No color information given for branch {} using default color blue ([0,0,1]).".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No color information given for branch {} using default color blue ([0,0,1]).".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["color"] = defaultColor
                 self.branchSpecs[i] = newSpec
 
             if "bendingStiffness" not in branchSpec:
-                warn(
-                    "No bending stiffness information given for branch {} using default stiffness (1 N/rad).".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No bending stiffness information given for branch {} using default stiffness (1 N/rad).".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["bendingStiffness"] = defaultBendingStiffness
                 self.branchSpecs[i] = newSpec
 
             if "torsionalStiffness" not in branchSpec:
-                warn(
-                    "No torsional stiffness information given for branch {} using default stiffness (1 N/rad).".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No torsional stiffness information given for branch {} using default stiffness (1 N/rad).".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["torsionalStiffness"] = defaultTorsionalStiffness
                 self.branchSpecs[i] = newSpec
 
             if "bendingDampingCoeffs" not in branchSpec:
-                warn(
-                    "No bending damping coefficient information given for branch {} using default stiffness (0.1 N/rad).".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No bending damping coefficient information given for branch {} using default stiffness (0.1 N/rad).".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["bendingDampingCoeffs"] = defaultBendingDampingCoeff
                 self.branchSpecs[i] = newSpec
 
             if "torsionalDampingCoeffs" not in branchSpec:
-                warn(
-                    "No torsional damping coefficient information given for branch {} using default stiffness (0.1 N/rad).".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No torsional damping coefficient information given for branch {} using default stiffness (0.1 N/rad).".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
                 newSpec["torsionalDampingCoeffs"] = defaultTorsionalDampingCoeff
                 self.branchSpecs[i] = newSpec
 
             if "rootJointRestPositions" not in branchSpec:
-                warn(
-                    "No rootJointRestPositions information given for branch {} using default rest position.".format(
-                        i
+                if self.verbose:
+                    warn(
+                        "No rootJointRestPositions information given for branch {} using default rest position.".format(
+                            i
+                        )
                     )
-                )
                 newSpec = self.branchSpecs[i].copy()
 
                 if self.branches[i] == self.rootBranch:
@@ -402,6 +415,9 @@ class BranchedDeformableLinearObject(BDLOTopology):
             branchRootDofIndices.append(brachRootJoint.getIndexInSkeleton(i))
         return np.array(branchRootDofIndices)
 
+    def setGeneralizedCoordinates(self, q):
+        self.skel.setPositions(q)
+
     def setBranchRootDof(self, branchIndex, dofIndex, dofValue):
         """sets a root Dof of a branch to the specified value
 
@@ -421,6 +437,33 @@ class BranchedDeformableLinearObject(BDLOTopology):
 
     def _getBodyNodeIndicesFromBranch(self, branch):
         return branch.getBranchInfo()["correspondingBodyNodeIndices"]
+
+    def getJointLocalCoordinatesFromBranch(self, branchIndex):
+        branchLength = self.branches[branchIndex].getBranchInfo()["length"]
+        segmentLengths = self.branches[branchIndex].getBranchInfo()["segmentLengths"]
+        if self.getBranch(branchIndex) == self.rootBranch:
+            segmentLengths = segmentLengths[::-1]
+        localCoordinates = np.insert(
+            np.cumsum(np.array(segmentLengths)) / branchLength, 0, 0
+        )
+        return localCoordinates
+
+    # cartesian to local space conversion functions
+    def getBodyNodeCenterLocalCoordinates(self, bodyNodeIndex):
+        correspondingBranchIndex = self.getBranchCorrespondanceForBodyNode(
+            bodyNodeIndex
+        )
+        SJoint = self.getJointLocalCoordinatesFromBranch(correspondingBranchIndex)
+        bodyNodeIndicesInBranch = self.getBranch(
+            correspondingBranchIndex
+        ).getBranchInfo()["correspondingBodyNodeIndices"]
+        indexInBranch = np.where(np.array(bodyNodeIndicesInBranch) == bodyNodeIndex)[0][
+            0
+        ]
+        SCenter = SJoint[:-1] + np.diff(SJoint) / 2
+        if self.getBranch(correspondingBranchIndex) == self.rootBranch:
+            SCenter = SCenter[::-1]
+        return SCenter[indexInBranch]
 
     def getCartesianJointPositions(self):
         """returns the cartesian positions of all joints (including start and end joint)"""
@@ -457,13 +500,22 @@ class BranchedDeformableLinearObject(BDLOTopology):
             cartesianJointPositions.append(childJointPosition)
         return np.array(cartesianJointPositions)
 
-    def getCartesianBodyCenterPositions(self):
+    def getCartesianBodyCenterPositions(self, returnBranchLocalCoordinates=False):
         cartesianBodyCenterPositions = []
+        branchCorrespondance = []
+        S = []
         for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
             cartesianBodyCenterPositions.append(
                 self.skel.getBodyNode(bodyNodeIndex).getTransform().translation()
             )
-        return np.array(cartesianBodyCenterPositions)
+            branchCorrespondance.append(
+                self.getBranchCorrespondanceForBodyNode(bodyNodeIndex)
+            )
+            S.append(self.getBodyNodeCenterLocalCoordinates(bodyNodeIndex))
+        if returnBranchLocalCoordinates:
+            return np.array(cartesianBodyCenterPositions), branchCorrespondance, S
+        else:
+            return np.array(cartesianBodyCenterPositions)
 
     # correspondance functions
     def getBranchCorrespondanceForBodyNode(self, bodyNodeIndex):
@@ -478,7 +530,9 @@ class BranchedDeformableLinearObject(BDLOTopology):
         return correspondingBranches[0]
 
     # custom functions for plotting
-    def getAdjacentPointPairs(self):
+    def getAdjacentPointPairs(self, q=None):
+        if q is not None:
+            self.setGeneralizedCoordinates(q)
         pointPairs = []
         for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
             jointPositions = self.getCartesianJointPositionsForBodyNode(bodyNodeIndex)
@@ -565,16 +619,6 @@ class BranchedDeformableLinearObject(BDLOTopology):
         # reverse direction to go to end of segment
         relativeTransformToParentJoint[:3, 3] = -relativeTransformToParentJoint[:3, 3]
         return (bodyNodeTransform @ relativeTransformToParentJoint)[:3, 3]
-
-    def getJointLocalCoordinatesFromBranch(self, branchIndex):
-        branchLength = self.branches[branchIndex].getBranchInfo()["length"]
-        segmentLengths = self.branches[branchIndex].getBranchInfo()["segmentLengths"]
-        if self.getBranch(branchIndex) == self.rootBranch:
-            segmentLengths = segmentLengths[::-1]
-        localCoordinates = np.insert(
-            np.cumsum(np.array(segmentLengths)) / branchLength, 0, 0
-        )
-        return localCoordinates
 
     def getBodyNodeIndexFromBranchLocalCoodinate(self, branchIndex: int, s: float):
         """returns the bodyNode index corresponding to the local coordinate running along a branch. Local coordinate runs from branch startNode to branch end node, except for rootBranch where it runs from end node to start node, because rootBranch starts with a leafnode.
@@ -722,22 +766,26 @@ class BranchedDeformableLinearObject(BDLOTopology):
         offset = self.getOffsetInBodyNodeCoordinatesFromBranchLocalCoordiate(
             branchIndex, correspondingBodyNode, s
         )
-        bodyNode = self.skel.getBodyNode(correspondingBodyNode)
-        jacobian = bodyNode.getWorldJacobian(offset)
-        jacobianTrans = jacobian[3:6, :]
-        jacobianRot = jacobian[:3, :]
-        transformToWorld = np.linalg.inv(
-            self.skel.getBodyNode(0).getWorldTransform().rotation()
-        )
-        jacobian = np.vstack((jacobianRot, transformToWorld @ jacobianTrans))
+        # bodyNode = self.skel.getBodyNode(correspondingBodyNode)
+        # jacobian = bodyNode.getWorldJacobian(offset)
+        # jacobianTrans = jacobian[3:6, :]
+        # jacobianRot = jacobian[:3, :]
+        # # transformToWorld = np.linalg.inv(
+        # #     self.skel.getBodyNode(branchIndex).getWorldTransform().rotation()
+        # # )
+        # # jacobian = np.vstack(
+        # #     (transformToWorld @ jacobianRot, transformToWorld @ jacobianTrans)
+        # # )
 
-        indexPointer = 0
-        paddedJacobian = np.zeros((6, self.skel.getNumDofs()))
-        for i in range(0, self.skel.getNumDofs()):
-            if bodyNode.dependsOn(i):
-                paddedJacobian[:, i] = jacobian[:, indexPointer]
-                indexPointer += 1
-        return paddedJacobian
+        # indexPointer = 0
+        # paddedJacobian = np.zeros((6, self.skel.getNumDofs()))
+        # for i in range(0, self.skel.getNumDofs()):
+        #     if bodyNode.dependsOn(i):
+        #         paddedJacobian[:, i] = jacobian[:, indexPointer]
+        #         indexPointer += 1
+        return self.skel.getWorldJacobian(
+            self.skel.getBodyNode(correspondingBodyNode), offset
+        )
 
     def getLeafNodeCartesianPositions(self):
         """returns the cartesian positions for all leafnodes"""
@@ -760,6 +808,36 @@ class BranchedDeformableLinearObject(BDLOTopology):
 
     def getGeneralizedCoordinates(self):
         return self.skel.getPositions()
+
+    def computeForwardKinematics(
+        self, q, locations="center", returnBranchLocalCoordinates=True
+    ):
+        self.skel.setPositions(q)
+
+        if locations == "center":
+            return self.getCartesianBodyCenterPositions(returnBranchLocalCoordinates)
+        elif locations == "joint":
+            return self.getCartesianJointPositions()
+        else:
+            raise NotImplementedError
+
+    def computeForwardKinematicsFromBranchLocalCoordinates(
+        self, q, branchLocalCoordinates
+    ):
+        """computes the forward kinematics for given joint angel vector q at locations specified by a list of branch local coordinates
+
+        Args:
+            q (Nx1 np.array): generalized coordinates of the skeleton
+            branchLocalCoordinates (list of tuple): branch local coordinates as tuples of (branchIndex, s)
+        """
+        self.setGeneralizedCoordinates(q)
+        X = []
+        for branchLocalCoordinate in branchLocalCoordinates:
+            x = self.getCartesianPositionFromBranchLocalCoordinate(
+                branchLocalCoordinate[0], branchLocalCoordinate[1]
+            )
+            X.append(x)
+        return np.array(X)
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

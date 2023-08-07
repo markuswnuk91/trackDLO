@@ -1,16 +1,18 @@
 {    
     "dataSetPaths": [
-        "data/darus_data_download/data/20230518_roboticwireharnessmounting/20230518_RoboticWireHarnessMounting/20230518_170955_YShape/",
-        "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/",
-        "data/darus_data_download/data/20230517_093927_manipulationsequence_manual_labeled_yshape/",
-        "data/darus_data_download/data/20230517_094256_manipulationsequence_manual_labeled_partial/",
-        "data/darus_data_download/data/20230517_094727_manipulationsequence_manual_labeled_arena/"
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_130903_modelY/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_131545_modelY/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_154903_modelY/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_140014_arena/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_141025_arena/",
+        "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_142058_arena/"
     ],
-    "dataSetToLoad": 2,
-    "initialFrame": 0,
-    "finalFrame": 200,
-    "frameStep": 5,
+    "dataSetsToLoad": [3,4,5],
+    "frameForInitialization": 0,
+    "frameForStartingExperiments": 0,
+    "frameStep":1,
     "savePaths": ["data/eval/tracking/"],
+    "registrationMethodsToEvaluate": ["cpd","spr","krcpd","krcpd4BDLO"],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -26,7 +28,24 @@
             "vMin" : 0,
             "vMax" : 1
         },
-        
+        "hsvPassThroughFilters" : [
+            {
+                "hueMin": 159,
+                "hueMax": 168,
+                "saturationMin": 107,
+                "saturationMax": 131,
+                "valueMin": 137,
+                "valueMax": 255
+            },
+            {
+                "hueMin": 94,
+                "hueMax": 110,
+                "saturationMin": 119,
+                "saturationMax": 163,
+                "valueMin": 224,
+                "valueMax": 255
+            }
+        ],
         "cameraCoordinateBoundingBoxParameters" : {
             "xMin" : -1,
             "xMax" : 1,
@@ -81,20 +100,20 @@
     },
 
     "cpdParameters" : {
-        "max_iterations":1,
+        "max_iterations":10,
         "alpha": 1, 
-        "beta": 2,
-        "normalize": 1
+        "beta": 0.5,
+        "normalize": 0
     },
     "sprParameters" : {
-        "max_iterations":1,
-        "tauFactor": 3,
-        "lambdaFactor": 100,
-        "beta": 2,
-        "knn":5,
+        "max_iterations":10,
+        "tauFactor": 100,
+        "lambdaFactor": 1,
+        "beta": 0.5,
+        "knn":7,
         "tauAnnealing":0.9,
         "lambdaAnnealing":0.9,
-        "normalize": 1
+        "normalize": 0
     },
     "kprParameters" : {
         "max_iterations":1,
@@ -105,7 +124,17 @@
         "normalize": 1
     },
     "krcpdParameters" : {
-        "max_iterations":1,
+        "max_iterations":10,
+        "alpha": 1, 
+        "beta": 0.5,
+        "ik_iterations":10,
+        "damping":8,
+        "dampingAnnealing":1,
+        "minDampingFactor": 1,
+        "normalize": 0
+    },
+    "krcpd4BDLOParameters" : {
+        "max_iterations":10,
         "alpha": 1, 
         "beta": 0.5,
         "ik_iterations":10,

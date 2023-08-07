@@ -110,3 +110,18 @@ class ImageProcessing(DataHandler):
         for mask in masks:
             resultingMask = cv2.bitwise_and(resultingMask, mask)
         return resultingMask
+
+    def combineMasks_OR(self, masks: list):
+        """combines masks by overlaying then, the resulting mask only contains parts wich are in both masks
+
+        Args:
+            masks (list): list of masks that should be combined
+
+        Returns:
+            resultingMask(np.array): resulting mask
+        """
+        (h, w) = masks[0].shape
+        resultingMask = masks[0]
+        for mask in masks:
+            resultingMask = cv2.bitwise_or(resultingMask, mask)
+        return resultingMask

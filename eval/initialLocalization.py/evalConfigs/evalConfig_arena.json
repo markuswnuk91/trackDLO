@@ -1,19 +1,17 @@
 {    
     "dataSetPaths": [
-        "data/darus_data_download/data/20230518_roboticwireharnessmounting/20230518_RoboticWireHarnessMounting/20230518_170955_YShape/",
-        "data/darus_data_download/data/20230517_093521_manipulationsequence_manual_labeled_singledlo/20230517_093521_ManipulationSequence_manual_labeled_SingleDLO/",
-        "data/darus_data_download/data/202230603_Configurations_mounted/20230603_134040_partial/"
-
+        "data/darus_data_download/data/202230603_Configurations_mounted/20230603_143937_modelY/",
+        "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/"
     ],
-    "dataSetsToLoad": [2],
-    "filesToLoad": [0],
+    "dataSetToLoad": 1,
+    "resultFolderPath":"data/eval/initialLocalization/",
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
-            "hueMax": 15,
-            "saturationMin": 150,
-            "saturationMax": 250,
-            "valueMin": 0,
+            "hueMax": 10,
+            "saturationMin": 180,
+            "saturationMax": 255,
+            "valueMin": 200,
             "valueMax": 255
         },
         "roiFilterParameters" : {
@@ -54,21 +52,42 @@
             "xMax" : 0.63,
             "yMin" : -0.5,
             "yMax" : 0.5,
-            "zMin" : 0.3,
+            "zMin" : 0.25,
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 5
+            "nthElement" : 1
         }
     },
-    "somParameters" : {
-        "numSeedPoints": 800,
-        "alpha": 0.9,
-        "alphaAnnealing": 0.95,
-        "sigma2": 0.3,
-        "sigma2Min": 0.008,
-        "sigma2Annealing": 0.95,
-        "method": "kernel",
-        "max_iterations": 100
+    "modelGeneration":{
+        "numSegments": 30
+    },
+    "topologyExtraction":{
+        "somParameters" : {
+            "numSeedPoints": 150,
+            "alpha": 0.9,
+            "alphaAnnealing": 1,
+            "sigma2": 0.3,
+            "sigma2Min": 0.001,
+            "sigma2Annealing": 0.87,
+            "method": "kernel",
+            "max_iterations": 30
+        },
+        "l1Parameters" : {
+            "numSeedPoints": 800,
+            "h": 0.03,
+            "hAnnealing": 0.8,
+            "hMin": 0.01,
+            "mu": 0.35,
+            "max_iterations": 10
+        },
+        "pruningThreshold": 0.03
+    },
+    "localization":{
+        "numSamples": 10,
+        "numIterations": 100,
+        "verbose": 0,
+        "method": "IK",
+        "jacobianDamping":1
     }
 }

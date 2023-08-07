@@ -6,6 +6,7 @@ from warnings import warn
 from scipy.spatial import distance_matrix
 from scipy.sparse.csgraph import shortest_path
 from sklearn import preprocessing
+import time
 
 try:
     sys.path.append(os.getcwd().replace("/src/localization/topologyExtraction", ""))
@@ -82,6 +83,7 @@ class TopologyExtraction(object):
         self.reducedPointSetsFilter = []
         self.extractedTopology = None
         self.extractedFeatureMatrix = None
+        self.runTimes = {}
 
         if somParameters is None:
             self.somParameters = {
@@ -140,6 +142,7 @@ class TopologyExtraction(object):
         return self.extractedTopology
 
     def determineGeodesicDistance(self, reducedPointSet, densePointSet):
+        runTimeGeodesicDistance_start = time.time()
         combinedPointSet = np.vstack((reducedPointSet, densePointSet))
         AdjMinSpan = minimalSpanningTree(
             distance_matrix(combinedPointSet, combinedPointSet)
@@ -154,9 +157,14 @@ class TopologyExtraction(object):
             indices=list(range(0, len(reducedPointSet))),
         )
         pathDistanceMatrix = pathDistanceMatrix[:, : len(reducedPointSet)]
+        runTimeGeodesicDistance_end = time.time()
+        self.runTimes["geodesicDistance"] = (
+            runTimeGeodesicDistance_end - runTimeGeodesicDistance_start
+        )
         return pathDistanceMatrix
 
     def extractTopology(self, reducedPointSet, densePointSet=None, method="combined"):
+        featureMatrixExtractionRuntime_start = time.time()
         if method == "geodesic":
             if densePointSet is None:
                 densePointSet = self.Y
@@ -195,6 +203,8 @@ class TopologyExtraction(object):
             )
         else:
             raise NotImplementedError
+        featureMatrixExtractionRuntime_end = time.time()
+        minimalSpanningTreeRuntime_start = time.time()
         extractedTopology = MinimalSpanningTreeTopology(
             **{
                 "X": reducedPointSet,
@@ -202,6 +212,17 @@ class TopologyExtraction(object):
             },
         )
         self.extractedTopology = extractedTopology
+        minimalSpanningTreeRuntime_end = time.time()
+
+        self.runTimes["featureExtraction"] = (
+            featureMatrixExtractionRuntime_end - featureMatrixExtractionRuntime_start
+        )
+        self.runTimes["minimalSpanningTree"] = (
+            minimalSpanningTreeRuntime_end - minimalSpanningTreeRuntime_start
+        )
+        self.runTimes["topologyExtraction"] = (
+            minimalSpanningTreeRuntime_end - featureMatrixExtractionRuntime_start
+        )
         return extractedTopology
 
     def reducePointSetSOM(
@@ -332,5 +353,8 @@ class TopologyExtraction(object):
             tuple(item) for item in map(sorted, tuplesOfPruningIndices)
         }
         unqiquePruningIndices = list(map(list, zip(*uniqueTuplesOfPruningIndices)))
-        prunedPointSet = np.delete(pointSet, unqiquePruningIndices[0], axis=0)
+        if len(unqiquePruningIndices) > 0:
+            prunedPointSet = np.delete(pointSet, unqiquePruningIndices[0], axis=0)
+        else:
+            prunedPointSet = pointSet
         return prunedPointSet

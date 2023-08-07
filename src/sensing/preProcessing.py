@@ -21,6 +21,7 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         hsvFilterParameters=None,
         roiFilterParameters=None,
         boundingBoxParameters=None,
+        hsvPassThroughFilters=None,
         *args,
         **kwargs
     ):
@@ -32,6 +33,7 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
             if calibrationParameters is None
             else calibrationParameters
         )
+
         self.cameraParameters = (
             self.loadCameraParameters("cameraParameters.json")
             if cameraParameters is None
@@ -51,6 +53,12 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
             self.getBoundingBoxDefaultValues()
             if boundingBoxParameters is None
             else boundingBoxParameters
+        )
+
+        self.hsvPassThroughFilters = (
+            self.getDefaultPassThroughFilters_HSV()
+            if hsvPassThroughFilters is None
+            else hsvPassThroughFilters
         )
 
     def getFilterDefaultValues_HSV(self):
@@ -78,6 +86,27 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
             "zMax": 2.5,
         }
         return boundingBoxParameters
+
+    def getDefaultPassThroughFilters_HSV(self):
+        hsvPassThroughFilters = [
+            {
+                "hueMin": 159,
+                "hueMax": 168,
+                "saturationMin": 107,
+                "saturationMax": 131,
+                "valueMin": 137,
+                "valueMax": 255,
+            },
+            {
+                "hueMin": 94,
+                "hueMax": 110,
+                "saturationMin": 119,
+                "saturationMax": 163,
+                "valueMin": 224,
+                "valueMax": 255,
+            },
+        ]
+        return hsvPassThroughFilters
 
     def getParametersFromDict_HSV(self, parameterDict):
         """extracts the filter parameters for a HSV filter from a parameter dict"""
@@ -113,13 +142,17 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         qmatrix: np.ndarray = None,
         hsvFilterParameters: dict = None,
         roiFilterParameters: dict = None,
+        hsvPassThroughFilters: list = None,
     ):
         if hsvFilterParameters is None:
             hsvFilterParameters = self.hsvFilterParameters
         if roiFilterParameters is None:
             roiFilterParametes = self.roiFilterParameters
+        if hsvPassThroughFilters is None:
+            hsvPassThroughFilters = self.hsvPassThroughFilters
         if qmatrix is None:
             qmatrix = self.cameraParameters["qmatrix"]
+
         # Color Filter
         (
             hueMin,
@@ -132,10 +165,39 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         maskFilter_Color = self.getMaskFromRGB_applyHSVFilter(
             rgbImage, hueMin, hueMax, saturationMin, saturationMax, valueMin, valueMax
         )
+
+        passThroughMasks = []
+        # passThroughFilter
+        for passThroughFilterParameters in hsvPassThroughFilters:
+            (
+                hueMin,
+                hueMax,
+                saturationMin,
+                saturationMax,
+                valueMin,
+                valueMax,
+            ) = self.getParametersFromDict_HSV(passThroughFilterParameters)
+            maskFilter_PassThrough = self.getMaskFromRGB_applyHSVFilter(
+                rgbImage,
+                hueMin,
+                hueMax,
+                saturationMin,
+                saturationMax,
+                valueMin,
+                valueMax,
+            )
+            passThroughMasks.append(maskFilter_PassThrough)
         # ROI Filter
         (uMin, uMax, vMin, vMax) = self.getParametersFromDict_ROI(roiFilterParametes)
         maskFilter_ROI = self.getMaskFromRGB_applyROI(rgbImage, uMin, uMax, vMin, vMax)
-        combinedMask = self.combineMasks_AND([maskFilter_Color, maskFilter_ROI])
+
+        # combine color masks
+        colorMasks = passThroughMasks
+        colorMasks.insert(0, maskFilter_Color)
+        combinedColorMask = self.combineMasks_OR(colorMasks)
+
+        # add ROI Mask
+        combinedMask = self.combineMasks_AND([combinedColorMask, maskFilter_ROI])
         # PointCloud Generation
         points, colors = self.calculatePointCloud(
             rgbImage, disparityMap, qmatrix, combinedMask

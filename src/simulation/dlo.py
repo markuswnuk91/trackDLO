@@ -45,6 +45,7 @@ class DeformableLinearObject(object):
         collidable=None,
         adjacentBodyCheck=None,
         enableSelfCollisionCheck: bool = None,
+        verbose=None,
         *args,
         **kwargs,
     ):
@@ -83,6 +84,7 @@ class DeformableLinearObject(object):
         self.enableSelfCollisionCheck = (
             False if enableSelfCollisionCheck is None else enableSelfCollisionCheck
         )
+        self.verbose = False if verbose is None else verbose
 
         self.segmentLength = self.length / self.numSegments
         self.segmentLengths = []
@@ -130,7 +132,8 @@ class DeformableLinearObject(object):
         # else:
         #     self.skel.disableSelfCollisionCheck()
         self.skel.setSelfCollisionCheck(self.enableSelfCollisionCheck)
-        print("Succesfully created Skeleton: " + self.name)
+        if self.verbose:
+            print("Successfully created Skeleton: " + self.name)
 
     def makeRootBody(
         self,

@@ -26,7 +26,24 @@
             "vMin" : 0,
             "vMax" : 1
         },
-        
+        "hsvPassThroughFilters" : [
+            {
+                "hueMin": 159,
+                "hueMax": 168,
+                "saturationMin": 107,
+                "saturationMax": 131,
+                "valueMin": 137,
+                "valueMax": 255
+            },
+            {
+                "hueMin": 94,
+                "hueMax": 110,
+                "saturationMin": 119,
+                "saturationMax": 163,
+                "valueMin": 224,
+                "valueMax": 255
+            }
+        ],
         "cameraCoordinateBoundingBoxParameters" : {
             "xMin" : -1,
             "xMax" : 1,
@@ -84,17 +101,18 @@
         "max_iterations":1,
         "alpha": 1, 
         "beta": 2,
-        "normalize": 1
+        "mu": 0.1,
+        "normalize": 0
     },
     "sprParameters" : {
         "max_iterations":1,
-        "tauFactor": 3,
-        "lambdaFactor": 100,
-        "beta": 2,
-        "knn":5,
+        "tauFactor": 10,
+        "lambdaFactor": 500,
+        "beta": 0.5,
+        "knn":7,
         "tauAnnealing":0.9,
         "lambdaAnnealing":0.9,
-        "normalize": 1
+        "normalize": 0
     },
     "kprParameters" : {
         "max_iterations":1,

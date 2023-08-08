@@ -30,10 +30,10 @@ except:
 global vis
 global result
 vis = True
-save = True
-loadInitialStateFromResult = False
+save = False
+loadInitialStateFromResult = True
 runExperiment = True
-registrationsToRun = ["cpd", "spr", "krcpd"]
+registrationsToRun = ["cpd", "spr", "krcpd", "krcpd4BDLO"]
 # setup evalulation class
 global eval
 pathToConfigFile = (
@@ -196,7 +196,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
                 dataSetPath,
             )
             Y = pointCloud[0]
-            cpd.Y = Y
+            cpd.setTargetPointCloud(Y)
             cpd.X = cpd.T.copy()
             # setup result callback
             logTargets = lambda: registrationResult["T"].append(cpd.T.copy())
@@ -229,7 +229,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
                 dataSetPath,
             )
             Y = pointCloud[0]
-            spr.Y = Y
+            spr.setTargetPointCloud(Y)
 
             # setup result callback
             logTargets = lambda: registrationResult["T"].append(spr.T.copy())
@@ -265,7 +265,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
                 dataSetPath,
             )
             Y = pointCloud[0]
-            kpr.Y = Y
+            kpr.setTargetPointCloud(Y)
             # setup result callback
             logTargets = lambda: registrationResult["T"].append(kpr.T.copy())
             registrationResult = setupRegistrationResultTemplate()
@@ -300,7 +300,7 @@ def runExperiment(dataSetPath, startFrame, endFrame):
                 dataSetPath,
             )
             Y = pointCloud[0]
-            krcpd.Y = Y
+            krcpd.setTargetPointCloud(Y)
             # setup result callback
             logTargets = lambda: registrationResult["T"].append(krcpd.T.copy())
             registrationResult = setupRegistrationResultTemplate()

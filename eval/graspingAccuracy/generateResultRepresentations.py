@@ -12,6 +12,14 @@ try:
 except:
     print("Imports for Grasping Accuracy Result Evaluation failed.")
     raise
+
+# script control parameters
+controlOptions = {
+    "printResultTables": True,
+    "plot2DGraspingError": False,
+    "scatterPlotGraspingErrors": False,
+}
+
 global eval
 pathToConfigFile = (
     os.path.dirname(os.path.abspath(__file__))
@@ -416,7 +424,12 @@ def visualizeGraspingError2D(graspingAccuracyResult):
     return
 
 
-def tabularizeResults(results):
+def tabularizeResults(
+    results,
+    methodsToPrint=["cpd", "spr", "krcpd4BDLO"],
+    modelsToPrint=["modelY", "partialWireHarness", "arenaWireHarness"],
+    resultScaleFactor=100,
+):
     (
         translationalGraspingErrors,
         rotationalGraspingErrors,
@@ -425,6 +438,7 @@ def tabularizeResults(results):
     ) = accumulateGraspingErrors(results)
 
     evaluationResults = {
+        "nGrasps": {},
         "translationalError": {},
         "translationalStdDev": {},
         "rotationalError": {},
@@ -434,6 +448,7 @@ def tabularizeResults(results):
     methods = list(set(correspondingMethods))
 
     for i, model in enumerate(models):
+        evaluationResults["nGrasps"][model] = correspondingModels.count(model)
         evaluationResults["translationalError"][model] = {}
         evaluationResults["translationalStdDev"][model] = {}
         evaluationResults["rotationalError"][model] = {}
@@ -466,108 +481,91 @@ def tabularizeResults(results):
                 np.array(rotationalGraspingErrors)[rotationalIndices]
             )
 
-    # generate results
-
-    table = r"""
-        \begin{tabular}{lccccccc}\toprule	
-        & & \multicolumn{2}{c}{\acs{CPD}} & \multicolumn{2}{c}{\acs{SPR}} & \multicolumn{2}{c}{\acs{KPR}}
-        \\\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
-        model		& $n_{\text{grasp}}$  & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ \\\midrule
+    # generate tabels
+    # translational
+    translational_tabel = r"""translational result table:
+    ----------Cut-------------
     """
-
     translationalTabelResults = []
-    for model in models:
+    for model in modelsToPrint:
         resultRow = []
-        for method in methods:
+        resultRow.append(evaluationResults["nGrasps"][model])
+        for method in methodsToPrint:
             resultRow.append(evaluationResults["translationalError"][model][method])
             resultRow.append(evaluationResults["translationalStdDev"][model][method])
         translationalTabelResults.append(resultRow)
-
+    for model, tableRow in zip(modelsToPrint, translationalTabelResults):
+        modelID = eval.getModelID(model)
+        nGrasps = tableRow[0]
+        formatted_table_row = [
+            format(r * resultScaleFactor, ".1f") for r in tableRow[1:]
+        ]
+        # Identify the lowest mean
+        min_mean = min(formatted_table_row[2::2], key=float)
+        min_std = min(formatted_table_row[3::2], key=float)
+        # Wrap the lowest mean with \textbf{}
+        formatted_table_row[2::2] = [
+            r if r != min_mean else f"\\textbf{{{r}}}"
+            for r in formatted_table_row[2::2]
+        ]
+        # Wrap the lowest std with \textbf{}
+        formatted_table_row[3::2] = [
+            r if r != min_std else f"\\textbf{{{r}}}" for r in formatted_table_row[3::2]
+        ]
+        translational_tabel += f"\t{modelID} & {nGrasps} & {' & '.join(map(str, formatted_table_row))}\\\\\n"
+    translational_tabel += r"""----------Cut-------------
+    """
+    # rotational
+    rotational_tabel = r"""rotational result table:
+    ----------Cut-------------
+    """
     rotationalTableResults = []
-    for model in models:
+    for model in modelsToPrint:
         resultRow = []
-        for method in methods:
+        resultRow.append(evaluationResults["nGrasps"][model])
+        for method in methodsToPrint:
             resultRow.append(evaluationResults["rotationalError"][model][method])
             resultRow.append(evaluationResults["rotationalStdDev"][model][method])
         rotationalTableResults.append(resultRow)
-
-    for model, tableRow in zip(models, translationalTabelResults):
+    for model, tableRow in zip(modelsToPrint, rotationalTableResults):
         modelID = eval.getModelID(model)
-        formatted_table_row = [format(r, ".2f") for r in tableRow]
-        table += f"\t{modelID} & {' & '.join(map(str, formatted_table_row))} \\\\\n"
-
-    table += r"""\end{tabular}"""
-
-    print(table)
-    #     """"
-    # table = r"""
-    # \begin{tabular}{lccccccc}\toprule \n
-    # & & \multicolumn{2}{c}{\acs{CPD}} & \multicolumn{2}{c}{\acs{SPR}} & \multicolumn{2}{c}{\acs{KPR}}
-    # \\\cmidrule(lr){3-4}\cmidrule(lr){5-6}\cmidrule(lr){7-8}
-    # model		& $n_{\text{grasp}}$  & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ & $\bar{e}_{t}$ & $\sigma_{e_t}$ \\\midrule
-    # \acs{TCL}-0  & x & x & x & x & x& x& x  \\
-    # \acs{TCL}-1. & x & x & x & x & x& x& x  \\
-    # \acs{TCL}-2 	& x & x & x & x & x& x& x  \\
-    # \acs{TCL}-3  & x & x & x & x & x& x& x \\\bottomrule
-    # \end{tabular}
-    # """
-
-    # # latex_table_column = f"""
-    #         ${translationalErrorResults['model']}$ & ${translationalErrorResults["model"]['n_config']}$ & ${runtimeResults['t_preprocessing']:.2f}$ & ${runtimeResults['t_l1_skel']:.2f}$ & ${runtimeResults['t_som']:.2f}$ & ${runtimeResults['t_mst']:.2f}$ & ${runtimeResults['t_corresp']:.2f}$ & ${runtimeResults['t_ik']:.2f}$ & $\\mathbf{{{runtimeResults['t_total']:.2f}}}$ \\\\
-    # """"
-
-    # translationalErrorResult["model"]["method"]
-
-    # meanRotationalError["model"]["method"]
-    #         translationalErrorResult = {
-    #         "model":
-    #     }
-
-    # for i, translationalGraspingError in enumerate(translationalGraspingErrors):
-    #     translationalErrorResult = {
-    #         "model":
-    #     }
-    # translationalErrorResults = [
-    #     {
-
-    #     }
-    # ]
-
-    # {
-    #     "model": eval.getModelID(
-    #         evaluationResults[0]["initializationResult"]["modelParameters"][
-    #             "modelInfo"
-    #         ]["name"]
-    #     ),
-    #     "n_grasps": sdf,
-    #     "t_preprocessing": 0.0,
-    #     "t_l1_skel": 0.0,
-    #     "t_som": 0.0,
-    #     "t_mst": 0.0,
-    #     "t_corresp": 0.0,
-    #     "t_ik": 0.0,
-    #     "t_total": 0.0,
-    # }
-
-    # latex_table_column = f"""
-    #         ${translationalErrorResults['model']}$ & ${translationalErrorResults["model"]['n_config']}$ & ${runtimeResults['t_preprocessing']:.2f}$ & ${runtimeResults['t_l1_skel']:.2f}$ & ${runtimeResults['t_som']:.2f}$ & ${runtimeResults['t_mst']:.2f}$ & ${runtimeResults['t_corresp']:.2f}$ & ${runtimeResults['t_ik']:.2f}$ & $\\mathbf{{{runtimeResults['t_total']:.2f}}}$ \\\\
-    #         """"
-
-    raise NotImplementedError
+        nGrasps = tableRow[0]
+        formatted_table_row = [format(r, ".1f") for r in tableRow[1:]]
+        # Identify the lowest mean
+        min_mean = min(formatted_table_row[2::2], key=float)
+        min_std = min(formatted_table_row[3::2], key=float)
+        # Wrap the lowest mean with \textbf{}
+        formatted_table_row[2::2] = [
+            r if r != min_mean else f"\\textbf{{{r}}}"
+            for r in formatted_table_row[2::2]
+        ]
+        # Wrap the lowest std with \textbf{}
+        formatted_table_row[3::2] = [
+            r if r != min_std else f"\\textbf{{{r}}}" for r in formatted_table_row[3::2]
+        ]
+        rotational_tabel += f"\t{modelID} & {nGrasps} & {' & '.join(map(str, formatted_table_row))}\\\\\n"
+    rotational_tabel += r"""----------Cut-------------
+    """
+    return translational_tabel, rotational_tabel
 
 
 if __name__ == "__main__":
     # load all results
     results = loadResults(resultRootFolderPath)
+    if controlOptions["printResultTables"]:
+        print(tabularizeResults(results)[0])
+        print(tabularizeResults(results)[1])
 
-    tabularizeResults(results)
-    visualizeGraspingError2D(
-        graspingAccuracyResult=results[0]["graspingAccuracyResults"][0]
-    )
+    if controlOptions["plot2DGraspingError"]:
+        for i, dataSet in dataSets:
+            for j, method in methods:
+        visualizeGraspingError2D(
+            graspingAccuracyResult=results[2]["graspingAccuracyResults"][2]
+        )
 
     # plot result representations
-    scatterPlotGraspingErrors(results)
-    # tabularize results
+    if controlOptions["scatterPlotGraspingErrors"]:
+        scatterPlotGraspingErrors(results)
 
     # save result representations
 

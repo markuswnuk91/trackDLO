@@ -248,3 +248,20 @@ class NonRigidRegistration(object):
     def setTargetPointCloud(self, Y):
         (self.M, _) = Y.shape
         self.Y = Y
+        self.reinitializeParameters()
+
+    def initializeParameters(self):
+        """
+        Placeholder for child classes.
+        """
+        raise NotImplementedError(
+            "Updating the source points should be defined in child classes."
+        )
+
+    def reinitializeParameters(self):
+        """
+        Placeholder for child classes.
+        """
+        raise NotImplementedError(
+            "Updating the source points should be defined in child classes."
+        )

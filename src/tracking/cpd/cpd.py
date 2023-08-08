@@ -106,7 +106,9 @@ class CoherentPointDrift(NonRigidRegistration):
                     beta
                 )
             )
+        self.initializeParameters(alpha, beta, low_rank, num_eig)
 
+    def initializeParameters(self, alpha=None, beta=None, low_rank=False, num_eig=100):
         self.alpha = 2 if alpha is None else alpha
         self.beta = 2 if beta is None else beta
         self.diff = np.inf
@@ -126,6 +128,14 @@ class CoherentPointDrift(NonRigidRegistration):
             self.inv_S = np.diag(1.0 / self.S)
             self.S = np.diag(self.S)
             self.E = 0.0
+
+    def reinitializeParameters(self):
+        self.initializeParameters(
+            alpha=self.alpha,
+            beta=self.beta,
+            low_rank=self.low_rank,
+            num_eig=self.num_eig,
+        )
 
     def isConverged(self):
         """

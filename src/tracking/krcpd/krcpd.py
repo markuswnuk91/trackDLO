@@ -29,15 +29,40 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         self.model = model
         self.qInit = qInit
         X = self.model.getPositions(self.qInit)
-        super().__init__(X=X, *args, **kwargs)
-
+        self.Xreg = X
         self.q = qInit
         self.Dof = len(self.q)
+        super().__init__(X=X, *args, **kwargs)
+        self.initializeKinematicRegularizationParameters(
+            damping=damping,
+            minDampingFactor=minDampingFactor,
+            dampingAnnealing=dampingAnnealing,
+            ik_iterations=ik_iterations,
+        )
+
+    def initializeKinematicRegularizationParameters(
+        self,
+        damping=None,
+        minDampingFactor=None,
+        dampingAnnealing=None,
+        ik_iterations=None,
+    ):
+        super().initializeParameters(self.alpha, self.beta)
         self.damping = 1 if damping is None else damping
         self.minDampingFactor = 1 if minDampingFactor is None else minDampingFactor
         self.dampingAnnealing = 0.97 if dampingAnnealing is None else dampingAnnealing
         self.ik_iterations = 1 if ik_iterations is None else ik_iterations
-        self.Xreg = self.X
+        return
+
+    def reinitializeParameters(self):
+        self.initializeParameters(alpha=self.alpha, beta=self.beta)
+        self.initializeKinematicRegularizationParameters(
+            damping=self.damping,
+            minDampingFactor=self.minDampingFactor,
+            dampingAnnealing=self.dampingAnnealing,
+            ik_iterations=self.ik_iterations,
+        )
+        return
 
     def estimateCorrespondance(self):
         """

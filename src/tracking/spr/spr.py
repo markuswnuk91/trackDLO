@@ -132,10 +132,28 @@ class StructurePreservedRegistration(NonRigidRegistration):
                     lambdaAnnealing
                 )
             )
+        self.initializeParameters(
+            tauFactor=tauFactor,
+            lambdaFactor=lambdaFactor,
+            beta=beta,
+            knn=knn,
+            tauAnnealing=tauAnnealing,
+            lambdaAnnealing=lambdaAnnealing,
+        )
 
+    def initializeParameters(
+        self,
+        tauFactor=None,
+        lambdaFactor=None,
+        beta=None,
+        knn=None,
+        tauAnnealing=None,
+        lambdaAnnealing=None,
+    ):
         self.tauFactor = 2 if tauFactor is None else tauFactor
         self.lambdaFactor = 2 if lambdaFactor is None else lambdaFactor
         self.beta = 2 if beta is None else beta
+        self.knn = 7 if knn is None else knn
         self.tauAnnealing = 0.97 if tauAnnealing is None else tauAnnealing
         self.lambdaAnnealing = 0.97 if lambdaAnnealing is None else lambdaAnnealing
         self.diff = np.inf
@@ -150,6 +168,16 @@ class StructurePreservedRegistration(NonRigidRegistration):
         self.W = np.zeros((self.N, self.D))
         self.G = gaussian_kernel(self.X, self.beta)
         self.Phi = Mlle(self.X, knn, 2).getAlignmentMatrix()
+
+    def reinitializeParameters(self):
+        self.initializeParameters(
+            tauFactor=self.tauFactor,
+            lambdaFactor=self.lambdaFactor,
+            beta=self.beta,
+            knn=self.knn,
+            tauAnnealing=self.tauAnnealing,
+            lambdaAnnealing=self.lambdaAnnealing,
+        )
 
     def isConverged(self):
         """

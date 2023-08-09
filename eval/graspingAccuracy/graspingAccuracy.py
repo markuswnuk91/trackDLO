@@ -46,7 +46,7 @@ vis = {
 pathToConfigFile = (
     os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/evalConfig_partial.json"
 )
-evaluationDataFolderPath = "data/eval/graspingAccuracy/"
+evaluationDataFolderPath = "data/eval/graspingAccuracy/results/"
 logFileName = "graspingAccuracy.log"
 
 # configure logging

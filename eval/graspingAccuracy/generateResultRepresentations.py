@@ -15,8 +15,8 @@ except:
 
 # script control parameters
 controlOptions = {
-    "printResultTables": True,
-    "plot2DGraspingError": False,
+    "printResultTables": False,
+    "plot2DGraspingError": True,
     "scatterPlotGraspingErrors": False,
 }
 
@@ -27,8 +27,8 @@ pathToConfigFile = (
 )
 eval = GraspingAccuracyEvaluation(configFilePath=pathToConfigFile)
 
-resultRootFolderPath = eval.config["resultRootFolderPath"]
-resultFileName = eval.config["resultFileName"]
+resultRootFolderPath = "data/eval/graspingAccuracy/results"
+resultFileName = "result"
 
 
 def loadResults(resultRootFolderPath):
@@ -179,6 +179,11 @@ def visualizeGraspingError2D(graspingAccuracyResult):
     # parameters
     gripperWidth = 0.1
     fingerWidth = 0.3
+    method = graspingAccuracyResult["method"]
+    dataSetName = graspingAccuracyResult["dataSetPath"].split("/")[-2]
+    model = graspingAccuracyResult["trackingResult"]["registrationResults"][
+        "modelParameters"
+    ]["modelInfo"]["name"]
     frames = graspingAccuracyResult["predictedFrames"]
     dataSetPath = graspingAccuracyResult["dataSetPath"]
     rgbImages = []
@@ -413,14 +418,17 @@ def visualizeGraspingError2D(graspingAccuracyResult):
             predictionColor,
             5,
         )
-    for rgbImage in rgbImages:
-        fig = plt.figure(frameon=False)
-        # fig.set_size_inches(imageWitdthInInches, imageHeightInInches)
-        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
-        ax.set_axis_off()
-        fig.add_axes(ax)
-        ax.imshow(rgbImage, aspect="auto")
-    plt.show(block=True)
+    for i, rgbImage in enumerate(rgbImages):
+        savePath = eval.config["resultRootFolderPath"] + "/imgs/graspingResults/"
+        fileName = dataSetName + "_" + method + "_" "graspingPose_" + str(i)
+        eval.plotImageWithMatplotlib(
+            rgbImage=rgbImage,
+            show=False,
+            save=True,
+            savePath=savePath,
+            fileName=fileName,
+        )
+    plt.show(block=False)
     return
 
 
@@ -557,11 +565,13 @@ if __name__ == "__main__":
         print(tabularizeResults(results)[1])
 
     if controlOptions["plot2DGraspingError"]:
-        for i, dataSet in dataSets:
-            for j, method in methods:
-        visualizeGraspingError2D(
-            graspingAccuracyResult=results[2]["graspingAccuracyResults"][2]
-        )
+        for i, dataSetResult in enumerate(results):
+            for j, graspingAccuracyResult in enumerate(
+                dataSetResult["graspingAccuracyResults"]
+            ):
+                visualizeGraspingError2D(
+                    graspingAccuracyResult=results[i]["graspingAccuracyResults"][j]
+                )
 
     # plot result representations
     if controlOptions["scatterPlotGraspingErrors"]:

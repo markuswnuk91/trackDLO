@@ -1357,6 +1357,53 @@ class Evaluation(object):
             )
         plt.show(block=block)
 
+    def plotImageWithMatplotlib(
+        self,
+        rgbImage,
+        imageWitdthInInches=5,
+        imageHeightInInches=5,
+        grayScale=False,
+        show=True,
+        block=False,
+        save=False,
+        savePath=None,
+        fileName=None,
+        format="png",
+        dpi=100,
+    ):
+        savePath = "data/eval/imgs/" if savePath is None else savePath
+        fileName = (
+            self.dataHandler.generateIdentifier(MS=False) + "_img"
+            if fileName is None
+            else fileName
+        )
+        fig = plt.figure(frameon=False)
+        fig.set_size_inches(imageWitdthInInches, imageHeightInInches)
+        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
+        ax.set_axis_off()
+        fig.add_axes(ax)
+
+        if grayScale:
+            ax.imshow(
+                cv2.cvtColor(rgbImage, cv2.COLOR_RGB2GRAY), cmap="gray", aspect="auto"
+            )
+        else:
+            ax.imshow(rgbImage, cmap="gray", aspect="auto")
+        if save:
+            filePath = savePath + fileName
+            # create directory if it does not exist
+            if not os.path.exists(savePath):
+                os.makedirs(savePath)
+            plt.savefig(
+                filePath + "." + format,
+                format=format,
+                dpi=dpi,
+            )
+        if show:
+            plt.show(block=block)
+        else:
+            plt.close(fig)
+
     def plotTimeSeries(self, timeSeriesDataY, timeSeriesDataX=None, block=False):
         """Plots a time series of the given data
 

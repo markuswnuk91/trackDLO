@@ -3,6 +3,7 @@ import os
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.spatial.transform import Rotation as R
+import cv2
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation/graspingAccuracy", ""))
@@ -195,3 +196,177 @@ class GraspingAccuracyEvaluation(Evaluation):
             projectedGraspingAngularErrorsOnZInRad,
             projectedGraspingAngularErrorsOnZInGrad,
         )
+
+    # def drawGraspingPoses(
+    #     self,
+    #     rgbImage,
+    #     dataSetPath,
+    #     graspingPositions3D,
+    #     graspingAxes3D,
+    #     colors,
+    #     gripperWidth=0.1,
+    #     fingerWidth=0.3,
+    # ):
+    #     """draws grasp poses in an image
+
+    #     Args:
+    #         rgbImage (np.array): RGB-Image
+    #         dataSetPath (str): Path to the data set to obtain required information for inverse stereoprojection
+    #         graspPositions3D (_type_): _description_
+    #         graspAxes3D (_type_): _description_
+    #         colors (_type_): _description_
+    #         gripperWidth (float, optional): _description_. Defaults to 0.1.
+    #         fingerWidth (float, optional): _description_. Defaults to 0.3.
+    #     """
+    #     # reproject grasp positions
+    #     graspingPositions2D = eval.reprojectFrom3DRobotBase(
+    #         graspingPositions3D, dataSetPath
+    #     )
+    #     return rgbImage
+    def visualizeGraspingPoses2D(
+        self,
+        frame,
+        dataSetPath,
+        graspingPositions3D: np.array,
+        graspingAxes3D: np.array,
+        colors: list = None,
+        gipperWidth3D=0.1,
+        fingerWidth2D=0.5,
+        centerThickness=10,
+        lineThickness=5,
+        markerFill=-1,
+    ):
+        # reproject grasping positions in image
+        graspingPositions2D = self.reprojectFrom3DRobotBase(
+            graspingPositions3D, dataSetPath
+        )
+        # reproject grasping axes in image
+        graspingAxesStartPoints3D = (
+            graspingPositions3D - gipperWidth3D / 2 * graspingAxes3D
+        )
+        graspingAxesEndPoints3D = (
+            graspingPositions3D + gipperWidth3D / 2 * graspingAxes3D
+        )
+        graspingAxesStartPoints2D = self.reprojectFrom3DRobotBase(
+            graspingAxesStartPoints3D, dataSetPath
+        )
+        graspingAxesEndPoints2D = self.reprojectFrom3DRobotBase(
+            graspingAxesEndPoints3D, dataSetPath
+        )
+        # 2D grasping axes
+        graspingAxes2D = graspingAxesEndPoints2D - graspingAxesStartPoints2D
+
+        rgbImage, _ = self.getDataSet(frame, dataSetPath)
+
+        self.drawGraspingPoses2D(
+            rgbImage=rgbImage,
+            graspingPositions2D=graspingPositions2D,
+            graspingAxes2D=graspingAxes2D,
+            colors=colors,
+        )
+        return rgbImage
+
+    def drawGraspingPoses2D(
+        self,
+        rgbImage,
+        graspingPositions2D: np.array,
+        graspingAxes2D: np.array,
+        colors: list = None,
+        fingerWidth2D=0.5,
+        centerThickness=10,
+        lineThickness=5,
+        markerFill=-1,
+    ):
+        # ensure we have a 2D array
+        graspingPositions2D = graspingPositions2D.reshape(-1, 2)
+        graspingAxes2D = graspingAxes2D.reshape(-1, 2)
+
+        if len(colors) != len(graspingPositions2D):
+            raise ValueError(
+                "Expected same length for lists of grasping positions and colors"
+            )
+        colors = (
+            [[1, 0, 0] for _ in range(len(graspingPositions2D))]
+            if colors is None
+            else colors
+        )
+        # convert colors to open cv format
+        cvColors = []
+        for color in colors:
+            cvColors.append([value * 255 for value in color])
+        # compute orthogonal 2D gripper axis
+        gripperAxes2D = (np.array(([0, 1], [-1, 0])) @ graspingAxes2D.T).T
+        # compute start and end points for gripper
+        gripperStartPoints2D = np.around(
+            (graspingPositions2D - 0.5 * gripperAxes2D)
+        ).astype(int)
+        gripperEndPoints2D = np.around(
+            graspingPositions2D + 0.5 * gripperAxes2D
+        ).astype(int)
+        # compute start and end points for gripper fingers
+        gripperEndFingerStartPoints = np.around(
+            gripperEndPoints2D - 0.5 * fingerWidth2D * graspingAxes2D
+        ).astype(int)
+        gripperEndFingerEndPoints = np.around(
+            gripperEndPoints2D + 0.5 * fingerWidth2D * graspingAxes2D
+        ).astype(int)
+        gripperStartFingerStartPoints = np.around(
+            gripperStartPoints2D - 0.5 * fingerWidth2D * graspingAxes2D
+        ).astype(int)
+        gripperStartFingerEndPoints = np.around(
+            gripperStartPoints2D + 0.5 * fingerWidth2D * graspingAxes2D
+        ).astype(int)
+
+        # draw
+        for i, graspingPosition in enumerate(graspingPositions2D):
+            # grasping centers
+            rgbImage = cv2.circle(
+                rgbImage,
+                graspingPosition,
+                centerThickness,
+                cvColors[i],
+                markerFill,
+            )
+            # draw gripper axes
+            rgbImage = cv2.line(
+                rgbImage,
+                (
+                    gripperStartPoints2D[i][0],
+                    gripperStartPoints2D[i][1],
+                ),
+                (
+                    gripperEndPoints2D[i][0],
+                    gripperEndPoints2D[i][1],
+                ),
+                cvColors[i],
+                lineThickness,
+            )
+            # finger at end
+            rgbImage = cv2.line(
+                rgbImage,
+                (
+                    gripperEndFingerStartPoints[i][0],
+                    gripperEndFingerStartPoints[i][1],
+                ),
+                (
+                    gripperEndFingerEndPoints[i][0],
+                    gripperEndFingerEndPoints[i][1],
+                ),
+                cvColors[i],
+                lineThickness,
+            )
+            # finger at start
+            rgbImage = cv2.line(
+                rgbImage,
+                (
+                    gripperStartFingerStartPoints[i][0],
+                    gripperStartFingerStartPoints[i][1],
+                ),
+                (
+                    gripperStartFingerEndPoints[i][0],
+                    gripperStartFingerEndPoints[i][1],
+                ),
+                cvColors[i],
+                lineThickness,
+            )
+        return rgbImage

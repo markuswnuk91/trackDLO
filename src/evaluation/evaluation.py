@@ -902,7 +902,7 @@ class Evaluation(object):
                 )
         endFrame = (
             self.getNumImageSetsInDataSet(dataSetPath)
-            if endFrame is None or -1
+            if endFrame is None or endFrame == -1
             else endFrame
         )
         frameStep = 1 if frameStep is None else frameStep

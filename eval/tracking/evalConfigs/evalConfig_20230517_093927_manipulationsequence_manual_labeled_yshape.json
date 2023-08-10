@@ -1,6 +1,6 @@
 {   "frameForInitialization": 0,
     "initialFrame": 0,
-    "finalFrame": -1,
+    "finalFrame": 10,
     "frameStep" : 1,
     "preprocessingParameters": {
         "hsvFilterParameters" : {
@@ -97,12 +97,12 @@
     },
     "sprParameters" : {
         "max_iterations":1,
-        "tauFactor": 10,
-        "lambdaFactor": 500,
+        "tauFactor": 500,
+        "lambdaFactor": 1,
         "beta": 0.5,
         "knn":7,
-        "tauAnnealing":0.9,
-        "lambdaAnnealing":0.9,
+        "tauAnnealing":1,
+        "lambdaAnnealing":1,
         "normalize": 0
     },
     "kprParameters" : {

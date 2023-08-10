@@ -159,25 +159,22 @@ class StructurePreservedRegistration(NonRigidRegistration):
         self.diff = np.inf
         self.L = -np.inf
 
+        self.W = np.zeros((self.N, self.D))
+        self.G = gaussian_kernel(self.X, self.beta)
+        self.Phi = Mlle(self.X, knn, 2).getAlignmentMatrix()
+
+    def initializeCorrespondances(self):
         self.P = np.zeros((self.N, self.M))
         self.Pden = np.zeros((self.M))
         self.Pt1 = np.zeros((self.M,))
         self.P1 = np.zeros((self.N,))
         self.Np = 0
         self.PY = np.zeros((self.N, self.D))
-        self.W = np.zeros((self.N, self.D))
-        self.G = gaussian_kernel(self.X, self.beta)
-        self.Phi = Mlle(self.X, knn, 2).getAlignmentMatrix()
 
     def reinitializeParameters(self):
-        self.initializeParameters(
-            tauFactor=self.tauFactor,
-            lambdaFactor=self.lambdaFactor,
-            beta=self.beta,
-            knn=self.knn,
-            tauAnnealing=self.tauAnnealing,
-            lambdaAnnealing=self.lambdaAnnealing,
-        )
+        self.initializeCorrespondances()
+        self.estimateCorrespondance()
+        self.update_variance()
 
     def isConverged(self):
         """
@@ -213,32 +210,41 @@ class StructurePreservedRegistration(NonRigidRegistration):
         M-step: Calculate a new parameters of the registration.
         """
 
-        tauFactor = (self.tauAnnealing) ** (self.iteration) * self.tauFactor
-        lambdaFactor = (self.lambdaAnnealing) ** (self.iteration) * self.lambdaFactor
+        self.tauFactor = (self.tauAnnealing) ** (self.iteration) * self.tauFactor
+        self.lambdaFactor = (self.lambdaAnnealing) ** (
+            self.iteration
+        ) * self.lambdaFactor
 
         dP1 = np.diag(self.P1)
         A = (
             np.dot(dP1, self.G)
-            + lambdaFactor * self.sigma2 * np.eye(self.N)
-            + tauFactor * self.sigma2 * np.dot(self.Phi, self.G)
+            + self.lambdaFactor * self.sigma2 * np.eye(self.N)
+            + self.tauFactor * self.sigma2 * np.dot(self.Phi, self.G)
         )
         B = (
             self.PY
             - np.dot(dP1, self.X)
-            - tauFactor * self.sigma2 * np.dot(self.Phi, self.X)
+            - self.tauFactor * self.sigma2 * np.dot(self.Phi, self.X)
         )
         self.W = np.linalg.solve(A, B)
 
         # set the new targets
         self.computeTargets()
+        self.update_variance()
+
+    def update_variance(self):
+        """
+        Update the variance of the mixture model using the new estimate of the deformable transformation.
+        See the update rule for sigma2 in Eq. 23 of of https://arxiv.org/pdf/0905.2635.pdf.
+        """
 
         # update objective function
         Lold = self.L
         self.L = (
             np.sum(np.log(self.Pden))
             + self.D * self.M * np.log(self.sigma2) / 2
-            - lambdaFactor / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
-            - tauFactor / 2 * np.trace(np.transpose(self.T) @ self.Phi @ self.T)
+            - self.lambdaFactor / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
+            - self.tauFactor / 2 * np.trace(np.transpose(self.T) @ self.Phi @ self.T)
         )
 
         self.diff = np.abs((self.L - Lold) / self.L)

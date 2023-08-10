@@ -113,12 +113,6 @@ class CoherentPointDrift(NonRigidRegistration):
         self.beta = 2 if beta is None else beta
         self.diff = np.inf
         self.L = np.inf
-        self.P = np.zeros((self.N, self.M))
-        self.Pden = np.zeros((self.M))
-        self.Pt1 = np.zeros((self.M,))
-        self.P1 = np.zeros((self.N,))
-        self.PY = np.zeros((self.N, self.D))
-        self.Np = 0
         self.W = np.zeros((self.N, self.D))
         self.G = gaussian_kernel(self.X, self.beta)
         self.low_rank = low_rank
@@ -128,14 +122,20 @@ class CoherentPointDrift(NonRigidRegistration):
             self.inv_S = np.diag(1.0 / self.S)
             self.S = np.diag(self.S)
             self.E = 0.0
+        self.initializeCorrespondances()
+
+    def initializeCorrespondances(self):
+        self.P = np.zeros((self.N, self.M))
+        self.Pden = np.zeros((self.M))
+        self.Pt1 = np.zeros((self.M,))
+        self.P1 = np.zeros((self.N,))
+        self.PY = np.zeros((self.N, self.D))
+        self.Np = 0
 
     def reinitializeParameters(self):
-        self.initializeParameters(
-            alpha=self.alpha,
-            beta=self.beta,
-            low_rank=self.low_rank,
-            num_eig=self.num_eig,
-        )
+        self.initializeCorrespondances()
+        self.estimateCorrespondance()
+        self.update_variance()
 
     def isConverged(self):
         """

@@ -23,12 +23,11 @@ global runOpt
 global eval
 
 runExperiment = True
-loadInitializationFromResult = True
 runOpt = {"localization": False, "tracking": True}
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": True,
-    "evaluationResults": True,
+    "trackingResults": False,
+    "evaluationResults": False,
 }
 vis = {
     "som": False,
@@ -46,11 +45,12 @@ vis = {
 pathToConfigFile = (
     os.path.dirname(os.path.abspath(__file__)) + "/evalConfigs/evalConfig_partial.json"
 )
-evaluationDataFolderPath = "data/eval/graspingAccuracy/results/"
+savePath = "data/eval/graspingAccuracy/results/"
 logFileName = "graspingAccuracy.log"
+resultFileName = "result"
 
 # configure logging
-logFile = evaluationDataFolderPath + logFileName
+logFile = savePath + logFileName
 logLevel = logging.INFO
 logFormat = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(filename=logFile, level=logLevel, format=logFormat)
@@ -259,8 +259,7 @@ if __name__ == "__main__":
             # run experiments
             # set file paths
             dataSetName = dataSetPath.split("/")[-2]
-            resultFolderPath = evaluationDataFolderPath + dataSetName + "/"
-            resultFileName = "result"
+            resultFolderPath = savePath + dataSetName + "/"
             resultFilePath = resultFolderPath + resultFileName + ".pkl"
             if runOpt["localization"]:
                 initializationResult = runInitialization(dataSetPath)

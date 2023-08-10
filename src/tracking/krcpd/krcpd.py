@@ -62,6 +62,8 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             dampingAnnealing=self.dampingAnnealing,
             ik_iterations=self.ik_iterations,
         )
+        self.estimateCorrespondance()
+        self.update_variance()
         return
 
     def estimateCorrespondance(self):

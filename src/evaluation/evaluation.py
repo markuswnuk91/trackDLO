@@ -901,7 +901,9 @@ class Evaluation(object):
                     "Branch coordinates not specified for tracking. Please provide the branch coordinates corresponding to the initial confiugration."
                 )
         endFrame = (
-            self.getNumImageSetsInDataSet(dataSetPath) if endFrame is None else endFrame
+            self.getNumImageSetsInDataSet(dataSetPath)
+            if endFrame is None or -1
+            else endFrame
         )
         frameStep = 1 if frameStep is None else frameStep
         if startFrame is not None and endFrame is not None:
@@ -988,7 +990,8 @@ class Evaluation(object):
         registrationResult["dataSetPath"] = dataSetPath
         registrationResult["fileName"] = self.getFileName(startFrame, dataSetPath)
         registrationResult["filePath"] = self.getFilePath(startFrame, dataSetPath)
-        registrationResult["frame"] = startFrame
+        registrationResult["startFrame"] = startFrame
+        registrationResult["frames"] = framesToTrack
         trackingResult["registrations"].append(registrationResult)
         for frame in framesToTrack[1:]:
             pointCloud = self.getPointCloud(
@@ -1000,7 +1003,6 @@ class Evaluation(object):
             registrationResult["dataSetPath"] = dataSetPath
             registrationResult["fileName"] = self.getFileName(frame, dataSetPath)
             registrationResult["filePath"] = self.getFilePath(frame, dataSetPath)
-            registrationResult["frame"] = frame
             trackingResult["registrations"].append(registrationResult)
 
         if closeVisAfterRunning:

@@ -1,7 +1,7 @@
 {   "frameForInitialization": 0,
     "initialFrame": 0,
-    "finalFrame": 10,
-    "frameStep" : 1,
+    "finalFrame": 150,
+    "frameStep" : 2,
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -124,7 +124,7 @@
         "normalize": 0
     },
     "krcpd4BDLOParameters" : {
-        "max_iterations":10,
+        "max_iterations":1,
         "alpha": 1, 
         "beta": 0.5,
         "ik_iterations":10,

@@ -171,7 +171,11 @@ class StructurePreservedRegistration(NonRigidRegistration):
         self.Np = 0
         self.PY = np.zeros((self.N, self.D))
 
+    def initializeWeights(self):
+        self.W = np.zeros((self.N, self.D))
+
     def reinitializeParameters(self):
+        self.initializeWeights()
         self.initializeCorrespondances()
         self.estimateCorrespondance()
         self.update_variance()

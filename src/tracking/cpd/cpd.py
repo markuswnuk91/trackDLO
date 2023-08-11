@@ -113,7 +113,6 @@ class CoherentPointDrift(NonRigidRegistration):
         self.beta = 2 if beta is None else beta
         self.diff = np.inf
         self.L = np.inf
-        self.W = np.zeros((self.N, self.D))
         self.G = gaussian_kernel(self.X, self.beta)
         self.low_rank = low_rank
         self.num_eig = num_eig
@@ -123,6 +122,10 @@ class CoherentPointDrift(NonRigidRegistration):
             self.S = np.diag(self.S)
             self.E = 0.0
         self.initializeCorrespondances()
+        self.initializeWeights()
+
+    def initializeWeights(self):
+        self.W = np.zeros((self.N, self.D))
 
     def initializeCorrespondances(self):
         self.P = np.zeros((self.N, self.M))
@@ -133,6 +136,7 @@ class CoherentPointDrift(NonRigidRegistration):
         self.Np = 0
 
     def reinitializeParameters(self):
+        self.initializeWeights()
         self.initializeCorrespondances()
         self.estimateCorrespondance()
         self.update_variance()

@@ -248,6 +248,7 @@ class NonRigidRegistration(object):
     def setTargetPointCloud(self, Y):
         (self.M, _) = Y.shape
         self.Y = Y
+        self.X = self.T
         self.reinitializeParameters()
 
     def initializeParameters(self):

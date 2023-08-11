@@ -17,7 +17,7 @@ except:
 global runOpt
 global visOpt
 global saveOpt
-runOpt = {"localization": False, "tracking": False, "evaluation": True}
+runOpt = {"localization": False, "tracking": True, "evaluation": True}
 visOpt = {
     "som": False,
     "somIterations": True,
@@ -87,25 +87,94 @@ def calculateTrackingErrors(trackingResult):
     return trackingErrors
 
 
+def calculateGeometricErrors(trackingResult):
+    accumulatedGeometricErrorPerIteration = []
+    meanGeometricErrorPerIteration = []
+    model = eval.generateModel(trackingResult["modelParameters"])
+    B = trackingResult["B"]
+    branchIndices = list(set(B))
+    numBranches = len(branchIndices)
+    totalLength = 0
+    for branch in model.getBranches():
+        totalLength += branch.getBranchInfo()["length"]
+    correspondingNodeIndices = []
+    XRef = model.getCartesianBodyCenterPositions()
+    for branchIndex in branchIndices:
+        nodeIndices = [i for i, x in enumerate(B) if x == branchIndex]
+        correspondingNodeIndices.append(nodeIndices)
+
+    registrationResults = trackingResult["registrations"]
+    XInit = registrationResults[0]["X"]
+    for registrationResult in registrationResults:
+        T = registrationResult["T"]
+        geometricBranchErrors = []
+        desiredNodeDistances = []
+        registeredNodeDistances = []
+        referenceNodeDistances = []
+        for i, branchIndex in enumerate(branchIndices):
+            correspondingNodes = correspondingNodeIndices[i]
+            correspondingT = T[correspondingNodes, :]
+            correspondingXInit = XInit[correspondingNodes, :]
+            correspondingXRef = XRef[correspondingNodes, :]
+            referenceDifferences = np.diff(correspondingXRef, axis=0)
+            currentDifferences = np.diff(correspondingT, axis=0)
+            desiredDifferences = np.diff(correspondingXInit, axis=0)
+            currentDistances = np.linalg.norm(currentDifferences, axis=1)
+            desiredDistances = np.linalg.norm(desiredDifferences, axis=1)
+            referenceDistances = np.linalg.norm(referenceDifferences, axis=1)
+            for desiredNodeDistance, currentNodeDistance, referenceNodeDistance in zip(
+                desiredDistances, currentDistances, referenceDistances
+            ):
+                registeredNodeDistances.append(currentNodeDistance)
+                desiredNodeDistances.append(desiredNodeDistance)
+                referenceNodeDistances.append(referenceNodeDistance)
+            currentBranchLength = np.sum(currentDistances)
+            desiredBranchLength = np.sum(desiredDistances)
+            geometricBranchError = np.abs(desiredBranchLength - currentBranchLength)
+            geometricBranchErrors.append(geometricBranchError)
+        geometricError = np.sum(
+            np.abs(np.array(desiredNodeDistances) - np.array(registeredNodeDistances))
+        )
+        meanGeometricError = np.mean(
+            np.abs(np.array(desiredNodeDistances) - np.array(registeredNodeDistances))
+        )
+        accumulatedGeometricErrorPerIteration.append(geometricError)
+        meanGeometricErrorPerIteration.append(meanGeometricError)
+    return accumulatedGeometricErrorPerIteration, meanGeometricErrorPerIteration
+
+
 def evaluateTrackingResults(results):
-    trackingEvaluationResults = []
+    trackingEvaluationResults = {}
     for trackingMethodResult in results["trackingResults"]:
         trackingEvaluationResult = {}
+        method = trackingMethodResult["method"]
+        trackingEvaluationResult["trackingResult"] = trackingMethodResult
         # tracking errors
         trackingErrors = calculateTrackingErrors(trackingMethodResult)
         trackingEvaluationResult["trackingErrors"] = trackingErrors
-    # geometric error
-    print("geometric error is evaluated here")
+        # geometric errors
+        (
+            accumulatedGeometricErrorPerIteration,
+            meanGeometricErrorPerIteration,
+        ) = calculateGeometricErrors(trackingMethodResult)
+        trackingEvaluationResult[
+            "accumulatedGeometricErrors"
+        ] = accumulatedGeometricErrorPerIteration
+        trackingEvaluationResult["meanGeometricErrors"] = meanGeometricErrorPerIteration
 
-    print(
-        "here we evaluate certain samples of frames in the data set for their reprojection error"
-    )
+        trackingEvaluationResults[method] = trackingEvaluationResult
+
+        # reprojection errors
+        print(
+            "here we evaluate certain samples of frames in the data set for their reprojection error"
+        )
 
     # successfully tracked frames
     print("here the images are generated to determine the frame until tracking fails")
 
     # runtime
     print("runtime is evaluated here")
+    return trackingEvaluationResults
 
 
 if __name__ == "__main__":

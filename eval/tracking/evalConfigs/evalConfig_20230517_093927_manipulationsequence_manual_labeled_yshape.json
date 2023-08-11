@@ -1,7 +1,7 @@
 {   "frameForInitialization": 0,
     "initialFrame": 0,
-    "finalFrame": 150,
-    "frameStep" : 2,
+    "finalFrame": 50,
+    "frameStep" : 1,
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,

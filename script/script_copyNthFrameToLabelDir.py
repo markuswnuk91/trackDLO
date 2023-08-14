@@ -5,7 +5,7 @@ nth_element = 50
 filetype = "rgb"  # disparity
 
 # Define the folder path
-folder_path = "data/darus_data_download/data/20230517_093927_manipulationsequence_manual_labeled_yshape/data"  # replace with your folder path
+folder_path = "data/darus_data_download/data/20230524_171237_ManipulationSequences_mountedWireHarness_modelY/data"  # replace with your folder path
 
 save_dir = "labels"
 
@@ -22,7 +22,7 @@ all_files = [
 ]
 
 # Retrieve every n-th file
-nth_files = all_files[1::nth_element]
+nth_files = all_files[0::nth_element]
 
 if not os.path.exists(save_folder_path):
     os.makedirs(save_folder_path)

@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import dartpy as dart
 from scipy.spatial import distance_matrix
+from scipy.interpolate import interp1d
 from functools import partial
 import pickle
 from warnings import warn
@@ -113,6 +114,10 @@ class Evaluation(object):
         )
         return fileName
 
+    def getFileIndexFromFileName(self, fileName, dataSetPath):
+        data_folder_path = dataSetPath + "data/"
+        return self.dataHandler.getFileIndexFromFileName(fileName, data_folder_path)
+
     def getFileIdentifierFromFilePath(self, filePath):
         return filePath.split("/")[-1]
 
@@ -193,6 +198,16 @@ class Evaluation(object):
                 results = pickle.load(f)
         return results
 
+    def loadLabelInfo(self, dataSetFolderPath, labelFolderName=None, fileName=None):
+        if fileName is None:
+            fileName = "labels.json"
+        if labelFolderName is None:
+            labelFolderName = "labels"
+
+        filePath = dataSetFolderPath + labelFolderName + "/" + fileName
+        labelInformation = self.dataHandler.loadFromJson(filePath)
+        return labelInformation
+
     def getLastLoadedDataPath(self):
         return self.getFilePath(
             self.currentLoadFileIdentifier, self.currentDataSetLoadPath
@@ -209,6 +224,27 @@ class Evaluation(object):
             if entry[key] == value:
                 return entry
         return None
+
+    def getFileNameFromLabelEntry(self, labelEntry):
+        return labelEntry["file_upload"].split("-")[1]
+
+    def findCorrespondingLabelEntry(self, fileName, labelsDict):
+        for labelInfo in labelsDict:
+            if self.getFileNameFromLabelEntry(labelInfo) == fileName:
+                return labelInfo
+        return None
+
+    def checkLabels(self, dataSetPath):
+        """checks if a data set has labels"""
+        # Define the path to the labels folder and the labels.json file
+        labels_folder = os.path.join(dataSetPath, "labels")
+        labels_file = os.path.join(labels_folder, "labels.json")
+
+        # Check if both the labels folder exists and the labels.json file exists
+        if os.path.isdir(labels_folder) and os.path.isfile(labels_file):
+            return True
+
+        return False
 
     # data loading
     def getDataSet(self, fileIdentifier=None, dataSetFolderPath=None):
@@ -315,6 +351,24 @@ class Evaluation(object):
                 s = markerInfo["lenthFromBranchRootNode"] / markerInfo["branchLength"]
                 branchLocalCoordinates.append((branchIdx, s))
         return branchLocalCoordinates
+
+    def interpolateRegistredTargets(self, T, B, S, localCoordinates):
+        predictedPositions = []
+        for localCoordiate in localCoordinates:
+            # interpolate target positions to get grasping pose
+            correspondingIndices = [
+                index for index, value in enumerate(B) if value == localCoordiate[0]
+            ]
+            TCorresponding = T[correspondingIndices, :]
+            sCorresponding = np.array(S)[correspondingIndices]
+            sSortedIndices = np.argsort(sCorresponding)
+            TSorted = TCorresponding[sSortedIndices]
+            sSorted = sCorresponding[sSortedIndices]
+            sIntertpolated = localCoordiate[1]
+            branchInterpoationFun = interp1d(sSorted, TSorted.T, fill_value="extrapolate")
+            predictedPosition = branchInterpoationFun(sIntertpolated)
+            predictedPositions.append(predictedPosition)
+        return np.array(predictedPositions)
 
     # model generation
     def getModelParameters(self, dataSetPath, numBodyNodes=None):
@@ -990,8 +1044,10 @@ class Evaluation(object):
         registrationResult["dataSetPath"] = dataSetPath
         registrationResult["fileName"] = self.getFileName(startFrame, dataSetPath)
         registrationResult["filePath"] = self.getFilePath(startFrame, dataSetPath)
-        registrationResult["startFrame"] = startFrame
-        registrationResult["frames"] = framesToTrack
+        registrationResult["frame"] = startFrame
+        trackingResult["dataSetPath"] = dataSetPath
+        trackingResult["startFrame"] = startFrame
+        trackingResult["frames"] = framesToTrack
         trackingResult["registrations"].append(registrationResult)
         for frame in framesToTrack[1:]:
             pointCloud = self.getPointCloud(
@@ -1003,6 +1059,7 @@ class Evaluation(object):
             registrationResult["dataSetPath"] = dataSetPath
             registrationResult["fileName"] = self.getFileName(frame, dataSetPath)
             registrationResult["filePath"] = self.getFilePath(frame, dataSetPath)
+            registrationResult["frame"] = frame
             trackingResult["registrations"].append(registrationResult)
 
         if closeVisAfterRunning:

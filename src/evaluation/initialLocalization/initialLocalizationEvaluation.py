@@ -14,25 +14,6 @@ class InitialLocalizationEvaluation(Evaluation):
     def __init__(self, configFilePath, *args, **kwargs):
         super().__init__(configFilePath, *args, **kwargs)
 
-    def loadLabelInfo(self, dataSetFolderPath, labelFolderName=None, fileName=None):
-        if fileName is None:
-            fileName = "labels.json"
-        if labelFolderName is None:
-            labelFolderName = "labels"
-
-        filePath = dataSetFolderPath + labelFolderName + "/" + fileName
-        labelInformation = self.dataHandler.loadFromJson(filePath)
-        return labelInformation
-
-    def getFileNameFromLabelEntry(self, labelEntry):
-        return labelEntry["file_upload"].split("-")[1]
-
-    def findCorrespondingLabelEntry(self, fileName, labelsDict):
-        for labelInfo in labelsDict:
-            if self.getFileNameFromLabelEntry(labelInfo) == fileName:
-                return labelInfo
-        return None
-
     def loadGroundTruthLabelPixelCoordinates(self, dataSetFilePath):
         # gather information
         dataSetFolderPath = self.dataHandler.getDataSetFolderPathFromRelativeFilePath(
@@ -54,7 +35,12 @@ class InitialLocalizationEvaluation(Evaluation):
             ):
                 ValueError(
                     "Label order error. Expected label number: {}, instead got: {}".format(
-                        i,
+                        i + 1,
+                        int(
+                            annotationResult["value"]["keypointlabels"][0].split("_")[
+                                -1
+                            ]
+                        ),
                     )
                 )
             # extract label pixel coordinates

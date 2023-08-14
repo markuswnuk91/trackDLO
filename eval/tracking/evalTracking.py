@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import distance_matrix
+from warnings import warn
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -17,7 +18,7 @@ except:
 global runOpt
 global visOpt
 global saveOpt
-runOpt = {"localization": False, "tracking": True, "evaluation": True}
+runOpt = {"localization": False, "tracking": False, "evaluation": True}
 visOpt = {
     "som": False,
     "somIterations": True,
@@ -26,13 +27,13 @@ visOpt = {
     "topologyExtraction": True,
     "inverseKinematicsIterations": True,
     "correspondanceEstimation": False,
-    "initializationResult": False,
+    "initializationResult": True,
     "trackingIterations": True,
 }
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": False,
-    "evaluationResults": False,
+    "trackingResults": True,
+    "evaluationResults": True,
 }
 loadInitialStateFromResult = True
 runExperiment = True
@@ -42,12 +43,15 @@ registrationsToRun = [
     "krcpd",
     "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
-dataSetsToLoad = [0]  # -1 to load all data sets
+dataSetsToLoad = [3]  # -1 to load all data sets
 
 savePath = "data/eval/tracking/results/"
 resultFileName = "result"
 dataSetPaths = [
     "data/darus_data_download/data/20230517_093927_manipulationsequence_manual_labeled_yshape/",
+    "data/darus_data_download/data/20230524_170231_manipulationsequences_mountedwireharness_modely/",
+    "data/darus_data_download/data/20230524_170800_ManipulationSequences_mountedWireHarness_modelY/",
+    "data/darus_data_download/data/20230524_171237_ManipulationSequences_mountedWireHarness_modelY/",
 ]
 
 
@@ -88,6 +92,7 @@ def calculateTrackingErrors(trackingResult):
 
 
 def calculateGeometricErrors(trackingResult):
+    geometricErrorResult = {"mean": [], "accumulated": []}
     accumulatedGeometricErrorPerIteration = []
     meanGeometricErrorPerIteration = []
     model = eval.generateModel(trackingResult["modelParameters"])
@@ -138,13 +143,86 @@ def calculateGeometricErrors(trackingResult):
         meanGeometricError = np.mean(
             np.abs(np.array(desiredNodeDistances) - np.array(registeredNodeDistances))
         )
-        accumulatedGeometricErrorPerIteration.append(geometricError)
-        meanGeometricErrorPerIteration.append(meanGeometricError)
-    return accumulatedGeometricErrorPerIteration, meanGeometricErrorPerIteration
+        geometricErrorResult["accumulated"].append(geometricError)
+        geometricErrorResult["mean"].append(meanGeometricError)
+    return geometricErrorResult
+
+
+def calculateReprojectionErrors(trackingMethodResult):
+    reprojectionErrorResult = {}
+
+    dataSetPath = trackingMethodResult["dataSetPath"]
+    # get label local cooridnates
+    markerLocalCoordinates = eval.getMarkerBranchLocalCoordinates(dataSetPath)
+    # deteremine for which frames labels exist
+    labelInfo = eval.loadLabelInfo(dataSetPath)
+    labeledFrames = []
+    labeledFramesFileNames = []
+    groundTruthPixelCoordinatesForFrame = []
+    missingLabelsForFrame = []
+    for labelEntry in labelInfo:
+        fileName = labelEntry["file_upload"].split("-")[-1]
+        labeledFramesFileNames.append(fileName)
+        filePath = dataSetPath + "data/" + fileName
+        labeledFrames.append(eval.getFileIndexFromFileName(fileName, dataSetPath))
+        (
+            groundTruthPixelCoordinates,
+            missingLabels,
+        ) = eval.loadGroundTruthLabelPixelCoordinates(filePath)
+        groundTruthPixelCoordinatesForFrame.append(groundTruthPixelCoordinates)
+        missingLabelsForFrame.append(missingLabels)
+
+    trackedFrames = trackingMethodResult["frames"]
+    framesToEvaluate = list(set(labeledFrames) & set(trackedFrames))
+
+    evaluatedFrames = []
+    B = trackingMethodResult["B"]
+    S = trackingMethodResult["S"]
+    meanReprojectionErrorPerFrame = []
+    reprojectionErrorsPerFrame = []
+    predictedCoordinates2DPerFrame = []
+    groundTruthCoordinates2DPerFrame = []
+    for frame in framesToEvaluate:
+        groundTruthCoordinates2D = groundTruthPixelCoordinatesForFrame[
+            labeledFrames.index(frame)
+        ]
+        # get tracking result cooresponding to labeld frame
+        correspondingTrackingMethodResult = eval.findCorrespondingEntryFromKeyValuePair(
+            trackingMethodResult["registrations"], "frame", frame
+        )
+        T = correspondingTrackingMethodResult["T"]
+        predictedPositions3D = eval.interpolateRegistredTargets(
+            T, B, S, markerLocalCoordinates
+        )
+        # reproject in 2D pixel coordinates
+        predictedCoordinates2D = eval.reprojectFrom3DRobotBase(
+            predictedPositions3D, dataSetPath
+        )
+
+        missingLabels = missingLabelsForFrame[labeledFrames.index(frame)]
+        labelsToEvaluate = list(
+            set(list(range(0, len(predictedPositions3D)))) - set(missingLabels)
+        )
+        reprojectionErrors = np.linalg.norm(
+            predictedCoordinates2D[labelsToEvaluate, :] - groundTruthCoordinates2D,
+            axis=1,
+        )
+        meanReprojectionErrorPerFrame.append(np.mean(reprojectionErrors))
+        predictedCoordinates2DPerFrame.append(predictedCoordinates2D)
+        groundTruthCoordinates2DPerFrame.append(groundTruthCoordinates2D)
+        reprojectionErrorsPerFrame.append(reprojectionErrors)
+        evaluatedFrames.append(frame)
+        reprojectionErrorResult["frames"] = framesToEvaluate
+        reprojectionErrorResult["mean"] = meanReprojectionErrorPerFrame
+        reprojectionErrorResult["predictedCoordinates"] = predictedCoordinates2DPerFrame
+        reprojectionErrorResult["groundTruthCoordinates"] = groundTruthCoordinates2D
+        reprojectionErrorResult["reprojectionErrors"] = reprojectionErrorsPerFrame
+    return reprojectionErrorResult
 
 
 def evaluateTrackingResults(results):
     trackingEvaluationResults = {}
+    dataSetPath = results["dataSetPath"]
     for trackingMethodResult in results["trackingResults"]:
         trackingEvaluationResult = {}
         method = trackingMethodResult["method"]
@@ -153,21 +231,20 @@ def evaluateTrackingResults(results):
         trackingErrors = calculateTrackingErrors(trackingMethodResult)
         trackingEvaluationResult["trackingErrors"] = trackingErrors
         # geometric errors
-        (
-            accumulatedGeometricErrorPerIteration,
-            meanGeometricErrorPerIteration,
-        ) = calculateGeometricErrors(trackingMethodResult)
-        trackingEvaluationResult[
-            "accumulatedGeometricErrors"
-        ] = accumulatedGeometricErrorPerIteration
-        trackingEvaluationResult["meanGeometricErrors"] = meanGeometricErrorPerIteration
+        geometricErrors = calculateGeometricErrors(trackingMethodResult)
+        trackingEvaluationResult["geometricErrors"] = geometricErrors
 
         trackingEvaluationResults[method] = trackingEvaluationResult
 
         # reprojection errors
-        print(
-            "here we evaluate certain samples of frames in the data set for their reprojection error"
-        )
+        # check if data set has labels
+        hasLabels = eval.checkLabels(dataSetPath)
+        if hasLabels:
+            reprojectionErrors = calculateReprojectionErrors(trackingMethodResult)
+        else:
+            warn(
+                "No annotated ground truth labels found. Proceeding without calculating reprojection error."
+            )
 
     # successfully tracked frames
     print("here the images are generated to determine the frame until tracking fails")
@@ -280,7 +357,7 @@ if __name__ == "__main__":
         if runOpt["evaluation"]:
             trackingEvaluationResults = evaluateTrackingResults(results)
             results["trackingEvaluationResults"] = trackingEvaluationResults
-            if saveOpt["trackingEvaluationResults"]:
+            if saveOpt["evaluationResults"]:
                 eval.saveResults(
                     folderPath=resultFolderPath,
                     generateUniqueID=False,

@@ -17,7 +17,7 @@ all_files = [
 ]
 
 # Retrieve every 2nd file
-nth_files = all_files[1::nth_element]
+nth_files = all_files[0::nth_element]
 
 # Print the result
 for file in nth_files:

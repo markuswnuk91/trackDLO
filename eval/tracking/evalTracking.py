@@ -18,7 +18,7 @@ except:
 global runOpt
 global visOpt
 global saveOpt
-runOpt = {"localization": False, "tracking": False, "evaluation": True}
+runOpt = {"localization": False, "tracking": True, "evaluation": True}
 visOpt = {
     "som": False,
     "somIterations": True,
@@ -38,8 +38,8 @@ saveOpt = {
 loadInitialStateFromResult = True
 runExperiment = True
 registrationsToRun = [
-    # "cpd",
-    # "spr",
+    "cpd",
+    "spr",
     "krcpd",
     "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
@@ -234,8 +234,20 @@ def calculateReprojectionErrors(trackingMethodResult):
         reprojectionErrorResult["B"] = B
         reprojectionErrorResult["S"] = S
         reprojectionErrorResult["evaluatedMarkers"] = evaluatedMarkers
-
     return reprojectionErrorResult
+
+
+def calculateRuntimes(trackingMethodResult):
+    runtimeResults = trackingMethodResult["runtimes"]
+    runtimeResults["mean"] = np.mean(
+        trackingMethodResult["runtimes"]["runtimesPerIteration"]
+    )
+    runtimeResults["std"] = np.std(
+        trackingMethodResult["runtimes"]["runtimesPerIteration"]
+    )
+    runtimeResults["numPointsPerIteration"]
+
+    return runtimeResults
 
 
 def evaluateTrackingResults(results):
@@ -251,8 +263,6 @@ def evaluateTrackingResults(results):
         # geometric errors
         geometricErrors = calculateGeometricErrors(trackingMethodResult)
         trackingEvaluationResult["geometricErrors"] = geometricErrors
-
-        trackingEvaluationResults[method] = trackingEvaluationResult
 
         # reprojection errors
         # check if data set has labels
@@ -280,7 +290,6 @@ def evaluateTrackingResults(results):
                 "groundTruthMarkerCoordinates2D"
             ][i]
             evaluatedMarkers = reprojectionErrors["evaluatedMarkers"][i]
-
             eval.visualizeReprojectionError(
                 fileName=eval.getFileName(evalFrame, dataSetPath),
                 dataSetPath=dataSetPath,
@@ -288,12 +297,12 @@ def evaluateTrackingResults(results):
                 adjacencyMatrix=adjacencyMatrix,
                 predictedMarkerCoordinates2D=predictedMarkerCoordinates2D,
                 groundTruthMarkerCoordinates2D=groundTruthMarkerCoordinates2D,
+                block=False,
             )
-    # successfully tracked frames
-    print("here the images are generated to determine the frame until tracking fails")
-
-    # runtime
-    print("runtime is evaluated here")
+        # runtime
+        runtimeResults = calculateRuntimes(trackingMethodResult)
+        trackingEvaluationResult["runtimeResults"] = runtimeResults
+        trackingEvaluationResults[method] = trackingEvaluationResult
     return trackingEvaluationResults
 
 

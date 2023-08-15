@@ -1,6 +1,6 @@
 {   "frameForInitialization": 0,
     "initialFrame": 0,
-    "finalFrame": 100,
+    "finalFrame": 30,
     "frameStep" : 1,
     "preprocessingParameters": {
         "hsvFilterParameters" : {

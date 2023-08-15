@@ -2,6 +2,7 @@ import numpy as np
 import numbers
 from warnings import warn
 from src.utils.utils import initialize_sigma2
+import time
 
 
 class NonRigidRegistration(object):
@@ -117,6 +118,13 @@ class NonRigidRegistration(object):
         self.normalize = bool(normalize) if normalize is None else bool(normalize)
         self.callback = None
 
+        # runtime counter initializaton
+        self.runTimes = {}
+        self.runTimes["runtimesPerIteration"] = []
+        self.runTimes["correspondanceEstimation"] = []
+        self.runTimes["parameterUpdate"] = []
+        self.runTimes["targetComputation"] = []
+
     def register(self, checkConvergence=True, customCallback=None, *args, **kwargs):
         """
         Peform the registration
@@ -136,6 +144,7 @@ class NonRigidRegistration(object):
             Returned params dependent on registration method used.
         """
         self.iteration = 0
+        self.runTimes["runtimesPerRegistration"] = []
         self.computeTargets()
         run = True
         while run:
@@ -143,20 +152,46 @@ class NonRigidRegistration(object):
                 run = False
             if checkConvergence and self.isConverged():
                 run = False
-            self.iterate()
-            if callable(self.callback):
-                self.callback()
-            if callable(customCallback):
-                customCallback(*args, **kwargs)
+            if run:
+                runtimePerIteration_start = time.time()
+                self.iterate()
+                runtimePerIteration_end = time.time()
+                runtimePerIteration = (
+                    runtimePerIteration_end - runtimePerIteration_start
+                )
+                self.runTimes["runtimesPerIteration"].append(runtimePerIteration)
+                self.runTimes["runtimesPerRegistration"].append(runtimePerIteration)
+                if callable(self.callback):
+                    self.callback()
+                if callable(customCallback):
+                    customCallback(*args, **kwargs)
         return self.T, self.getParameters()
 
     def iterate(self):
         """
         Perform one iteration of the registration.
         """
+        correspondanceEstimationRuntime_start = time.time()
         self.estimateCorrespondance()
+        correspondanceEstimationRuntime_end = time.time()
+        self.runTimes["correspondanceEstimation"].append(
+            correspondanceEstimationRuntime_end - correspondanceEstimationRuntime_start
+        )
+
+        parameterUpdateRuntime_start = time.time()
         self.updateParameters()
+        parameterUpdateRuntime_end = time.time()
+        self.runTimes["parameterUpdate"].append(
+            parameterUpdateRuntime_end - parameterUpdateRuntime_start
+        )
+
+        targetComputationRuntime_start = time.time()
         self.computeTargets()
+        targetComputationRuntime_end = time.time()
+        self.runTimes["targetComputation"].append(
+            targetComputationRuntime_end - targetComputationRuntime_start
+        )
+
         self.iteration += 1
 
     def isConverged(self):

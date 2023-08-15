@@ -208,7 +208,7 @@ class TrackingEvaluation(Evaluation):
                 groundTruthLabelFill,
             )
 
-        self.plotImageWithMatplotlib(rgbImg, block=True)
+        self.plotImageWithMatplotlib(rgbImg, block=block)
         # while i <= len(registrationTargetCoordinates2D[:, 0]) - 1:
         #     cv2.line(
         #         rgbImg,

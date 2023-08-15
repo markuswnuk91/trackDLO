@@ -880,6 +880,9 @@ class Evaluation(object):
             registrationResult["q"] = registration.q.copy()
             registrationResult["Xreg"] = registration.Xreg.copy()
 
+        registrationResult["runtimes"] = registration.runTimes[
+            "runtimesPerRegistration"
+        ]
         return registrationResult
 
     def runTracking(
@@ -1052,6 +1055,7 @@ class Evaluation(object):
         trackingResult["startFrame"] = startFrame
         trackingResult["frames"] = framesToTrack
         trackingResult["registrations"].append(registrationResult)
+
         for frame in framesToTrack[1:]:
             pointCloud = self.getPointCloud(
                 frame,
@@ -1064,7 +1068,7 @@ class Evaluation(object):
             registrationResult["filePath"] = self.getFilePath(frame, dataSetPath)
             registrationResult["frame"] = frame
             trackingResult["registrations"].append(registrationResult)
-
+        trackingResult["runtimes"] = reg.runTimes
         if closeVisAfterRunning:
             plt.close("all")
 

@@ -55,13 +55,8 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         return
 
     def reinitializeParameters(self):
-        self.initializeParameters(alpha=self.alpha, beta=self.beta)
-        self.initializeKinematicRegularizationParameters(
-            damping=self.damping,
-            minDampingFactor=self.minDampingFactor,
-            dampingAnnealing=self.dampingAnnealing,
-            ik_iterations=self.ik_iterations,
-        )
+        self.initializeWeights()
+        self.initializeCorrespondances()
         self.estimateCorrespondance()
         self.update_variance()
         return
@@ -216,13 +211,13 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             return X + np.dot(G, self.W)
         else:
             if self.low_rank is False:
-                # self.T = self.X + np.dot(self.G, self.W)
-                if np.any(self.P1 > 0):
-                    self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
-                        :, None
-                    ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
-                else:
-                    self.T = self.Xreg
+                self.T = self.X + np.dot(self.G, self.W)
+                # if np.any(self.P1 > 0):
+                #     self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
+                #         :, None
+                #     ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
+                # else:
+                #     self.T = self.Xreg
             elif self.low_rank is True:
                 self.T = self.X + np.matmul(
                     self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))

@@ -839,6 +839,23 @@ class BranchedDeformableLinearObject(BDLOTopology):
             X.append(x)
         return np.array(X)
 
+    def getBodyNodeNodeAdjacencyMatrix(self):
+        bodyNodeAdjacencyMatrix = np.zeros(
+            (self.skel.getNumBodyNodes(), self.skel.getNumBodyNodes())
+        )
+        for i, bodyNode in enumerate(self.skel.getBodyNodes()):
+            parentBodyNode = bodyNode.getParentBodyNode()
+            numChildBodyNodes = bodyNode.getNumChildBodyNodes()
+            if parentBodyNode is not None:
+                j = parentBodyNode.getIndexInSkeleton()
+                bodyNodeAdjacencyMatrix[i, j] = 1
+            if numChildBodyNodes > 0:
+                for childBodyNodeIndex in range(0, numChildBodyNodes):
+                    childBodyNode = bodyNode.getChildBodyNode(childBodyNodeIndex)
+                    j = childBodyNode.getIndexInSkeleton()
+                    bodyNodeAdjacencyMatrix[i, j] = 1
+        return bodyNodeAdjacencyMatrix
+
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):
 #     """

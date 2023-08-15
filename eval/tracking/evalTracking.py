@@ -32,14 +32,14 @@ visOpt = {
 }
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": True,
+    "trackingResults": False,
     "evaluationResults": True,
 }
 loadInitialStateFromResult = True
 runExperiment = True
 registrationsToRun = [
-    "cpd",
-    "spr",
+    # "cpd",
+    # "spr",
     "krcpd",
     "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
@@ -182,41 +182,57 @@ def calculateReprojectionErrors(trackingMethodResult):
     reprojectionErrorsPerFrame = []
     predictedCoordinates2DPerFrame = []
     groundTruthCoordinates2DPerFrame = []
+    correspondingTrackingMethodResults = []
+    targetPositions3D = []
+    evaluatedMarkers = []
     for frame in framesToEvaluate:
-        groundTruthCoordinates2D = groundTruthPixelCoordinatesForFrame[
+        groundTruthMarkerCoordinates2D = groundTruthPixelCoordinatesForFrame[
             labeledFrames.index(frame)
         ]
         # get tracking result cooresponding to labeld frame
         correspondingTrackingMethodResult = eval.findCorrespondingEntryFromKeyValuePair(
             trackingMethodResult["registrations"], "frame", frame
         )
+        correspondingTrackingMethodResults.append(correspondingTrackingMethodResult)
         T = correspondingTrackingMethodResult["T"]
-        predictedPositions3D = eval.interpolateRegistredTargets(
+        targetPositions3D.append(T)
+        predictedMarkerPositions3D = eval.interpolateRegistredTargets(
             T, B, S, markerLocalCoordinates
         )
         # reproject in 2D pixel coordinates
-        predictedCoordinates2D = eval.reprojectFrom3DRobotBase(
-            predictedPositions3D, dataSetPath
+        predictedMarkerCoordinates2D = eval.reprojectFrom3DRobotBase(
+            predictedMarkerPositions3D, dataSetPath
         )
 
         missingLabels = missingLabelsForFrame[labeledFrames.index(frame)]
         labelsToEvaluate = list(
-            set(list(range(0, len(predictedPositions3D)))) - set(missingLabels)
+            set(list(range(0, len(predictedMarkerPositions3D)))) - set(missingLabels)
         )
+        evaluatedMarkers.append(labelsToEvaluate)
         reprojectionErrors = np.linalg.norm(
-            predictedCoordinates2D[labelsToEvaluate, :] - groundTruthCoordinates2D,
+            predictedMarkerCoordinates2D[labelsToEvaluate, :]
+            - groundTruthMarkerCoordinates2D,
             axis=1,
         )
         meanReprojectionErrorPerFrame.append(np.mean(reprojectionErrors))
-        predictedCoordinates2DPerFrame.append(predictedCoordinates2D)
-        groundTruthCoordinates2DPerFrame.append(groundTruthCoordinates2D)
+        predictedCoordinates2DPerFrame.append(predictedMarkerCoordinates2D)
+        groundTruthCoordinates2DPerFrame.append(groundTruthMarkerCoordinates2D)
         reprojectionErrorsPerFrame.append(reprojectionErrors)
         evaluatedFrames.append(frame)
         reprojectionErrorResult["frames"] = framesToEvaluate
         reprojectionErrorResult["mean"] = meanReprojectionErrorPerFrame
-        reprojectionErrorResult["predictedCoordinates"] = predictedCoordinates2DPerFrame
-        reprojectionErrorResult["groundTruthCoordinates"] = groundTruthCoordinates2D
+        reprojectionErrorResult[
+            "predictedMarkerCoordinates2D"
+        ] = predictedCoordinates2DPerFrame
+        reprojectionErrorResult[
+            "groundTruthMarkerCoordinates2D"
+        ] = groundTruthCoordinates2DPerFrame
         reprojectionErrorResult["reprojectionErrors"] = reprojectionErrorsPerFrame
+        reprojectionErrorResult["targetPositions3D"] = targetPositions3D
+        reprojectionErrorResult["B"] = B
+        reprojectionErrorResult["S"] = S
+        reprojectionErrorResult["evaluatedMarkers"] = evaluatedMarkers
+
     return reprojectionErrorResult
 
 
@@ -245,7 +261,34 @@ def evaluateTrackingResults(results):
             warn(
                 "No annotated ground truth labels found. Proceeding without calculating reprojection error."
             )
+        # plot reprojection errors
+        model = eval.generateModel(
+            modelParameters=results["trackingResults"][0]["modelParameters"],
+        )
+        adjacencyMatrix = model.getBodyNodeNodeAdjacencyMatrix()
+        for i, evalFrame in enumerate(reprojectionErrors["frames"]):
+            T = trackingMethodResult["registrations"][evalFrame]["T"]
+            predictedMarkerCoordinates2D = reprojectionErrors[
+                "predictedMarkerCoordinates2D"
+            ][i]
+            groundTruthMarkerCoordinates2D = reprojectionErrors[
+                "groundTruthMarkerCoordinates2D"
+            ][i]
+            evaluatedMarkers = reprojectionErrors["evaluatedMarkers"][i]
 
+            eval.visualizeReprojectionError(
+                fileName=eval.getFileName(evalFrame, dataSetPath),
+                dataSetPath=dataSetPath,
+                positions3D=T,
+                adjacencyMatrix=adjacencyMatrix,
+                predictedMarkerCoordinates2D=reprojectionErrors[
+                    "predictedMarkerCoordinates2D"
+                ][i],
+                groundTruthMarkerCoordinates2D=reprojectionErrors[
+                    "groundTruthMarkerCoordinates2D"
+                ][i],
+                evaluatedMarkers=evaluatedMarkers,
+            )
     # successfully tracked frames
     print("here the images are generated to determine the frame until tracking fails")
 

@@ -1,5 +1,6 @@
 import sys, os
 import numpy as np
+import cv2
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation/tracking", ""))
@@ -118,3 +119,133 @@ class TrackingEvaluation(Evaluation):
         missingLabels = list(set(collectedLabels) ^ set(expectedLabelNumbers))
 
         return np.array(groundTruthLabels_inPixelCoordiantes), missingLabels
+
+    def visualizeReprojectionError(
+        self,
+        fileName,
+        dataSetPath,
+        positions3D,
+        adjacencyMatrix,
+        predictedMarkerCoordinates2D,
+        groundTruthMarkerCoordinates2D,
+        evaluatedMarkers=None,
+        modelColor=[0, 81 / 255, 158 / 255],
+        modelThickness=5,
+        reprojectionErrorColor=[1, 0, 0],
+        reprojectionErrorThickness=5,
+        markerThickness=10,
+        markerColor=[0, 190 / 255, 1],
+        markerFill=-1,
+        groundTruthLabelThickness=10,
+        groundTruthLabelColor=[255 / 255, 109 / 255, 106 / 255],
+        groundTruthLabelFill=-1,
+        imageWitdthInInches=5,
+        imageHeightInInches=5,
+        plotGrayScale=False,
+        block=False,
+        save=False,
+        savePath="data/eval/imgs/",
+        format="png",
+        dpi=100,
+    ):
+        evaluatedMarkers = (
+            list(range(0, len(groundTruthMarkerCoordinates2D)))
+            if evaluatedMarkers is None
+            else evaluatedMarkers
+        )
+        # scale colors
+        modelColor = tuple([x * 255 for x in modelColor])
+        reprojectionErrorColor = tuple([x * 255 for x in reprojectionErrorColor])
+        markerColor = tuple([x * 255 for x in markerColor])
+        groundTruthLabelColor = tuple([x * 255 for x in groundTruthLabelColor])
+
+        # reproject joints in 2D pixel coordinates
+        positions2D = self.reprojectFrom3DRobotBase(positions3D, dataSetPath)
+
+        # load image
+        rgbImg = self.getDataSet(fileName, dataSetPath)[0]  # load image
+
+        # draw image
+        i = 0
+        j = 0
+        I, J = adjacencyMatrix.shape
+        for i in range(0, I):
+            for j in range(0, J):
+                if adjacencyMatrix[i, j] == 1:
+                    cv2.line(
+                        rgbImg,
+                        (
+                            positions2D[i, 0],
+                            positions2D[i, 1],
+                        ),
+                        (
+                            positions2D[j, 0],
+                            positions2D[j, 1],
+                        ),
+                        modelColor,
+                        modelThickness,
+                    )
+        for i, _ in enumerate(groundTruthMarkerCoordinates2D):
+            cv2.line(
+                rgbImg,
+                (
+                    predictedMarkerCoordinates2D[evaluatedMarkers[i]][0],
+                    predictedMarkerCoordinates2D[evaluatedMarkers[i]][1],
+                ),
+                (
+                    groundTruthMarkerCoordinates2D[i][0],
+                    groundTruthMarkerCoordinates2D[i][1],
+                ),
+                reprojectionErrorColor,
+                reprojectionErrorThickness,
+            )
+            cv2.circle(
+                rgbImg,
+                predictedMarkerCoordinates2D[evaluatedMarkers[i]],
+                markerThickness,
+                markerColor,
+                markerFill,
+            )
+            cv2.circle(
+                rgbImg,
+                groundTruthMarkerCoordinates2D[i],
+                groundTruthLabelThickness,
+                groundTruthLabelColor,
+                groundTruthLabelFill,
+            )
+
+        self.plotImageWithMatplotlib(rgbImg, block=True)
+        # while i <= len(registrationTargetCoordinates2D[:, 0]) - 1:
+        #     cv2.line(
+        #         rgbImg,
+        #         (
+        #             registrationTargetCoordinates2D[:, 0][i],
+        #             registrationTargetCoordinates2D[:, 1][i],
+        #         ),
+        #         (
+        #             registrationTargetCoordinates2D[:, 0][i + 1],
+        #             registrationTargetCoordinates2D[:, 1][i + 1],
+        #         ),
+        #         modelColor,
+        #         modelThickness,
+        #     )
+        #     i += 2
+        # for i, markerPosition in enumerate(markerCoordinates2D):
+        #     cv2.line(
+        #         rgbImg,
+        #         (markerPosition[0], markerPosition[1]),
+        #         (
+        #             groundTruthLabelCoordinates[i][0],
+        #             groundTruthLabelCoordinates[i][1],
+        #         ),
+        #         reprojectionErrorColor,
+        #         reprojectionErrorThickness,
+        #     )
+        #     cv2.circle(rgbImg, markerPosition, markerThickness, markerColor, markerFill)
+        #     cv2.circle(
+        #         rgbImg,
+        #         groundTruthLabelCoordinates[i],
+        #         groundTruthLabelThickness,
+        #         groundTruthLabelColor,
+        #         groundTruthLabelFill,
+        #     )

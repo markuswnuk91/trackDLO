@@ -205,12 +205,14 @@ def calculateReprojectionErrors(trackingMethodResult):
         )
 
         missingLabels = missingLabelsForFrame[labeledFrames.index(frame)]
-        labelsToEvaluate = list(
-            set(list(range(0, len(predictedMarkerPositions3D)))) - set(missingLabels)
+        markersToEvaluate = list(
+            set(list(range(1, len(predictedMarkerPositions3D) + 1)))
+            - set(missingLabels)
         )
-        evaluatedMarkers.append(labelsToEvaluate)
+        evaluatedMarkers.append(markersToEvaluate)
+        markerCoordinateIndices = np.array(markersToEvaluate) - 1
         reprojectionErrors = np.linalg.norm(
-            predictedMarkerCoordinates2D[labelsToEvaluate, :]
+            predictedMarkerCoordinates2D[markerCoordinateIndices, :]
             - groundTruthMarkerCoordinates2D,
             axis=1,
         )
@@ -268,9 +270,12 @@ def evaluateTrackingResults(results):
         adjacencyMatrix = model.getBodyNodeNodeAdjacencyMatrix()
         for i, evalFrame in enumerate(reprojectionErrors["frames"]):
             T = trackingMethodResult["registrations"][evalFrame]["T"]
+            markerIndicesToEvaluate = (
+                np.array(reprojectionErrors["evaluatedMarkers"][i]) - 1
+            )
             predictedMarkerCoordinates2D = reprojectionErrors[
                 "predictedMarkerCoordinates2D"
-            ][i]
+            ][i][markerIndicesToEvaluate, :]
             groundTruthMarkerCoordinates2D = reprojectionErrors[
                 "groundTruthMarkerCoordinates2D"
             ][i]
@@ -281,13 +286,8 @@ def evaluateTrackingResults(results):
                 dataSetPath=dataSetPath,
                 positions3D=T,
                 adjacencyMatrix=adjacencyMatrix,
-                predictedMarkerCoordinates2D=reprojectionErrors[
-                    "predictedMarkerCoordinates2D"
-                ][i],
-                groundTruthMarkerCoordinates2D=reprojectionErrors[
-                    "groundTruthMarkerCoordinates2D"
-                ][i],
-                evaluatedMarkers=evaluatedMarkers,
+                predictedMarkerCoordinates2D=predictedMarkerCoordinates2D,
+                groundTruthMarkerCoordinates2D=groundTruthMarkerCoordinates2D,
             )
     # successfully tracked frames
     print("here the images are generated to determine the frame until tracking fails")

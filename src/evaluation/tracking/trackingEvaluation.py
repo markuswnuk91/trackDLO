@@ -128,7 +128,6 @@ class TrackingEvaluation(Evaluation):
         adjacencyMatrix,
         predictedMarkerCoordinates2D,
         groundTruthMarkerCoordinates2D,
-        evaluatedMarkers=None,
         modelColor=[0, 81 / 255, 158 / 255],
         modelThickness=5,
         reprojectionErrorColor=[1, 0, 0],
@@ -148,11 +147,6 @@ class TrackingEvaluation(Evaluation):
         format="png",
         dpi=100,
     ):
-        evaluatedMarkers = (
-            list(range(0, len(groundTruthMarkerCoordinates2D)))
-            if evaluatedMarkers is None
-            else evaluatedMarkers
-        )
         # scale colors
         modelColor = tuple([x * 255 for x in modelColor])
         reprojectionErrorColor = tuple([x * 255 for x in reprojectionErrorColor])
@@ -189,8 +183,8 @@ class TrackingEvaluation(Evaluation):
             cv2.line(
                 rgbImg,
                 (
-                    predictedMarkerCoordinates2D[evaluatedMarkers[i]][0],
-                    predictedMarkerCoordinates2D[evaluatedMarkers[i]][1],
+                    predictedMarkerCoordinates2D[i][0],
+                    predictedMarkerCoordinates2D[i][1],
                 ),
                 (
                     groundTruthMarkerCoordinates2D[i][0],
@@ -201,7 +195,7 @@ class TrackingEvaluation(Evaluation):
             )
             cv2.circle(
                 rgbImg,
-                predictedMarkerCoordinates2D[evaluatedMarkers[i]],
+                predictedMarkerCoordinates2D[i],
                 markerThickness,
                 markerColor,
                 markerFill,

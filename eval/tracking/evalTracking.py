@@ -18,7 +18,7 @@ except:
 global runOpt
 global visOpt
 global saveOpt
-runOpt = {"localization": False, "tracking": True, "evaluation": True}
+runOpt = {"localization": False, "tracking": False, "evaluation": True}
 visOpt = {
     "som": False,
     "somIterations": True,
@@ -245,8 +245,18 @@ def calculateRuntimes(trackingMethodResult):
     runtimeResults["std"] = np.std(
         trackingMethodResult["runtimes"]["runtimesPerIteration"]
     )
-    runtimeResults["numPointsPerIteration"]
-
+    numPointsPerIterations_Y = []
+    numPointsPerIterations_X = []
+    numCorrespondancesPerIteration = []
+    for registrationResult in trackingMethodResult["registrations"]:
+        numPoints_Y = len(registrationResult["Y"])
+        numPointsPerIterations_Y.append(numPoints_Y)
+        numPoints_X = len(registrationResult["X"])
+        numPointsPerIterations_X.append(numPoints_X)
+        numCorrespondances = numPoints_Y * numPoints_X
+        numCorrespondancesPerIteration.append(numCorrespondances)
+    runtimeResults["numPointsPerIteration"] = numPointsPerIterations_Y
+    runtimeResults["numCorrespondancesPerIteration"] = numCorrespondancesPerIteration
     return runtimeResults
 
 
@@ -273,6 +283,7 @@ def evaluateTrackingResults(results):
             warn(
                 "No annotated ground truth labels found. Proceeding without calculating reprojection error."
             )
+        trackingEvaluationResult["reprojectionErrors"] = reprojectionErrors
         # plot reprojection errors
         model = eval.generateModel(
             modelParameters=results["trackingResults"][0]["modelParameters"],

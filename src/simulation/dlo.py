@@ -384,3 +384,16 @@ class DeformableLinearObject(object):
 
         frameList.append(newFrame)
         self.frames[key] = frameList
+
+    def computeForwardKinematics(self, q, locations="center"):
+        self.skel.setPositions(q)
+        cartesianPositions = []
+        if locations == "center":
+            for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
+                bodyNode = self.skel.getBodyNode(bodyNodeIndex)
+                cartesianPosition = bodyNode.getTransform().translation()
+                cartesianPositions.append(cartesianPosition)
+            return np.array((cartesianPositions))
+
+        else:
+            raise NotImplementedError

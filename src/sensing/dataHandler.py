@@ -208,8 +208,8 @@ class DataHandler(object):
             )
         return (rgbImage, disparityMap)
 
-    def saveRGBImage(self, rgb_image, folderPath, fileName):
-        cv2.imwrite(folderPath + fileName + ".png", rgb_image)
+    def saveRGBImage(self, rgb_image, folderPath, fileName, type=".png"):
+        cv2.imwrite(folderPath + fileName + type, rgb_image)
 
     # save functions
     def saveNumpyArrayAsBinary(self, numpyArray, folderPath, fileName):

@@ -269,6 +269,10 @@ class Evaluation(object):
         )
         return dataSet
 
+    def getImage(self, frame, dataSetFolderPath):
+        rgbImg, _ = self.getDataSet(frame, dataSetFolderPath)
+        return rgbImg
+
     def getPointCloud(
         self, fileIdentifier, dataSetFolderPath, segmentationMethod="standard"
     ):
@@ -1350,6 +1354,9 @@ class Evaluation(object):
             plt.show(block=block)
         else:
             plt.close(fig)
+
+    def saveImage(self, rgbImage, savePath, fileType=".png"):
+        cv2.imwrite(savePath + fileType, cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB))
 
     def plotTimeSeries(self, timeSeriesDataY, timeSeriesDataX=None, block=False):
         """Plots a time series of the given data

@@ -11,6 +11,8 @@ try:
     from src.tracking.spr.spr import StructurePreservedRegistration
     from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
     from src.tracking.kpr.kinematicsModel import KinematicsModelDart
+
+    from src.visualization.plot3D import *
 except:
     print("Imports for class TrackingEvaluation failed.")
     raise
@@ -44,28 +46,28 @@ class TrackingEvaluation(Evaluation):
     #     else:
     #         raise NotImplementedError
 
-    def runSPR(
-        self,
-        PointClouds,
-        XInit,
-        iterationsUntilUpdate,
-        sprParameters,
-        vis=True,
-        saveResults=True,
-        saveImages=False,
-    ):
-        result = {}
-        spr = StructurePreservedRegistration(
-            **{
-                "X": XInit,
-                "Y": PointClouds[0],
-            }
-        )
-        callback = self.setupEvaluationCallback(
-            spr, result, visualize=True, saveImages=True
-        )
-        spr.register(callback)
-        return result
+    # def runSPR(
+    #     self,
+    #     PointClouds,
+    #     XInit,
+    #     iterationsUntilUpdate,
+    #     sprParameters,
+    #     vis=True,
+    #     saveResults=True,
+    #     saveImages=False,
+    # ):
+    #     result = {}
+    #     spr = StructurePreservedRegistration(
+    #         **{
+    #             "X": XInit,
+    #             "Y": PointClouds[0],
+    #         }
+    #     )
+    #     callback = self.setupEvaluationCallback(
+    #         spr, result, visualize=True, saveImages=True
+    #     )
+    #     spr.register(callback)
+    #     return result
 
     def loadGroundTruthLabelPixelCoordinates(self, dataSetFilePath):
         # gather information
@@ -243,3 +245,116 @@ class TrackingEvaluation(Evaluation):
         #         groundTruthLabelColor,
         #         groundTruthLabelFill,
         #     )
+
+    def drawConfiguration2D(
+        self,
+        rgbImg,
+        positions2D,
+        adjacencyMatrix,
+        lineColor=[0, 81 / 255, 158 / 255],
+        circleColor=[0, 81 / 255, 158 / 255],
+        lineThickness=5,
+        circleRadius=10,
+    ):
+        # scale colors
+        lineColor = tuple([x * 255 for x in lineColor])
+        circleColor = tuple([x * 255 for x in circleColor])
+
+        # draw image
+        i = 0
+        j = 0
+        I, J = adjacencyMatrix.shape
+        for i in range(0, I):
+            cv2.circle(
+                rgbImg, positions2D[i, :], circleRadius, circleColor, thickness=-1
+            )
+            for j in range(0, J):
+                if adjacencyMatrix[i, j] == 1:
+                    cv2.line(
+                        rgbImg,
+                        (
+                            positions2D[i, 0],
+                            positions2D[i, 1],
+                        ),
+                        (
+                            positions2D[j, 0],
+                            positions2D[j, 1],
+                        ),
+                        lineColor,
+                        lineThickness,
+                    )
+        return rgbImg
+
+    def plotTrackingResult2D(
+        self,
+        frame,
+        dataSetPath,
+        positions3D,
+        adjacencyMatrix,
+        lineColor=[0, 81 / 255, 158 / 255],
+        circleColor=[0, 81 / 255, 158 / 255],
+        lineThickness=5,
+        circleRadius=10,
+    ):
+        # reproject joints in 2D pixel coordinates
+        positions2D = self.reprojectFrom3DRobotBase(positions3D, dataSetPath)
+
+        # load image
+        rgbImg = self.getDataSet(frame, dataSetPath)[0]  # load image
+
+        rgbImg = self.drawConfiguration2D(
+            rgbImg=rgbImg,
+            positions2D=positions2D,
+            adjacencyMatrix=adjacencyMatrix,
+            lineColor=lineColor,
+            circleColor=circleColor,
+            lineThickness=lineThickness,
+            circleRadius=circleRadius,
+        )
+        return rgbImg
+
+    def plotTrackingResult3D(
+        self,
+        pointCloud,
+        targets,
+        adjacencyMatrix,
+        pointCloudColor=[1, 0, 0],
+        targetColor=[0, 0, 1],
+        lineColor=[0, 0, 1],
+        pointCloudPointSize=1,
+        targetPointSize=10,
+        pointCloudAlpha=0.1,
+        targetAlpha=1,
+        axisLimX=[0, 1],
+        axisLimY=[-0.2, 0.8],
+        axisLimZ=[0, 1],
+        elevation=25,
+        azimuth=70,
+    ):
+        fig, ax = setupLatexPlot3D(
+            axisLimX=axisLimX, axisLimY=axisLimY, axisLimZ=axisLimZ
+        )
+
+        plotPointSet(
+            ax=ax,
+            X=pointCloud,
+            color=pointCloudColor,
+            size=pointCloudPointSize,
+            alpha=pointCloudAlpha,
+        )
+        plotPointSet(
+            ax=ax, X=targets, color=targetColor, size=targetPointSize, alpha=targetAlpha
+        )
+        i = 0
+        j = 0
+        I, J = adjacencyMatrix.shape
+        for i in range(0, I):
+            for j in range(0, J):
+                if adjacencyMatrix[i, j] == 1:
+                    plotLine(
+                        ax=ax,
+                        pointPair=np.vstack((targets[i, :], targets[j, :])),
+                        color=lineColor,
+                    )
+        ax.view_init(elev=elevation, azim=azimuth)
+        return fig, ax

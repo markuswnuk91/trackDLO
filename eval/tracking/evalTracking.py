@@ -18,7 +18,7 @@ except:
 global runOpt
 global visOpt
 global saveOpt
-runOpt = {"localization": False, "tracking": False, "evaluation": True}
+runOpt = {"localization": False, "tracking": True, "evaluation": True}
 visOpt = {
     "som": False,
     "somIterations": True,
@@ -38,8 +38,8 @@ saveOpt = {
 loadInitialStateFromResult = True
 runExperiment = True
 registrationsToRun = [
-    "cpd",
-    "spr",
+    # "cpd",
+    # "spr",
     "krcpd",
     "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO

@@ -1,6 +1,6 @@
 {   "frameForInitialization": 0,
     "initialFrame": 0,
-    "finalFrame": 30,
+    "finalFrame": 300,
     "frameStep" : 1,
     "preprocessingParameters": {
         "hsvFilterParameters" : {
@@ -97,7 +97,7 @@
     },
     "sprParameters" : {
         "max_iterations":1,
-        "tauFactor": 500,
+        "tauFactor": 1000,
         "lambdaFactor": 1,
         "beta": 0.5,
         "knn":7,
@@ -117,7 +117,7 @@
         "max_iterations":1,
         "alpha": 1, 
         "beta": 0.5,
-        "ik_iterations":20,
+        "ik_iterations":10,
         "damping":1,
         "dampingAnnealing":1,
         "minDampingFactor": 1,
@@ -128,7 +128,7 @@
         "alpha": 1, 
         "beta": 0.5,
         "ik_iterations":10,
-        "damping":1,
+        "damping":3,
         "dampingAnnealing":1,
         "minDampingFactor": 1,
         "normalize": 0

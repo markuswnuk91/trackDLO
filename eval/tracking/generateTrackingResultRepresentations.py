@@ -10,6 +10,7 @@ try:
     from src.evaluation.tracking.trackingEvaluation import (
         TrackingEvaluation,
     )
+    from src.visualization.dartVisualizer import DartVisualizer, DartScene
 except:
     print("Imports for Tracking Result Evaluation failed.")
     raise
@@ -135,8 +136,14 @@ def createTrackingErrorTimeSeriesPlot(
             rgbImg = eval.getImage(highlightFrame, dataSetPath)
             fileName2DPlot = "hightligth_img_" + str(i + 1)
             fileName3DPlot = "hightligth_3Dplot_" + str(i + 1)
+            fileNameDartPlot = "hightligth_dart_" + str(i + 1)
+            fileNameDartFrontViewPlot = "hightligth_dart_front_" + str(i + 1)
             savePath2DPlot = os.path.join(subfolderPath, fileName2DPlot)
             savePath3DPlot = os.path.join(subfolderPath, fileName3DPlot)
+            savePathDartPlot = os.path.join(subfolderPath, fileNameDartPlot)
+            savePathDartFrontViewPlot = os.path.join(
+                subfolderPath, fileNameDartFrontViewPlot
+            )
             if subfolder == "raw":
                 eval.saveImage(rgbImg, savePath2DPlot)
             else:
@@ -179,6 +186,41 @@ def createTrackingErrorTimeSeriesPlot(
                     savePath3DPlot + ".png",
                 )
                 # plot result in DART
+                modelParameters = dataSetResult["trackingResults"][0]["modelParameters"]
+                model = eval.generateModel(modelParameters)
+
+                q = model.computeInverseKinematics(
+                    targets=positions3D, damping=0.5, numIterations=100, verbose=True
+                )
+                dartScene = DartScene(model.skel, q)
+                dartScene.saveFrame(
+                    savePathDartPlot,
+                    grid=True,
+                    x=0,
+                    y=0,
+                    width=1000,
+                    height=1000,
+                    eye=[0.5, 1.3, 1.0],
+                    center=[0.5, 0, 0.3],
+                    up=[0, -1, 0],
+                    format=".png",
+                )
+                dartScene.saveFrame(
+                    savePathDartFrontViewPlot,
+                    grid=True,
+                    x=0,
+                    y=0,
+                    width=1000,
+                    height=1000,
+                    eye=[4, 0, 1.5],
+                    center=[0.5, 0, 0.3],
+                    up=[0, 0, 1],
+                    format=".png",
+                )
+                # qDart = dartScene.computeCartesianForceInverseKinematics(
+                #     model.skel, targetPositions=positions3D, vis=True, verbose=True
+                # )
+                # print(qDart)
                 # eval.visualizeConfigurationInDart()
     return
 

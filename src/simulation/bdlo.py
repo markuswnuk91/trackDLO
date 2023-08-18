@@ -8,6 +8,7 @@ try:
     sys.path.append(os.getcwd().replace("/src/simulation", ""))
     from src.simulation.dlo import DeformableLinearObject
     from src.modelling.topologyModel import topologyModel
+    from src.utils.utils import dampedPseudoInverse
 except:
     print("Imports for DLO failed.")
 
@@ -855,6 +856,48 @@ class BranchedDeformableLinearObject(BDLOTopology):
                     j = childBodyNode.getIndexInSkeleton()
                     bodyNodeAdjacencyMatrix[i, j] = 1
         return bodyNodeAdjacencyMatrix
+
+    def computeInverseKinematics(
+        self,
+        targets,
+        numIterations=100,
+        qInit=None,
+        method="damped",
+        damping=None,
+        targetPositions="centers",
+        verbose=False,
+    ):
+        qInit = self.skel.getPositions() if qInit is None else qInit
+        damping = 1 if damping is None else damping
+        q = qInit.copy()[:, None]
+        dq = np.zeros((self.skel.getNumDofs(), 1))
+        self.skel.setPositions(qInit)
+        if method == "damped":
+            iteration = 0
+            N = self.skel.getNumBodyNodes()
+            Dof = self.skel.getNumDofs()
+            jacobians = np.zeros((3 * N, Dof))
+            errors = np.zeros((3 * N, 1))
+            currentPositions = np.zeros((3 * N, 1))
+            targetPositions = targets.flatten()[:, None]
+            while iteration < numIterations:
+                self.skel.setPositions(q)
+                for i, bodyNode in enumerate(self.skel.getBodyNodes()):
+                    currentPositions[
+                        3 * i : 3 * i + 3
+                    ] = bodyNode.getTransform().translation()[:, None]
+                    jacobians[3 * i : 3 * i + 3, :] = self.skel.getWorldJacobian(
+                        bodyNode, np.array((0, 0, 0))
+                    )[3:6, :]
+                errors = targetPositions - currentPositions
+                dq = dampedPseudoInverse(jacobians, damping) @ (errors)
+                q = q + dq
+                iteration += 1
+                if verbose:
+                    print("Iteration: {}/{}".format(iteration, numIterations))
+        else:
+            raise NotImplementedError
+        return q.flatten()
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

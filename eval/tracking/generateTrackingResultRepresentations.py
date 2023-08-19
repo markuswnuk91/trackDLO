@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import tikzplotlib
+import cv2
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -11,13 +12,20 @@ try:
         TrackingEvaluation,
     )
     from src.visualization.dartVisualizer import DartVisualizer, DartScene
+    from src.visualization.plot3D import *
+    from src.visualization.plot2D import *
 except:
     print("Imports for Tracking Result Evaluation failed.")
     raise
 
 
 # script control parameters
-controlOptions = {"tabularizeResults": False, "createTrackingTimeSeriesPlots": True}
+controlOptions = {
+    "tabularizeResults": False,
+    "createTrackingTimeSeriesPlots": False,
+    "createStackedImagesPlot": False,
+    "createReprojectionErrorBoxPlot": True,
+}
 resultFileName = "result"
 resultFolderPaths = [
     "data/eval/tracking/results/20230524_171237_ManipulationSequences_mountedWireHarness_modelY"
@@ -225,6 +233,94 @@ def createTrackingErrorTimeSeriesPlot(
     return
 
 
+def createStackedImagesPlot(results):
+    # load images
+
+    dataSetPath = results[0]["dataSetPath"]
+    numFrames = eval.getNumImageSetsInDataSet(dataSetPath)
+    frames = list(range(0, numFrames))
+    nthFrame = 100
+    frames = frames[1::nthFrame]
+    images = []
+    for frame in frames:
+        image = eval.getImage(frame, dataSetPath)
+        images.append(image)
+
+    # Define the alpha value
+    alpha = 0.5
+    accumulated_blend = images[0]
+
+    for img in images[1:]:
+        accumulated_blend = cv2.addWeighted(accumulated_blend, 0.5, img, 0.5, 0)
+
+    cv2.imshow("Blended Image", accumulated_blend)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+def createReprojectionErrorBoxPlots(accumulatedResults):
+    for result in accumulatedResults:
+        createReprojectionErrorBoxPlot(result)
+    return
+
+
+def createReprojectionErrorBoxPlot(result, methods=["cpd", "spr", "krcpd"]):
+    # Define the width of the bars
+    width = 0.2
+
+    means = []
+    stds = []
+    positions = []
+    keys = [key for key in result["trackingEvaluationResults"].keys()]
+    labeledFrames = result["trackingEvaluationResults"][keys[0]]["reprojectionErrors"][
+        "frames"
+    ]
+
+    X = labeledFrames
+    for i, method in enumerate(methods):
+        # Sample mean and std results
+        reprojectionErrorsPerFrame = result["trackingEvaluationResults"]["cpd"][
+            "reprojectionErrors"
+        ]["reprojectionErrors"]
+        mean = []
+        std = []
+        for reprojectionErrors in reprojectionErrorsPerFrame:
+            meanPerFrame = np.mean(reprojectionErrors)
+            stdPerFrame = np.std(reprojectionErrors)
+            mean.append(meanPerFrame)
+            std.append(stdPerFrame)
+        means.append(mean)
+        stds.append(std)
+
+        # Define the positions for each method's bars
+        sign = np.sign((((i + 1) - (len(methods) + 1) / 2)))
+        shif = sign * np.abs(((i + 1) - (len(methods) + 1) / 2)) * width
+        position = np.array(X) + shif
+        positions.append(position)
+
+    # plot error bars
+    for i, method in enumerate(methods):
+        plt.errorbar(
+            positions[i],
+            means[i],
+            yerr=stds[i],
+            fmt="o",
+            label=method,
+            capsize=5,
+        )
+
+    # Set the title, labels, and a legend
+    plt.xlabel("frames")
+    plt.ylabel("Results")
+    plt.xticks(X)
+    plt.legend()
+
+    # Display the plot
+    plt.tight_layout()
+    plt.show()
+    return
+
+
 if __name__ == "__main__":
     # setup eval class
     if resultsToLoad[0] == -1:
@@ -262,6 +358,11 @@ if __name__ == "__main__":
     if controlOptions["createTrackingTimeSeriesPlots"]:
         createTrackingErrorTimeSeriesPlots(accumulatedResults)
 
-    # create reprojection error time series
+    # create stacked image plot
+    if controlOptions["createStackedImagesPlot"]:
+        createStackedImagesPlot(accumulatedResults)
 
+    # create reprojection error time series / bar plot ?
+    if controlOptions["createReprojectionErrorBoxPlot"]:
+        createReprojectionErrorBoxPlots(accumulatedResults)
     # create image sequence for mantipulation sceanrios

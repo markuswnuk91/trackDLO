@@ -33,6 +33,8 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         self.q = qInit
         self.Dof = len(self.q)
         super().__init__(X=X, *args, **kwargs)
+
+        self.kappa = 10
         self.initializeKinematicRegularizationParameters(
             damping=damping,
             minDampingFactor=minDampingFactor,
@@ -61,56 +63,56 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         self.update_variance()
         return
 
-    def estimateCorrespondance(self):
-        """
-        E-step: Compute the expectation step  of the EM algorithm.
-        """
-        if self.normalize:
-            # normalize to 0 mean
-            Y_hat = self.Y - np.mean(self.Y)
-            Xreg_hat = self.Xreg - np.mean(self.Xreg)
-            # normalize to 0 variance
-            scalingFactor_Xreg = np.sqrt(np.sum(self.Xreg**2) / self.N)
-            scalingFactor_Y = np.sqrt(np.sum(self.Y**2) / self.M)
-            Y_hat = Y_hat / scalingFactor_Y
-            Xreg_hat = Xreg_hat / scalingFactor_Xreg
-            P = np.sum((Y_hat[None, :, :] - Xreg_hat[:, None, :]) ** 2, axis=2)
+    # def estimateCorrespondance(self):
+    #     """
+    #     E-step: Compute the expectation step  of the EM algorithm.
+    #     """
+    #     if self.normalize:
+    #         # normalize to 0 mean
+    #         Y_hat = self.Y - np.mean(self.Y)
+    #         Xreg_hat = self.Xreg - np.mean(self.Xreg)
+    #         # normalize to 0 variance
+    #         scalingFactor_Xreg = np.sqrt(np.sum(self.Xreg**2) / self.N)
+    #         scalingFactor_Y = np.sqrt(np.sum(self.Y**2) / self.M)
+    #         Y_hat = Y_hat / scalingFactor_Y
+    #         Xreg_hat = Xreg_hat / scalingFactor_Xreg
+    #         P = np.sum((Y_hat[None, :, :] - Xreg_hat[:, None, :]) ** 2, axis=2)
 
-            c = (2 * np.pi * self.sigma2) ** (self.D / 2)
-            c = c * self.mu / (1 - self.mu)
-            c = c * self.N / self.M
+    #         c = (2 * np.pi * self.sigma2) ** (self.D / 2)
+    #         c = c * self.mu / (1 - self.mu)
+    #         c = c * self.N / self.M
 
-            P = np.exp(-P / (2 * self.sigma2))
-            den = np.sum(P, axis=0)
-            den = np.tile(den, (self.N, 1))
-            den[den == 0] = np.finfo(float).eps
-            den += c
+    #         P = np.exp(-P / (2 * self.sigma2))
+    #         den = np.sum(P, axis=0)
+    #         den = np.tile(den, (self.N, 1))
+    #         den[den == 0] = np.finfo(float).eps
+    #         den += c
 
-            self.Pden = den[0, :]
-            self.P = np.divide(P, self.Pden)
-            self.Pt1 = np.sum(self.P, axis=0)
-            self.P1 = np.sum(self.P, axis=1)
-            self.Np = np.sum(self.P1)
-            self.PY = np.matmul(self.P, self.Y)
-        else:
-            P = np.sum((self.Y[None, :, :] - self.Xreg[:, None, :]) ** 2, axis=2)
+    #         self.Pden = den[0, :]
+    #         self.P = np.divide(P, self.Pden)
+    #         self.Pt1 = np.sum(self.P, axis=0)
+    #         self.P1 = np.sum(self.P, axis=1)
+    #         self.Np = np.sum(self.P1)
+    #         self.PY = np.matmul(self.P, self.Y)
+    #     else:
+    #         P = np.sum((self.Y[None, :, :] - self.Xreg[:, None, :]) ** 2, axis=2)
 
-            c = (2 * np.pi * self.sigma2) ** (self.D / 2)
-            c = c * self.mu / (1 - self.mu)
-            c = c * self.N / self.M
+    #         c = (2 * np.pi * self.sigma2) ** (self.D / 2)
+    #         c = c * self.mu / (1 - self.mu)
+    #         c = c * self.N / self.M
 
-            P = np.exp(-P / (2 * self.sigma2))
-            den = np.sum(P, axis=0)
-            den = np.tile(den, (self.N, 1))
-            den[den == 0] = np.finfo(float).eps
-            den += c
+    #         P = np.exp(-P / (2 * self.sigma2))
+    #         den = np.sum(P, axis=0)
+    #         den = np.tile(den, (self.N, 1))
+    #         den[den == 0] = np.finfo(float).eps
+    #         den += c
 
-            self.Pden = den[0, :]
-            self.P = np.divide(P, self.Pden)
-            self.Pt1 = np.sum(self.P, axis=0)
-            self.P1 = np.sum(self.P, axis=1)
-            self.Np = np.sum(self.P1)
-            self.PY = np.matmul(self.P, self.Y)
+    #         self.Pden = den[0, :]
+    #         self.P = np.divide(P, self.Pden)
+    #         self.Pt1 = np.sum(self.P, axis=0)
+    #         self.P1 = np.sum(self.P, axis=1)
+    #         self.Np = np.sum(self.P1)
+    #         self.PY = np.matmul(self.P, self.Y)
 
     def updateParameters(self):
         """
@@ -118,10 +120,22 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         See Eq. 22 of https://arxiv.org/pdf/0905.2635.pdf.
         """
         if self.low_rank is False:
-            A = np.dot(np.diag(self.P1), self.G) + self.alpha * self.sigma2 * np.eye(
-                self.N
+            # A = np.dot(np.diag(self.P1), self.G) + self.alpha * self.sigma2 * np.eye(
+            #     self.N
+            # )
+            # B = self.PY - np.dot(np.diag(self.P1), self.X)
+            # self.W = np.linalg.solve(A, B)
+
+            A = (
+                np.dot(np.diag(self.P1), self.G)
+                + self.alpha * self.sigma2 * np.eye(self.N)
+                + self.kappa * self.sigma2 * np.eye(self.N)
             )
-            B = self.PY - np.dot(np.diag(self.P1), self.X)
+            B = (
+                self.PY
+                + self.kappa * self.sigma2 * self.Xreg
+                - np.dot(np.diag(self.P1), self.X)
+            )
             self.W = np.linalg.solve(A, B)
 
         elif self.low_rank is True:

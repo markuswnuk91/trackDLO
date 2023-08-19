@@ -120,7 +120,7 @@
         "alpha": 10, 
         "beta": 0.5,
         "ik_iterations":10,
-        "damping":2,
+        "damping":5,
         "dampingAnnealing":1,
         "minDampingFactor": 1,
         "mu": 0.1,

@@ -35,13 +35,11 @@ saveOpt = {
     "trackingResults": False,
     "evaluationResults": True,
 }
-loadInitialStateFromResult = True
-runExperiment = True
 registrationsToRun = [
     # "cpd",
     # "spr",
     "krcpd",
-    "krcpd4BDLO",
+    # "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
 dataSetsToLoad = [3]  # -1 to load all data sets
 

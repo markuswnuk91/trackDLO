@@ -1,7 +1,7 @@
 {   "frameForInitialization": 0,
     "initialFrame": 0,
-    "finalFrame": 300,
-    "frameStep" : 1,
+    "finalFrame": -1,
+    "frameStep" : 5,
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -82,15 +82,15 @@
     },
     "localization":{
         "numSamples": 10,
-        "numIterations": 20,
+        "numIterations": 100,
         "verbose": 0,
         "method": "IK",
         "jacobianDamping":1
     },
 
     "cpdParameters" : {
-        "max_iterations":1,
-        "alpha": 1, 
+        "max_iterations":10,
+        "alpha": 10, 
         "beta": 0.5,
         "mu": 0.1,
         "normalize": 0
@@ -99,8 +99,9 @@
         "max_iterations":1,
         "tauFactor": 1000,
         "lambdaFactor": 1,
-        "beta": 0.5,
+        "beta": 1.2,
         "knn":7,
+        "mu": 0.1,
         "tauAnnealing":1,
         "lambdaAnnealing":1,
         "normalize": 0
@@ -111,26 +112,29 @@
         "damping":3 ,
         "dampingAnnealing":1,
         "minDampingFactor": 1,
+        "mu": 0.1,
         "normalize": 1
     },
     "krcpdParameters" : {
-        "max_iterations":1,
-        "alpha": 1, 
+        "max_iterations":10,
+        "alpha": 10, 
         "beta": 0.5,
         "ik_iterations":10,
-        "damping":1,
+        "damping":2,
         "dampingAnnealing":1,
         "minDampingFactor": 1,
+        "mu": 0.1,
         "normalize": 0
     },
     "krcpd4BDLOParameters" : {
         "max_iterations":1,
         "alpha": 1, 
-        "beta": 0.5,
+        "beta": 1.2,
         "ik_iterations":10,
-        "damping":3,
+        "damping":1.1,
         "dampingAnnealing":1,
         "minDampingFactor": 1,
+        "mu": 0.1,
         "normalize": 0
     }
 }

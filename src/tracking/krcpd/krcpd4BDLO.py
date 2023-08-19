@@ -209,13 +209,13 @@ class KinematicRegularizedCoherentPointDrift4BDLO(
             return X + np.dot(G, self.W)
         else:
             if self.low_rank is False:
-                # self.T = self.X + np.dot(self.G, self.W)
-                if np.any(self.P1 > 0):
-                    self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
-                        :, None
-                    ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
-                else:
-                    self.T = self.Xreg
+                self.T = self.X + np.dot(self.G, self.W)
+                # if np.any(self.P1 > 0):
+                #     self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
+                #         :, None
+                #     ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
+                # else:
+                #     self.T = self.Xreg
             elif self.low_rank is True:
                 self.T = self.X + np.matmul(
                     self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))

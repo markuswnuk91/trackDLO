@@ -117,7 +117,7 @@ class NonRigidRegistration(object):
         self.mu = 0.0 if mu is None else mu
         self.normalize = bool(normalize) if normalize is None else bool(normalize)
         self.callback = None
-
+        self.totalIterations = 0
         # runtime counter initializaton
         self.runTimes = {}
         self.runTimes["runtimesPerIteration"] = []
@@ -193,6 +193,7 @@ class NonRigidRegistration(object):
         )
 
         self.iteration += 1
+        self.totalIterations += 1
 
     def isConverged(self):
         """

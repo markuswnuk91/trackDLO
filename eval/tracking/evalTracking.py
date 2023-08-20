@@ -31,25 +31,25 @@ visOpt = {
     "trackingIterations": True,
 }
 saveOpt = {
-    "localizationResults": False,
-    "trackingResults": False,
+    "localizationResults": True,
+    "trackingResults": True,
+    "saveRegistrationsAsImage": True,
     "evaluationResults": True,
 }
 registrationsToRun = [
     # "cpd",
     # "spr",
+    # "kpr",
     "krcpd",
     # "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
-dataSetsToLoad = [3]  # -1 to load all data sets
+dataSetsToLoad = [1]  # -1 to load all data sets
 
 savePath = "data/eval/tracking/results/"
 resultFileName = "result"
 dataSetPaths = [
-    "data/darus_data_download/data/20230517_093927_manipulationsequence_manual_labeled_yshape/",
-    "data/darus_data_download/data/20230524_170231_manipulationsequences_mountedwireharness_modely/",
-    "data/darus_data_download/data/20230524_170800_ManipulationSequences_mountedWireHarness_modelY/",
-    "data/darus_data_download/data/20230524_171237_ManipulationSequences_mountedWireHarness_modelY/",
+    "20230524_171237_ManipulationSequences_mountedWireHarness_modelY/",
+    "data/darus_data_download/data/20230524_161235_ManipulationSequences_mountedWireHarness_arena/",
 ]
 
 
@@ -372,7 +372,7 @@ if __name__ == "__main__":
             ]
         # tracking
         if runOpt["tracking"]:
-            results["trackingResults"] = []
+            results["trackingResults"] = {}
             bdloModelParameters = eval.getModelParameters(
                 dataSetPath=dataSetPath,
                 numBodyNodes=eval.config["modelGeneration"]["numSegments"],
@@ -385,6 +385,10 @@ if __name__ == "__main__":
                 else:
                     finalFrame = eval.config["finalFrame"]
 
+                if saveOpt["saveRegistrationsAsImage"]:
+                    registrationsSavePath = (
+                        resultFolderPath + "registrations/" + registrationMethod
+                    ) + "/"
                 trackingResult = eval.runTracking(
                     dataSetPath=dataSetPath,
                     bdloModelParameters=bdloModelParameters,
@@ -398,9 +402,17 @@ if __name__ == "__main__":
                     S=results["initializationResult"]["localization"]["SInit"],
                     qInit=results["initializationResult"]["localization"]["qInit"],
                     visualize=visOpt["trackingIterations"],
+                    savePath=registrationsSavePath,
                 )
-                results["trackingResults"].append(trackingResult)
+                results["trackingResults"][registrationMethod] = trackingResult
                 if saveOpt["trackingResults"]:
+                    if os.path.exists(resultFolderPath + resultFileName):
+                        existingResults = eval.loadResults(resultFilePath)
+                        for method in existingResults:
+                            if method not in registrationsToRun:
+                                results["trackingResults"][method] = existingResults[
+                                    method
+                                ]
                     eval.saveResults(
                         folderPath=resultFolderPath,
                         generateUniqueID=False,

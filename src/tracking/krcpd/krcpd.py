@@ -175,6 +175,7 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         q = self.q
         ik_iterations = self.ik_iterations
         X_desired = self.X + np.dot(self.G, self.W)
+        X_desired_com = np.mean(X_desired, axis=0)
         for i in range(0, ik_iterations):
             X_current = self.model.getPositions(q)
             X_error = X_desired - X_current
@@ -185,6 +186,8 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             J = np.vstack(jacobians)
             dq = dampedPseudoInverse(J, jacobianDamping) @ X_error.flatten()
             q = q + dq
+            self.X_reg = self.computeRegularizedConfiguration(q)
+            q[3:6] = q[3:6] + X_desired_com - np.mean(self.X_reg, axis=0)
         # update generalized coordinates
         self.q = q
         self.computeRegularizedConfiguration()
@@ -225,13 +228,13 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             return X + np.dot(G, self.W)
         else:
             if self.low_rank is False:
-                self.T = self.X + np.dot(self.G, self.W)
-                # if np.any(self.P1 > 0):
-                #     self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
-                #         :, None
-                #     ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
-                # else:
-                #     self.T = self.Xreg
+                # self.T = self.X + np.dot(self.G, self.W)
+                if np.any(self.P1 > 0):
+                    self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
+                        :, None
+                    ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
+                else:
+                    self.T = self.Xreg
             elif self.low_rank is True:
                 self.T = self.X + np.matmul(
                     self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))

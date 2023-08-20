@@ -1,191 +1,140 @@
+from builtins import super
 import os
 import sys
 import numpy as np
 import numbers
-from warnings import warn
 
 try:
-    sys.path.append(os.getcwd().replace("/src/tracking/kpr", ""))
-    from src.tracking.registration import NonRigidRegistration
-    from src.tracking.kpr.kinematicsModel import KinematicsModelDart
+    sys.path.append(os.getcwd().replace("/src/tracking/krcpd", ""))
+    from src.tracking.cpd.cpd import CoherentPointDrift
     from src.utils.utils import dampedPseudoInverse
+    from src.utils.utils import gaussian_kernel
 except:
-    print("Imports for KPR failed.")
+    print("Imports for KR-CPD failed.")
     raise
 
 
-class KinematicsPreservingRegistration(NonRigidRegistration):
-    """Base class for kinematics based non-rigid registration algorithm.
-
-    Attributes:
-    -------------
-    q: numpy array
-        Nx1 array of degrees of freedom
-
-    qInit: numpy array
-        Nx1 array of initial values for the degrees of freedom
-
-    q0: numpy array
-        Nx1 array of rest positions for the degrees of freedom to which the model should converge if no target points are given
-
-    q_dot: numpy array
-        Nx1 array of velocities (change per iteration) of the degrees of freedom
-
-    Y: numpy array
-        MxD array of input target points (e.g. point cloud data)
-
-    T: numpy array
-        NxD array of output targets that should approximate the input target points
-
-    N: int
-        Number of degrees of freedom
-
-    M: int
-        Number of data points
-
-    D: int
-        Dimensionality target points and targets
-
-    model: kinematic model class
-        a kinematic model that provides functionality to calculate positions X and Jacobians J from gernalized coordinates q.
-        The provided model must provide the following two functions
-            1) self.getPositions(q): returns a NxD np.array of spatial positions X from a (DoFx1) np.array of generalized coordinates q
-            2) self.getJacobian(q,n): returns the jacobian towards the spatatial position X(n,:) from a (DoFyx1) np.array of generalized coordinates q and position information n
-
-    iterations: int
-        The current iteration throughout the registration
-
-    max_iterations: int
-        Maximum number of iterations the registration performs before terminating
-
-    tolerance: float (positive)
-        tolerance for checking convergence.
-        Registration will terminate once the difference between
-        consecutive objective function values falls within this tolerance.
-
-    diff: float (positive)
-        The absolute normalized difference between the current and previous objective function values.
-
-    L: float
-        The log-likelyhood of the dataset probability given the parameterization. SPR aims to update the parameters such that they maximize this value.
-
-    P: numpy array
-        MxN array of probabilities.
-        P[m, n] represents the probability that the m-th target point
-        corresponds to the n-th target.
-
-    mu: float (between 0 and 1)
-        Contribution of the uniform distribution to account for outliers.
-        Valid values span 0 (inclusive) and 1 (exclusive).
-    """
-
+class KinematicsPreservingRegistration(CoherentPointDrift):
     def __init__(
         self,
+        model,
         qInit,
-        model: KinematicsModelDart,
-        ik_iterations=None,
+        kappa=None,
+        kappaAnnealing=None,
         damping=None,
-        dampingAnnealing=None,
         minDampingFactor=None,
+        dampingAnnealing=None,
+        ik_iterations=None,
         *args,
         **kwargs
     ):
-        X = model.getPositions(qInit)
-        super().__init__(X=X, *args, **kwargs)
-        if type(qInit) is not np.ndarray or qInit.ndim > 1:
-            raise ValueError("The degrees of freedom (q) must be a 1D numpy array.")
-
-        if ik_iterations is not None and (
-            not isinstance(ik_iterations, numbers.Number) or ik_iterations < 0
-        ):
-            raise ValueError(
-                "Expected a positive integer for max_iterations instead got: {}".format(
-                    ik_iterations
-                )
-            )
-        elif isinstance(ik_iterations, numbers.Number) and not isinstance(
-            ik_iterations, int
-        ):
-            warn(
-                "Received a non-integer value for max_iterations: {}. Casting to integer.".format(
-                    ik_iterations
-                )
-            )
-            ik_iterations = int(ik_iterations)
-
-        self.qInit = qInit
-        self.q = qInit.copy()
         self.model = model
-        self.Dof = self.q.size
-        self.ik_iterations = 1 if ik_iterations is None else ik_iterations
+        self.qInit = qInit
+        X = self.model.getPositions(self.qInit)
+        self.Xreg = X
+        self.q = qInit
+        self.Dof = len(self.q)
+        super().__init__(X=X, *args, **kwargs)
 
+        self.kappa = 1 if kappa is None else kappa
+        self.kappaAnnealing = 1 if kappaAnnealing is None else kappaAnnealing
+
+        self.initializeKinematicRegularizationParameters(
+            damping=damping,
+            minDampingFactor=minDampingFactor,
+            dampingAnnealing=dampingAnnealing,
+            ik_iterations=ik_iterations,
+        )
+
+    def initializeKinematicRegularizationParameters(
+        self,
+        damping=None,
+        minDampingFactor=None,
+        dampingAnnealing=None,
+        ik_iterations=None,
+    ):
+        super().initializeParameters(self.alpha, self.beta)
         self.damping = 1 if damping is None else damping
-        self.dampingAnnealing = 0.97 if dampingAnnealing is None else dampingAnnealing
         self.minDampingFactor = 1 if minDampingFactor is None else minDampingFactor
+        self.dampingAnnealing = 0.97 if dampingAnnealing is None else dampingAnnealing
+        self.ik_iterations = 1 if ik_iterations is None else ik_iterations
+        return
 
-        self.diff = np.inf
-        self.L = -np.inf
-        self.P = np.zeros((self.N, self.M))
-        self.Pden = np.zeros((self.M))
-        self.Pt1 = np.zeros((self.M,))
-        self.P1 = np.zeros((self.N,))
-        self.Np = 0
-        self.PY = np.zeros((self.N, self.D))
-        self.W = np.zeros((self.Dof, self.D))
-
-    def isConverged(self):
-        """
-        Checks if change of cost function is below the defined tolerance
-        """
-        return self.diff < self.tolerance
-
-    def updateDegreesOfFreedom(self):
-        self.q += self.dq
-
-    def computeTargets(self, q=None):
-        """
-        Update the targets using the new estimate of the parameters.
-        Attributes
-        ----------
-        q: numpy array, optional
-            Array of points to transform - use to predict a new set of points.
-            Best for predicting on new points not used to run initial registration.
-                If None, self.q used.
-
-        Returns
-        -------
-        T: numpy array
-            the transformed targets T(X).
-
-        """
-        if q is not None:
-            T = np.zeros((self.N, self.D))
-            for n in range(0, self.N):
-                T[n, :] = self.model.getPositions(q)[n, :]
-            return T
-        else:
-            for n in range(0, self.N):
-                self.T[n, :] = self.model.getPositions(self.q)[n, :]
+    def reinitializeParameters(self):
+        self.initializeWeights()
+        self.initializeCorrespondances()
+        self.estimateCorrespondance()
+        self.update_variance()
         return
 
     def updateParameters(self):
         """
-        M-step: Calculate a new parameters of the registration.
+        M-step: Calculate a new estimate of the deformable transformation.
+        See Eq. 22 of https://arxiv.org/pdf/0905.2635.pdf.
         """
-        jacobianDamping = (self.dampingAnnealing) ** (self.iteration) * self.damping
-        if (
-            jacobianDamping < self.minDampingFactor
-        ):  # lower limit of regularization to ensure stability of matrix inversion
-            jacobianDamping = self.minDampingFactor
 
-        self.X_desired = np.divide(self.PY, self.P1[:, None])
-        # kinematic regularization (solve IK iteratively)
+        self.kappa = (self.kappaAnnealing) ** (self.iteration) * self.kappa
+
+        if self.low_rank is False:
+            # A = np.dot(np.diag(self.P1), self.G) + self.alpha * self.sigma2 * np.eye(
+            #     self.N
+            # )
+            # B = self.PY - np.dot(np.diag(self.P1), self.X)
+            # self.W = np.linalg.solve(A, B)
+
+            A = (
+                np.dot(np.diag(self.P1), self.G)
+                + self.alpha * self.sigma2 * np.eye(self.N)
+                + self.kappa * self.sigma2 * np.eye(self.N)
+            )
+            B = (
+                self.PY
+                + self.kappa * self.sigma2 * (self.Xreg - self.X)
+                - np.dot(np.diag(self.P1), self.X)
+            )
+            self.W = np.linalg.solve(A, B)
+
+        elif self.low_rank is True:
+            # Matlab code equivalent can be found here:
+            # https://github.com/markeroon/matlab-computer-vision-routines/tree/master/third_party/CoherentPointDrift
+            dP = np.diag(self.P1)
+            dPQ = np.matmul(dP, self.Q)
+            F = self.PY - np.matmul(dP, self.X)
+
+            self.W = (
+                1
+                / (self.alpha * self.sigma2)
+                * (
+                    F
+                    - np.matmul(
+                        dPQ,
+                        (
+                            np.linalg.solve(
+                                (
+                                    self.alpha * self.sigma2 * self.inv_S
+                                    + np.matmul(self.Q.T, dPQ)
+                                ),
+                                (np.matmul(self.Q.T, F)),
+                            )
+                        ),
+                    )
+                )
+            )
+            QtW = np.matmul(self.Q.T, self.W)
+            self.E = self.E + self.alpha / 2 * np.trace(
+                np.matmul(QtW.T, np.matmul(self.S, QtW))
+            )
+
+        # kinematic regularization
+        jacobianDamping = (self.dampingAnnealing) ** (self.iteration) * self.damping
         dq = np.zeros(len(self.q))
         q = self.q
         ik_iterations = self.ik_iterations
+        X_desired = self.X + np.dot(self.G, self.W)
+        X_desired_com = np.mean(X_desired, axis=0)
         for i in range(0, ik_iterations):
             X_current = self.model.getPositions(q)
-            X_error = self.X_desired - X_current
+            X_error = X_desired - X_current
             jacobians = []
             for n in range(0, self.N):
                 J_hat = self.model.getJacobian(q, n)
@@ -193,56 +142,57 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             J = np.vstack(jacobians)
             dq = dampedPseudoInverse(J, jacobianDamping) @ X_error.flatten()
             q = q + dq
-
-            # @xwk: optionally incorporate stiffness
-            # A = np.vstack(
-            #     (
-            #         J,
-            #         np.sum(stiffnessMatrix, axis=0),
-            #         np.tile(gravity, (1, len(X_current))) @ J,
-            #     )
-            # )
-            # B = np.append(
-            #     X_error.flatten(),
-            #     (
-            #         np.sum(stiffnessMatrix @ (self.q0 - q), axis=0),
-            #         np.sum(X_current * gravity),
-            #     ),
-            # )
-
+            self.X_reg = self.computeRegularizedConfiguration(q)
+            q[3:6] = q[3:6] + X_desired_com - np.mean(self.X_reg, axis=0)
         # update generalized coordinates
         self.q = q
+        self.computeRegularizedConfiguration()
+        # self.W = (1 - (self.P1 / np.max(self.P1)))[:, None] * np.linalg.inv(self.G) @ (
+        #     self.Xreg - self.X
+        # ) + (self.P1 / np.max(self.P1))[:, None] * self.W
 
-        # set the new targets
         self.computeTargets()
 
-        # update objective function
-        Lold = self.L
-        self.L = (
-            np.sum(np.log(self.Pden))
-            + self.D * self.M * np.log(self.sigma2) / 2
-            # - lambdaFactor / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
-        )
+        self.update_variance()
 
-        self.diff = np.abs((self.L - Lold) / self.L)
+    def computeRegularizedConfiguration(self, q=None):
+        if q is not None:
+            Xreg = self.model.getPositions(q)
+            return Xreg
+        else:
+            self.Xreg = self.model.getPositions(self.q)
+            return
 
-        # update sigma
-        yPy = np.dot(
-            np.transpose(self.Pt1), np.sum(np.multiply(self.Y, self.Y), axis=1)
-        )
-        xPx = np.dot(np.transpose(self.P1), np.sum(np.multiply(self.T, self.T), axis=1))
-        trPXY = np.sum(np.multiply(self.T, self.PY))
-        self.sigma2 = (xPx - 2 * trPXY + yPy) / (self.Np * self.D)
-
-        if self.sigma2 <= 0:
-            self.sigma2 = self.tolerance / 10
-
-    def getParameters(self):
+    def computeTargets(self, X=None):
         """
-        Return the current estimate of the deformable transformation parameters.
+        Update the targets using the new estimate of the parameters.
+        Attributes
+        ----------
+        X: numpy array, optional
+            Array of points to transform - use to predict on new set of points.
+            Best for predicting on new points not used to run initial registration.
+                If None, self.X used.
+
         Returns
         -------
-        self.T: numpy array of target points
-        self.q: numpy array of corresponding generalized coordinates
+        If X is None, returns None.
+        Otherwise, returns the transformed X.
+
         """
-        return self.T, self.q
+        if X is not None:
+            G = gaussian_kernel(X=X, beta=self.beta, Y=self.X)
+            return X + np.dot(G, self.W)
+        else:
+            if self.low_rank is False:
+                self.T = self.X + np.dot(self.G, self.W)
+                # if np.any(self.P1 > 0):
+                #     self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
+                #         :, None
+                #     ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
+                # else:
+                #     self.T = self.Xreg
+            elif self.low_rank is True:
+                self.T = self.X + np.matmul(
+                    self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))
+                )
+                return

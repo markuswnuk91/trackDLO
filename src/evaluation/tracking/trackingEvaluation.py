@@ -9,7 +9,9 @@ try:
     # registration algorithms
     from src.tracking.cpd.cpd import CoherentPointDrift
     from src.tracking.spr.spr import StructurePreservedRegistration
-    from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
+    from src.tracking.kpr.kpr import KinematicsPreservingRegistration
+
+    # from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
     from src.tracking.kpr.kinematicsModel import KinematicsModelDart
 
     from src.visualization.plot3D import *

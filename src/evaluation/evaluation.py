@@ -44,7 +44,8 @@ try:
     from src.tracking.cpd.cpd import CoherentPointDrift
     from src.tracking.spr.spr import StructurePreservedRegistration
     from src.tracking.kpr.kpr import KinematicsPreservingRegistration
-    from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
+
+    # from src.tracking.kpr.kpr4BDLO import KinematicsPreservingRegistration4BDLO
     from src.tracking.kpr.kinematicsModel import KinematicsModelDart
     from src.tracking.krcpd.krcpd import (
         KinematicRegularizedCoherentPointDrift,
@@ -878,7 +879,9 @@ class Evaluation(object):
         ):
             registrationResult["W"] = registration.W.copy()
             registrationResult["G"] = registration.G.copy()
-        elif type(registration) == KinematicRegularizedCoherentPointDrift:
+        elif (type(registration) == KinematicRegularizedCoherentPointDrift) or type(
+            registration
+        ) == KinematicsPreservingRegistration:
             registrationResult["W"] = registration.W.copy()
             registrationResult["G"] = registration.G.copy()
             registrationResult["q"] = registration.q.copy()
@@ -910,6 +913,7 @@ class Evaluation(object):
         logTargets=True,
         closeVisAfterRunning=True,
         cleanUpMemory=True,
+        savePath=None,
     ):
         # # setup tracking problem
         # if startFrame is None and Y is None:
@@ -991,7 +995,9 @@ class Evaluation(object):
             reg = CoherentPointDrift(Y=Y, X=XInit, **trackingParameters)
             if visualize:
                 if visualizationCallback is None:
-                    visualizationCallback = self.getVisualizationCallback(reg)
+                    visualizationCallback = self.getVisualizationCallback(
+                        reg, savePath=savePath
+                    )
                 reg.registerCallback(visualizationCallback)
         elif method == "spr":
             trackingParameters = (
@@ -1002,7 +1008,30 @@ class Evaluation(object):
             reg = StructurePreservedRegistration(Y=Y, X=XInit, **trackingParameters)
             if visualize:
                 if visualizationCallback is None:
-                    visualizationCallback = self.getVisualizationCallback(reg)
+                    visualizationCallback = self.getVisualizationCallback(
+                        reg, savePath=savePath
+                    )
+                reg.registerCallback(visualizationCallback)
+        elif method == "kpr":
+            trackingParameters = (
+                self.config["kprParameters"]
+                if trackingParameters is None
+                else trackingParameters
+            )
+            # bdloModel = self.generateModel(bdloModelParameters)
+            kinematicsModel.skel.setPositions(bdloModel.getGeneralizedCoordinates())
+            # resetModel
+            reg = KinematicsPreservingRegistration(
+                Y=Y,
+                model=kinematicsModel,
+                qInit=qInit,
+                **trackingParameters,
+            )
+            if visualize:
+                if visualizationCallback is None:
+                    visualizationCallback = self.getVisualizationCallback(
+                        reg, savePath=savePath
+                    )
                 reg.registerCallback(visualizationCallback)
         elif method == "krcpd":
             trackingParameters = (
@@ -1021,7 +1050,9 @@ class Evaluation(object):
             )
             if visualize:
                 if visualizationCallback is None:
-                    visualizationCallback = self.getVisualizationCallback(reg)
+                    visualizationCallback = self.getVisualizationCallback(
+                        reg, savePath=savePath
+                    )
                 reg.registerCallback(visualizationCallback)
         elif method == "krcpd4BDLO":
             trackingParameters = (
@@ -1046,7 +1077,9 @@ class Evaluation(object):
             )
             if visualize:
                 if visualizationCallback is None:
-                    visualizationCallback = self.getVisualizationCallback(reg)
+                    visualizationCallback = self.getVisualizationCallback(
+                        reg, savePath=savePath
+                    )
                 reg.registerCallback(visualizationCallback)
         registrationResult = self.runRegistration(
             reg, checkConvergence=checkConvergence, logTargets=logTargets
@@ -1094,6 +1127,7 @@ class Evaluation(object):
         ax=None,
         dim=None,
         pauseInterval=0.1,
+        savePath=None,
         *args,
         **kwargs
     ):
@@ -1110,6 +1144,7 @@ class Evaluation(object):
                 ax,
                 classHandle,
                 pauseInterval=pauseInterval,
+                savePath=savePath,
                 *args,
                 **kwargs,
             )
@@ -1159,12 +1194,30 @@ class Evaluation(object):
         )
 
     def standardVisualizationCallback(
-        self, fig, ax, classHandle, pauseInterval=0.1, *args, **kwargs
+        self, fig, ax, classHandle, pauseInterval=0.1, savePath=None, *args, **kwargs
     ):
         ax.cla()
         self.standardVisualizationFunction(fig, ax, classHandle)
         plt.draw()
         plt.pause(pauseInterval)
+
+        if savePath is not None:
+            if not os.path.exists(savePath):
+                os.makedirs(savePath)
+            if type(classHandle) == CoherentPointDrift:
+                saveName = "cpd_" + str(classHandle.totalIterations)
+            elif type(classHandle) == StructurePreservedRegistration:
+                saveName = "spr_" + str(classHandle.totalIterations)
+            elif type(classHandle) == KinematicsPreservingRegistration:
+                saveName = "kpr_" + str(classHandle.totalIterations)
+            elif type(classHandle) == KinematicRegularizedCoherentPointDrift:
+                saveName = "krcpd_" + str(classHandle.totalIterations)
+            elif type(classHandle) == KinematicRegularizedCoherentPointDrift4BDLO:
+                saveName = "krcpd4BDLO_" + str(classHandle.totalIterations)
+            else:
+                raise NotImplementedError
+            savePath = savePath + saveName + ".png"
+            plt.savefig(savePath)
 
     def standardVisualizationFunction(self, fig, ax, classHandle, *args, **kwargs):
         # determine type of classhandle
@@ -1190,24 +1243,26 @@ class Evaluation(object):
                 xColor=[1, 0, 0],
                 yColor=[0, 0, 0],
             )
-        elif type(classHandle) == KinematicsPreservingRegistration:
-            plotPointSets(
-                ax=ax,
-                X=classHandle.T,
-                Y=classHandle.Y,
-                ySize=1,
-                xSize=30,
-                xColor=[1, 0, 0],
-                yColor=[0, 0, 0],
-            )
-            plotPointSet(
-                ax=ax,
-                X=classHandle.X_desired,
-                size=30,
-                color=[0, 1, 0],
-            )
-        elif (type(classHandle) == KinematicRegularizedCoherentPointDrift) or (
-            type(classHandle) == KinematicRegularizedCoherentPointDrift4BDLO
+        # elif type(classHandle) == KinematicsPreservingRegistration:
+        #     plotPointSets(
+        #         ax=ax,
+        #         X=classHandle.T,
+        #         Y=classHandle.Y,
+        #         ySize=1,
+        #         xSize=30,
+        #         xColor=[1, 0, 0],
+        #         yColor=[0, 0, 0],
+        #     )
+        #     plotPointSet(
+        #         ax=ax,
+        #         X=classHandle.X_desired,
+        #         size=30,
+        #         color=[0, 1, 0],
+        #     )
+        elif (
+            (type(classHandle) == KinematicRegularizedCoherentPointDrift)
+            or (type(classHandle) == KinematicRegularizedCoherentPointDrift4BDLO)
+            or (type(classHandle) == KinematicsPreservingRegistration)
         ):
             plotPointSets(
                 ax=ax,
@@ -1266,6 +1321,7 @@ class Evaluation(object):
         else:
             raise NotImplementedError
         set_axes_equal(ax)
+        return
 
     def visualizeTopologyExtractionResult(self, topologyExtraction, *args, **kwargs):
         fig, ax = self.setupFigure()

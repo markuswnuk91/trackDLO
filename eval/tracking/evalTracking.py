@@ -18,7 +18,7 @@ except:
 global runOpt
 global visOpt
 global saveOpt
-runOpt = {"localization": False, "tracking": True, "evaluation": True}
+runOpt = {"localization": False, "tracking": True, "evaluation": False}
 visOpt = {
     "som": False,
     "somIterations": True,
@@ -31,16 +31,16 @@ visOpt = {
     "trackingIterations": True,
 }
 saveOpt = {
-    "localizationResults": True,
+    "localizationResults": False,
     "trackingResults": True,
     "saveRegistrationsAsImage": True,
     "evaluationResults": True,
 }
 registrationsToRun = [
-    # "cpd",
-    # "spr",
+    "cpd",
+    "spr",
     # "kpr",
-    "krcpd",
+    # "krcpd",
     # "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
 dataSetsToLoad = [1]  # -1 to load all data sets
@@ -261,10 +261,9 @@ def calculateRuntimes(trackingMethodResult):
 def evaluateTrackingResults(results):
     trackingEvaluationResults = {}
     dataSetPath = results["dataSetPath"]
-    for trackingMethodResult in results["trackingResults"]:
+    for method in results["trackingResults"]:
         trackingEvaluationResult = {}
-        method = trackingMethodResult["method"]
-        trackingEvaluationResult["trackingResult"] = trackingMethodResult
+        trackingEvaluationResult["trackingResult"] = results["trackingResults"][method]
         # tracking errors
         trackingErrors = calculateTrackingErrors(trackingMethodResult)
         trackingEvaluationResult["trackingErrors"] = trackingErrors
@@ -405,9 +404,12 @@ if __name__ == "__main__":
                     savePath=registrationsSavePath,
                 )
                 results["trackingResults"][registrationMethod] = trackingResult
+                # ensure methods are not overridden
                 if saveOpt["trackingResults"]:
-                    if os.path.exists(resultFolderPath + resultFileName):
-                        existingResults = eval.loadResults(resultFilePath)
+                    if os.path.exists(resultFilePath):
+                        existingResults = eval.loadResults(resultFilePath)[
+                            "trackingResults"
+                        ]
                         for method in existingResults:
                             if method not in registrationsToRun:
                                 results["trackingResults"][method] = existingResults[

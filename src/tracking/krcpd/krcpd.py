@@ -23,6 +23,7 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         minDampingFactor=None,
         dampingAnnealing=None,
         ik_iterations=None,
+        confidenceBasedUpdate=None,
         *args,
         **kwargs
     ):
@@ -34,6 +35,9 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         self.Dof = len(self.q)
         super().__init__(X=X, *args, **kwargs)
 
+        self.confidenceBasedUpdate = (
+            False if confidenceBasedUpdate is None else bool(confidenceBasedUpdate)
+        )
         self.kappa = 10
         self.initializeKinematicRegularizationParameters(
             damping=damping,
@@ -228,15 +232,54 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             return X + np.dot(G, self.W)
         else:
             if self.low_rank is False:
-                # self.T = self.X + np.dot(self.G, self.W)
-                if np.any(self.P1 > 0):
-                    self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
-                        :, None
-                    ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
-                else:
-                    self.T = self.Xreg
+                # if not self.confidenceBasedUpdate:
+                #     self.T = self.X + np.dot(self.G, self.W)
+                # else:
+                #     if np.any(self.P1 > 0):
+                #         self.T = self.Xreg + np.exp(-(1 - (self.P1 / np.max(self.P1))))[
+                #             :, None
+                #         ] * (self.X + np.dot(self.G, self.W) - self.Xreg)
+                #     else:
+                #         self.T = self.Xreg
+                self.T = self.computeRegularizedConfiguration(self.q)
             elif self.low_rank is True:
                 self.T = self.X + np.matmul(
                     self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))
                 )
                 return
+
+    # def update_variance(self):
+    #     """
+    #     Update the variance of the mixture model using the new estimate of the deformable transformation.
+    #     See the update rule for sigma2 in Eq. 23 of of https://arxiv.org/pdf/0905.2635.pdf.
+    #     """
+
+    #     # The original CPD paper does not explicitly calculate the objective functional.
+    #     # This functional includes terms from both the negative log-likelihood and
+    #     # the Gaussian kernel used for regularization.
+    #     Lold = self.L
+    #     self.L = (
+    #         np.sum(-np.log(self.Pden))
+    #         - self.D * self.M * np.log(self.sigma2) / 2
+    #         + self.alpha / 2 * np.trace(np.transpose(self.W) @ self.G @ self.W)
+    #     )
+    #     self.diff = np.abs((self.L - Lold) / self.L)
+
+    #     # Optionally we could use the difference between the current and previous
+    #     # estimate of the variance as a proxy to test for convergence.
+    #     # qprev = self.sigma2 #comment in to use variance to test convergence
+
+    #     yPy = np.dot(
+    #         np.transpose(self.Pt1), np.sum(np.multiply(self.Y, self.Y), axis=1)
+    #     )
+    #     xPx = np.dot(
+    #         np.transpose(self.P1), np.sum(np.multiply(self.Xreg, self.Xreg), axis=1)
+    #     )
+    #     trPXY = np.sum(np.multiply(self.Xreg, self.PY))
+
+    #     self.sigma2 = (xPx - 2 * trPXY + yPy) / (self.Np * self.D)
+
+    #     if self.sigma2 <= 0:
+    #         self.sigma2 = self.tolerance / 10
+
+    #     # self.diff = np.abs(self.sigma2 - qprev) # comment in to use variance to test convergence

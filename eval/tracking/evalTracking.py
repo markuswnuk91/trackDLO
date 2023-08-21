@@ -18,7 +18,7 @@ except:
 global runOpt
 global visOpt
 global saveOpt
-runOpt = {"localization": False, "tracking": True, "evaluation": False}
+runOpt = {"localization": False, "tracking": True, "evaluation": True}
 visOpt = {
     "som": False,
     "somIterations": True,
@@ -37,18 +37,18 @@ saveOpt = {
     "evaluationResults": True,
 }
 registrationsToRun = [
-    "cpd",
-    "spr",
+    # "cpd",
+    # "spr",
     # "kpr",
-    # "krcpd",
+    "krcpd",
     # "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
-dataSetsToLoad = [1]  # -1 to load all data sets
+dataSetsToLoad = [0]  # -1 to load all data sets
 
 savePath = "data/eval/tracking/results/"
 resultFileName = "result"
 dataSetPaths = [
-    "20230524_171237_ManipulationSequences_mountedWireHarness_modelY/",
+    "data/darus_data_download/data/20230524_171237_ManipulationSequences_mountedWireHarness_modelY/",
     "data/darus_data_download/data/20230524_161235_ManipulationSequences_mountedWireHarness_arena/",
 ]
 
@@ -263,6 +263,7 @@ def evaluateTrackingResults(results):
     dataSetPath = results["dataSetPath"]
     for method in results["trackingResults"]:
         trackingEvaluationResult = {}
+        trackingMethodResult = results["trackingResults"][method]
         trackingEvaluationResult["trackingResult"] = results["trackingResults"][method]
         # tracking errors
         trackingErrors = calculateTrackingErrors(trackingMethodResult)
@@ -276,36 +277,36 @@ def evaluateTrackingResults(results):
         hasLabels = eval.checkLabels(dataSetPath)
         if hasLabels:
             reprojectionErrors = calculateReprojectionErrors(trackingMethodResult)
+            trackingEvaluationResult["reprojectionErrors"] = reprojectionErrors
+            # plot reprojection errors
+            model = eval.generateModel(
+                modelParameters=results["trackingResults"][0]["modelParameters"],
+            )
+            adjacencyMatrix = model.getBodyNodeNodeAdjacencyMatrix()
+            for i, evalFrame in enumerate(reprojectionErrors["frames"]):
+                T = trackingMethodResult["registrations"][evalFrame]["T"]
+                markerIndicesToEvaluate = (
+                    np.array(reprojectionErrors["evaluatedMarkers"][i]) - 1
+                )
+                predictedMarkerCoordinates2D = reprojectionErrors[
+                    "predictedMarkerCoordinates2D"
+                ][i][markerIndicesToEvaluate, :]
+                groundTruthMarkerCoordinates2D = reprojectionErrors[
+                    "groundTruthMarkerCoordinates2D"
+                ][i]
+                evaluatedMarkers = reprojectionErrors["evaluatedMarkers"][i]
+                eval.visualizeReprojectionError(
+                    fileName=eval.getFileName(evalFrame, dataSetPath),
+                    dataSetPath=dataSetPath,
+                    positions3D=T,
+                    adjacencyMatrix=adjacencyMatrix,
+                    predictedMarkerCoordinates2D=predictedMarkerCoordinates2D,
+                    groundTruthMarkerCoordinates2D=groundTruthMarkerCoordinates2D,
+                    block=False,
+                )
         else:
             warn(
                 "No annotated ground truth labels found. Proceeding without calculating reprojection error."
-            )
-        trackingEvaluationResult["reprojectionErrors"] = reprojectionErrors
-        # plot reprojection errors
-        model = eval.generateModel(
-            modelParameters=results["trackingResults"][0]["modelParameters"],
-        )
-        adjacencyMatrix = model.getBodyNodeNodeAdjacencyMatrix()
-        for i, evalFrame in enumerate(reprojectionErrors["frames"]):
-            T = trackingMethodResult["registrations"][evalFrame]["T"]
-            markerIndicesToEvaluate = (
-                np.array(reprojectionErrors["evaluatedMarkers"][i]) - 1
-            )
-            predictedMarkerCoordinates2D = reprojectionErrors[
-                "predictedMarkerCoordinates2D"
-            ][i][markerIndicesToEvaluate, :]
-            groundTruthMarkerCoordinates2D = reprojectionErrors[
-                "groundTruthMarkerCoordinates2D"
-            ][i]
-            evaluatedMarkers = reprojectionErrors["evaluatedMarkers"][i]
-            eval.visualizeReprojectionError(
-                fileName=eval.getFileName(evalFrame, dataSetPath),
-                dataSetPath=dataSetPath,
-                positions3D=T,
-                adjacencyMatrix=adjacencyMatrix,
-                predictedMarkerCoordinates2D=predictedMarkerCoordinates2D,
-                groundTruthMarkerCoordinates2D=groundTruthMarkerCoordinates2D,
-                block=False,
             )
         # runtime
         runtimeResults = calculateRuntimes(trackingMethodResult)

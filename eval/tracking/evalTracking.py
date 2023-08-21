@@ -18,7 +18,7 @@ except:
 global runOpt
 global visOpt
 global saveOpt
-runOpt = {"localization": False, "tracking": True, "evaluation": True}
+runOpt = {"localization": False, "tracking": False, "evaluation": True}
 visOpt = {
     "som": False,
     "somIterations": True,
@@ -29,16 +29,17 @@ visOpt = {
     "correspondanceEstimation": False,
     "initializationResult": True,
     "trackingIterations": True,
+    "reprojectionErrors": True,
 }
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": True,
+    "trackingResults": False,
     "saveRegistrationsAsImage": True,
     "evaluationResults": True,
 }
 registrationsToRun = [
-    # "cpd",
-    # "spr",
+    "cpd",
+    "spr",
     # "kpr",
     "krcpd",
     # "krcpd4BDLO",
@@ -50,6 +51,7 @@ resultFileName = "result"
 dataSetPaths = [
     "data/darus_data_download/data/20230524_171237_ManipulationSequences_mountedWireHarness_modelY/",
     "data/darus_data_download/data/20230524_161235_ManipulationSequences_mountedWireHarness_arena/",
+    "data/darus_data_download/data/20230807_162939_ManipulationSequences_mountedWireHarness_partial/",
 ]
 
 
@@ -280,7 +282,9 @@ def evaluateTrackingResults(results):
             trackingEvaluationResult["reprojectionErrors"] = reprojectionErrors
             # plot reprojection errors
             model = eval.generateModel(
-                modelParameters=results["trackingResults"][0]["modelParameters"],
+                modelParameters=list(results["trackingResults"].items())[0][1][
+                    "modelParameters"
+                ],
             )
             adjacencyMatrix = model.getBodyNodeNodeAdjacencyMatrix()
             for i, evalFrame in enumerate(reprojectionErrors["frames"]):
@@ -295,15 +299,16 @@ def evaluateTrackingResults(results):
                     "groundTruthMarkerCoordinates2D"
                 ][i]
                 evaluatedMarkers = reprojectionErrors["evaluatedMarkers"][i]
-                eval.visualizeReprojectionError(
-                    fileName=eval.getFileName(evalFrame, dataSetPath),
-                    dataSetPath=dataSetPath,
-                    positions3D=T,
-                    adjacencyMatrix=adjacencyMatrix,
-                    predictedMarkerCoordinates2D=predictedMarkerCoordinates2D,
-                    groundTruthMarkerCoordinates2D=groundTruthMarkerCoordinates2D,
-                    block=False,
-                )
+                if visOpt["reprojectionErrors"]:
+                    eval.visualizeReprojectionError(
+                        fileName=eval.getFileName(evalFrame, dataSetPath),
+                        dataSetPath=dataSetPath,
+                        positions3D=T,
+                        adjacencyMatrix=adjacencyMatrix,
+                        predictedMarkerCoordinates2D=predictedMarkerCoordinates2D,
+                        groundTruthMarkerCoordinates2D=groundTruthMarkerCoordinates2D,
+                        block=False,
+                    )
         else:
             warn(
                 "No annotated ground truth labels found. Proceeding without calculating reprojection error."
@@ -356,8 +361,11 @@ if __name__ == "__main__":
                 visualizeCorresponanceEstimation=visOpt["correspondanceEstimation"],
                 visualizeResult=visOpt["initializationResult"],
             )
-            results["initializationResult"] = initializationResult
             if saveOpt["localizationResults"]:
+                # ensure existing tracking / evaluation results are not overridden
+                if os.path.exists(resultFilePath):
+                    results = eval.loadResults(resultFilePath)
+                results["initializationResult"] = initializationResult
                 eval.saveResults(
                     folderPath=resultFolderPath,
                     generateUniqueID=False,
@@ -372,7 +380,6 @@ if __name__ == "__main__":
             ]
         # tracking
         if runOpt["tracking"]:
-            results["trackingResults"] = {}
             bdloModelParameters = eval.getModelParameters(
                 dataSetPath=dataSetPath,
                 numBodyNodes=eval.config["modelGeneration"]["numSegments"],
@@ -404,18 +411,21 @@ if __name__ == "__main__":
                     visualize=visOpt["trackingIterations"],
                     savePath=registrationsSavePath,
                 )
-                results["trackingResults"][registrationMethod] = trackingResult
-                # ensure methods are not overridden
+
                 if saveOpt["trackingResults"]:
+                    # ensure methods are not overridden
                     if os.path.exists(resultFilePath):
-                        existingResults = eval.loadResults(resultFilePath)[
-                            "trackingResults"
-                        ]
-                        for method in existingResults:
-                            if method not in registrationsToRun:
-                                results["trackingResults"][method] = existingResults[
-                                    method
-                                ]
+                        results = eval.loadResults(resultFilePath)
+                        if "trackingResults" in results:
+                            existingTrackingResults = results["trackingResults"]
+                            for method in existingTrackingResults:
+                                if method not in registrationsToRun:
+                                    results["trackingResults"][
+                                        method
+                                    ] = existingTrackingResults[method]
+                        else:
+                            results["trackingResults"] = {}
+                        results["trackingResults"][registrationMethod] = trackingResult
                     eval.saveResults(
                         folderPath=resultFolderPath,
                         generateUniqueID=False,

@@ -174,7 +174,11 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             )
 
         # kinematic regularization
-        jacobianDamping = (self.dampingAnnealing) ** (self.iteration) * self.damping
+        jacobianDamping = (self.dampingAnnealing) ** (
+            self.totalIterations
+        ) * self.damping
+        if jacobianDamping < self.minDampingFactor:
+            jacobianDamping = self.minDampingFactor
         dq = np.zeros(len(self.q))
         q = self.q
         ik_iterations = self.ik_iterations

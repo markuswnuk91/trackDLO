@@ -1,5 +1,4 @@
 import sys
-import sys
 import os
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,19 +20,22 @@ except:
 
 # script control parameters
 controlOptions = {
-    "tabularizeResults": False,
-    "createTrackingTimeSeriesPlots": False,
-    "createStackedImagesPlot": False,
+    "tabularizeResults": True,
+    "createTrackingTimeSeriesPlots": True,
+    "createStackedImagesPlot": True,
     "createReprojectionErrorBoxPlot": True,
 }
 resultFileName = "result"
 resultFolderPaths = [
-    "data/eval/tracking/results/20230524_171237_ManipulationSequences_mountedWireHarness_modelY"
+    "data/eval/tracking/results/20230524_171237_ManipulationSequences_mountedWireHarness_modelY",
+    "data/eval/tracking/results/20230807_162939_ManipulationSequences_mountedWireHarness_partial",
+    "data/eval/tracking/results/20230524_161235_ManipulationSequences_mountedWireHarness_arena",
 ]
-resultsToLoad = [0]
+resultsToLoad = [1]
 savePathsForRepresentations = {
     "trackingErrorTimeSeries": "data/eval/tracking/trackingTimeSeriesPlots"
 }
+highlightFrames = [1, 10, 20, 30, 50, 70, 100, 150, 200]
 
 
 def tabularizeResults(accumulatedResults, methodsToPrint=["cpd", "spr", "krcpd"]):
@@ -44,16 +46,27 @@ def tabularizeResults(accumulatedResults, methodsToPrint=["cpd", "spr", "krcpd"]
         modelID = eval.getModelID(
             result["initializationResult"]["modelParameters"]["modelInfo"]["name"]
         )
+        trackingMethods = list(result["trackingEvaluationResults"].keys())
         dataSetTableRowEntries = {
             "modelID": modelID,
-            "n_tracked_frames": len(result["trackingResults"][0]["frames"]),
-            "n_labeld_frames": len(
-                result["trackingEvaluationResults"]["cpd"]["reprojectionErrors"][
-                    "frames"
-                ]
+            "n_tracked_frames": len(
+                result["trackingResults"][trackingMethods[0]]["frames"]
             ),
             "n_methods": len(methodsToPrint),
         }
+        if (
+            "reprojectionErrors"
+            in result["trackingEvaluationResults"][trackingMethods[0]]
+        ):
+            dataSetTableRowEntries["n_labeled_frames"] = (
+                len(
+                    result["trackingEvaluationResults"][trackingMethods[0]][
+                        "reprojectionErrors"
+                    ]["frames"]
+                ),
+            )
+        else:
+            dataSetTableRowEntries["n_labeled_frames"] = 0
         for trackingMethod in list(result["trackingEvaluationResults"].keys()):
             if trackingMethod not in methodsToPrint:
                 continue
@@ -70,11 +83,6 @@ def tabularizeResults(accumulatedResults, methodsToPrint=["cpd", "spr", "krcpd"]
                         "geometricErrors"
                     ]["accumulated"]
                 ),
-                "reprojectionError": np.mean(
-                    result["trackingEvaluationResults"][trackingMethod][
-                        "reprojectionErrors"
-                    ]["mean"]
-                ),
                 "runtime": runtimeScaleFactor
                 * np.mean(
                     result["trackingEvaluationResults"][trackingMethod][
@@ -83,8 +91,20 @@ def tabularizeResults(accumulatedResults, methodsToPrint=["cpd", "spr", "krcpd"]
                 ),
             }
 
+            if (
+                "reprojectionErrors"
+                in result["trackingEvaluationResults"][trackingMethods[0]]
+            ):
+                dataSetTableRowEntries[trackingMethod]["reprojectionError"] = np.mean(
+                    result["trackingEvaluationResults"][trackingMethod][
+                        "reprojectionErrors"
+                    ]["mean"]
+                )
+            else:
+                dataSetTableRowEntries[trackingMethod]["reprojectionError"] = 0
+
         dataSetTableRow = f"""----------Cut-------------
-            \multirow{{{dataSetTableRowEntries["n_methods"]}}}{{*}}{{${dataSetTableRowEntries["modelID"]}$}} & \multirow{{{dataSetTableRowEntries["n_methods"]}}}{{*}}{{${dataSetTableRowEntries["n_tracked_frames"]}$}} & \multirow{{{dataSetTableRowEntries["n_methods"]}}}{{*}}{{${dataSetTableRowEntries["n_labeld_frames"]}$}} & \\acs{{CPD}} & ${dataSetTableRowEntries["cpd"]["trackingError"]:.2f}$ & ${dataSetTableRowEntries["cpd"]["geometricError"]:.2f}$ & ${int(dataSetTableRowEntries["cpd"]["reprojectionError"])}$ & ${dataSetTableRowEntries["cpd"]["runtime"]:.2f}$ \\\\
+            \multirow{{{dataSetTableRowEntries["n_methods"]}}}{{*}}{{${dataSetTableRowEntries["modelID"]}$}} & \multirow{{{dataSetTableRowEntries["n_methods"]}}}{{*}}{{${dataSetTableRowEntries["n_tracked_frames"]}$}} & \multirow{{{dataSetTableRowEntries["n_methods"]}}}{{*}}{{${dataSetTableRowEntries["n_labeled_frames"]}$}} & \\acs{{CPD}} & ${dataSetTableRowEntries["cpd"]["trackingError"]:.2f}$ & ${dataSetTableRowEntries["cpd"]["geometricError"]:.2f}$ & ${int(dataSetTableRowEntries["cpd"]["reprojectionError"])}$ & ${dataSetTableRowEntries["cpd"]["runtime"]:.2f}$ \\\\
             &  &  & \\acs{{SPR}} & ${dataSetTableRowEntries["spr"]["trackingError"]:.2f}$ & ${dataSetTableRowEntries["spr"]["geometricError"]:.2f}$ & ${int(dataSetTableRowEntries["spr"]["reprojectionError"])}$ & ${dataSetTableRowEntries["spr"]["runtime"]:.2f}$ \\\\
             &  &  & \\acs{{KPR}} & ${dataSetTableRowEntries["krcpd"]["trackingError"]:.2f}$ & ${dataSetTableRowEntries["krcpd"]["geometricError"]:.2f}$ & ${int(dataSetTableRowEntries["krcpd"]["reprojectionError"])}$ & ${dataSetTableRowEntries["krcpd"]["runtime"]:.2f}$ \\\\
             ----------Cut-------------"""
@@ -94,7 +114,9 @@ def tabularizeResults(accumulatedResults, methodsToPrint=["cpd", "spr", "krcpd"]
 
 def createTrackingErrorTimeSeriesPlots(results):
     for dataSetResult in results:
-        createTrackingErrorTimeSeriesPlot(dataSetResult, highlightFrames=[1, 10, 22])
+        createTrackingErrorTimeSeriesPlot(
+            dataSetResult, highlightFrames=highlightFrames
+        )
 
 
 def createTrackingErrorTimeSeriesPlot(
@@ -194,7 +216,9 @@ def createTrackingErrorTimeSeriesPlot(
                     savePath3DPlot + ".png",
                 )
                 # plot result in DART
-                modelParameters = dataSetResult["trackingResults"][0]["modelParameters"]
+                modelParameters = dataSetResult["trackingResults"][
+                    list(dataSetResult["trackingResults"].keys())[0]
+                ]["modelParameters"]
                 model = eval.generateModel(modelParameters)
 
                 q = model.computeInverseKinematics(

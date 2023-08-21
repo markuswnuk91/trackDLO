@@ -1,6 +1,7 @@
 import sys, os
 import numpy as np
 import cv2
+import time
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation/tracking", ""))
@@ -146,6 +147,7 @@ class TrackingEvaluation(Evaluation):
         imageHeightInInches=5,
         plotGrayScale=False,
         block=False,
+        pause=3,
         save=False,
         savePath="data/eval/imgs/",
         format="png",
@@ -213,6 +215,9 @@ class TrackingEvaluation(Evaluation):
             )
 
         self.plotImageWithMatplotlib(rgbImg, block=block)
+        if block is False:
+            time.sleep(pause)
+            plt.close()
         # while i <= len(registrationTargetCoordinates2D[:, 0]) - 1:
         #     cv2.line(
         #         rgbImg,

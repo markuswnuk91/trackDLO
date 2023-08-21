@@ -61,7 +61,7 @@
     },
     "topologyExtraction":{
         "somParameters" : {
-            "numSeedPoints": 30,
+            "numSeedPoints": 100,
             "alpha": 0.9,
             "alphaAnnealing": 1,
             "sigma2": 0.3,
@@ -71,14 +71,14 @@
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 100,
-            "h": 0.03,
-            "hAnnealing": 0.9,
+            "numSeedPoints": 300,
+            "h": 0.04,
+            "hAnnealing": 0.8,
             "hMin": 0.01,
             "mu": 0.35,
-            "max_iterations": 3
+            "max_iterations": 10
         },
-        "pruningThreshold": 1e-6
+        "pruningThreshold": 0.03
     },
     "localization":{
         "numSamples": 10,
@@ -123,11 +123,12 @@
         "alpha": 1, 
         "beta": 0.5,
         "ik_iterations":10,
-        "damping":0.1,
-        "dampingAnnealing":1,
-        "minDampingFactor": 1,
+        "damping":3,
+        "dampingAnnealing":0.7,
+        "minDampingFactor": 0.5,
         "mu": 0.1,
-        "normalize": 1
+        "normalize": 0,
+        "confidenceBasedUpdate":0
     },
     "krcpd4BDLOParameters" : {
         "max_iterations":1,
@@ -135,7 +136,7 @@
         "beta": 1.2,
         "ik_iterations":3,
         "damping":1.1,
-        "dampingAnnealing":1,
+        "dampingAnnealing":0.9,
         "minDampingFactor": 1,
         "mu": 0.1,
         "normalize": 0

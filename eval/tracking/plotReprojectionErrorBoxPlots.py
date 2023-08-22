@@ -18,7 +18,7 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [0],
+    "resultsToLoad": [1],
     "save": True,
     "saveAsTikz": True,
     "showPlot": True,

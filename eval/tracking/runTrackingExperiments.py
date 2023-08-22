@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import distance_matrix
 from warnings import warn
+import shutil
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -20,7 +21,7 @@ global visOpt
 global saveOpt
 runOpt = {
     "localization": False,
-    "tracking": False,
+    "tracking": True,
     #    "evaluation": True
 }
 visOpt = {
@@ -37,18 +38,18 @@ visOpt = {
 }
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": False,
-    #    "saveRegistrationsAsImage": True,
+    "trackingResults": True,
+    "saveRegistrationsAsImage": True,
     #    "evaluationResults": True,
 }
 registrationsToRun = [
-    "cpd",
+    # "cpd",
     "spr",
     # "kpr",
     "krcpd",
     # "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
-dataSetsToLoad = [0]  # -1 to load all data sets
+dataSetsToLoad = [2]  # -1 to load all data sets
 
 savePath = "data/eval/tracking/results/"
 resultFileName = "result"
@@ -397,9 +398,17 @@ if __name__ == "__main__":
                     finalFrame = eval.config["finalFrame"]
 
                 if saveOpt["saveRegistrationsAsImage"]:
-                    registrationsSavePath = (
+                    registrationsSaveFolder = (
                         resultFolderPath + "registrations/" + registrationMethod
-                    ) + "/"
+                    )
+                    registrationsSavePath = registrationsSaveFolder + "/"
+                    if os.path.exists(registrationsSaveFolder):
+                        shutil.rmtree(registrationsSaveFolder)
+                        print(
+                            "Deleted existing result images for method: {}".format(
+                                registrationMethod
+                            )
+                        )
                 trackingResult = eval.runTracking(
                     dataSetPath=dataSetPath,
                     bdloModelParameters=bdloModelParameters,

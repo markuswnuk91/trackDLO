@@ -1,11 +1,11 @@
 import os
 import shutil
 
-nth_element = 50
+nth_element = 30
 filetype = "rgb"  # disparity
 
 # Define the folder path
-folder_path = "data/darus_data_download/data/20230524_171237_ManipulationSequences_mountedWireHarness_modelY/data"  # replace with your folder path
+folder_path = "data/darus_data_download/data/20230807_162939_ManipulationSequences_mountedWireHarness_partial/data"  # replace with your folder path
 
 save_dir = "labels"
 

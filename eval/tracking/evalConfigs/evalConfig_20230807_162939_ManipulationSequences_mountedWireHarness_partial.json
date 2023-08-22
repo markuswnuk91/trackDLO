@@ -90,7 +90,7 @@
 
     "cpdParameters" : {
         "max_iterations":1,
-        "alpha": 1, 
+        "alpha": 10, 
         "beta": 0.5,
         "mu": 0.1,
         "normalize": 0
@@ -108,7 +108,7 @@
     },
     "kprParameters" : {
         "max_iterations":10,
-        "alpha": 1, 
+        "alpha": 10, 
         "beta": 0.5,
         "kappa":1000,
         "ik_iterations":10,

@@ -1198,7 +1198,7 @@ class Evaluation(object):
         )
 
     def standardVisualizationCallback(
-        self, fig, ax, classHandle, pauseInterval=0.1, savePath=None, *args, **kwargs
+        self, fig, ax, classHandle, pauseInterval=0.2, savePath=None, *args, **kwargs
     ):
         ax.cla()
         self.standardVisualizationFunction(fig, ax, classHandle)

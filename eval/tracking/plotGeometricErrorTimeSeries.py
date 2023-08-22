@@ -7,17 +7,23 @@ import pickle
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
+    from src.evaluation.tracking.trackingEvaluation import TrackingEvaluation
     from src.visualization.plot2D import *
 except:
     print("Imports for plotting script geometric error time series failed.")
     raise
+
+
+global eval
+eval = TrackingEvaluation()
+
 controlOpt = {
     "resultsToLoad": [0],
     "highlightFrames": [[]],
     "save": True,
     "saveAsTikz": True,
     "showPlot": True,
-    "saveFolder": "data/eval/tracking/geometricErrorTimeSeriesPlots",
+    "saveFolder": "data/eval/tracking/plots/geometricErrorTimeSeries",
     "saveName": "geometricErrorTimeSeries",
 }
 resultFileName = "result.pkl"
@@ -40,18 +46,19 @@ def loadResult(filePath):
 def createGeometricErrorTimeSeriesPlot(
     dataSetResult, lineColors=None, highlightFrames=None, highlightColor=[1, 0, 0]
 ):
+    trackingResults = dataSetResult["trackingResults"]
+
     highlightFrames = [] if highlightFrames is None else highlightFrames
     fig = plt.figure()
     ax = plt.axes()
     geometricErrorLines = []
-    for key in dataSetResult["trackingEvaluationResults"]:
-        geometricErrors = dataSetResult["trackingEvaluationResults"][key][
-            "geometricErrors"
-        ]["mean"]
+    for method in trackingResults:
+        geometricErrorResults = eval.calculateGeometricErrors(trackingResults[method])
+        geometricErrors = geometricErrorResults["mean"]
         (geometricErrorLine,) = ax.plot(
             list(range(len(geometricErrors))), geometricErrors
         )
-        geometricErrorLine.set_label(key.upper())
+        geometricErrorLine.set_label(method.upper())
         geometricErrorLines.append(geometricErrorLine)
     for highlightFrame in highlightFrames:
         ax.axvline(x=highlightFrame, color=highlightColor)

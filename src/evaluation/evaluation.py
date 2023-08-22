@@ -63,10 +63,11 @@ except:
 
 
 class Evaluation(object):
-    def __init__(self, configFilePath, *args, **kwargs):
-        self.configFilePath = configFilePath
+    def __init__(self, configFilePath=None, *args, **kwargs):
         self.dataHandler = DataHandler()
-        self.config = self.dataHandler.loadFromJson(self.configFilePath)
+        if configFilePath is not None:
+            self.configFilePath = configFilePath
+            self.config = self.dataHandler.loadFromJson(self.configFilePath)
         self.results = {}
         self.resultLog = {
             "topologyExtraction": [],
@@ -378,6 +379,9 @@ class Evaluation(object):
         return np.array(predictedPositions)
 
     # model generation
+    def getModelInfo(self, dataSetPath):
+        return self.dataHandler.loadModelParameters("model.json", dataSetPath)
+
     def getModelParameters(self, dataSetPath, numBodyNodes=None):
         numBodyNodes = (
             self.config["modelGeneration"]["numSegments"]

@@ -7,10 +7,14 @@ import pickle
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
+    from src.evaluation.tracking.trackingEvaluation import TrackingEvaluation
     from src.visualization.plot2D import *
 except:
     print("Imports for plotting script tracking error time series failed.")
     raise
+
+global eval
+eval = TrackingEvaluation()
 
 controlOpt = {
     "resultsToLoad": [0],
@@ -18,7 +22,7 @@ controlOpt = {
     "save": True,
     "saveAsTikz": True,
     "showPlot": True,
-    "saveFolder": "data/eval/tracking/trackingErrorTimeSeriesPlots",
+    "saveFolder": "data/eval/tracking/plots/trackingErrorTimeSeries",
     "saveName": "trackingErrorTimeSeries",
 }
 resultFileName = "result.pkl"
@@ -42,16 +46,17 @@ def createTrackingErrorTimeSeriesPlot(
     dataSetResult, lineColors=None, highlightFrames=None, highlightColor=[1, 0, 0]
 ):
     """creates for a data set a folder with a tracking error plot over all methods, and images for each method for certain frames which can be custumized and are indicated as vertial lines in the plot"""
+
+    trackingResults = dataSetResult["trackingResults"]
+
     highlightFrames = [] if highlightFrames is None else highlightFrames
     fig = plt.figure()
     ax = plt.axes()
     trackingErrorLines = []
-    for key in dataSetResult["trackingEvaluationResults"]:
-        trackingErrors = dataSetResult["trackingEvaluationResults"][key][
-            "trackingErrors"
-        ]
+    for method in trackingResults:
+        trackingErrors = eval.calculateTrackingErrors(trackingResults[method])
         (trackingErrorLine,) = ax.plot(list(range(len(trackingErrors))), trackingErrors)
-        trackingErrorLine.set_label(key.upper())
+        trackingErrorLine.set_label(method.upper())
         trackingErrorLines.append(trackingErrorLine)
     for highlightFrame in highlightFrames:
         ax.axvline(x=highlightFrame, color=highlightColor)

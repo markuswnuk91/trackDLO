@@ -2,6 +2,7 @@ import sys, os
 import numpy as np
 import cv2
 import time
+from scipy.spatial import distance_matrix
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation/tracking", ""))
@@ -72,6 +73,9 @@ class TrackingEvaluation(Evaluation):
     #     spr.register(callback)
     #     return result
 
+    # ---------------------------------------------------------------------------
+    # DATA HANDLING FUNCITONS
+    # ---------------------------------------------------------------------------
     def loadGroundTruthLabelPixelCoordinates(self, dataSetFilePath):
         # gather information
         dataSetFolderPath = self.dataHandler.getDataSetFolderPathFromRelativeFilePath(
@@ -117,14 +121,212 @@ class TrackingEvaluation(Evaluation):
         expectedLabelNumbers = list(
             range(
                 1,
-                len(self.getModelParameters(dataSetFolderPath)["modelInfo"]["labels"])
-                + 1,
+                len(self.getModelInfo(dataSetFolderPath)["labels"]) + 1,
             )
         )
         missingLabels = list(set(collectedLabels) ^ set(expectedLabelNumbers))
 
         return np.array(groundTruthLabels_inPixelCoordiantes), missingLabels
 
+    # ---------------------------------------------------------------------------
+    # ERROR METRIC CALCULATION FUNCTIONS
+    # ---------------------------------------------------------------------------
+
+    def calculateTrackingErrors(self, trackingResult):
+        frames = []
+        trackingErrors = []
+        for registrationResult in trackingResult["registrations"]:
+            frames.append(
+                self.getFileIdentifierFromFilePath(registrationResult["filePath"])
+            )
+            T = registrationResult["T"]
+            Y = registrationResult["Y"]
+            trackingError = 1 / len(Y) * np.sum(np.min(distance_matrix(T, Y), axis=0))
+            trackingErrors.append(trackingError)
+        return trackingErrors
+
+    def calculateGeometricErrors(self, trackingResult):
+        geometricErrorResult = {"mean": [], "accumulated": []}
+        accumulatedGeometricErrorPerIteration = []
+        meanGeometricErrorPerIteration = []
+        model = self.generateModel(trackingResult["modelParameters"])
+        B = trackingResult["B"]
+        branchIndices = list(set(B))
+        numBranches = len(branchIndices)
+        totalLength = 0
+        for branch in model.getBranches():
+            totalLength += branch.getBranchInfo()["length"]
+        correspondingNodeIndices = []
+        XRef = model.getCartesianBodyCenterPositions()
+        for branchIndex in branchIndices:
+            nodeIndices = [i for i, x in enumerate(B) if x == branchIndex]
+            correspondingNodeIndices.append(nodeIndices)
+
+        registrationResults = trackingResult["registrations"]
+        XInit = registrationResults[0]["X"]
+        for registrationResult in registrationResults:
+            T = registrationResult["T"]
+            geometricBranchErrors = []
+            desiredNodeDistances = []
+            registeredNodeDistances = []
+            referenceNodeDistances = []
+            for i, branchIndex in enumerate(branchIndices):
+                correspondingNodes = correspondingNodeIndices[i]
+                correspondingT = T[correspondingNodes, :]
+                correspondingXInit = XInit[correspondingNodes, :]
+                correspondingXRef = XRef[correspondingNodes, :]
+                referenceDifferences = np.diff(correspondingXRef, axis=0)
+                currentDifferences = np.diff(correspondingT, axis=0)
+                desiredDifferences = np.diff(correspondingXInit, axis=0)
+                currentDistances = np.linalg.norm(currentDifferences, axis=1)
+                desiredDistances = np.linalg.norm(desiredDifferences, axis=1)
+                referenceDistances = np.linalg.norm(referenceDifferences, axis=1)
+                for (
+                    desiredNodeDistance,
+                    currentNodeDistance,
+                    referenceNodeDistance,
+                ) in zip(desiredDistances, currentDistances, referenceDistances):
+                    registeredNodeDistances.append(currentNodeDistance)
+                    desiredNodeDistances.append(desiredNodeDistance)
+                    referenceNodeDistances.append(referenceNodeDistance)
+                currentBranchLength = np.sum(currentDistances)
+                desiredBranchLength = np.sum(desiredDistances)
+                geometricBranchError = np.abs(desiredBranchLength - currentBranchLength)
+                geometricBranchErrors.append(geometricBranchError)
+            geometricError = np.sum(
+                np.abs(
+                    np.array(desiredNodeDistances) - np.array(registeredNodeDistances)
+                )
+            )
+            meanGeometricError = np.mean(
+                np.abs(
+                    np.array(desiredNodeDistances) - np.array(registeredNodeDistances)
+                )
+            )
+            geometricErrorResult["accumulated"].append(geometricError)
+            geometricErrorResult["mean"].append(meanGeometricError)
+        return geometricErrorResult
+
+    def calculateReprojectionErrors(self, trackingMethodResult):
+        reprojectionErrorResult = {}
+
+        dataSetPath = trackingMethodResult["dataSetPath"]
+        # get label local cooridnates
+        markerLocalCoordinates = self.getMarkerBranchLocalCoordinates(dataSetPath)
+        # deteremine for which frames labels exist
+        labelInfo = self.loadLabelInfo(dataSetPath)
+        labeledFrames = []
+        labeledFramesFileNames = []
+        groundTruthPixelCoordinatesForFrame = []
+        missingLabelsForFrame = []
+        for labelEntry in labelInfo:
+            fileName = labelEntry["file_upload"].split("-")[-1]
+            labeledFramesFileNames.append(fileName)
+            filePath = dataSetPath + "data/" + fileName
+            labeledFrames.append(self.getFileIndexFromFileName(fileName, dataSetPath))
+            (
+                groundTruthPixelCoordinates,
+                missingLabels,
+            ) = self.loadGroundTruthLabelPixelCoordinates(filePath)
+            groundTruthPixelCoordinatesForFrame.append(groundTruthPixelCoordinates)
+            missingLabelsForFrame.append(missingLabels)
+
+        trackedFrames = trackingMethodResult["frames"]
+        framesToEvaluate = list(set(labeledFrames) & set(trackedFrames))
+        framesToEvaluate.sort()
+        evaluatedFrames = []
+        B = trackingMethodResult["B"]
+        S = trackingMethodResult["S"]
+        meanReprojectionErrorPerFrame = []
+        stdReprojectionErrorPerFrame = []
+        reprojectionErrorsPerFrame = []
+        predictedCoordinates2DPerFrame = []
+        groundTruthCoordinates2DPerFrame = []
+        correspondingTrackingMethodResults = []
+        targetPositions3D = []
+        evaluatedMarkers = []
+        for frame in framesToEvaluate:
+            groundTruthMarkerCoordinates2D = groundTruthPixelCoordinatesForFrame[
+                labeledFrames.index(frame)
+            ]
+            # get tracking result cooresponding to labeld frame
+            correspondingTrackingMethodResult = (
+                self.findCorrespondingEntryFromKeyValuePair(
+                    trackingMethodResult["registrations"], "frame", frame
+                )
+            )
+            correspondingTrackingMethodResults.append(correspondingTrackingMethodResult)
+            T = correspondingTrackingMethodResult["T"]
+            targetPositions3D.append(T)
+            predictedMarkerPositions3D = self.interpolateRegistredTargets(
+                T, B, S, markerLocalCoordinates
+            )
+            # reproject in 2D pixel coordinates
+            predictedMarkerCoordinates2D = self.reprojectFrom3DRobotBase(
+                predictedMarkerPositions3D, dataSetPath
+            )
+
+            missingLabels = missingLabelsForFrame[labeledFrames.index(frame)]
+            markersToEvaluate = list(
+                set(list(range(1, len(predictedMarkerPositions3D) + 1)))
+                - set(missingLabels)
+            )
+            evaluatedMarkers.append(markersToEvaluate)
+            markerCoordinateIndices = np.array(markersToEvaluate) - 1
+            reprojectionErrors = np.linalg.norm(
+                predictedMarkerCoordinates2D[markerCoordinateIndices, :]
+                - groundTruthMarkerCoordinates2D,
+                axis=1,
+            )
+            meanReprojectionErrorPerFrame.append(np.mean(reprojectionErrors))
+            stdReprojectionErrorPerFrame.append(np.std(reprojectionErrors))
+            predictedCoordinates2DPerFrame.append(predictedMarkerCoordinates2D)
+            groundTruthCoordinates2DPerFrame.append(groundTruthMarkerCoordinates2D)
+            reprojectionErrorsPerFrame.append(reprojectionErrors)
+            evaluatedFrames.append(frame)
+            reprojectionErrorResult["labeledFrames"] = framesToEvaluate
+            reprojectionErrorResult["means"] = np.array(meanReprojectionErrorPerFrame)
+            reprojectionErrorResult["stds"] = np.array(stdReprojectionErrorPerFrame)
+            reprojectionErrorResult[
+                "predictedMarkerCoordinates2D"
+            ] = predictedCoordinates2DPerFrame
+            reprojectionErrorResult[
+                "groundTruthMarkerCoordinates2D"
+            ] = groundTruthCoordinates2DPerFrame
+            reprojectionErrorResult["reprojectionErrors"] = reprojectionErrorsPerFrame
+            reprojectionErrorResult["targetPositions3D"] = targetPositions3D
+            reprojectionErrorResult["B"] = B
+            reprojectionErrorResult["S"] = S
+            reprojectionErrorResult["evaluatedMarkers"] = evaluatedMarkers
+        return reprojectionErrorResult
+
+    def calculateRuntimes(trackingMethodResult):
+        runtimeResults = trackingMethodResult["runtimes"]
+        runtimeResults["mean"] = np.mean(
+            trackingMethodResult["runtimes"]["runtimesPerIteration"]
+        )
+        runtimeResults["std"] = np.std(
+            trackingMethodResult["runtimes"]["runtimesPerIteration"]
+        )
+        numPointsPerIterations_Y = []
+        numPointsPerIterations_X = []
+        numCorrespondancesPerIteration = []
+        for registrationResult in trackingMethodResult["registrations"]:
+            numPoints_Y = len(registrationResult["Y"])
+            numPointsPerIterations_Y.append(numPoints_Y)
+            numPoints_X = len(registrationResult["X"])
+            numPointsPerIterations_X.append(numPoints_X)
+            numCorrespondances = numPoints_Y * numPoints_X
+            numCorrespondancesPerIteration.append(numCorrespondances)
+        runtimeResults["numPointsPerIteration"] = numPointsPerIterations_Y
+        runtimeResults[
+            "numCorrespondancesPerIteration"
+        ] = numCorrespondancesPerIteration
+        return runtimeResults
+
+    # ---------------------------------------------------------------------------
+    # VISUALIZATION FUNCITONS
+    # ---------------------------------------------------------------------------
     def visualizeReprojectionError(
         self,
         fileName,

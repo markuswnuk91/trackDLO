@@ -49,7 +49,7 @@ registrationsToRun = [
     # "krcpd",
     # "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
-dataSetsToLoad = [0]  # -1 to load all data sets
+dataSetsToLoad = [1]  # -1 to load all data sets
 
 savePath = "data/eval/tracking/results/"
 resultFileName = "result"

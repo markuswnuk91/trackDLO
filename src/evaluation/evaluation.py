@@ -883,14 +883,13 @@ class Evaluation(object):
         ):
             registrationResult["W"] = registration.W.copy()
             registrationResult["G"] = registration.G.copy()
-        elif (type(registration) == KinematicRegularizedCoherentPointDrift) or type(
-            registration
-        ) == KinematicsPreservingRegistration:
+        elif type(registration) == KinematicRegularizedCoherentPointDrift:
             registrationResult["W"] = registration.W.copy()
             registrationResult["G"] = registration.G.copy()
             registrationResult["q"] = registration.q.copy()
             registrationResult["Xreg"] = registration.Xreg.copy()
-
+        elif type(registration) == KinematicsPreservingRegistration:
+            registrationResult["q"] = registration.q.copy()
         registrationResult["runtimes"] = registration.runTimes[
             "runtimesPerRegistration"
         ]
@@ -1263,10 +1262,8 @@ class Evaluation(object):
         #         size=30,
         #         color=[0, 1, 0],
         #     )
-        elif (
-            (type(classHandle) == KinematicRegularizedCoherentPointDrift)
-            or (type(classHandle) == KinematicRegularizedCoherentPointDrift4BDLO)
-            or (type(classHandle) == KinematicsPreservingRegistration)
+        elif (type(classHandle) == KinematicRegularizedCoherentPointDrift) or (
+            type(classHandle) == KinematicRegularizedCoherentPointDrift4BDLO
         ):
             plotPointSets(
                 ax=ax,
@@ -1278,6 +1275,16 @@ class Evaluation(object):
                 yColor=[0, 0, 0],
             )
             plotPointSet(ax=ax, X=classHandle.Xreg, size=30, color=[1, 0, 0], alpha=0.1)
+        elif type(classHandle) == KinematicsPreservingRegistration:
+            plotPointSets(
+                ax=ax,
+                X=classHandle.T,
+                Y=classHandle.Y,
+                ySize=1,
+                xSize=30,
+                xColor=[1, 0, 0],
+                yColor=[0, 0, 0],
+            )
         elif type(classHandle) == MinimalSpanningTreeTopology:
             if "color" in kwargs:
                 color = kwargs["color"]

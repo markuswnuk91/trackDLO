@@ -38,15 +38,15 @@ visOpt = {
 }
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": True,
+    "trackingResults": False,
     "saveRegistrationsAsImage": True,
     #    "evaluationResults": True,
 }
 registrationsToRun = [
     # "cpd",
-    "spr",
-    # "kpr",
-    "krcpd",
+    # "spr",
+    "kpr",
+    # "krcpd",
     # "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
 dataSetsToLoad = [2]  # -1 to load all data sets

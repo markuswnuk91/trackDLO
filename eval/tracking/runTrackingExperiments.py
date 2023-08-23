@@ -49,7 +49,7 @@ registrationsToRun = [
     # "krcpd",
     # "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
-dataSetsToLoad = [2]  # -1 to load all data sets
+dataSetsToLoad = [0]  # -1 to load all data sets
 
 savePath = "data/eval/tracking/results/"
 resultFileName = "result"
@@ -423,6 +423,7 @@ if __name__ == "__main__":
                     qInit=results["initializationResult"]["localization"]["qInit"],
                     visualize=visOpt["trackingIterations"],
                     savePath=registrationsSavePath,
+                    pauseInterval=0.1,
                 )
 
                 if saveOpt["trackingResults"]:

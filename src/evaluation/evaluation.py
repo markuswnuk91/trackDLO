@@ -917,6 +917,7 @@ class Evaluation(object):
         closeVisAfterRunning=True,
         cleanUpMemory=True,
         savePath=None,
+        pauseInterval=0.1,
     ):
         # # setup tracking problem
         # if startFrame is None and Y is None:
@@ -999,7 +1000,7 @@ class Evaluation(object):
             if visualize:
                 if visualizationCallback is None:
                     visualizationCallback = self.getVisualizationCallback(
-                        reg, savePath=savePath
+                        reg, savePath=savePath, pauseInterval=pauseInterval
                     )
                 reg.registerCallback(visualizationCallback)
         elif method == "spr":

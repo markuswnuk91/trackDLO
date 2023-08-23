@@ -3,6 +3,7 @@ import sys
 import numpy as np
 import numbers
 from warnings import warn
+import time
 
 try:
     sys.path.append(os.getcwd().replace("/src/tracking/krp", ""))
@@ -200,27 +201,53 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             self.iteration
         ) * self.stiffnessMatrix
 
+        dEGrav = np.zeros(self.Dof)
+        t_matrix_assembly_start = time.time()
+
+        # we can do this more efficnetly
+        # for n in range(0, self.N):
+        #     J = self.model.getJacobian(self.q, n)
+        #     dEGrav += self.gravity @ J
+        #     for m in range(0, self.M):
+        #         A += self.P[n, m] * (J.T @ J)
+        #         B += self.P[n, m] * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
+
+        # delta_x_desired = +np.mean(
+        #     self.PY / np.sum(self.P, axis=1)[:, np.newaxis], axis=0
+        # ) - np.mean(self.T, axis=0)
+        # A_trans = self.model.getJacobian(self.q, 0)[:, 3:6]
+        # dq_trans = np.linalg.solve(A_trans, delta_x_desired)
+        # self.q[3:6] = self.q[3:6] + dq_trans
+
         A = np.zeros((self.Dof, self.Dof))
         B = np.zeros(self.Dof)
-        dEGrav = np.zeros(self.Dof)
+        Jn_list = []
+        JnTJn_list = []
+
         for n in range(0, self.N):
-            J = self.model.getJacobian(self.q, n)
-            dEGrav += self.gravity @ J
-            for m in range(0, self.M):
-                # A += self.P[n, m] * (self.Gq.T @ J.T @ J @ self.Gq)
-                # B += self.P[n, m] * (self.Gq.T @ J.T @ (self.Y[m, :] - self.T[n, :]).T)
-                A += self.P[n, m] * (J.T @ J)
-                B += self.P[n, m] * (J.T @ (self.Y[m, :] - self.T[n, :]).T)
-        # A += wStiffness * stiffnessMatrix
-        # B += (
-        #     wStiffness * stiffnessMatrix @ (self.q0 - self.q)
-        # )  # add stiffness term for right side
-        # B += wGravity * dEGrav  # add gravitational term
+            Jn = self.model.getJacobian(self.q, n)
+            JnTJn = Jn.T @ Jn
+            JnTJn_weighted = JnTJn * self.P1[n]
+            A += JnTJn_weighted
+            Jn_list.append(self.model.getJacobian(self.q, n))
+            JnTJn_list.append(JnTJn)
+            B += Jn.T @ (self.P[n, :] @ (self.Y - self.T[n, :])).T
+
+        t_matrix_assembly_end = time.time()
+        print(
+            "Time for matrix assembly: {}".format(
+                t_matrix_assembly_end - t_matrix_assembly_start
+            )
+        )
+        t_pinv_start = time.time()
         AInvDamped = dampedPseudoInverse(A, jacobianDamping)
+        t_pinv_end = time.time()
+        print("Time for matrix inversion: {}".format(t_pinv_end - t_pinv_start))
         self.dq = AInvDamped @ B
+
         # update degrees of freedom
         self.updateDegreesOfFreedom()
-        self.dq[3:6] = B[3:6] / np.sum(self.P)
+
         # set the new targets
         self.computeTargets()
         self.update_variance()

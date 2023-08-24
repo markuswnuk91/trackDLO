@@ -18,10 +18,10 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [0],
+    "resultsToLoad": [2],
     "highlightFrames": [[]],
-    "save": True,
-    "saveAsTikz": True,
+    "save": False,
+    "saveAsTikz": False,
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/geometricErrorTimeSeries",
     "saveName": "geometricErrorTimeSeries",

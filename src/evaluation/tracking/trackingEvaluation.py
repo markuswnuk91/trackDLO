@@ -524,6 +524,7 @@ class TrackingEvaluation(Evaluation):
 
     def plotTrackingResult3D(
         self,
+        ax,
         pointCloud,
         targets,
         adjacencyMatrix,
@@ -534,16 +535,10 @@ class TrackingEvaluation(Evaluation):
         targetPointSize=10,
         pointCloudAlpha=0.1,
         targetAlpha=1,
-        axisLimX=[0, 1],
-        axisLimY=[-0.2, 0.8],
-        axisLimZ=[0, 1],
         elevation=25,
         azimuth=70,
+        lineWidth=1.5,
     ):
-        fig, ax = setupLatexPlot3D(
-            axisLimX=axisLimX, axisLimY=axisLimY, axisLimZ=axisLimZ
-        )
-
         plotPointSet(
             ax=ax,
             X=pointCloud,
@@ -564,6 +559,7 @@ class TrackingEvaluation(Evaluation):
                         ax=ax,
                         pointPair=np.vstack((targets[i, :], targets[j, :])),
                         color=lineColor,
+                        linewidth=lineWidth,
                     )
         ax.view_init(elev=elevation, azim=azimuth)
-        return fig, ax
+        return ax

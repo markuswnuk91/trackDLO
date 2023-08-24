@@ -18,12 +18,13 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [1],
+    "resultsToLoad": [2],
     "save": True,
     "saveAsTikz": True,
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/reprojectionErrorBarPlot",
     "saveName": "reprojectionErrorBarPlot",
+    "methodsToEvaluate": ["cpd", "spr", "kpr", "krcpd"],
 }
 resultFileName = "result.pkl"
 
@@ -53,6 +54,14 @@ def createReprojectionErrorBoxPlots(
     trackingResults = dataSetResult["trackingResults"]
 
     availableMethods = [key for key in trackingResults.keys()]
+
+    for method in methodsToEvaluate:
+        if method not in availableMethods:
+            raise ValueError(
+                "Requested method {} not in result file. Provided results are {}. Please include the the necessary information to continue.".format(
+                    method, availableMethods
+                )
+            )
     # compute reprojection errors
     reprojectionErrorEvaluationResults = {}
     for method in trackingResults:
@@ -149,4 +158,6 @@ if __name__ == "__main__":
         dataSetResults.append(result)
     # create plot
     for dataSetResult in dataSetResults:
-        createReprojectionErrorBoxPlots(dataSetResult)
+        createReprojectionErrorBoxPlots(
+            dataSetResult, methodsToEvaluate=controlOpt["methodsToEvaluate"]
+        )

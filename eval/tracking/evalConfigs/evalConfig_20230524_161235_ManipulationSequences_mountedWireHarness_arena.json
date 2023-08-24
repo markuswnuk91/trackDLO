@@ -78,11 +78,11 @@
             "mu": 0.35,
             "max_iterations": 10
         },
-        "pruningThreshold": 0.03
+        "pruningThreshold": 0.001
     },
     "localization":{
         "numSamples": 10,
-        "numIterations": 100,
+        "numIterations": 30,
         "verbose": 0,
         "method": "IK",
         "jacobianDamping":1

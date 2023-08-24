@@ -623,6 +623,23 @@ class Evaluation(object):
         XInit, BInit, SInit = bdloModel.computeForwardKinematics(
             qInit, locations="center", returnBranchLocalCoordinates=True
         )
+        localizationResult = {
+            "S": localization.S,
+            "C": localization.C,
+            "Y": localization.Y,
+            "X": localization.X,
+            "q": localization.q,
+            "XLog": localization.XLog,
+            "qLog": localization.qLog,
+            "XInit": XInit,
+            "qInit": qInit,
+            "BInit": BInit,
+            "SInit": SInit,
+            "modelParameters": bdloModelParameters,
+            "extractedTopology": localization.extractedTopology,
+            "runtimes": localization.runTimes,
+            "adjacennyMatrix": bdloModel.getBodyNodeNodeAdjacencyMatrix(),
+        }
         # visualization
         if visualizeCorresponanceEstimation:
             fig, ax = self.setupFigure()
@@ -630,7 +647,7 @@ class Evaluation(object):
             plt.show(block=block)
         if closeAfterRunning:
             plt.close("all")
-        return XInit, BInit, SInit, qInit, localization
+        return localizationResult, localization
 
     def runInitialLocalization(
         self,
@@ -684,7 +701,7 @@ class Evaluation(object):
             else jacobianDamping
         )
 
-        XInit, BInit, SInit, qInit, localization = self.initialLocalization(
+        localizationResult, localization = self.initialLocalization(
             pointSet=pointSet,
             extractedTopology=extractedTopology,
             bdloModelParameters=bdloModelParameters,
@@ -700,22 +717,6 @@ class Evaluation(object):
             block=block,
             closeAfterRunning=closeAfterRunning,
         )
-        localizationResult = {
-            "S": localization.S,
-            "C": localization.C,
-            "Y": localization.Y,
-            "X": localization.X,
-            "q": localization.q,
-            "XLog": localization.XLog,
-            "qLog": localization.qLog,
-            "XInit": XInit,
-            "qInit": qInit,
-            "BInit": BInit,
-            "SInit": SInit,
-            "modelParameters": bdloModelParameters,
-            "extractedTopology": localization.extractedTopology,
-            "runtimes": localization.runTimes,
-        }
         if logResults:
             self.resultLog["localization"].append(localizationResult)
 
@@ -875,7 +876,7 @@ class Evaluation(object):
         registrationResult["X"] = registration.X.copy()
         registrationResult["Y"] = registration.Y.copy()
         registrationResult["T"] = registration.T.copy()
-
+        registrationResult["sigma2"] = registration.sigma2.copy()
         # gather registration specific results
         if (
             type(registration) == CoherentPointDrift

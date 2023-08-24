@@ -20,7 +20,7 @@ global runOpt
 global visOpt
 global saveOpt
 runOpt = {
-    "localization": False,
+    "localization": True,
     "tracking": True,
     #    "evaluation": True
 }
@@ -366,11 +366,13 @@ if __name__ == "__main__":
                 visualizeCorresponanceEstimation=visOpt["correspondanceEstimation"],
                 visualizeResult=visOpt["initializationResult"],
             )
+            results["initializationResult"] = initializationResult
             if saveOpt["localizationResults"]:
-                # ensure existing tracking / evaluation results are not overridden
+                # ensure existing tracking results are not overridden
                 if os.path.exists(resultFilePath):
-                    results = eval.loadResults(resultFilePath)
-                results["initializationResult"] = initializationResult
+                    existingResults = eval.loadResults(resultFilePath)
+                    existingTrackingResults = existingResults["trackingResults"]
+                    results["trackingResults"] = existingTrackingResults
                 eval.saveResults(
                     folderPath=resultFolderPath,
                     generateUniqueID=False,

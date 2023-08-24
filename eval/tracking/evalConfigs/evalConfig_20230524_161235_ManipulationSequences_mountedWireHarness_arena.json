@@ -111,7 +111,7 @@
         "alpha": 1, 
         "beta": 0.5,
         "kappa":1000,
-        "wStiffness":0.01,
+        "wStiffness":0,
         "ik_iterations":3,
         "damping":3,
         "dampingAnnealing":0.7,

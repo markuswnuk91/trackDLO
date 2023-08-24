@@ -145,7 +145,7 @@ class NonRigidRegistration(object):
         """
         self.iteration = 0
         self.runTimes["runtimesPerRegistration"] = []
-        self.computeTargets()
+        # self.computeTargets()
         run = True
         while run:
             if self.iteration >= self.max_iterations:

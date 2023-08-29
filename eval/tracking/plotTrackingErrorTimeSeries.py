@@ -17,13 +17,14 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [0],
+    "resultsToLoad": [2],
     "highlightFrames": [[1, 10, 20, 30, 50, 70, 100, 150, 200]],
     "save": True,
     "saveAsTikz": True,
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/trackingErrorTimeSeries",
     "saveName": "trackingErrorTimeSeries",
+    "methodsToEvaluate": ["cpd", "spr", "kpr"],
 }
 resultFileName = "result.pkl"
 
@@ -43,17 +44,25 @@ def loadResult(filePath):
 
 
 def createTrackingErrorTimeSeriesPlot(
-    dataSetResult, lineColors=None, highlightFrames=None, highlightColor=[1, 0, 0]
+    dataSetResult,
+    methodsToEvaluate=None,
+    lineColors=None,
+    highlightFrames=None,
+    highlightColor=[1, 0, 0],
 ):
     """creates for a data set a folder with a tracking error plot over all methods, and images for each method for certain frames which can be custumized and are indicated as vertial lines in the plot"""
 
     trackingResults = dataSetResult["trackingResults"]
 
+    methodsToEvaluate = (
+        list(trackingResults.keys()) if methodsToEvaluate is None else methodsToEvaluate
+    )
+
     highlightFrames = [] if highlightFrames is None else highlightFrames
     fig = plt.figure()
     ax = plt.axes()
     trackingErrorLines = []
-    for method in trackingResults:
+    for method in methodsToEvaluate:
         trackingErrors = eval.calculateTrackingErrors(trackingResults[method])
         (trackingErrorLine,) = ax.plot(list(range(len(trackingErrors))), trackingErrors)
         trackingErrorLine.set_label(method.upper())
@@ -91,4 +100,6 @@ if __name__ == "__main__":
         results.append(result)
     # create plot
     for result in results:
-        createTrackingErrorTimeSeriesPlot(result)
+        createTrackingErrorTimeSeriesPlot(
+            dataSetResult=result, methodsToEvaluate=controlOpt["methodsToEvaluate"]
+        )

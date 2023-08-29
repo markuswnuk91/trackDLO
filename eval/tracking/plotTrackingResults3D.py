@@ -70,7 +70,7 @@ def createPlots(dataSetResult, frame, method, verbose=True):
     pointCloud = registrationResult["Y"]
     targets = registrationResult["T"]
     adjacencyMatrix = dataSetResult["trackingResults"][method]["adjacencyMatrix"]
-
+    dataSetPath = dataSetResult["dataSetPath"]
     ax = eval.plotTrackingResult3D(
         ax=ax,
         pointCloud=pointCloud,
@@ -96,7 +96,8 @@ def createPlots(dataSetResult, frame, method, verbose=True):
     # save figure
     if controlOpt["save"]:
         fileName = controlOpt["saveName"] + "_frame_" + str(frame)
-        folderPath = os.path.join(controlOpt["saveFolder"], method)
+        dataSetName = dataSetPath.split("/")[-2]
+        folderPath = os.path.join(controlOpt["saveFolder"], dataSetName, method)
         if not os.path.exists(folderPath):
             os.makedirs(folderPath, exist_ok=True)
         filePath = os.path.join(folderPath, fileName)

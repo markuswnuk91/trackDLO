@@ -18,7 +18,7 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [2],
+    "resultsToLoad": [0, 1, 2],
     "save": True,
     "saveAsTikz": True,
     "showPlot": True,
@@ -45,14 +45,16 @@ def loadResult(filePath):
 
 def createReprojectionErrorBoxPlots(
     dataSetResult,
-    methodsToEvaluate=["cpd", "spr", "krcpd"],
+    methodsToEvaluate=None,
     numSamples=10,
     spacingXTicks=3,
     spacingErrorBars=2,
     capsize=3,
 ):
     trackingResults = dataSetResult["trackingResults"]
-
+    methodsToEvaluate = (
+        list(trackingResults.keys()) if methodsToEvaluate is None else methodsToEvaluate
+    )
     availableMethods = [key for key in trackingResults.keys()]
 
     for method in methodsToEvaluate:
@@ -64,13 +66,13 @@ def createReprojectionErrorBoxPlots(
             )
     # compute reprojection errors
     reprojectionErrorEvaluationResults = {}
-    for method in trackingResults:
+    for method in methodsToEvaluate:
         reprojectionErrorEvaluationResult = eval.calculateReprojectionErrors(
             trackingResults[method]
         )
         reprojectionErrorEvaluationResults[method] = reprojectionErrorEvaluationResult
 
-    labeledFrames = reprojectionErrorEvaluationResults[availableMethods[0]][
+    labeledFrames = reprojectionErrorEvaluationResults[methodsToEvaluate[0]][
         "labeledFrames"
     ]
 

@@ -93,7 +93,8 @@
         "alpha": 1, 
         "beta": 0.5,
         "mu": 0.1,
-        "normalize": 0
+        "normalize": 0,
+        "sigma2": 0.001
     },
     "sprParameters" : {
         "max_iterations":1,
@@ -104,19 +105,20 @@
         "mu": 0.1,
         "tauAnnealing":1,
         "lambdaAnnealing":1,
-        "normalize": 0
+        "normalize": 0,
+        "sigma2": 0.001
     },
     "kprParameters" : {
         "max_iterations":1,
-        "alpha": 1, 
-        "beta": 0.5,
-        "kappa":1000,
         "ik_iterations":10,
+        "wStiffness":0.1,
+        "stiffnessAnnealing": 0.8,
         "damping":0.8,
         "dampingAnnealing":0.8,
         "minDampingFactor": 0.1,
         "mu": 0.1,
-        "normalize": 0
+        "normalize": 0,
+        "sigma2": 0.001
     },
     "krcpdParameters" : {
         "max_iterations":1,
@@ -127,7 +129,8 @@
         "dampingAnnealing":1,
         "minDampingFactor": 1,
         "mu": 0.1,
-        "normalize": 1
+        "normalize": 1,
+        "sigma2": 0.001
     },
     "krcpd4BDLOParameters" : {
         "max_iterations":1,

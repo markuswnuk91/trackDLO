@@ -20,7 +20,7 @@ global runOpt
 global visOpt
 global saveOpt
 runOpt = {
-    "localization": True,
+    "localization": False,
     "tracking": True,
     #    "evaluation": True
 }
@@ -38,18 +38,18 @@ visOpt = {
 }
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": False,
+    "trackingResults": True,
     "saveRegistrationsAsImage": True,
     #    "evaluationResults": True,
 }
 registrationsToRun = [
-    # "cpd",
-    # "spr",
+    "cpd",
+    "spr",
     "kpr",
-    # "krcpd",
+    "krcpd",
     # "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
-dataSetsToLoad = [1]  # -1 to load all data sets
+dataSetsToLoad = [-1]  # -1 to load all data sets
 
 savePath = "data/eval/tracking/results/"
 resultFileName = "result"

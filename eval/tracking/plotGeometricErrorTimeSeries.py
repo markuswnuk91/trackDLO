@@ -18,13 +18,14 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [2],
+    "resultsToLoad": [1],
     "highlightFrames": [[]],
     "save": False,
     "saveAsTikz": False,
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/geometricErrorTimeSeries",
     "saveName": "geometricErrorTimeSeries",
+    "methodsToEvaluate": ["cpd", "spr", "kpr", "krcpd"],
 }
 resultFileName = "result.pkl"
 
@@ -44,7 +45,11 @@ def loadResult(filePath):
 
 
 def createGeometricErrorTimeSeriesPlot(
-    dataSetResult, lineColors=None, highlightFrames=None, highlightColor=[1, 0, 0]
+    dataSetResult,
+    methodsToEvaluate=None,
+    lineColors=None,
+    highlightFrames=None,
+    highlightColor=[1, 0, 0],
 ):
     trackingResults = dataSetResult["trackingResults"]
 

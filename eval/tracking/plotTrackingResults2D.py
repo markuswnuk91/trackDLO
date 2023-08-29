@@ -18,10 +18,10 @@ eval = TrackingEvaluation()
 
 controlOpt = {
     "resultsToLoad": [0],
-    "methods": ["krcpd"],  # "cpd", "spr", "kpr", "krcpd"
+    "methods": ["cpd", "spr", "kpr", "krcpd"],  # "cpd", "spr", "kpr", "krcpd"
     "frames": [5, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650],
     "save": True,
-    "showPlot": True,
+    "showPlot": False,
     "saveFolder": "data/eval/tracking/plots/trackingResults2D",
     "saveName": "trackingResult2D",
     "´postProcessingToAlginPointCloud": False,
@@ -89,7 +89,8 @@ def createPlots(dataSetResult, frame, method, verbose=True):
     # save Visualization
     if controlOpt["save"]:
         filename = controlOpt["saveName"] + "_frame_" + str(frame)
-        folderPath = os.path.join(controlOpt["saveFolder"], method)
+        dataSetName = dataSetPath.split("/")[-2]
+        folderPath = os.path.join(controlOpt["saveFolder"], dataSetName, method)
         if not os.path.exists(folderPath):
             os.makedirs(folderPath, exist_ok=True)
         savePath = os.path.join(folderPath, filename)

@@ -31,7 +31,7 @@ resultFolderPaths = [
     "data/eval/tracking/results/20230807_162939_ManipulationSequences_mountedWireHarness_partial",
     "data/eval/tracking/results/20230524_161235_ManipulationSequences_mountedWireHarness_arena",
 ]
-resultsToLoad = [1]
+resultsToLoad = [2]
 savePathsForRepresentations = {
     "trackingErrorTimeSeries": "data/eval/tracking/trackingTimeSeriesPlots"
 }

@@ -128,8 +128,8 @@ def createSuccessRateBarPlot(
     # )
 
     # Set the title, labels, and a legend
-    plt.xlabel("model")
-    plt.ylabel("Number of tracked frames")
+    plt.xlabel("methods")
+    plt.ylabel("Successfully tracked frames")
     plt.xticks(XTicks, [x.upper() for x in methodsToEvaluate])
     plt.ylim([0, int(absNumFrames * 1.2)])
     plt.legend()

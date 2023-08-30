@@ -18,14 +18,14 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [1],
+    "resultsToLoad": [0, 1, 2],
     "highlightFrames": [[]],
-    "save": False,
-    "saveAsTikz": False,
+    "save": True,
+    "saveAsTikz": True,
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/geometricErrorTimeSeries",
     "saveName": "geometricErrorTimeSeries",
-    "methodsToEvaluate": ["cpd", "spr", "kpr", "krcpd"],
+    "methodsToEvaluate": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
 }
 resultFileName = "result.pkl"
 
@@ -34,6 +34,8 @@ resultFolderPaths = [
     "data/eval/tracking/results/20230807_162939_ManipulationSequences_mountedWireHarness_partial",
     "data/eval/tracking/results/20230524_161235_ManipulationSequences_mountedWireHarness_arena",
 ]
+
+styleOpt = {"legende": False}
 
 
 def loadResult(filePath):
@@ -52,14 +54,16 @@ def createGeometricErrorTimeSeriesPlot(
     highlightColor=[1, 0, 0],
 ):
     trackingResults = dataSetResult["trackingResults"]
-
+    methodsToEvaluate = (
+        list(trackingResults.keys()) if methodsToEvaluate is None else methodsToEvaluate
+    )
     highlightFrames = [] if highlightFrames is None else highlightFrames
     fig = plt.figure()
     ax = plt.axes()
     geometricErrorLines = []
-    for method in trackingResults:
+    for method in methodsToEvaluate:
         geometricErrorResults = eval.calculateGeometricErrors(trackingResults[method])
-        geometricErrors = geometricErrorResults["mean"]
+        geometricErrors = geometricErrorResults["lengthError"]
         (geometricErrorLine,) = ax.plot(
             list(range(len(geometricErrors))), geometricErrors
         )
@@ -68,8 +72,11 @@ def createGeometricErrorTimeSeriesPlot(
     for highlightFrame in highlightFrames:
         ax.axvline(x=highlightFrame, color=highlightColor)
 
-    # make legend
-    ax.legend(loc="upper right")
+    if styleOpt["legende"]:
+        # make legend
+        ax.legend(loc="upper right")
+    plt.xlabel("frames")
+    plt.ylabel("geometric error in m")
     if controlOpt["save"]:
         # make folder for dataSet
         dataSetPath = dataSetResult["dataSetPath"]
@@ -97,4 +104,6 @@ if __name__ == "__main__":
         results.append(result)
     # create plot
     for result in results:
-        createGeometricErrorTimeSeriesPlot(result)
+        createGeometricErrorTimeSeriesPlot(
+            result, methodsToEvaluate=controlOpt["methodsToEvaluate"]
+        )

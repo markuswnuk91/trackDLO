@@ -146,7 +146,7 @@ class TrackingEvaluation(Evaluation):
         return trackingErrors
 
     def calculateGeometricErrors(self, trackingResult):
-        geometricErrorResult = {"mean": [], "accumulated": []}
+        geometricErrorResult = {"mean": [], "accumulated": [], "lengthError": []}
         accumulatedGeometricErrorPerIteration = []
         meanGeometricErrorPerIteration = []
         model = self.generateModel(trackingResult["modelParameters"])
@@ -170,6 +170,8 @@ class TrackingEvaluation(Evaluation):
             desiredNodeDistances = []
             registeredNodeDistances = []
             referenceNodeDistances = []
+            referenceBranchLengths = []
+            estimatedBranchLengths = []
             for i, branchIndex in enumerate(branchIndices):
                 correspondingNodes = correspondingNodeIndices[i]
                 correspondingT = T[correspondingNodes, :]
@@ -191,8 +193,11 @@ class TrackingEvaluation(Evaluation):
                     referenceNodeDistances.append(referenceNodeDistance)
                 currentBranchLength = np.sum(currentDistances)
                 desiredBranchLength = np.sum(desiredDistances)
+                referenceBranchLength = np.sum(referenceDistances)
                 geometricBranchError = np.abs(desiredBranchLength - currentBranchLength)
                 geometricBranchErrors.append(geometricBranchError)
+                estimatedBranchLengths.append(currentBranchLength)
+                referenceBranchLengths.append(referenceBranchLength)
             geometricError = np.sum(
                 np.abs(
                     np.array(desiredNodeDistances) - np.array(registeredNodeDistances)
@@ -203,8 +208,12 @@ class TrackingEvaluation(Evaluation):
                     np.array(desiredNodeDistances) - np.array(registeredNodeDistances)
                 )
             )
+            estimatedTotalLength = np.sum(estimatedBranchLengths)
+            refereceTotalLength = np.sum(referenceBranchLengths)
+            branchLengthError = np.abs(refereceTotalLength - estimatedTotalLength)
             geometricErrorResult["accumulated"].append(geometricError)
             geometricErrorResult["mean"].append(meanGeometricError)
+            geometricErrorResult["lengthError"].append(branchLengthError)
         return geometricErrorResult
 
     def calculateReprojectionErrors(self, trackingMethodResult):

@@ -90,7 +90,7 @@
 
     "cpdParameters" : {
         "max_iterations":1,
-        "alpha": 10, 
+        "alpha": 1, 
         "beta": 0.5,
         "mu": 0.1,
         "normalize": 0,
@@ -99,14 +99,14 @@
     "sprParameters" : {
         "max_iterations":1,
         "tauFactor": 1000,
-        "lambdaFactor": 10,
+        "lambdaFactor": 1,
         "beta": 0.5,
         "knn":7,
         "mu": 0.1,
         "tauAnnealing":1,
         "lambdaAnnealing":1,
         "normalize": 0,
-        "sigma2": 0.001
+        "sigma2": 0.01
     },
     "kprParameters" : {
         "max_iterations":1,
@@ -122,7 +122,7 @@
     },
     "krcpdParameters" : {
         "max_iterations":1,
-        "alpha": 10, 
+        "alpha": 1, 
         "beta": 0.5,
         "ik_iterations":10,
         "damping":3,

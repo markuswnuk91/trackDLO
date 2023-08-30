@@ -19,7 +19,7 @@ eval = TrackingEvaluation()
 controlOpt = {
     "resultsToLoad": [0],
     "methods": ["cpd", "spr", "krcpd"],  # "cpd", "spr", "kpr", "krcpd"
-    "frames": [0, 5, 100, 250, 400, 500, 650],
+    "frames": [[0, 5, 100, 250, 400, 500, 650]],
     "save": True,
     "saveAsPGF": False,
     "showPlot": False,
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         result = loadResult(resultFilePath)
         results.append(result)
     # create plot
-    for result in results:
+    for i, result in enumerate(results):
         for method in controlOpt["methods"]:
-            for frame in controlOpt["frames"]:
+            for frame in controlOpt["frames"][i]:
                 createPlots(result, frame, method)

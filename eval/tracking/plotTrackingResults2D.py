@@ -17,7 +17,7 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [0],
+    "resultsToLoad": [0, 1, 2],
     "methods": ["cpd", "spr", "kpr", "krcpd"],  # "cpd", "spr", "kpr", "krcpd"
     "frames": [5, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650],
     "save": True,

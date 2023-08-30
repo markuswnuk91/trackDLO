@@ -17,15 +17,16 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [2],
-    "highlightFrames": [[1, 10, 20, 30, 50, 70, 100, 150, 200]],
+    "resultsToLoad": [0, 1, 2],
+    "highlightFrames": [[], [], []],
     "save": True,
     "saveAsTikz": True,
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/trackingErrorTimeSeries",
     "saveName": "trackingErrorTimeSeries",
-    "methodsToEvaluate": ["cpd", "spr", "kpr"],
+    "methodsToEvaluate": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
 }
+styleOpt = {"legende": True}
 resultFileName = "result.pkl"
 
 resultFolderPaths = [
@@ -70,9 +71,11 @@ def createTrackingErrorTimeSeriesPlot(
     for highlightFrame in highlightFrames:
         ax.axvline(x=highlightFrame, color=highlightColor)
 
-    # make legend
-    ax.legend(loc="upper right")
-
+    if styleOpt["legende"]:
+        # make legend
+        ax.legend(loc="upper right")
+    plt.xlabel("frames")
+    plt.ylabel("tracking error in m")
     if controlOpt["save"]:
         # make folder for dataSet
         dataSetPath = dataSetResult["dataSetPath"]

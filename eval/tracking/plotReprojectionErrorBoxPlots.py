@@ -24,8 +24,10 @@ controlOpt = {
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/reprojectionErrorBarPlot",
     "saveName": "reprojectionErrorBarPlot",
-    "methodsToEvaluate": ["cpd", "spr", "kpr", "krcpd"],
+    "methodsToEvaluate": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
 }
+styleOpt = {"legende": False}
+
 resultFileName = "result.pkl"
 
 resultFolderPaths = [
@@ -47,8 +49,8 @@ def createReprojectionErrorBoxPlots(
     dataSetResult,
     methodsToEvaluate=None,
     numSamples=10,
-    spacingXTicks=3,
-    spacingErrorBars=2,
+    spacingXTicks=5,
+    spacingErrorBars=3,
     capsize=3,
 ):
     trackingResults = dataSetResult["trackingResults"]
@@ -127,9 +129,10 @@ def createReprojectionErrorBoxPlots(
 
     # Set the title, labels, and a legend
     plt.xlabel("frames")
-    plt.ylabel("Results")
+    plt.ylabel("mean reprojection error in px")
     plt.xticks(XTicks, framesToPlot)
-    plt.legend()
+    if styleOpt["legende"]:
+        plt.legend()
     plt.tight_layout()
 
     if controlOpt["save"]:

@@ -442,3 +442,30 @@ def plotVector(ax, origin, direction, length=None, color=None):
         direction[2],
         color=color,
     )
+
+
+def plotGraph(
+    ax,
+    X,
+    adjacencyMatrix,
+    pointCcolor=[0, 0, 1],
+    lineColor=[0, 0, 1],
+    pointSize=10,
+    lineWidth=1.5,
+    pointAlpha=1,
+    lineAlpha=1,
+):
+    plotPointSet(ax=ax, X=X, color=pointCcolor, size=pointSize, alpha=pointAlpha)
+    i = 0
+    j = 0
+    I, J = adjacencyMatrix.shape
+    for i in range(0, I):
+        for j in range(0, J):
+            if adjacencyMatrix[i, j] == 1:
+                plotLine(
+                    ax=ax,
+                    pointPair=np.vstack((X[i, :], X[j, :])),
+                    color=lineColor,
+                    linewidth=lineWidth,
+                    alpha=lineAlpha,
+                )

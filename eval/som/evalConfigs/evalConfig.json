@@ -6,7 +6,7 @@
 
     ],
     "dataSetsToLoad": [2],
-    "filesToLoad": [0],
+    "filesToLoad": [3],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -58,16 +58,16 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 5
+            "nthElement" : 20
         }
     },
     "somParameters" : {
-        "numSeedPoints": 800,
+        "numSeedPoints": 300,
         "alpha": 0.9,
-        "alphaAnnealing": 0.95,
+        "alphaAnnealing": 0.87,
         "sigma2": 0.3,
-        "sigma2Min": 0.008,
-        "sigma2Annealing": 0.95,
+        "sigma2Min": 0.2,
+        "sigma2Annealing": 0.9,
         "method": "kernel",
         "max_iterations": 100
     }

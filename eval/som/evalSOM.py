@@ -116,7 +116,7 @@ if __name__ == "__main__":
     else:
         result = eval.results[0]
     # plot evaluation
-    somResult = result[0]["result"]
+    somResult = result["result"]
     # tracking error
     trackingErrors = []
     Y = somResult["Y"][0]

@@ -6,7 +6,7 @@
 
     ],
     "dataSetsToLoad": [2],
-    "filesToLoad": [0],
+    "filesToLoad": [3],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -58,15 +58,15 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 10
+            "nthElement" : 20
         }
     },
     "l1Parameters" : {
-        "numSeedPoints": 1000,
-        "h": 0.001,
-        "hAnnealing": 0.8,
-        "hMin": 0.0008,
+        "numSeedPoints": 300,
+        "h": 0.01,
+        "hAnnealing": 1,
+        "hMin": 0.01,
         "mu": 0.35,
-        "max_iterations": 10
+        "max_iterations": 30
     }
 }

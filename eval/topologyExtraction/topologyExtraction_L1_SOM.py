@@ -19,9 +19,7 @@ except:
 # source data
 sourceSample = 1
 dataSrc = [
-    "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_2.ply",
-    "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_7.ply",
-    "data/darus_data_download/data/dlo_dataset/DLO_Data/20220203_Random_Poses_Unfolded_Wire_Harness/pointcloud_4.ply",
+    "data/darus_data_download/data/20230807_Configurations_mounted/20230807_150735_partial"
 ]
 dataPath = dataSrc[sourceSample]
 

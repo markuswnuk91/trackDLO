@@ -56,11 +56,15 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 3
+            "nthElement" : 10
         }
     },
     "modelGeneration":{
         "numSegments": 30
+    },
+    "lofParameters" : {
+        "numNeighbors": 30,
+        "contamination": 0.01
     },
     "topologyExtraction":{
         "somParameters" : {

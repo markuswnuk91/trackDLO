@@ -62,6 +62,10 @@
     "modelGeneration":{
         "numSegments": 30
     },
+    "lofParameters" : {
+        "numNeighbors": 30,
+        "contamination": 0.01
+    },
     "topologyExtraction":{
         "somParameters" : {
             "numSeedPoints": 150,
@@ -74,7 +78,7 @@
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 800,
+            "numSeedPoints": 300,
             "h": 0.03,
             "hAnnealing": 0.8,
             "hMin": 0.01,

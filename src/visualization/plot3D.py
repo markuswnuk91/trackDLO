@@ -461,7 +461,7 @@ def plotGraph(
     I, J = adjacencyMatrix.shape
     for i in range(0, I):
         for j in range(0, J):
-            if adjacencyMatrix[i, j] == 1:
+            if adjacencyMatrix[i, j] != 0:
                 plotLine(
                     ax=ax,
                     pointPair=np.vstack((X[i, :], X[j, :])),

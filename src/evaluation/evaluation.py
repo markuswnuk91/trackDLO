@@ -32,6 +32,9 @@ try:
     from src.localization.topologyExtraction.minimalSpanningTreeTopology import (
         MinimalSpanningTreeTopology,
     )
+    from src.localization.topologyExtraction.minimalSpanningTreeExtraction import (
+        MinimalSpanningTreeExtraction,
+    )
 
     # model generation
     from src.simulation.bdlo import BranchedDeformableLinearObject
@@ -506,6 +509,11 @@ class Evaluation(object):
         filteredPointSet = lof.sampleLOF(pointSet)
         return filteredPointSet
 
+    def extractMinimumSpanningTreeTopology(self, pointSet, nPaths):
+        minSpanTreeExtractor = MinimalSpanningTreeExtraction(pointSet, nPaths)
+        extractedMinimalSpanningTreeTropology = minSpanTreeExtractor.extractTopology()
+        return extractedMinimalSpanningTreeTropology
+
     def extractTopology(
         self,
         pointSet,
@@ -665,8 +673,8 @@ class Evaluation(object):
             self.resultLog["topologyExtraction"].append(topologyExtractionResult)
 
         return topologyExtractionResult, extractedTopology, topologyExtraction
-        # -------------------------------------------------------------------------
 
+    # -------------------------------------------------------------------------
     # Initial Localization
     # -------------------------------------------------------------------------
     def initialLocalization(

@@ -28,6 +28,7 @@ try:
     )
     from src.localization.downsampling.som.som import SelfOrganizingMap
     from src.localization.downsampling.l1median.l1Median import L1Median
+    from src.localization.downsampling.filter.lofFilter import LocalOutlierFactorFilter
     from src.localization.topologyExtraction.minimalSpanningTreeTopology import (
         MinimalSpanningTreeTopology,
     )
@@ -418,7 +419,93 @@ class Evaluation(object):
         model = self.generateModel(modelParameters)
         return model, modelParameters
 
-    # topology extraction
+    # topology extraction functions
+    def runSOM(
+        self,
+        pointSet,
+        somParameters=None,
+        visualizeIterations=False,
+        visualizeResult=False,
+        visualizationCallback=None,
+        block=False,
+        closeAfterRunning=True,
+    ):
+        somParameters = (
+            self.config["topologyExtraction"]["somParameters"]
+            if somParameters is None
+            else somParameters
+        )
+        som = SelfOrganizingMap(Y=pointSet, **somParameters)
+        # som
+        if (visualizeResult or visualizeIterations) and visualizationCallback is None:
+            visualizationCallback_SOM = self.getVisualizationCallback(som)
+        else:
+            visualizationCallback_SOM = visualizationCallback
+        if visualizeIterations:
+            som.registerCallback(visualizationCallback_SOM)
+
+        reducedPointSet = som.calculateReducedRepresentation()
+        somResult = {
+            "X": som.X,
+            "Y": som.Y,
+            "T": reducedPointSet,
+            "runtimes": som.runTimes,
+        }
+
+        if visualizeResult:
+            visualizationCallback_SOM(som)
+            plt.show(block=block)
+        if closeAfterRunning:
+            plt.close("all")
+        return somResult
+
+    def runL1Median(
+        self,
+        pointSet,
+        l1Parameters=None,
+        visualizeIterations=False,
+        visualizeResult=False,
+        visualizationCallback=None,
+        block=False,
+        closeAfterRunning=True,
+    ):
+        l1Parameters = (
+            self.config["topologyExtraction"]["l1Parameters"]
+            if l1Parameters is None
+            else l1Parameters
+        )
+        l1Median = L1Median(Y=pointSet, **l1Parameters)
+        # l1
+        if (visualizeResult or visualizeIterations) and visualizationCallback is None:
+            visualizationCallback = self.getVisualizationCallback(l1Median)
+        else:
+            visualizationCallback = visualizationCallback
+        if visualizeIterations:
+            l1Median.registerCallback(visualizationCallback)
+
+        reducedPointSet = l1Median.calculateReducedRepresentation()
+        l1Result = {
+            "X": l1Median.X,
+            "Y": l1Median.Y,
+            "T": reducedPointSet,
+            "runtimes": l1Median.runTimes,
+        }
+
+        if visualizeResult:
+            visualizationCallback(l1Median)
+            plt.show(block=block)
+        if closeAfterRunning:
+            plt.close("all")
+        return l1Result
+
+    def filterLOF(self, pointSet, lofParameters=None):
+        lofParameters = (
+            self.config["lofParameters"] if lofParameters is None else lofParameters
+        )
+        lof = LocalOutlierFactorFilter(**lofParameters)
+        filteredPointSet = lof.sampleLOF(pointSet)
+        return filteredPointSet
+
     def extractTopology(
         self,
         pointSet,
@@ -1186,7 +1273,15 @@ class Evaluation(object):
         return fig, ax
 
     def setupVisualizationCallback(
-        self, visFunction, fig, ax, classHandle, pauseInterval=0.1, *args, **kwargs
+        self,
+        visFunction,
+        fig,
+        ax,
+        classHandle,
+        pauseInterval=0.1,
+        savePath=None,
+        *args,
+        **kwargs
     ):
         return partial(
             visFunction,
@@ -1194,6 +1289,7 @@ class Evaluation(object):
             ax,
             classHandle,
             pauseInterval,
+            savePath,
             *args,
             **kwargs,
         )

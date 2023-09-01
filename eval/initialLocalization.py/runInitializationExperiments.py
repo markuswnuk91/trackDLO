@@ -22,12 +22,13 @@ except:
 runOpt = {
     "dataSetsToEvaluate": [1],
     "runInitializationExperiment": True,
-    "dataSetsToEvaluate" "runSom": False,
-    "runL1": False,
+    "runSom": False,
+    "runL1": True,
+    "filterLOF": True,
     #    "evaluation": True
 }
 
-framesToEvaluate = [3]
+framesToEvaluate = [7]
 
 dataSetPaths = [
     "data/darus_data_download/data/202230603_Configurations_mounted/20230603_143937_modelY/",
@@ -90,43 +91,66 @@ if __name__ == "__main__":
                 os.path.dirname(os.path.abspath(__file__)) + relConfigFilePath
             )
             eval = InitialLocalizationEvaluation(pathToConfigFile)
-
+            model, _ = eval.getModel(dataSetPath)
             for frame in framesToEvaluate:
                 initializationResult = {}
                 # load data
                 pointCloud = eval.getPointCloud(frame, dataSetPath)
-                Y = pointCloud[0][::10]
+                Y = pointCloud[0]
 
+                fig, ax = setupLatexPlot3D()
+                plotPointSet(ax=ax, X=Y, color=[1, 0, 0])
+                if runOpt["filterLOF"]:
+                    Y = eval.filterLOF(Y)
+                plotPointSet(ax=ax, X=Y, color=[0, 0, 1])
+                plt.show(block=True)
                 # perform l1 skeletonization
-                # visualize result
+                if runOpt["runL1"]:
+                    l1Result = eval.runL1Median(
+                        pointSet=Y,
+                        visualizeIterations=True,
+                        visualizeResult=True,
+                        block=False,
+                        closeAfterRunning=False,
+                    )
+                    Y_hat = l1Result["T"]
                 # save result
 
                 # perform som
-                # visualize result
+                if runOpt["runSom"]:
+                    somResult = eval.runSOM(
+                        pointSet=Y,
+                        visualizeIterations=True,
+                        visualizeResult=True,
+                        block=True,
+                        closeAfterRunning=False,
+                    )
+                    Y_hat = somResult["T"]
                 # save result
 
                 # extract minimum spanning tree
                 # visualize result
-                minSpanTree = minimalSpanningTree(distance_matrix(Y, Y))
-                longestPaths = find_n_longest_paths(minSpanTree, 3)
+                minSpanTree = minimalSpanningTree(distance_matrix(Y_hat, Y_hat))
+                nLongestPaths = model.getNumLeafNodes() - 1
+                longestPaths = find_n_longest_paths(minSpanTree, nLongestPaths)
 
                 print(longestPaths)
                 fig, ax = setupLatexPlot3D()
                 l = [item for sublist in longestPaths for item in sublist]
-                adjacencyMatrix = np.zeros((Y.shape[0], Y.shape[0]))
+                adjacencyMatrix = np.zeros((Y_hat.shape[0], Y_hat.shape[0]))
                 for path in longestPaths:
                     predecessorIdxs = path[1:]
                     nodeIdxs = path[:-1]
                     for nodeIdx, predecessorIdx in zip(nodeIdxs, predecessorIdxs):
                         adjacencyMatrix[nodeIdx, predecessorIdx] = 1
-                plotGraph(ax=ax, X=Y, adjacencyMatrix=adjacencyMatrix)
+                plotGraph(ax=ax, X=Y_hat, adjacencyMatrix=adjacencyMatrix)
                 plotGraph(
                     ax=ax,
-                    X=Y,
+                    X=Y_hat,
                     adjacencyMatrix=(minSpanTree != 0).astype(int),
                     lineColor=[1, 0, 0],
                 )
-                plt.show()
+                plt.show(block=True)
                 # adjacencyMatrix = (minSpanTree != 0).astype(int)
                 # fig, ax = setupLatexPlot3D()
                 # plotGraph(ax=ax, X=Y, adjacencyMatrix=adjacencyMatrix)

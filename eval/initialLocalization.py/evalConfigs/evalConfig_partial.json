@@ -56,26 +56,30 @@
             "zMax" : 0.5
         },
         "downsamplingParameters" : {
-            "nthElement" : 10
+            "nthElement" : 5
         }
     },
     "modelGeneration":{
         "numSegments": 30
     },
+    "lofParameters" : {
+        "numNeighbors": 30,
+        "contamination": 0.01
+    },
     "topologyExtraction":{
         "somParameters" : {
-            "numSeedPoints": 70,
+            "numSeedPoints": 300,
             "alpha": 0.9,
             "alphaAnnealing": 1,
             "sigma2": 0.3,
-            "sigma2Min": 0.001,
+            "sigma2Min": 0.12,
             "sigma2Annealing": 0.87,
             "method": "kernel",
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 150,
-            "h": 0.03,
+            "numSeedPoints": 300,
+            "h": 0.01,
             "hAnnealing": 0.9,
             "hMin": 0.001,
             "mu": 0.35,

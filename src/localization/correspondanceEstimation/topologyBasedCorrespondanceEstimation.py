@@ -422,9 +422,24 @@ class TopologyBasedCorrespondanceEstimation(object):
 
         # sample points from templateTopology
         for branch in self.templateTopology.getBranches():
-            branchIndex = self.templateTopology.getBranchIndex(branch)
-            # get cartesian positions
-            for s in S:
+            if self.templateTopology.isOuterBranch(branch):
+                branchIndex = self.templateTopology.getBranchIndex(branch)
+                # get cartesian positions
+                for s in S:
+                    cartesianPosition = self.templateTopology.getCartesianPositionFromBranchLocalCoordinate(
+                        branchIndex, s
+                    )
+                    cartesianPositionsTemplate.append(cartesianPosition)
+                    # build feature matrix
+                    pointFeatures = self.getBranchFeatures(
+                        self.templateTopology, branch
+                    )
+                    pointFeatures = np.insert(pointFeatures, 0, s)
+                    pointFeaturesTemplate.append(pointFeatures)
+            elif self.templateTopology.isInnerBranch(branch):
+                branchIndex = self.templateTopology.getBranchIndex(branch)
+                # get cartesian positions
+                s = 0.5
                 cartesianPosition = (
                     self.templateTopology.getCartesianPositionFromBranchLocalCoordinate(
                         branchIndex, s
@@ -438,9 +453,24 @@ class TopologyBasedCorrespondanceEstimation(object):
 
         # sample points from extractedTopology
         for branch in self.extractedTopology.getBranches():
-            branchIndex = self.extractedTopology.getBranchIndex(branch)
-            # get cartesian position
-            for s in S:
+            if self.extractedTopology.isOuterBranch(branch):
+                branchIndex = self.extractedTopology.getBranchIndex(branch)
+                # get cartesian position
+                for s in S:
+                    cartesianPosition = self.extractedTopology.interpolateCartesianPositionFromBranchLocalCoordinate(
+                        branchIndex, s
+                    )
+                    cartesianPositionsExtracted.append(cartesianPosition)
+                    # build feature matrix
+                    pointFeatures = self.getBranchFeatures(
+                        self.extractedTopology, branch
+                    )
+                    pointFeatures = np.insert(pointFeatures, 0, s)
+                    pointFeaturesExtracted.append(pointFeatures)
+            elif self.extractedTopology.isInnerBranch(branch):
+                branchIndex = self.extractedTopology.getBranchIndex(branch)
+                # get cartesian position
+                s = 0.5
                 cartesianPosition = self.extractedTopology.interpolateCartesianPositionFromBranchLocalCoordinate(
                     branchIndex, s
                 )
@@ -474,8 +504,14 @@ class TopologyBasedCorrespondanceEstimation(object):
         Xsample = np.array(cartesianPositionsTemplate)
         C = np.zeros(
             (
-                self.extractedTopology.getNumBranches() * len(S),
-                self.templateTopology.getNumBranches() * len(S),
+                (
+                    self.extractedTopology.getNumOuterBranches() * len(S)
+                    + self.extractedTopology.getNumInnerBranches()
+                ),
+                (
+                    self.templateTopology.getNumOuterBranches() * len(S)
+                    + self.extractedTopology.getNumInnerBranches()
+                ),
             )
         )
         for i in pointIndicesExtracted:

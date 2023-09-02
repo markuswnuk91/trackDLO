@@ -39,7 +39,16 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         sampled Y positions on the extracted topology which are the target positions for the optimization
     """
 
-    def __init__(self, S, callback=None, jacobianDamping=None, *args, **kwargs):
+    def __init__(
+        self,
+        S,
+        callback=None,
+        jacobianDamping=None,
+        dampingAnnealing=None,
+        minDamping=None,
+        *args,
+        **kwargs
+    ):
         super().__init__(*args, **kwargs)
         if np.any(S > 1) or np.any(S < 0):
             raise ValueError(
@@ -56,8 +65,11 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         self.X = np.zeros((self.Ns, self.D))
         self.XLog = []
         self.qLog = []
+        self.XCorrespondanceLog = []
         (self.N, _) = self.X.shape
         self.jacobianDamping = 1 if jacobianDamping is None else jacobianDamping
+        self.dampingAnnealing = 1 if dampingAnnealing is None else dampingAnnealing
+        self.minDamping = 0.1 if minDamping is None else minDamping
         # unlockedDofs = []
         # for i, branch in enumerate(self.bdlo.getBranches()):
         #     branchRootDofIndices = self.bdlo.getBranchRootDofIndices(i)
@@ -100,6 +112,22 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
                 k * len(self.S) : (k + 1) * len(self.S)
             ] = self.bdlo.getCartesianPositionsFromBranchLocalCoordinates(k, S)
         return X
+
+    def getCorrespondingPositionsAndJacobians(self):
+        jacobians = []
+        X_current = []
+        for b in range(0, self.K):
+            if self.bdlo.isOuterBranch(self.bdlo.getBranch(b)):
+                for s in self.S:
+                    x_current, J_hat = self.getModelPositionAndJacobian(b, s, self.q)
+                    X_current.append(x_current)
+                    jacobians.append(J_hat[3:6, :])
+            elif self.bdlo.isInnerBranch(self.bdlo.getBranch(b)):
+                s = 0.5
+                x_current, J_hat = self.getModelPositionAndJacobian(b, s, self.q)
+                X_current.append(x_current)
+                jacobians.append(J_hat[3:6, :])
+        return np.array(X_current), jacobians
 
     def initOptimVars(self, lockedDofs=None):
         """initializes the optimization variables
@@ -224,9 +252,11 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
         if self.extractedTopology is None:
             warn("No topology yet extracted. Extracting topology ...")
             self.extractTopology()
-        (self.YTarget, self.X, self.C) = self.findCorrespondancesFromLocalCoordinates(
-            self.S
-        )
+        (
+            self.YTarget,
+            self.XCorrespondance,
+            self.C,
+        ) = self.findCorrespondancesFromLocalCoordinates(self.S)
         if method == "least_squares":
             self.runtimeInverseKinematics_start = time.time()
             if numIter == -1:
@@ -244,29 +274,34 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
             if numIter == -1:
                 numIter = 100
             self.X_desired = self.C.T @ self.YTarget
+            X_desired_com = np.mean(self.X_desired, axis=0)
             # kinematic regularization (solve IK iteratively)
             dq = np.zeros(self.bdlo.skel.getNumDofs())
             q = self.q
             ik_iterations = numIter
             for i in range(0, ik_iterations):
+                damping = self.dampingAnnealing**i * self.jacobianDamping
+                if damping < self.minDamping:
+                    damping = self.minDamping
                 runTimeInverseKinematicsIteration_start = time.time()
-                jacobians = []
-                X_error = []
-                X_current = []
-                for b in range(0, self.K):
-                    for s in self.S:
-                        x_current, J_hat = self.getModelPositionAndJacobian(
-                            b, s, self.q
-                        )
-                        X_current.append(x_current)
-                        jacobians.append(J_hat[3:6, :])
-                self.X = np.array(X_current)
-                X_error = self.X_desired - self.X
+
+                (
+                    self.XCorrespondance,
+                    jacobians,
+                ) = self.getCorrespondingPositionsAndJacobians()
+                X_error = self.X_desired - self.XCorrespondance
                 J = np.vstack(jacobians)
-                dq = dampedPseudoInverse(J, self.jacobianDamping) @ X_error.flatten()
+                dq = dampedPseudoInverse(J, damping) @ X_error.flatten()
+                dq[3:6] = np.zeros(3)
                 self.q = self.q + dq
+                self.q[3:6] = (
+                    self.q[3:6] + X_desired_com - np.mean(self.XCorrespondance, axis=0)
+                )
                 # save X and q
+                self.X = self.forwardKinematics(self.q, self.S)
+                self.XCorrespondance, _ = self.getCorrespondingPositionsAndJacobians()
                 self.XLog.append(self.X)
+                self.XCorrespondanceLog.append(self.XCorrespondance)
                 self.qLog.append(self.q)
                 runTimeInverseKinematicsIteration_end = time.time()
                 if callable(self.callback):

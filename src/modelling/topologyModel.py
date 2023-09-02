@@ -881,6 +881,36 @@ class topologyModel(object):
         else:
             return False
 
+    def isOuterBranch(self, branch: branch):
+        startNode = branch.getStartNode()
+        endNode = branch.getEndNode()
+        if self.isLeafNode(startNode) or self.isLeafNode(endNode):
+            return True
+        else:
+            return False
+
+    def isInnerBranch(self, branch: branch):
+        startNode = branch.getStartNode()
+        endNode = branch.getEndNode()
+        if self.isBranchNode(startNode) and self.isBranchNode(endNode):
+            return True
+        else:
+            return False
+
+    def getNumOuterBranches(self):
+        numOuterBranches = 0
+        for branch in self.branches:
+            if self.isOuterBranch(branch):
+                numOuterBranches += 1
+        return numOuterBranches
+
+    def getNumInnerBranches(self):
+        numInnerBranches = 0
+        for branch in self.branches:
+            if self.isInnerBranch(branch):
+                numInnerBranches += 1
+        return numInnerBranches
+
     def getSummedLength(self):
         length = 0
         for branch in self.branches:

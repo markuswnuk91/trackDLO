@@ -81,17 +81,20 @@
             "numSeedPoints": 300,
             "h": 0.01,
             "hAnnealing": 0.9,
-            "hMin": 0.001,
+            "hMin": 0.005,
             "mu": 0.35,
-            "max_iterations": 30
+            "max_iterations": 3
         },
         "pruningThreshold": 0.002
     },
     "localization":{
         "numSamples": 10,
-        "numIterations": 100,
+        "numIterations": 30,
         "verbose": 0,
         "method": "IK",
-        "jacobianDamping":1
+        "jacobianDamping":1,
+        "dampingAnnealing": 0.8,
+        "minDamping":0.1
+
     }
 }

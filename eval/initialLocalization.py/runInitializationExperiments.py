@@ -124,14 +124,4 @@ if __name__ == "__main__":
                     closeAfterRunning=True,
                     logResults=True,
                 )
-                # perform correspondance assignment
-                # visualize result
-                # save result
-
-                # perform inverse kinematics
-                # visualize result
-                # save result
-
-                # perform tracking
-                # visualize result
                 # save result

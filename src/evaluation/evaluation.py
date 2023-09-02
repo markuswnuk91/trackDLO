@@ -682,11 +682,7 @@ class Evaluation(object):
         pointSet,
         extractedTopology,
         bdloModelParameters,
-        numSamples=10,
-        numIterations=100,
-        verbose=0,
-        method="IK",
-        jacobianDamping=None,
+        localizationParameters,
         visualizeCorresponanceEstimation=False,
         visualizeIterations=False,
         visualizeResult=False,
@@ -694,18 +690,24 @@ class Evaluation(object):
         block=False,
         closeAfterRunning=True,
     ):
-        localCoordinateSamples = np.linspace(0, 1, numSamples)
+        #     "numSamples": 10,
+        # "numIterations": 100,
+        # "verbose": 0,
+        # "method": "IK",
+        # "jacobianDamping":1,
+        # "dampingAnnealing": 0.8,
+        # "minDamping":0.1
+
+        localCoordinateSamples = np.linspace(0, 1, localizationParameters["numSamples"])
         Y = pointSet
         bdloModel = self.generateModel(bdloModelParameters)
 
         localization = BDLOLocalization(
-            **{
-                "Y": Y,
-                "S": localCoordinateSamples,
-                "templateTopology": bdloModel,
-                "extractedTopology": extractedTopology,
-                "jacobianDamping": jacobianDamping,
-            }
+            Y=Y,
+            S=localCoordinateSamples,
+            templateTopology=bdloModel,
+            extractedTopology=extractedTopology,
+            **localizationParameters,
         )
         if visualizeIterations:
             visualizationCallback = self.getVisualizationCallback(localization)
@@ -713,7 +715,9 @@ class Evaluation(object):
 
         # run inital localization
         qInit = localization.reconstructShape(
-            numIter=numIterations, verbose=verbose, method=method
+            numIter=localizationParameters["numIterations"],
+            verbose=localizationParameters["verbose"],
+            method=localizationParameters["method"],
         )
         XInit, BInit, SInit = bdloModel.computeForwardKinematics(
             qInit, locations="center", returnBranchLocalCoordinates=True
@@ -749,11 +753,7 @@ class Evaluation(object):
         pointSet,
         extractedTopology,
         bdloModelParameters,
-        numSamples=None,
-        numIterations=None,
-        verbose=None,
-        method=None,
-        jacobianDamping=None,
+        localizationParameters=None,
         visualizeCorresponanceEstimation=True,
         visualizeIterations=True,
         visualizeResult=True,
@@ -778,33 +778,33 @@ class Evaluation(object):
         #     pointSet = self.getPointCloud(frame, dataSetPath)
         #     bdloModel = self.generateModel(dataSetPath)
         #     _, extractedTopology = self.runTopologyExtraction(pointSet)
-        numSamples = (
-            self.config["localization"]["numSamples"]
-            if numSamples is None
-            else numSamples
+        # numSamples = (
+        #     self.config["localization"]["numSamples"]
+        #     if numSamples is None
+        #     else numSamples
+        # )
+        # numIterations = (
+        #     self.config["localization"]["numIterations"]
+        #     if numIterations is None
+        #     else numIterations
+        # )
+        # verbose = self.config["localization"]["verbose"] if verbose is None else verbose
+        # method = self.config["localization"]["method"] if method is None else method
+        # jacobianDamping = (
+        #     self.config["localization"]["jacobianDamping"]
+        #     if jacobianDamping is None
+        #     else jacobianDamping
+        # )
+        localizationParameters = (
+            self.config["localization"]
+            if localizationParameters is None
+            else localizationParameters
         )
-        numIterations = (
-            self.config["localization"]["numIterations"]
-            if numIterations is None
-            else numIterations
-        )
-        verbose = self.config["localization"]["verbose"] if verbose is None else verbose
-        method = self.config["localization"]["method"] if method is None else method
-        jacobianDamping = (
-            self.config["localization"]["jacobianDamping"]
-            if jacobianDamping is None
-            else jacobianDamping
-        )
-
         localizationResult, localization = self.initialLocalization(
             pointSet=pointSet,
             extractedTopology=extractedTopology,
             bdloModelParameters=bdloModelParameters,
-            numSamples=numSamples,
-            numIterations=numIterations,
-            verbose=verbose,
-            method=method,
-            jacobianDamping=jacobianDamping,
+            localizationParameters=localizationParameters,
             visualizeCorresponanceEstimation=visualizeCorresponanceEstimation,
             visualizeIterations=visualizeIterations,
             visualizeResult=visualizeResult,
@@ -834,11 +834,7 @@ class Evaluation(object):
         visualizeExtractionResult=False,
         somCallback=None,
         l1Callback=None,
-        numSamples=None,
-        numIterations=None,
-        verbose=None,
-        method=None,
-        jacobianDamping=None,
+        localizationParameters=None,
         visualizeCorresponanceEstimation=True,
         visualizeIterations=True,
         visualizeResult=True,
@@ -896,11 +892,7 @@ class Evaluation(object):
             pointSet,
             extractedTopology,
             bdloModelParameters,
-            numSamples,
-            numIterations,
-            verbose,
-            method,
-            jacobianDamping,
+            localizationParameters,
             visualizeCorresponanceEstimation,
             visualizeIterations,
             visualizeResult,
@@ -1426,7 +1418,7 @@ class Evaluation(object):
                 classHandle.extractedTopology,
                 **{"color": extractedTopologyColor},
             )
-            for i, x in enumerate(classHandle.X):
+            for i, x in enumerate(classHandle.XCorrespondance):
                 plotLine(
                     ax=ax,
                     pointPair=np.vstack(

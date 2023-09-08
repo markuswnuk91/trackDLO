@@ -32,7 +32,7 @@ runOpt = {
 }
 saveOpt = {
     "saveResults": True,
-    "resultRootFolderPath": "data/eval/initialLocalization",
+    "resultRootFolderPath": "data/eval/initialLocalization/results",
     "resultFileType": ".pkl",
     "overwrite": True,
 }
@@ -45,9 +45,9 @@ visOpt = {
     "visSOMResult": False,
     "visTopologyExtractionResult": False,
     "visLocalizationIterations": True,
-    "visLocalizationResult": True,
+    "visLocalizationResult": False,
 }
-framesToEvaluate = [0, 1, 2, 3, 4, 5, 6]
+framesToEvaluate = [-1]
 framesToSkip = []
 failedFrames = []
 
@@ -162,7 +162,7 @@ if __name__ == "__main__":
                         )
                         Y_hat = l1Result["T"]
                         # save result
-                        result["l1MedianResult"] = l1Result
+                        result["l1Result"] = l1Result
                     if visOpt["visL1MedianResult"]:
                         fig, ax = setupLatexPlot3D()
                         plotPointSets(

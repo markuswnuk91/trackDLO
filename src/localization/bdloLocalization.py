@@ -313,10 +313,13 @@ class BDLOLocalization(TopologyBasedCorrespondanceEstimation):
             self.X = self.forwardKinematics(self.q, self.S)
 
         runtimeInverseKinematics_end = time.time()
-        self.runTimes["inverseKinematics"] = (
+        self.runTimes["inverseKinematicsWithVisualiazation"] = (
             runtimeInverseKinematics_end - runtimeInverseKinematics_start
         )
-        self.runTimes["localization"] = (
+        self.runTimes["inverseKinematicsWithoutVisualization"] = np.sum(
+            self.runTimes["inverseKinematicsIterations"]
+        )
+        self.runTimes["localizationWithVisualization"] = (
             runtimeInverseKinematics_end - runTimeLocalization_start
         )
         return self.q

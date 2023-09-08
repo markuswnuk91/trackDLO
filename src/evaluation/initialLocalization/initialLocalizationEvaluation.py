@@ -13,8 +13,8 @@ except:
 
 
 class InitialLocalizationEvaluation(Evaluation):
-    def __init__(self, configFilePath, *args, **kwargs):
-        super().__init__(configFilePath, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def loadGroundTruthLabelPixelCoordinates(self, dataSetFilePath):
         # gather information
@@ -179,3 +179,43 @@ class InitialLocalizationEvaluation(Evaluation):
                 dpi=dpi,
             )
         plt.show(block=block)
+
+    def evaluateReprojectionError(self, initialLocalizationResult):
+        evalResult = {}
+        # get the file name corresponding to this result
+        dataSetFilePath = initialLocalizationResult["filePath"]
+        dataSetPath = initialLocalizationResult["dataSetPath"]
+        q = initialLocalizationResult["localizationResult"]["q"]
+        modelParameters = initialLocalizationResult["modelParameters"]
+        # load the corresponding ground trtuh label coordinates
+        groundTruthLabelCoordinates_2D = self.loadGroundTruthLabelPixelCoordinates(
+            dataSetFilePath
+        )
+        # get the local branch coordinates
+        markerBranchLocalCoordinates = self.getMarkerBranchLocalCoordinates(dataSetPath)
+        # get predicted 3D coordinates
+        model = self.generateModel(modelParameters)
+        modelInfo = self.dataHandler.loadModelParameters("model.json", dataSetPath)
+        markerCoordinates_3D = model.computeForwardKinematicsFromBranchLocalCoordinates(
+            q=q,
+            branchLocalCoordinates=markerBranchLocalCoordinates,
+        )
+        # reproject in 2D pixel coordinates
+        markerCoordinates_2D = self.reprojectFrom3DRobotBase(
+            markerCoordinates_3D, dataSetPath
+        )
+        # evaluate reprojection error
+        reprojectionErrors = groundTruthLabelCoordinates_2D - markerCoordinates_2D
+        meanReprojectionError = np.mean(np.linalg.norm(reprojectionErrors, axis=1))
+
+        evalResult["filePath"] = dataSetFilePath
+        evalResult["dataSetPath"] = dataSetPath
+        evalResult["q"] = q
+        evalResult["modelParameters"] = modelParameters
+        evalResult["groundTruthLabelCoordinates_2D"] = groundTruthLabelCoordinates_2D
+        evalResult["markerBranchLocalCoordinates"] = markerBranchLocalCoordinates
+        evalResult["markerCoordinates_3D"] = markerCoordinates_3D
+        evalResult["markerCoordinates_2D"] = markerCoordinates_2D
+        evalResult["reprojectionErrors"] = reprojectionErrors
+        evalResult["meanReprojectionError"] = meanReprojectionError
+        return evalResult

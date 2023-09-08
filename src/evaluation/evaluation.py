@@ -12,6 +12,7 @@ import pickle
 from warnings import warn
 import time
 import gc
+import time
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation", ""))
@@ -518,9 +519,16 @@ class Evaluation(object):
             self.config["lofParameters"] if lofParameters is None else lofParameters
         )
         lof = LocalOutlierFactorFilter(**lofParameters)
+        runtimeLOF_start = time.time()
         filteredPointSet = lof.sampleLOF(pointSet)
+        runtimeLOF_end = time.time()
         outliers = lof.Outliers
-        lofResult = {"filteredPointSet": filteredPointSet, "outliers": outliers}
+        runtime = runtimeLOF_end - runtimeLOF_start
+        lofResult = {
+            "filteredPointSet": filteredPointSet,
+            "outliers": outliers,
+            "runtime": runtime,
+        }
         return lofResult
 
     def extractMinimumSpanningTreeTopology(self, pointSet, model):

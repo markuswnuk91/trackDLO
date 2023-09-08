@@ -63,8 +63,8 @@
         "numSegments": 30
     },
     "lofParameters" : {
-        "numNeighbors": 30,
-        "contamination": 0.01
+        "numNeighbors": 20,
+        "contamination": 0.07
     },
     "topologyExtraction":{
         "somParameters" : {
@@ -83,7 +83,9 @@
             "hAnnealing": 0.9,
             "hMin": 0.005,
             "mu": 0.35,
-            "max_iterations": 10
+            "max_iterations": 20,
+            "densityCompensation": 0
+
         },
         "pruningThreshold": 0.002
     },

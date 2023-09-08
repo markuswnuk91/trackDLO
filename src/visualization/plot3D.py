@@ -66,11 +66,12 @@ def plotPoint(
     edgeColor=None,
     alpha=1,
     label: str = None,
-    size=20,
+    size=None,
     marker="o",
     zorder=1,
 ):
     edgeColor = color if edgeColor is None else edgeColor
+    size = 20 if size is None else size
     if len(x) == 3:
         if label is None:
             ax.scatter(
@@ -262,10 +263,14 @@ def plotLine(
     ax: plt.axis,
     pointPair: np.array,
     label: str = None,
-    color=[0, 0, 1],
-    alpha=1,
-    linewidth=1.5,
+    color=None,
+    alpha=None,
+    linewidth=None,
 ):
+    color = [0, 0, 1] if color is None else color
+    alpha = 1 if alpha is None else alpha
+    linewidth = 1.5 if linewidth is None else linewidth
+
     if pointPair.shape[1] == 2:
         ax.plot(
             pointPair[:, 0],
@@ -469,3 +474,69 @@ def plotGraph(
                     linewidth=lineWidth,
                     alpha=lineAlpha,
                 )
+    return
+
+
+def plotTopology3D(
+    ax,
+    topology,
+    color=None,
+    lineWidth=None,
+    lineAlpha=None,
+    plotPoints=False,
+    pointAlpha=None,
+    pointSize=None,
+):
+    color = [0, 0, 1] if color is None else color
+
+    pointPairs = topology.getAdjacentPointPairs()
+    for pointPair in pointPairs:
+        stackedPair = np.stack(pointPair)
+        plotLine(
+            ax,
+            pointPair=stackedPair,
+            color=color,
+            linewidth=lineWidth,
+            alpha=lineAlpha,
+        )
+    if plotPoints:
+        points = np.unique(
+            np.array([point for pointPair in pointPairs for point in pointPair]), axis=0
+        )
+        plotPointSet(ax, X=points, color=color, size=pointSize, alpha=pointAlpha)
+    return
+
+
+def plotCorrespondances3D(
+    ax,
+    X,
+    Y,
+    C,
+    xColor=None,
+    yColor=None,
+    correspondanceColor=None,
+    xSize=None,
+    ySize=None,
+    linewidth=None,
+    xAlpha=None,
+    yAlpha=None,
+    lineAlpha=None,
+):
+    xColor = [0, 0, 1] if xColor is None else xColor
+    yColor = [1, 0, 0] if yColor is None else yColor
+    correspondanceColor = (
+        [0.3, 0.3, 0.3] if correspondanceColor is None else correspondanceColor
+    )
+
+    XCorresponding = C @ X
+    for x, y in zip(XCorresponding, Y):
+        plotPoint(ax=ax, x=x, color=xColor, alpha=xAlpha, size=xSize)
+        plotPoint(ax=ax, x=y, color=yColor, alpha=yAlpha, size=ySize)
+        plotLine(
+            ax=ax,
+            pointPair=np.vstack((x, y)),
+            color=correspondanceColor,
+            linewidth=linewidth,
+            alpha=lineAlpha,
+        )
+    return

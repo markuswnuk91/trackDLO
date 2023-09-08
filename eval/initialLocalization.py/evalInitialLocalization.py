@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import cv2
 
+
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
     from src.evaluation.initialLocalization.initialLocalizationEvaluation import (

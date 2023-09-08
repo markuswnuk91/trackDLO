@@ -197,6 +197,18 @@ class Evaluation(object):
         else:
             print("Results were not saved.")
 
+    def saveWithPickle(self, data, filePath, verbose=True, recursionLimit=None):
+        # create directory if it does not exist
+        if not os.path.exists(filePath):
+            os.makedirs(os.path.dirname(filePath), exist_ok=True)
+        if recursionLimit is not None:
+            sys.setrecursionlimit(recursionLimit)
+        with open(filePath, "wb") as f:
+            pickle.dump(data, f)
+        if verbose:
+            print("Saved file {}".format(filePath))
+        return
+
     def loadResults(self, filePath):
         _, file_extension = os.path.splitext(filePath)
         if file_extension == ".pkl":
@@ -507,12 +519,19 @@ class Evaluation(object):
         )
         lof = LocalOutlierFactorFilter(**lofParameters)
         filteredPointSet = lof.sampleLOF(pointSet)
-        return filteredPointSet
+        outliers = lof.Outliers
+        lofResult = {"filteredPointSet": filteredPointSet, "outliers": outliers}
+        return lofResult
 
-    def extractMinimumSpanningTreeTopology(self, pointSet, nPaths):
+    def extractMinimumSpanningTreeTopology(self, pointSet, model):
+        result = {}
+        nPaths = model.getNumLeafNodes() - 1
         minSpanTreeExtractor = MinimalSpanningTreeExtraction(pointSet, nPaths)
         extractedMinimalSpanningTreeTropology = minSpanTreeExtractor.extractTopology()
-        return extractedMinimalSpanningTreeTropology
+        result["nPaths"] = nPaths
+        result["Y"] = pointSet
+        result["extractedTopology"] = extractedMinimalSpanningTreeTropology
+        return result
 
     def extractTopology(
         self,
@@ -726,9 +745,12 @@ class Evaluation(object):
             "S": localization.S,
             "C": localization.C,
             "Y": localization.Y,
+            "YTarget": localization.YTarget,
             "X": localization.X,
+            "XCorrespondance": localization.XCorrespondance,
             "q": localization.q,
             "XLog": localization.XLog,
+            "XCorrespondanceLog": localization.XCorrespondanceLog,
             "qLog": localization.qLog,
             "XInit": XInit,
             "qInit": qInit,
@@ -1403,9 +1425,12 @@ class Evaluation(object):
                 plotLine(ax, pointPair=stackedPair, color=color)
 
         elif type(classHandle) == BDLOLocalization:
-            templateTopologyColor = list(self.colorMaps["viridis"].to_rgba(0)[:3])
-            extractedTopologyColor = list(self.colorMaps["viridis"].to_rgba(1)[:3])
-            correspondanceColor = list(self.colorMaps["viridis"].to_rgba(0.5)[:3])
+            # templateTopologyColor = list(self.colorMaps["viridis"].to_rgba(0)[:3])
+            # extractedTopologyColor = list(self.colorMaps["viridis"].to_rgba(1)[:3])
+            # correspondanceColor = list(self.colorMaps["viridis"].to_rgba(0.5)[:3])
+            templateTopologyColor = [0, 0, 1]
+            extractedTopologyColor = [1, 0, 0]
+            correspondanceColor = [0.5, 0.5, 0.5]
             self.standardVisualizationFunction(
                 fig,
                 ax,

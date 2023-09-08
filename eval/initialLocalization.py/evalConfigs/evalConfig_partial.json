@@ -83,13 +83,13 @@
             "hAnnealing": 0.9,
             "hMin": 0.005,
             "mu": 0.35,
-            "max_iterations": 3
+            "max_iterations": 10
         },
         "pruningThreshold": 0.002
     },
     "localization":{
         "numSamples": 10,
-        "numIterations": 30,
+        "numIterations": 20,
         "verbose": 0,
         "method": "IK",
         "jacobianDamping":1,

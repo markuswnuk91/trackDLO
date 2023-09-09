@@ -118,7 +118,8 @@ if __name__ == "__main__":
 
                     result["config"] = eval.config
                     result["dataSetPath"] = dataSetPath
-                    result["fileName"] = dataSetName
+                    result["dataSetName"] = dataSetName
+                    result["fileName"] = fileName
                     result["filePath"] = filePath
                     result["frame"] = frame
                     result["modelIdentifier"] = modelIdentifier

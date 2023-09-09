@@ -2,7 +2,6 @@ import sys, os
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 try:
     sys.path.append(os.getcwd().replace("/src/visualization", ""))
     from src.visualization.plotUtils import set_size, set_axes_equal

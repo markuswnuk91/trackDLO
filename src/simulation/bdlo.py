@@ -541,6 +541,71 @@ class BranchedDeformableLinearObject(BDLOTopology):
             pointPairs.append(pointPair)
         return pointPairs
 
+    # custom functions for plotting
+    def getJointPositionsAndAdjacencyMatrix(self, q=None):
+        if q is not None:
+            self.setGeneralizedCoordinates(q)
+        pointPairs = []
+        jointIdx = 0
+        points = []
+        for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
+            jointPositions = self.getCartesianJointPositionsForBodyNode(bodyNodeIndex)
+            pointPair = (jointPositions[0], jointPositions[1])
+            pointPairs.append(pointPair)
+        # pointPairs = []
+        # for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
+        #     jointPositions = self.getCartesianJointPositionsForBodyNode(bodyNodeIndex)
+        #     pointPair = (jointPositions[0], jointPositions[1])
+        #     pointPairs.append(pointPair)
+        # points = np.unique(
+        #     np.array([point for pointPair in pointPairs for point in pointPair]), axis=0
+        # )
+        # # adjacencyMatrix = np.zeros((len(points), len(points)))
+        # # for pointPair in pointPairs:
+        # #     for idx, point in enumerate(points):
+        # #         if np.array_equal(pointPair[0], point):
+        # #             firstPointIdx = idx
+        # #         if np.array_equal(pointPair[1], point):
+        # #             secondPointIdx = idx
+        # #     adjacencyMatrix[firstPointIdx, secondPointIdx] = 1
+        # adjacencyMatrix = np.zeros((len(points), len(points)))
+        # for i, point in enumerate(points):
+        #     for pointPair in pointPairs:
+        #         if np.array_equal(point, pointPair[0]):
+
+        #     for j, otherPoint in enumerate(points):
+        #         for pointPair in pointPairs:
+        #             firstInTuple = any(
+        #                 np.array_equal(point, thisPoint) for point in pointPair
+        #             )
+        #             secondInTuple = any(
+        #                 np.array_equal(point, otherPoint) for point in pointPair
+        #             )
+        #             if firstInTuple and secondInTuple:
+        #                 adjacencyMatrix[i, j] = 1
+        jointPositions = []
+        adjacencyMatrix = np.zeros(
+            (self.skel.getNumBodyNodes() + 1, self.skel.getNumBodyNodes() + 1)
+        )
+        for i in range(self.skel.getNumBodyNodes()):
+            bodyNode = self.skel.getBodyNode(i)
+            parentBodyNode = bodyNode.getParentBodyNode()
+            if parentBodyNode is None:
+                jointPositions.append(self.getCartesianPositionSegmentStart(i))
+                jointPositions.append(self.getCartesianPositionSegmentEnd(i))
+                adjacencyMatrix[i, i + 1] = 1
+                adjacencyMatrix[i + 1, i] = 1
+            else:
+                jointPositions.append(self.getCartesianPositionSegmentEnd(i))
+                j = parentBodyNode.getIndexInSkeleton()
+                adjacencyMatrix[i + 1, j + 1] = 1
+
+        # for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
+        #     startJointPosition = self.getCartesianPositionSegmentStart(bodyNodeIndex)
+        #     if
+        #     pointPair = (jointPositions[0], jointPositions[1])
+        return np.vstack(jointPositions), adjacencyMatrix
+
     def getAdjacentPointPairsAndBranchCorrespondance(self):
         pointPairs = []
         for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):

@@ -395,6 +395,58 @@ class Evaluation(object):
             predictedPositions.append(predictedPosition)
         return np.array(predictedPositions)
 
+    def loadGroundTruthLabelPixelCoordinates(self, dataSetFilePath):
+        # gather information
+        dataSetFolderPath = self.dataHandler.getDataSetFolderPathFromRelativeFilePath(
+            dataSetFilePath
+        )
+        fileName = self.dataHandler.getFileNameFromRelativeFilePath(dataSetFilePath)
+        # load label information
+        labelsDict = self.loadLabelInfo(dataSetFolderPath)
+
+        # extract entry corresponding to result
+        labelInfo = self.findCorrespondingLabelEntry(fileName, labelsDict)
+
+        # make sure the labels are in correct order
+        groundTruthLabels_inPixelCoordiantes = []
+        collectedLabels = []
+        for annotationResult in labelInfo["annotations"][0]["result"]:
+            labelNumber = int(
+                annotationResult["value"]["keypointlabels"][0].split("_")[-1]
+            )
+            if len(collectedLabels) > 0 and labelNumber < collectedLabels[-1]:
+                ValueError(
+                    "Label order error. Expected label number greater than {}, instead got: {}".format(
+                        collectedLabels[-1],
+                        labelNumber,
+                    )
+                )
+            # extract label pixel coordinates
+            xInPixelCoords = int(
+                annotationResult["value"]["x"]
+                * annotationResult["original_width"]
+                / 100
+            )
+            yInPixelCoords = int(
+                annotationResult["value"]["y"]
+                * annotationResult["original_height"]
+                / 100
+            )
+            groundTruthLabels_inPixelCoordiantes.append(
+                (xInPixelCoords, yInPixelCoords)
+            )
+            collectedLabels.append(labelNumber)
+
+        expectedLabelNumbers = list(
+            range(
+                1,
+                len(self.getModelInfo(dataSetFolderPath)["labels"]) + 1,
+            )
+        )
+        missingLabels = list(set(collectedLabels) ^ set(expectedLabelNumbers))
+
+        return np.array(groundTruthLabels_inPixelCoordiantes), missingLabels
+
     # model generation
     def getModelInfo(self, dataSetPath):
         return self.dataHandler.loadModelParameters("model.json", dataSetPath)

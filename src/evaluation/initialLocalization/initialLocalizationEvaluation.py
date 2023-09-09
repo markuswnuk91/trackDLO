@@ -16,50 +16,50 @@ class InitialLocalizationEvaluation(Evaluation):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def loadGroundTruthLabelPixelCoordinates(self, dataSetFilePath):
-        # gather information
-        dataSetFolderPath = self.dataHandler.getDataSetFolderPathFromRelativeFilePath(
-            dataSetFilePath
-        )
-        fileName = self.dataHandler.getFileNameFromRelativeFilePath(dataSetFilePath)
-        # load label information
-        labelsDict = self.loadLabelInfo(dataSetFolderPath)
+    # def loadGroundTruthLabelPixelCoordinates(self, dataSetFilePath):
+    #     # gather information
+    #     dataSetFolderPath = self.dataHandler.getDataSetFolderPathFromRelativeFilePath(
+    #         dataSetFilePath
+    #     )
+    #     fileName = self.dataHandler.getFileNameFromRelativeFilePath(dataSetFilePath)
+    #     # load label information
+    #     labelsDict = self.loadLabelInfo(dataSetFolderPath)
 
-        # extract entry corresponding to result
-        labelInfo = self.findCorrespondingLabelEntry(fileName, labelsDict)
+    #     # extract entry corresponding to result
+    #     labelInfo = self.findCorrespondingLabelEntry(fileName, labelsDict)
 
-        # make sure the labels are in correct order
-        groundTruthLabels_inPixelCoordiantes = []
-        for i, annotationResult in enumerate(labelInfo["annotations"][0]["result"]):
-            if (
-                int(annotationResult["value"]["keypointlabels"][0].split("_")[-1])
-                != i + 1
-            ):
-                ValueError(
-                    "Label order error. Expected label number: {}, instead got: {}".format(
-                        i + 1,
-                        int(
-                            annotationResult["value"]["keypointlabels"][0].split("_")[
-                                -1
-                            ]
-                        ),
-                    )
-                )
-            # extract label pixel coordinates
-            xInPixelCoords = int(
-                annotationResult["value"]["x"]
-                * annotationResult["original_width"]
-                / 100
-            )
-            yInPixelCoords = int(
-                annotationResult["value"]["y"]
-                * annotationResult["original_height"]
-                / 100
-            )
-            groundTruthLabels_inPixelCoordiantes.append(
-                (xInPixelCoords, yInPixelCoords)
-            )
-        return np.array(groundTruthLabels_inPixelCoordiantes)
+    #     # make sure the labels are in correct order
+    #     groundTruthLabels_inPixelCoordiantes = []
+    #     for i, annotationResult in enumerate(labelInfo["annotations"][0]["result"]):
+    #         if (
+    #             int(annotationResult["value"]["keypointlabels"][0].split("_")[-1])
+    #             != i + 1
+    #         ):
+    #             ValueError(
+    #                 "Label order error. Expected label number: {}, instead got: {}".format(
+    #                     i + 1,
+    #                     int(
+    #                         annotationResult["value"]["keypointlabels"][0].split("_")[
+    #                             -1
+    #                         ]
+    #                     ),
+    #                 )
+    #             )
+    #         # extract label pixel coordinates
+    #         xInPixelCoords = int(
+    #             annotationResult["value"]["x"]
+    #             * annotationResult["original_width"]
+    #             / 100
+    #         )
+    #         yInPixelCoords = int(
+    #             annotationResult["value"]["y"]
+    #             * annotationResult["original_height"]
+    #             / 100
+    #         )
+    #         groundTruthLabels_inPixelCoordiantes.append(
+    #             (xInPixelCoords, yInPixelCoords)
+    #         )
+    #     return np.array(groundTruthLabels_inPixelCoordiantes)
 
     def visualizeReprojectionError(
         self,
@@ -188,9 +188,10 @@ class InitialLocalizationEvaluation(Evaluation):
         q = initialLocalizationResult["localizationResult"]["q"]
         modelParameters = initialLocalizationResult["modelParameters"]
         # load the corresponding ground trtuh label coordinates
-        groundTruthLabelCoordinates_2D = self.loadGroundTruthLabelPixelCoordinates(
-            dataSetFilePath
-        )
+        (
+            groundTruthLabelCoordinates_2D,
+            missingLabels,
+        ) = self.loadGroundTruthLabelPixelCoordinates(dataSetFilePath)
         # get the local branch coordinates
         markerBranchLocalCoordinates = self.getMarkerBranchLocalCoordinates(dataSetPath)
         # get predicted 3D coordinates
@@ -219,3 +220,82 @@ class InitialLocalizationEvaluation(Evaluation):
         evalResult["reprojectionErrors"] = reprojectionErrors
         evalResult["meanReprojectionError"] = meanReprojectionError
         return evalResult
+
+    def calculateReprojectionError(self, initialLocalizationEvaluationResult):
+        dataSetPath = initialLocalizationEvaluationResult["dataSetPath"]
+        # B = initialLocalizationEvaluationResult["localizationResult"]["BInit"]
+        # S = initialLocalizationEvaluationResult["localizationResult"]["S"]
+        q = initialLocalizationEvaluationResult["localizationResult"]["q"]
+        modelParameters = initialLocalizationEvaluationResult["modelParameters"]
+        filePath = initialLocalizationEvaluationResult["filePath"]
+
+        # get label local cooridnates
+        markerLocalCoordinates = self.getMarkerBranchLocalCoordinates(dataSetPath)
+        # get ground truth pixel coordinates
+        (
+            groundTruthMarkerCoordinates2D,
+            missingLabels,
+        ) = self.loadGroundTruthLabelPixelCoordinates(filePath)
+
+        # get predicted 3D coordinates
+        model = self.generateModel(modelParameters)
+        modelInfo = self.dataHandler.loadModelParameters("model.json", dataSetPath)
+        predictedMarkerPositions3D = (
+            model.computeForwardKinematicsFromBranchLocalCoordinates(
+                q=q,
+                branchLocalCoordinates=markerLocalCoordinates,
+            )
+        )
+
+        # reproject marker positions in 2D pixel coordinates
+        predictedMarkerCoordinates2D = self.reprojectFrom3DRobotBase(
+            predictedMarkerPositions3D, dataSetPath
+        )
+        markersToEvaluate = list(
+            set(list(range(1, len(predictedMarkerPositions3D) + 1)))
+            - set(missingLabels)
+        )
+        markerCoordinateIndices = np.array(markersToEvaluate) - 1
+        reprojectionErrors = np.linalg.norm(
+            predictedMarkerCoordinates2D[markerCoordinateIndices, :]
+            - groundTruthMarkerCoordinates2D,
+            axis=1,
+        )
+        result = {
+            "reprojectionErrors": reprojectionErrors,
+        }
+        result["groundTruthMarkerCoordiantes2D"] = groundTruthMarkerCoordinates2D
+        result["predictedMarkerCoordinates2D"] = predictedMarkerCoordinates2D
+        result["predictedMarkerPositions3D"] = predictedMarkerPositions3D
+        result["meanReprojectionError"] = np.mean(reprojectionErrors)
+        result["evaluatedMarkers"] = markersToEvaluate
+        result["markerLocalCoordinates"] = markerLocalCoordinates
+        return result
+
+    def plotLocalizationResult2D(
+        self,
+        frame,
+        dataSetPath,
+        positions3D,
+        adjacencyMatrix,
+        lineColor=[0, 81 / 255, 158 / 255],
+        circleColor=[0, 81 / 255, 158 / 255],
+        lineThickness=5,
+        circleRadius=10,
+    ):
+        # reproject joints in 2D pixel coordinates
+        positions2D = self.reprojectFrom3DRobotBase(positions3D, dataSetPath)
+
+        # load image
+        rgbImg = self.getDataSet(frame, dataSetPath)[0]  # load image
+
+        rgbImg = self.drawConfiguration2D(
+            rgbImg=rgbImg,
+            positions2D=positions2D,
+            adjacencyMatrix=adjacencyMatrix,
+            lineColor=lineColor,
+            circleColor=circleColor,
+            lineThickness=lineThickness,
+            circleRadius=circleRadius,
+        )
+        return rgbImg

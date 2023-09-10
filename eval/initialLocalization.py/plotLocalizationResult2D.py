@@ -17,8 +17,21 @@ except:
 global eval
 eval = InitialLocalizationEvaluation()
 
-resultFolderPaths = ["data/eval/initialLocalization/results/20230807_150735_partial"]
-controlOpt = {"resultsToLoad": 0}
+controlOpt = {
+    "dataSetsToLoad": [1],
+    # "resultsToLoad": [1],
+    "save": True,
+    "showPlot": False,
+    "block": False,
+    "saveFolder": "data/eval/initialLocalization/plots/initialLocalizationResults",
+    "saveName": "initialLocalizationResultImg",
+    "verbose": True,
+}
+
+resultFolderPaths = [
+    "data/eval/initialLocalization/results/20230807_150735_partial",
+    "data/eval/initialLocalization/results/20230516_113957_Partial",
+]
 
 styleOpt = {
     "lineColor": [0, 1, 0],
@@ -27,73 +40,72 @@ styleOpt = {
     "circleRadius": 10,
 }
 
-
-def list_result_files(path):
-    return [
-        f
-        for f in os.listdir(path)
-        if (os.path.isfile(os.path.join(path, f)) and f.split(".")[-1] == "pkl")
-    ]
-
-
 if __name__ == "__main__":
-    # load results
-    resultFolderPath = resultFolderPaths[0]
-    resultFiles = list_result_files(resultFolderPath)
-    for resultFile in resultFiles:
-        resultFilePath = os.path.join(resultFolderPath, resultFile)
-        result = eval.loadResults(resultFilePath)
-        reprojectionErrorResult = eval.calculateReprojectionError(result)
+    if controlOpt["dataSetsToLoad"][0] == -1:
+        dataSetsToEvaluate = resultFolderPaths
+    else:
+        dataSetsToEvaluate = [
+            dataSetPath
+            for i, dataSetPath in enumerate(resultFolderPaths)
+            if i in controlOpt["dataSetsToLoad"]
+        ]
+    for resultFolderPath in dataSetsToEvaluate:
+        # load results
+        resultFiles = eval.list_result_files(resultFolderPath)
+        failedFrames = []
 
-        # make plot
-        # load image
-        frame = result["frame"]
-        dataSetPath = result["dataSetPath"]
-        modelParameters = result["modelParameters"]
-        q = result["localizationResult"]["q"]
-        model = eval.generateModel(modelParameters)
-        model.setGeneralizedCoordinates(q)
-        positions3D, adjacencyMatrix = model.getJointPositionsAndAdjacencyMatrix()
-        positions2D = eval.reprojectFrom3DRobotBase(positions3D, dataSetPath)
-        rgbImg = eval.getDataSet(frame, dataSetPath)[0]  # load image
-        lineColor = styleOpt["lineColor"]
-        circleColor = styleOpt["circleColor"]
-        lineThickness = styleOpt["lineThickness"]
-        circleRadius = styleOpt["circleRadius"]
-        rgbImg = plotGraphImg(
-            rgbImg=rgbImg,
-            positions2D=positions2D,
-            adjacencyMatrix=adjacencyMatrix,
-            lineColor=lineColor,
-            circleColor=circleColor,
-            lineThickness=lineThickness,
-            circleRadius=circleRadius,
-        )
-        eval.plotImageWithMatplotlib(rgbImg, block=True)
-
-        # save image
-
-        # eval.plotLocalizationResult(
-        #     frame,
-        #     dataSetPath,
-        #     positions3D,
-        #     adjacencyMatrix,
-        #     lineColor=styleOpt["lineColor"],
-        #     circleColor=styleOpt["circleColor"],
-        #     lineThickness=styleOpt["lineThickness"],
-        #     circleRadius=styleOpt["circleRadius"],
-        # )
-        # load img
-        # plot points in img
-        # plot lines in img
-        # plot reporjection error in img
-    # results = []
-    # for resultFilePath in [resultFolderPaths[x] for x in controlOpt["resultsToLoad"]]:
-    #     resultFilePath = os.path.join(resultFilePath, resultFileName)
-    #     result = eval.,.loadResult(resultFilePath)
-    #     results.append(result)
-    # # create plot
-    # for result in results:
-    #     for method in controlOpt["methods"]:
-    #         for frame in controlOpt["frames"]:
-    #             createPlots(result, frame, method)
+        for resultFile in resultFiles:
+            resultFilePath = os.path.join(resultFolderPath, resultFile)
+            result = eval.loadResults(resultFilePath)
+            try:
+                # make plot
+                # load image
+                frame = result["frame"]
+                dataSetPath = result["dataSetPath"]
+                modelParameters = result["modelParameters"]
+                q = result["localizationResult"]["q"]
+                model = eval.generateModel(modelParameters)
+                model.setGeneralizedCoordinates(q)
+                (
+                    positions3D,
+                    adjacencyMatrix,
+                ) = model.getJointPositionsAndAdjacencyMatrix()
+                positions2D = eval.reprojectFrom3DRobotBase(positions3D, dataSetPath)
+                rgbImg = eval.getDataSet(frame, dataSetPath)[0]  # load image
+                lineColor = styleOpt["lineColor"]
+                circleColor = styleOpt["circleColor"]
+                lineThickness = styleOpt["lineThickness"]
+                circleRadius = styleOpt["circleRadius"]
+                rgbImg = plotGraphImg(
+                    rgbImg=rgbImg,
+                    positions2D=positions2D,
+                    adjacencyMatrix=adjacencyMatrix,
+                    lineColor=lineColor,
+                    circleColor=circleColor,
+                    lineThickness=lineThickness,
+                    circleRadius=circleRadius,
+                )
+                if controlOpt["showPlot"]:
+                    eval.plotImageWithMatplotlib(rgbImg, block=controlOpt["block"])
+                    if not controlOpt["block"]:
+                        plt.close("all")
+                # save image
+                if controlOpt["save"]:
+                    id = "_".join(resultFile.split("_")[0:3])
+                    fileName = id + "_" + controlOpt["saveName"]
+                    dataSetName = dataSetPath.split("/")[-2]
+                    folderPath = os.path.join(controlOpt["saveFolder"], dataSetName)
+                    savePath = os.path.join(folderPath, fileName)
+                    if not os.path.exists(folderPath):
+                        os.makedirs(folderPath, exist_ok=True)
+                    eval.saveImage(rgbImg, savePath)
+                if controlOpt["verbose"]:
+                    print(
+                        "Saved image for initial localization result {} for at {}.".format(
+                            resultFile, savePath
+                        )
+                    )
+            except:
+                failedFrames.append(result["frame"])
+        if len(failedFrames) > 0:
+            print("Failed on frames {}".format(failedFrames))

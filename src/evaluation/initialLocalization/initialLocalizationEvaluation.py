@@ -60,6 +60,13 @@ class InitialLocalizationEvaluation(Evaluation):
     #             (xInPixelCoords, yInPixelCoords)
     #         )
     #     return np.array(groundTruthLabels_inPixelCoordiantes)
+    # HELPER FUNCTIONS
+    def list_result_files(self, path):
+        return [
+            f
+            for f in os.listdir(path)
+            if (os.path.isfile(os.path.join(path, f)) and f.split(".")[-1] == "pkl")
+        ]
 
     def visualizeReprojectionError(
         self,
@@ -268,6 +275,7 @@ class InitialLocalizationEvaluation(Evaluation):
         result["predictedMarkerCoordinates2D"] = predictedMarkerCoordinates2D
         result["predictedMarkerPositions3D"] = predictedMarkerPositions3D
         result["meanReprojectionError"] = np.mean(reprojectionErrors)
+        result["stdReprojectionError"] = np.std(reprojectionErrors)
         result["evaluatedMarkers"] = markersToEvaluate
         result["markerLocalCoordinates"] = markerLocalCoordinates
         return result

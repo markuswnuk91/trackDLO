@@ -23,11 +23,14 @@ except:
     raise
 
 runOpt = {
-    "dataSetsToEvaluate": [1],
+    "dataSetsToEvaluate": [4],
+    "framesToEvaluate": [44],
     "runInitializationExperiment": True,
     "runSom": False,
     "runL1": True,
     "filterLOF": True,
+    "runTopologyExtraction": True,
+    "runLocalization": True,
     #    "evaluation": True
 }
 saveOpt = {
@@ -37,17 +40,16 @@ saveOpt = {
     "overwrite": True,
 }
 visOpt = {
-    "visPointCloud": False,
-    "visLOFFilter": False,
+    "visPointCloud": True,
+    "visLOFFilter": True,
     "visL1MedianIterations": True,
     "visL1MedianResult": False,
     "visSOMIterations": False,
     "visSOMResult": False,
-    "visTopologyExtractionResult": False,
+    "visTopologyExtractionResult": True,
     "visLocalizationIterations": True,
     "visLocalizationResult": False,
 }
-framesToEvaluate = [-1]
 framesToSkip = []
 failedFrames = []
 
@@ -55,6 +57,9 @@ dataSetPaths = [
     "data/darus_data_download/data/202230603_Configurations_mounted/20230603_143937_modelY/",
     "data/darus_data_download/data/20230807_Configurations_mounted/20230807_150735_partial/",
     "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/",
+    "data/darus_data_download/data/20230516_Configurations_labeled/20230516_112207_YShape/",
+    # "data/darus_data_download/data/20230516_Configurations_labeled/20230516_113957_Partial/",  # finished 10.09.2023
+    "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/",
 ]
 # logging settings
 logLevel = logging.INFO
@@ -78,10 +83,11 @@ if __name__ == "__main__":
         for dataSetPath in dataSetsToEvaluate:
             # setup evaluation class
             dataSetName = dataSetPath.split("/")[-2]
-            modelIdentifier = dataSetName.split("_")[-1]
+            dataSetIdentifier = dataSetName
             relConfigFilePath = configFilePath = (
-                "/evalConfigs/evalConfig" + "_" + modelIdentifier + ".json"
+                "/evalConfigs/evalConfig" + "_" + dataSetIdentifier + ".json"
             )
+            modelIdentifier = dataSetName.split("_")[-1]
             pathToConfigFile = (
                 os.path.dirname(os.path.abspath(__file__)) + relConfigFilePath
             )
@@ -90,10 +96,14 @@ if __name__ == "__main__":
             resultFolderPath = os.path.join(
                 saveOpt["resultRootFolderPath"], dataSetName
             )
+            # create directory if it does not exist
+            if not os.path.exists(resultFolderPath):
+                os.makedirs(resultFolderPath, exist_ok=True)
             # configure logging
             logFilePath = os.path.join(resultFolderPath, "localization.log")
             logging.basicConfig(filename=logFilePath, level=logLevel, format=logFormat)
 
+            framesToEvaluate = runOpt["framesToEvaluate"]
             if framesToEvaluate[0] == -1:
                 numFramesInDataSet = eval.getNumImageSetsInDataSet(dataSetPath)
                 framesToEvaluate = list(range(0, numFramesInDataSet))
@@ -132,6 +142,7 @@ if __name__ == "__main__":
                     if visOpt["visPointCloud"]:
                         fig, ax = setupLatexPlot3D()
                         plotPointSet(ax=ax, X=Y, color=[1, 0, 0], size=5, alpha=0.1)
+                        ax.view_init(elev=50, azim=40)
                         plt.show(block=True)
 
                     # filter outliers with lof filter
@@ -150,6 +161,7 @@ if __name__ == "__main__":
                             xSize=5,
                             ySize=30,
                         )
+                        ax.view_init(elev=50, azim=40)
                         plt.show(block=True)
 
                     # perform l1 skeletonization
@@ -164,18 +176,18 @@ if __name__ == "__main__":
                         Y_hat = l1Result["T"]
                         # save result
                         result["l1Result"] = l1Result
-                    if visOpt["visL1MedianResult"]:
-                        fig, ax = setupLatexPlot3D()
-                        plotPointSets(
-                            ax=ax,
-                            X=Y,
-                            Y=l1Result["T"],
-                            xColor=[0, 0, 0],
-                            yColor=[1, 0, 0],
-                            xSize=5,
-                            ySize=30,
-                        )
-                        plt.show(block=True)
+                        if visOpt["visL1MedianResult"]:
+                            fig, ax = setupLatexPlot3D()
+                            plotPointSets(
+                                ax=ax,
+                                X=Y,
+                                Y=l1Result["T"],
+                                xColor=[0, 0, 0],
+                                yColor=[1, 0, 0],
+                                xSize=5,
+                                ySize=30,
+                            )
+                            plt.show(block=True)
 
                     # perform som
                     if runOpt["runSom"]:
@@ -190,61 +202,64 @@ if __name__ == "__main__":
                         # save result
                         result["somResult"] = somResult
 
-                    # extract minimum spanning tree
-                    topologyExtractionResult = eval.extractMinimumSpanningTreeTopology(
-                        Y_hat, model
-                    )
-                    extractedTopology = topologyExtractionResult["extractedTopology"]
-                    # save result
-                    result["topologyExtractionResult"] = topologyExtractionResult
-                    if visOpt["visTopologyExtractionResult"]:
-                        # visualize result
-                        fig, ax = setupLatexPlot3D()
-                        plotGraph(
-                            ax=ax,
-                            X=extractedTopology.X,
-                            adjacencyMatrix=extractedTopology.featureMatrix,
+                    if runOpt["runTopologyExtraction"]:
+                        # extract minimum spanning tree
+                        topologyExtractionResult = (
+                            eval.extractMinimumSpanningTreeTopology(Y_hat, model)
                         )
-                        plt.show(block=True)
-
-                    localizationResult, _ = eval.runInitialLocalization(
-                        pointSet=Y_hat,
-                        extractedTopology=extractedTopology,
-                        bdloModelParameters=modelParameters,
-                        visualizeCorresponanceEstimation=True,
-                        visualizeIterations=visOpt["visLocalizationIterations"],
-                        visualizeResult=False,
-                        block=False,
-                        closeAfterRunning=True,
-                        logResults=True,
-                    )
-                    # save result
-                    result["localizationResult"] = localizationResult
-                    if visOpt["visLocalizationResult"]:
-                        fig, ax = setupLatexPlot3D()
-                        plotTopology3D(
-                            ax=ax,
-                            topology=localizationResult["extractedTopology"],
-                            color=[1, 0, 0],
-                            lineAlpha=1,
+                        extractedTopology = topologyExtractionResult[
+                            "extractedTopology"
+                        ]
+                        # save result
+                        result["topologyExtractionResult"] = topologyExtractionResult
+                        if visOpt["visTopologyExtractionResult"]:
+                            # visualize result
+                            fig, ax = setupLatexPlot3D()
+                            plotGraph(
+                                ax=ax,
+                                X=extractedTopology.X,
+                                adjacencyMatrix=extractedTopology.featureMatrix,
+                            )
+                            plt.show(block=True)
+                    if runOpt["runTopologyExtraction"] and runOpt["runLocalization"]:
+                        localizationResult, _ = eval.runInitialLocalization(
+                            pointSet=Y_hat,
+                            extractedTopology=extractedTopology,
+                            bdloModelParameters=modelParameters,
+                            visualizeCorresponanceEstimation=True,
+                            visualizeIterations=visOpt["visLocalizationIterations"],
+                            visualizeResult=False,
+                            block=False,
+                            closeAfterRunning=True,
+                            logResults=True,
                         )
-                        model.setGeneralizedCoordinates(localizationResult["q"])
-                        plotTopology3D(ax=ax, topology=model)
-                        plotCorrespondances3D(
-                            ax=ax,
-                            X=localizationResult["XCorrespondance"],
-                            Y=localizationResult["YTarget"],
-                            C=localizationResult["C"],
-                            xColor=[0, 0, 1],
-                            yColor=[1, 0, 0],
-                            correspondanceColor=[0, 0, 0],
-                            xSize=20,
-                            ySize=20,
-                            xAlpha=0.3,
-                            yAlpha=0.3,
-                            lineAlpha=0.3,
-                        )
-                        plt.show(block=True)
+                        # save result
+                        result["localizationResult"] = localizationResult
+                        if visOpt["visLocalizationResult"]:
+                            fig, ax = setupLatexPlot3D()
+                            plotTopology3D(
+                                ax=ax,
+                                topology=localizationResult["extractedTopology"],
+                                color=[1, 0, 0],
+                                lineAlpha=1,
+                            )
+                            model.setGeneralizedCoordinates(localizationResult["q"])
+                            plotTopology3D(ax=ax, topology=model)
+                            plotCorrespondances3D(
+                                ax=ax,
+                                X=localizationResult["XCorrespondance"],
+                                Y=localizationResult["YTarget"],
+                                C=localizationResult["C"],
+                                xColor=[0, 0, 1],
+                                yColor=[1, 0, 0],
+                                correspondanceColor=[0, 0, 0],
+                                xSize=20,
+                                ySize=20,
+                                xAlpha=0.3,
+                                yAlpha=0.3,
+                                lineAlpha=0.3,
+                            )
+                            plt.show(block=True)
 
                     if saveOpt["saveResults"]:
                         eval.saveWithPickle(
@@ -271,6 +286,11 @@ if __name__ == "__main__":
                     logging.info(
                         'Failed on frame {} ({}) from data set: "{}"'.format(
                             frame, failedFileName, dataSetPath
+                        )
+                    )
+                    print(
+                        "Failed on file{} in data set {}".format(
+                            failedFileName, dataSetPath
                         )
                     )
             print("Finished experiments on data set: {}".format(dataSetName))

@@ -39,6 +39,22 @@ class MinimalSpanningTreeExtraction(object):
         self.X = X
         self.nPaths = nPaths
 
+    def get_max_indices_sorted(self, matrix):
+        # Flatten the matrix
+        flattened = matrix.flatten()
+
+        # Get indices that would sort the flattened matrix
+        sorted_indices = np.argsort(flattened)
+
+        # Reverse the result to get indices in descending order of value
+        indices_of_max_values_flat = sorted_indices[::-1]
+
+        # Convert flattened indices back to matrix indices
+        matrix_indices = np.column_stack(
+            np.unravel_index(indices_of_max_values_flat, matrix.shape)
+        )
+        return matrix_indices
+
     def findNLongestPaths(self, adjacencyMatrix, nLongestPaths):
         longest_paths = []
         current_graph = adjacencyMatrix.copy()
@@ -47,18 +63,40 @@ class MinimalSpanningTreeExtraction(object):
                 csgraph=current_graph, directed=False, return_predecessors=True
             )
             dist_matrix[np.isinf(dist_matrix)] = 0
-            max_distant_point_idxs = np.unravel_index(
-                np.argmax(dist_matrix, axis=None), dist_matrix.shape
-            )
+            if len(longest_paths) >= 1:
+                # find the longest path connected to the already found paths
+                sorted_maxima_indices = self.get_max_indices_sorted(dist_matrix)
+                foundConnectedPath = False
+                for indices in sorted_maxima_indices:
+                    path = [indices[1]]
+                    predecessor = path[0]
+                    while predecessor != indices[0]:
+                        predecessor = predecessors[indices[0], predecessor]
+                        path.append(predecessor)
+                    for foundPath in longest_paths:
+                        newPathStartNodes = set(indices)
+                        alreadyFoundNodes = set(foundPath)
+                        if len(newPathStartNodes.intersection(alreadyFoundNodes)) > 0:
+                            foundConnectedPath = True
+                            break
+                        else:
+                            foundConnectedPath = False
+                    if foundConnectedPath:
+                        break
+            else:
+                # find the longest path
+                max_distant_point_idxs = np.unravel_index(
+                    np.argmax(dist_matrix, axis=None), dist_matrix.shape
+                )
+                path = [max_distant_point_idxs[1]]
+                predecessor = path[0]
+                while predecessor != max_distant_point_idxs[0]:
+                    predecessor = predecessors[max_distant_point_idxs[0], predecessor]
+                    path.append(predecessor)
+                # for row_idx in path:
+                #     for col_idx in path:
+                #         current_graph[row_idx, col_idx] = 0
             # remove the found longest path from the graph
-            path = [max_distant_point_idxs[1]]
-            predecessor = path[0]
-            while predecessor != max_distant_point_idxs[0]:
-                predecessor = predecessors[max_distant_point_idxs[0], predecessor]
-                path.append(predecessor)
-            # for row_idx in path:
-            #     for col_idx in path:
-            #         current_graph[row_idx, col_idx] = 0
             predecessorIdxs = path[1:]
             nodeIdxs = path[:-1]
             for nodeIdx, predecessorIdx in zip(nodeIdxs, predecessorIdxs):

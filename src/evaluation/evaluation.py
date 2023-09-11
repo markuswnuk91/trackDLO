@@ -198,7 +198,7 @@ class Evaluation(object):
         else:
             print("Results were not saved.")
 
-    def saveWithPickle(self, data, filePath, verbose=True, recursionLimit=None):
+    def saveWithPickle(self, data, filePath, verbose=False, recursionLimit=None):
         # create directory if it does not exist
         if not os.path.exists(filePath):
             os.makedirs(os.path.dirname(filePath), exist_ok=True)

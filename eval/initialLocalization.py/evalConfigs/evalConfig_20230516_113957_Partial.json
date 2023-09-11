@@ -8,7 +8,7 @@
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
-            "hueMax": 10,
+            "hueMax": 5,
             "saturationMin": 160,
             "saturationMax": 255,
             "valueMin": 0,
@@ -79,8 +79,8 @@
         },
         "l1Parameters" : {
             "numSeedPoints": 300,
-            "h": 0.001,
-            "hAnnealing": 0.8,
+            "h": 0.01,
+            "hAnnealing": 0.83,
             "hMin": 0.001,
             "mu": 0.35,
             "max_iterations": 30,
@@ -97,6 +97,5 @@
         "jacobianDamping":1,
         "dampingAnnealing": 0.8,
         "minDamping":0.1
-
     }
 }

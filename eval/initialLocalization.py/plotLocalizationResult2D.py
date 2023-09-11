@@ -18,7 +18,7 @@ global eval
 eval = InitialLocalizationEvaluation()
 
 controlOpt = {
-    "dataSetsToLoad": [1],
+    "dataSetsToLoad": [2],
     # "resultsToLoad": [1],
     "save": True,
     "showPlot": False,
@@ -31,6 +31,7 @@ controlOpt = {
 resultFolderPaths = [
     "data/eval/initialLocalization/results/20230807_150735_partial",
     "data/eval/initialLocalization/results/20230516_113957_Partial",
+    "data/eval/initialLocalization/results/20230516_115857_arena",
 ]
 
 styleOpt = {

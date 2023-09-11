@@ -24,11 +24,23 @@ except:
 
 runOpt = {
     "dataSetsToEvaluate": [4],
-    "framesToEvaluate": [44],
+    "framesToEvaluate": [
+        33,
+        34,
+        35,
+        38,
+        39,
+        43,
+        44,
+        45,
+        46,
+        47,
+        49,
+    ],
     "runInitializationExperiment": True,
-    "runSom": False,
-    "runL1": True,
-    "filterLOF": True,
+    # "runSom": False,
+    "runL1": False,
+    "filterLOF": False,
     "runTopologyExtraction": True,
     "runLocalization": True,
     #    "evaluation": True
@@ -40,12 +52,12 @@ saveOpt = {
     "overwrite": True,
 }
 visOpt = {
-    "visPointCloud": True,
-    "visLOFFilter": True,
+    "visPointCloud": False,
+    "visLOFFilter": False,
     "visL1MedianIterations": True,
     "visL1MedianResult": False,
-    "visSOMIterations": False,
-    "visSOMResult": False,
+    # "visSOMIterations": True,
+    # "visSOMResult": True,
     "visTopologyExtractionResult": True,
     "visLocalizationIterations": True,
     "visLocalizationResult": False,
@@ -108,9 +120,11 @@ if __name__ == "__main__":
                 numFramesInDataSet = eval.getNumImageSetsInDataSet(dataSetPath)
                 framesToEvaluate = list(range(0, numFramesInDataSet))
             framesToEvaluate = [
-                frame for frame in framesToEvaluate if frame not in framesToSkip
+                frame
+                for frame in framesToEvaluate
+                if frame not in eval.config["invalidFrames"]
             ]
-            for frame in framesToEvaluate:
+            for i, frame in enumerate(framesToEvaluate):
                 try:
                     # setup result file
                     fileName = eval.getFileName(frame, dataSetFolderPath=dataSetPath)
@@ -121,8 +135,8 @@ if __name__ == "__main__":
                         + saveOpt["resultFileType"]
                     )
                     # check if result for this frame exists, if not create new result
-                    if os.path.exists(resultFilePath) and not saveOpt["overwrite"]:
-                        eval.loadResults(resultFilePath)
+                    if os.path.exists(resultFilePath):
+                        result = eval.loadResults(resultFilePath)
                     else:
                         result = {}
 
@@ -138,7 +152,6 @@ if __name__ == "__main__":
                     # load data
                     pointCloud = eval.getPointCloud(frame, dataSetPath)
                     Y = pointCloud[0]
-                    result["pointCloud"] = Y
                     if visOpt["visPointCloud"]:
                         fig, ax = setupLatexPlot3D()
                         plotPointSet(ax=ax, X=Y, color=[1, 0, 0], size=5, alpha=0.1)
@@ -148,8 +161,19 @@ if __name__ == "__main__":
                     # filter outliers with lof filter
                     if runOpt["filterLOF"]:
                         lofResult = eval.filterLOF(Y)
-                    result["lofResult"] = lofResult
-                    Y = lofResult["filteredPointSet"]
+                        result["lofResult"] = lofResult
+                        Y = lofResult["filteredPointSet"]
+                        if saveOpt["saveResults"]:
+                            eval.saveWithPickle(
+                                data=result,
+                                filePath=resultFilePath,
+                                recursionLimit=10000,
+                            )
+                    else:
+                        if "lofResult" in result:
+                            lofResult = result["lofResult"]
+                            Y = lofResult["filteredPointSet"]
+
                     if visOpt["visLOFFilter"]:
                         fig, ax = setupLatexPlot3D()
                         plotPointSets(
@@ -176,31 +200,43 @@ if __name__ == "__main__":
                         Y_hat = l1Result["T"]
                         # save result
                         result["l1Result"] = l1Result
-                        if visOpt["visL1MedianResult"]:
-                            fig, ax = setupLatexPlot3D()
-                            plotPointSets(
-                                ax=ax,
-                                X=Y,
-                                Y=l1Result["T"],
-                                xColor=[0, 0, 0],
-                                yColor=[1, 0, 0],
-                                xSize=5,
-                                ySize=30,
+                        if saveOpt["saveResults"]:
+                            eval.saveWithPickle(
+                                data=result,
+                                filePath=resultFilePath,
+                                recursionLimit=10000,
                             )
-                            plt.show(block=True)
+                    elif not runOpt["runL1"] and "l1Result" in result:
+                        l1Result = result["l1Result"]
+                        Y_hat = l1Result["T"]
+                    else:
+                        pass
 
-                    # perform som
-                    if runOpt["runSom"]:
-                        somResult = eval.runSOM(
-                            pointSet=Y,
-                            visualizeIterations=visOpt["visSOMIterations"],
-                            visualizeResult=visOpt["visSOMResult"],
-                            block=True,
-                            closeAfterRunning=True,
+                    if visOpt["visL1MedianResult"]:
+                        fig, ax = setupLatexPlot3D()
+                        plotPointSets(
+                            ax=ax,
+                            X=Y,
+                            Y=l1Result["T"],
+                            xColor=[0, 0, 0],
+                            yColor=[1, 0, 0],
+                            xSize=5,
+                            ySize=30,
                         )
-                        Y_hat = somResult["T"]
-                        # save result
-                        result["somResult"] = somResult
+                        plt.show(block=True)
+
+                    # # perform som
+                    # if runOpt["runSom"]:
+                    #     somResult = eval.runSOM(
+                    #         pointSet=Y,
+                    #         visualizeIterations=visOpt["visSOMIterations"],
+                    #         visualizeResult=visOpt["visSOMResult"],
+                    #         block=True,
+                    #         closeAfterRunning=True,
+                    #     )
+                    #     Y_hat = somResult["T"]
+                    #     # save result
+                    #     result["somResult"] = somResult
 
                     if runOpt["runTopologyExtraction"]:
                         # extract minimum spanning tree
@@ -212,16 +248,32 @@ if __name__ == "__main__":
                         ]
                         # save result
                         result["topologyExtractionResult"] = topologyExtractionResult
-                        if visOpt["visTopologyExtractionResult"]:
-                            # visualize result
-                            fig, ax = setupLatexPlot3D()
-                            plotGraph(
-                                ax=ax,
-                                X=extractedTopology.X,
-                                adjacencyMatrix=extractedTopology.featureMatrix,
+                        if saveOpt["saveResults"]:
+                            eval.saveWithPickle(
+                                data=result,
+                                filePath=resultFilePath,
+                                recursionLimit=10000,
                             )
-                            plt.show(block=True)
-                    if runOpt["runTopologyExtraction"] and runOpt["runLocalization"]:
+                    elif not runOpt["runL1"] and "topologyExtractionResult" in result:
+                        topologyExtractionResult = result["topologyExtractionResult"]
+                        extractedTopology = topologyExtractionResult[
+                            "extractedTopology"
+                        ]
+                    else:
+                        raise ValueError(
+                            "Cannot continue because no topology was extracted. Check the settings."
+                        )
+                    if visOpt["visTopologyExtractionResult"]:
+                        # visualize result
+                        fig, ax = setupLatexPlot3D()
+                        plotGraph(
+                            ax=ax,
+                            X=extractedTopology.X,
+                            adjacencyMatrix=extractedTopology.featureMatrix,
+                        )
+                        plt.show(block=True)
+
+                    if runOpt["runLocalization"]:
                         localizationResult, _ = eval.runInitialLocalization(
                             pointSet=Y_hat,
                             extractedTopology=extractedTopology,
@@ -233,46 +285,45 @@ if __name__ == "__main__":
                             closeAfterRunning=True,
                             logResults=True,
                         )
-                        # save result
                         result["localizationResult"] = localizationResult
-                        if visOpt["visLocalizationResult"]:
-                            fig, ax = setupLatexPlot3D()
-                            plotTopology3D(
-                                ax=ax,
-                                topology=localizationResult["extractedTopology"],
-                                color=[1, 0, 0],
-                                lineAlpha=1,
+                        if saveOpt["saveResults"]:
+                            eval.saveWithPickle(
+                                data=result,
+                                filePath=resultFilePath,
+                                recursionLimit=10000,
+                                verbose=True,
                             )
-                            model.setGeneralizedCoordinates(localizationResult["q"])
-                            plotTopology3D(ax=ax, topology=model)
-                            plotCorrespondances3D(
-                                ax=ax,
-                                X=localizationResult["XCorrespondance"],
-                                Y=localizationResult["YTarget"],
-                                C=localizationResult["C"],
-                                xColor=[0, 0, 1],
-                                yColor=[1, 0, 0],
-                                correspondanceColor=[0, 0, 0],
-                                xSize=20,
-                                ySize=20,
-                                xAlpha=0.3,
-                                yAlpha=0.3,
-                                lineAlpha=0.3,
-                            )
-                            plt.show(block=True)
-
-                    if saveOpt["saveResults"]:
-                        eval.saveWithPickle(
-                            data=result, filePath=resultFilePath, recursionLimit=10000
+                    elif not runOpt["runL1"] and "localizationResult" in result:
+                        localizationResult = result["localizationResult"]
+                    else:
+                        raise ValueError(
+                            "Cannot continue because localization was not performed. Check the settings."
                         )
-                        # eval.saveResults(
-                        #     folderPath=resultFolderPath + "/",
-                        #     generateUniqueID=False,
-                        #     fileName=resultFileName,
-                        #     results=result,
-                        #     promtOnSave=False,
-                        #     overwrite=True,
-                        # )
+                    if visOpt["visLocalizationResult"]:
+                        fig, ax = setupLatexPlot3D()
+                        plotTopology3D(
+                            ax=ax,
+                            topology=localizationResult["extractedTopology"],
+                            color=[1, 0, 0],
+                            lineAlpha=1,
+                        )
+                        model.setGeneralizedCoordinates(localizationResult["q"])
+                        plotTopology3D(ax=ax, topology=model)
+                        plotCorrespondances3D(
+                            ax=ax,
+                            X=localizationResult["XCorrespondance"],
+                            Y=localizationResult["YTarget"],
+                            C=localizationResult["C"],
+                            xColor=[0, 0, 1],
+                            yColor=[1, 0, 0],
+                            correspondanceColor=[0, 0, 0],
+                            xSize=20,
+                            ySize=20,
+                            xAlpha=0.3,
+                            yAlpha=0.3,
+                            lineAlpha=0.3,
+                        )
+                        plt.show(block=True)
                     logging.info(
                         'Finished localization for frame {} ({}) from data set: "{}"'.format(
                             frame, fileName, dataSetPath
@@ -293,6 +344,8 @@ if __name__ == "__main__":
                             failedFileName, dataSetPath
                         )
                     )
+                    traceback.print_exc()
+                print("Evaluated frame {}/{}".format(i + 1, len(framesToEvaluate)))
             print("Finished experiments on data set: {}".format(dataSetName))
             logging.info("Finished experiments on data set: {}".format(dataSetName))
         print("Finished experiments.")

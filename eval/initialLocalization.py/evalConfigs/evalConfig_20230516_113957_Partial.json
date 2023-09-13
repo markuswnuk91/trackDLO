@@ -5,11 +5,12 @@
     ],
     "dataSetToLoad": 1,
     "resultFolderPath":"data/eval/initialLocalization/",
+    "invalidFrames": [],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
-            "hueMax": 5,
-            "saturationMin": 160,
+            "hueMax": 30,
+            "saturationMin": 100,
             "saturationMax": 255,
             "valueMin": 0,
             "valueMax": 255
@@ -56,7 +57,7 @@
             "zMax" : 1
         },
         "downsamplingParameters" : {
-            "nthElement" : 5
+            "nthElement" : 1
         }
     },
     "modelGeneration":{

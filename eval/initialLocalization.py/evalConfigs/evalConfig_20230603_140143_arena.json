@@ -49,12 +49,12 @@
         },
         
         "robotCoordinateBoundingBoxParameters" : {
-            "xMin" : 0.2,
-            "xMax" : 0.63,
-            "yMin" : -0.5,
-            "yMax" : 0.5,
-            "zMin" : 0.25,
-            "zMax" : 0.5
+            "xMin" : 0.0,
+            "xMax" : 1,
+            "yMin" : -0.6,
+            "yMax" : 0.8,
+            "zMin" : 0.0,
+            "zMax" : 1
         },
         "downsamplingParameters" : {
             "nthElement" : 1
@@ -64,12 +64,12 @@
         "numSegments": 30
     },
     "lofParameters" : {
-        "numNeighbors": 30,
-        "contamination": 0.01
+        "numNeighbors": 20,
+        "contamination": 0.03
     },
     "topologyExtraction":{
         "somParameters" : {
-            "numSeedPoints": 150,
+            "numSeedPoints": 350,
             "alpha": 0.9,
             "alphaAnnealing": 1,
             "sigma2": 0.3,
@@ -79,20 +79,22 @@
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 700,
-            "h": 0.03,
-            "hAnnealing": 0.8,
-            "hMin": 0.01,
+            "numSeedPoints": 350,
+            "h": 0.005,
+            "hAnnealing": 0.87,
+            "hMin": 0.001,
             "mu": 0.35,
-            "max_iterations": 10
+            "max_iterations": 30
         },
         "pruningThreshold": 0.03
     },
     "localization":{
         "numSamples": 10,
-        "numIterations": 100,
+        "numIterations": 30,
         "verbose": 0,
         "method": "IK",
-        "jacobianDamping":1
+        "jacobianDamping":1,
+        "dampingAnnealing": 0.8,
+        "minDamping":0.1
     }
 }

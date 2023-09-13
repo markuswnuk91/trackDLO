@@ -9,10 +9,10 @@
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
-            "hueMax": 15,
-            "saturationMin": 150,
+            "hueMax": 180,
+            "saturationMin": 158,
             "saturationMax": 255,
-            "valueMin": 200,
+            "valueMin": 0,
             "valueMax": 255
         },
         "roiFilterParameters" : {
@@ -24,10 +24,10 @@
         "hsvPassThroughFilters" : [
             {
                 "hueMin": 159,
-                "hueMax": 168,
+                "hueMax": 180,
                 "saturationMin": 107,
                 "saturationMax": 131,
-                "valueMin": 137,
+                "valueMin": 0,
                 "valueMax": 255
             },
             {
@@ -79,7 +79,7 @@
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 1000,
+            "numSeedPoints": 500,
             "h": 0.003,
             "hAnnealing": 0.8,
             "hMin": 0.001,

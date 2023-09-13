@@ -23,24 +23,12 @@ except:
     raise
 
 runOpt = {
-    "dataSetsToEvaluate": [4],
-    "framesToEvaluate": [
-        33,
-        34,
-        35,
-        38,
-        39,
-        43,
-        44,
-        45,
-        46,
-        47,
-        49,
-    ],
+    "dataSetsToEvaluate": [0],
+    "framesToEvaluate": [-1],
     "runInitializationExperiment": True,
     # "runSom": False,
-    "runL1": False,
-    "filterLOF": False,
+    "runL1": True,
+    "filterLOF": True,
     "runTopologyExtraction": True,
     "runLocalization": True,
     #    "evaluation": True
@@ -66,12 +54,12 @@ framesToSkip = []
 failedFrames = []
 
 dataSetPaths = [
-    "data/darus_data_download/data/202230603_Configurations_mounted/20230603_143937_modelY/",
-    "data/darus_data_download/data/20230807_Configurations_mounted/20230807_150735_partial/",
+    # "data/darus_data_download/data/202230603_Configurations_mounted/20230603_143937_modelY/",
+    # "data/darus_data_download/data/20230807_Configurations_mounted/20230807_150735_partial/",
     "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/",
-    "data/darus_data_download/data/20230516_Configurations_labeled/20230516_112207_YShape/",
+    # "data/darus_data_download/data/20230516_Configurations_labeled/20230516_112207_YShape/",
     # "data/darus_data_download/data/20230516_Configurations_labeled/20230516_113957_Partial/",  # finished 10.09.2023
-    "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/",
+    # "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/", # finished 12.09.2023
 ]
 # logging settings
 logLevel = logging.INFO
@@ -254,7 +242,10 @@ if __name__ == "__main__":
                                 filePath=resultFilePath,
                                 recursionLimit=10000,
                             )
-                    elif not runOpt["runL1"] and "topologyExtractionResult" in result:
+                    elif (
+                        not runOpt["runTopologyExtraction"]
+                        and "topologyExtractionResult" in result
+                    ):
                         topologyExtractionResult = result["topologyExtractionResult"]
                         extractedTopology = topologyExtractionResult[
                             "extractedTopology"
@@ -293,7 +284,9 @@ if __name__ == "__main__":
                                 recursionLimit=10000,
                                 verbose=True,
                             )
-                    elif not runOpt["runL1"] and "localizationResult" in result:
+                    elif (
+                        not runOpt["runLocalization"] and "localizationResult" in result
+                    ):
                         localizationResult = result["localizationResult"]
                     else:
                         raise ValueError(

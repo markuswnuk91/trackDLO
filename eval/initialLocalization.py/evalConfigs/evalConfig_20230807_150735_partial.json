@@ -5,6 +5,7 @@
     ],
     "dataSetToLoad": 1,
     "resultFolderPath":"data/eval/initialLocalization/",
+    "invalidFrames": [19,29,31,45,48,49],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -48,27 +49,27 @@
         },
         
         "robotCoordinateBoundingBoxParameters" : {
-            "xMin" : 0.2,
-            "xMax" : 0.63,
+            "xMin" : 0.0,
+            "xMax" : 0.8,
             "yMin" : -0.6,
-            "yMax" : 0.7,
-            "zMin" : 0.27,
-            "zMax" : 0.5
+            "yMax" : 0.8,
+            "zMin" : 0.0,
+            "zMax" : 1
         },
         "downsamplingParameters" : {
-            "nthElement" : 5
+            "nthElement" : 10
         }
     },
     "modelGeneration":{
         "numSegments": 30
     },
     "lofParameters" : {
-        "numNeighbors": 20,
-        "contamination": 0.07
+        "numNeighbors": 5,
+        "contamination": 0.001
     },
     "topologyExtraction":{
         "somParameters" : {
-            "numSeedPoints": 300,
+            "numSeedPoints": 700,
             "alpha": 0.9,
             "alphaAnnealing": 1,
             "sigma2": 0.3,
@@ -78,13 +79,13 @@
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 300,
+            "numSeedPoints": 500,
             "h": 0.01,
-            "hAnnealing": 0.9,
-            "hMin": 0.005,
+            "hAnnealing": 0.7,
+            "hMin": 0.001,
             "mu": 0.35,
-            "max_iterations": 20,
-            "densityCompensation": 0
+            "max_iterations": 30,
+            "densityCompensation": 1
 
         },
         "pruningThreshold": 0.002

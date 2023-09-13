@@ -26,7 +26,10 @@ controlOpt = {
     "verbose": True,
 }
 
-resultFolderPaths = ["data/eval/initialLocalization/results/20230807_150735_partial"]
+resultFolderPaths = [
+    "data/eval/initialLocalization/results/20230516_112207_YShape",
+    "data/eval/initialLocalization/results/20230807_150735_partial",
+]
 
 styleOpt = {}
 

@@ -18,6 +18,7 @@ try:
 
     from src.utils.utils import minimalSpanningTree
     from scipy.spatial import distance_matrix
+    from src.localization.downsampling.random.randomSampling import RandomSampling
 except:
     print("Imports for initialization evaluation script failed.")
     raise
@@ -27,30 +28,30 @@ runOpt = {
     "framesToEvaluate": [-1],
     "runInitializationExperiment": True,
     # "runSom": False,
-    "runL1": True,
+    "runL1": False,
     "filterLOF": True,
-    "runTopologyExtraction": True,
-    "runLocalization": True,
+    "runTopologyExtraction": False,
+    "runLocalization": False,
     #    "evaluation": True
 }
 saveOpt = {
-    "saveResults": True,
+    "saveResults": False,
     "resultRootFolderPath": "data/eval/initialLocalization/results",
     "resultFileType": ".pkl",
     "overwrite": True,
 }
 visOpt = {
-    "visPointCloud": False,
-    "visLOFFilter": False,
-    "visL1MedianIterations": True,
+    "visPointCloud": True,
+    "visLOFFilter": True,
+    "visL1MedianIterations": False,
     "visL1MedianResult": False,
     # "visSOMIterations": True,
     # "visSOMResult": True,
-    "visTopologyExtractionResult": True,
-    "visLocalizationIterations": True,
+    "visTopologyExtractionResult": False,
+    "visLocalizationIterations": False,
     "visLocalizationResult": False,
 }
-framesToSkip = []
+framesToSkip = [0, 1, 2, 5, 6, 7, 8, 9, 14, 15, 16, 23, 24, 46]
 failedFrames = []
 
 dataSetPaths = [
@@ -110,7 +111,10 @@ if __name__ == "__main__":
             framesToEvaluate = [
                 frame
                 for frame in framesToEvaluate
-                if frame not in eval.config["invalidFrames"]
+                if (
+                    frame not in eval.config["invalidFrames"]
+                    and frame not in framesToSkip
+                )
             ]
             for i, frame in enumerate(framesToEvaluate):
                 try:
@@ -197,6 +201,12 @@ if __name__ == "__main__":
                     elif not runOpt["runL1"] and "l1Result" in result:
                         l1Result = result["l1Result"]
                         Y_hat = l1Result["T"]
+                        # rand = RandomSampling(
+                        #     eval.config["topologyExtraction"]["l1Parameters"][
+                        #         "numSeedPoints"
+                        #     ]
+                        # )
+                        # Y_hat = rand.sampleRandom(Y)
                     else:
                         pass
 
@@ -338,7 +348,11 @@ if __name__ == "__main__":
                         )
                     )
                     traceback.print_exc()
-                print("Evaluated frame {}/{}".format(i + 1, len(framesToEvaluate)))
+                print(
+                    "Evaluated frame {} ({}/{})".format(
+                        frame, i + 1, len(framesToEvaluate)
+                    )
+                )
             print("Finished experiments on data set: {}".format(dataSetName))
             logging.info("Finished experiments on data set: {}".format(dataSetName))
         print("Finished experiments.")

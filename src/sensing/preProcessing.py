@@ -22,6 +22,7 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         roiFilterParameters=None,
         boundingBoxParameters=None,
         hsvPassThroughFilters=None,
+        skeletonizationParameters=None,
         *args,
         **kwargs
     ):
@@ -143,6 +144,7 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         hsvFilterParameters: dict = None,
         roiFilterParameters: dict = None,
         hsvPassThroughFilters: list = None,
+        skeletonizationParameters: dict = None,
     ):
         if hsvFilterParameters is None:
             hsvFilterParameters = self.hsvFilterParameters
@@ -198,6 +200,12 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
 
         # add ROI Mask
         combinedMask = self.combineMasks_AND([combinedColorMask, maskFilter_ROI])
+
+        if skeletonizationParameters is not None:
+            thresholdValue = skeletonizationParameters["thresholdValue"]
+            maxValue = skeletonizationParameters["maxValue"]
+            combinedMask = self.skeletonize(combinedMask, thresholdValue, maxValue)
+
         # PointCloud Generation
         points, colors = self.calculatePointCloud(
             rgbImage, disparityMap, qmatrix, combinedMask
@@ -213,6 +221,7 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         roiFilterParameters: dict = None,
         boundingBoxParameters: dict = None,
         hsvPassThroughFilters: list = None,
+        skeletonizationParameters: dict = None,
     ):
         if boundingBoxParameters is None:
             boundingBoxParameters = self.boundingBoxParameters
@@ -226,6 +235,7 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
             hsvFilterParameters,
             roiFilterParameters,
             hsvPassThroughFilters,
+            skeletonizationParameters,
         )
         # Bounding Box Filter
         (xMin, xMax, yMin, yMax, zMin, zMax) = self.getParametersFromDict_BoundingBox(

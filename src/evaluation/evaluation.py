@@ -304,42 +304,47 @@ class Evaluation(object):
             dataSetFolderPath = self.currentDataSetLoadPath
         else:
             self.currentDataSetLoadPath = dataSetFolderPath
+
+        parameters = self.config["preprocessingParameters"]
+        preProcessor = PreProcessing(
+            defaultLoadFolderPath=dataSetFolderPath,
+            hsvFilterParameters=parameters["hsvFilterParameters"],
+            roiFilterParameters=parameters["roiFilterParameters"],
+            hsvPassThroughFilters=parameters["hsvPassThroughFilters"],
+        )
+        # load data
+        rgbImage, disparityMap = self.getDataSet(fileIdentifier, dataSetFolderPath)
         if segmentationMethod == "standard":
-            parameters = self.config["preprocessingParameters"]
-            preProcessor = PreProcessing(
-                defaultLoadFolderPath=dataSetFolderPath,
-                hsvFilterParameters=parameters["hsvFilterParameters"],
-                roiFilterParameters=parameters["roiFilterParameters"],
-                hsvPassThroughFilters=parameters["hsvPassThroughFilters"],
-            )
-            # load data
-            rgbImage, disparityMap = self.getDataSet(fileIdentifier, dataSetFolderPath)
             # point cloud generation
             points, colors = preProcessor.calculatePointCloudFiltered_2D_3D(
                 rgbImage, disparityMap
             )
-            # downsampling
-            points, colors = preProcessor.downsamplePointCloud_nthElement(
-                (points, colors),
-                parameters["downsamplingParameters"]["nthElement"],
+        elif segmentationMethod == "skeletonized":
+            points, colors = preProcessor.calculatePointCloudFiltered_2D_3D(
+                rgbImage,
+                disparityMap,
+                skeletonizationParameters=parameters["skeletonizationParameters"],
             )
-            # bounding box filter in camera coodinate system
-            inliers, inlierColors = preProcessor.getInliersFromBoundingBox(
-                (points, colors),
-                parameters["cameraCoordinateBoundingBoxParameters"],
-            )
-            # transfrom points in robot coodinate sytem
-            inliers = preProcessor.transformPointsFromCameraToRobotBaseCoordinates(
-                inliers
-            )
-            # bounding box filter in robot coodinate system
-            inliers, inlierColors = preProcessor.getInliersFromBoundingBox(
-                (inliers, inlierColors),
-                parameters["robotCoordinateBoundingBoxParameters"],
-            )
-            return (inliers, inlierColors)
         else:
             raise NotImplementedError
+        # downsampling
+        points, colors = preProcessor.downsamplePointCloud_nthElement(
+            (points, colors),
+            parameters["downsamplingParameters"]["nthElement"],
+        )
+        # bounding box filter in camera coodinate system
+        inliers, inlierColors = preProcessor.getInliersFromBoundingBox(
+            (points, colors),
+            parameters["cameraCoordinateBoundingBoxParameters"],
+        )
+        # transfrom points in robot coodinate sytem
+        inliers = preProcessor.transformPointsFromCameraToRobotBaseCoordinates(inliers)
+        # bounding box filter in robot coodinate system
+        inliers, inlierColors = preProcessor.getInliersFromBoundingBox(
+            (inliers, inlierColors),
+            parameters["robotCoordinateBoundingBoxParameters"],
+        )
+        return (inliers, inlierColors)
 
     def reprojectFrom3DRobotBase(self, coordinates3D, dataSetFolderPath):
         preProcessor = PreProcessing(defaultLoadFolderPath=dataSetFolderPath)
@@ -407,6 +412,10 @@ class Evaluation(object):
         # extract entry corresponding to result
         labelInfo = self.findCorrespondingLabelEntry(fileName, labelsDict)
 
+        if labelInfo is None:
+            raise ValueError(
+                "Label for file {} not found in provided labels file.".format(fileName)
+            )
         # make sure the labels are in correct order
         groundTruthLabels_inPixelCoordiantes = []
         collectedLabels = []

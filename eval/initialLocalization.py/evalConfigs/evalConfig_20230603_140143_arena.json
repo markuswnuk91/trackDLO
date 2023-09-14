@@ -4,7 +4,8 @@
         "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/"
     ],
     "dataSetToLoad": 1,
-    "invalidFrames": [3,4, 10, 11,12,13,17,18,19,20,21,22, 25,26, 27,28,29,30,31],
+    "invalidFrames": [4,10,11,12,13,17,18,19,21,22,26,27,28,29,30,31,32,33,37,38,40,41,43,46,48,49],
+    "framesTOSkip": [],
     "resultFolderPath":"data/eval/initialLocalization/",
     "preprocessingParameters": {
         "hsvFilterParameters" : {
@@ -58,18 +59,22 @@
         },
         "downsamplingParameters" : {
             "nthElement" : 1
+        },
+        "skeletonizationParameters" : {
+            "thresholdValue" : 167,
+            "maxValue": 255
         }
     },
     "modelGeneration":{
         "numSegments": 30
     },
     "lofParameters" : {
-        "numNeighbors": 20,
+        "numNeighbors": 50,
         "contamination": 0.01
     },
     "topologyExtraction":{
         "somParameters" : {
-            "numSeedPoints": 300,
+            "numSeedPoints": 500,
             "alpha": 0.9,
             "alphaAnnealing": 1,
             "sigma2": 0.3,
@@ -79,8 +84,8 @@
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 150,
-            "h": 0.01,
+            "numSeedPoints": 300,
+            "h": 0.007,
             "hAnnealing": 0.8,
             "hMin": 0.003,
             "mu": 0.35,

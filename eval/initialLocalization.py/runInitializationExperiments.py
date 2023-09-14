@@ -28,14 +28,15 @@ runOpt = {
     "framesToEvaluate": [-1],
     "runInitializationExperiment": True,
     # "runSom": False,
-    "runL1": False,
+    "run2DSkeletonization": True,
+    "runL1": True,
     "filterLOF": True,
-    "runTopologyExtraction": False,
-    "runLocalization": False,
+    "runTopologyExtraction": True,
+    "runLocalization": True,
     #    "evaluation": True
 }
 saveOpt = {
-    "saveResults": False,
+    "saveResults": True,
     "resultRootFolderPath": "data/eval/initialLocalization/results",
     "resultFileType": ".pkl",
     "overwrite": True,
@@ -43,21 +44,22 @@ saveOpt = {
 visOpt = {
     "visPointCloud": True,
     "visLOFFilter": True,
-    "visL1MedianIterations": False,
+    "visL1MedianIterations": True,
     "visL1MedianResult": False,
     # "visSOMIterations": True,
     # "visSOMResult": True,
-    "visTopologyExtractionResult": False,
-    "visLocalizationIterations": False,
+    "visTopologyExtractionResult": True,
+    "visLocalizationIterations": True,
     "visLocalizationResult": False,
 }
-framesToSkip = [0, 1, 2, 5, 6, 7, 8, 9, 14, 15, 16, 23, 24, 46]
+# framesToSkip = [0, 1, 2, 5, 6, 7, 8, 9, 14, 15, 16, 23, 24, 34, 35, 44, 45, 47]
+framesToSkip = []
 failedFrames = []
 
 dataSetPaths = [
     # "data/darus_data_download/data/202230603_Configurations_mounted/20230603_143937_modelY/",
     # "data/darus_data_download/data/20230807_Configurations_mounted/20230807_150735_partial/",
-    "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/",
+    # "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/",
     # "data/darus_data_download/data/20230516_Configurations_labeled/20230516_112207_YShape/",
     # "data/darus_data_download/data/20230516_Configurations_labeled/20230516_113957_Partial/",  # finished 10.09.2023
     # "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/", # finished 12.09.2023
@@ -142,7 +144,12 @@ if __name__ == "__main__":
                     result["modelParameters"] = modelParameters
 
                     # load data
-                    pointCloud = eval.getPointCloud(frame, dataSetPath)
+                    if "run2DSkeletonization":
+                        pointCloud = eval.getPointCloud(
+                            frame, dataSetPath, segmentationMethod="skeletonized"
+                        )
+                    else:
+                        pointCloud = eval.getPointCloud(frame, dataSetPath)
                     Y = pointCloud[0]
                     if visOpt["visPointCloud"]:
                         fig, ax = setupLatexPlot3D()

@@ -17,7 +17,7 @@ global eval
 eval = InitialLocalizationEvaluation()
 
 controlOpt = {
-    "resultsToLoad": 0,
+    "resultsToLoad": 2,
     "save": True,
     "showPlot": True,
     "block": False,
@@ -27,8 +27,9 @@ controlOpt = {
 }
 
 resultFolderPaths = [
-    "data/eval/initialLocalization/results/20230516_112207_YShape",
-    "data/eval/initialLocalization/results/20230807_150735_partial",
+    # "data/eval/initialLocalization/results/20230516_112207_YShape",
+    # "data/eval/initialLocalization/results/20230807_150735_partial",
+    "data/eval/initialLocalization/results/20230603_140143_arena",
 ]
 
 styleOpt = {}

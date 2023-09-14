@@ -1,17 +1,19 @@
-import sys
-import os
+import sys, os
 import cv2
-import matplotlib.pyplot as plt
-import numpy as np
 
 try:
-    sys.path.append(os.getcwd().replace("/app", ""))
+    sys.path.append(os.getcwd().replace("/experimental", ""))
     from src.sensing.dataHandler import DataHandler
+    from src.evaluation.evaluation import Evaluation
+
+    # visualization
+    from src.visualization.plot3D import *
 except:
-    print("Imports for Application determineHSVFilterValues failed.")
+    print("Imports for  2D skeletonization script failed.")
     raise
 
-relFilePath = "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/data/20230603_141452_606262_image_rgb.png"
+eval = Evaluation()
+relFilePath = "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/data/20230603_140533_497114_image_rgb.png"
 
 fileName = os.path.basename(relFilePath)
 dataSetFolderPath = os.path.dirname(os.path.dirname(relFilePath)) + "/"
@@ -19,14 +21,14 @@ dataSetFolderPath = os.path.dirname(os.path.dirname(relFilePath)) + "/"
 max_value = 255
 max_value_H = 360 // 2
 low_H = 0
-low_S = 0
-low_V = 0
+low_S = 110
+low_V = 139
 high_H = max_value_H
 high_S = max_value
 high_V = max_value
 image_window__name = "Image"
 mask_window_name = "Mask"
-diff_window_name = "Difference"
+diff_window_name = "Skel"
 low_H_name = "Low H"
 low_S_name = "Low S"
 low_V_name = "Low V"
@@ -122,6 +124,24 @@ if __name__ == "__main__":
         # mask_inv = cv2.bitwise_not(mask)
         frame_diff = cv2.bitwise_and(rgbImage, rgbImage, mask=mask)
         frame_diff[np.where((frame_diff == [0, 0, 0]).all(axis=2))] = [255, 255, 255]
+
+        skel_img = cv2.cvtColor(frame_diff, cv2.COLOR_RGB2GRAY)  # convert to grayscale
+        size = np.size(skel_img)
+        skel = np.zeros(skel_img.shape, np.uint8)
+        ret, skel_img = cv2.threshold(skel_img, 167, 255, 0)
+        skel_img = cv2.bitwise_not(skel_img)
+        element = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+        done = False
+        while not done:
+            eroded = cv2.erode(skel_img, element)
+            temp = cv2.dilate(eroded, element)
+            temp = cv2.subtract(skel_img, temp)
+            skel = cv2.bitwise_or(skel, temp)
+            skel_img = eroded.copy()
+
+            zeros = size - cv2.countNonZero(skel_img)
+            if zeros == size:
+                done = True
         cv2.imshow(
             image_window__name,
             cv2.resize(
@@ -131,10 +151,9 @@ if __name__ == "__main__":
         cv2.imshow(mask_window_name, cv2.resize(mask, None, fx=0.25, fy=0.25))
         cv2.imshow(
             diff_window_name,
-            cv2.resize(
-                cv2.cvtColor(frame_diff, cv2.COLOR_RGB2BGR), None, fx=0.25, fy=0.25
-            ),
+            cv2.resize(skel, None, fx=0.25, fy=0.25),
         )
         key = cv2.waitKey(30)
         if key == ord("q") or key == 27:
             break
+    cv2.destroyAllWindows()

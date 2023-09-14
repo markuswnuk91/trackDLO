@@ -125,3 +125,23 @@ class ImageProcessing(DataHandler):
         for mask in masks:
             resultingMask = cv2.bitwise_or(resultingMask, mask)
         return resultingMask
+
+    def skeletonize(self, grayscaleImg, thresholdValue, maxValue):
+        skel_img = grayscaleImg.copy()
+        size = np.size(skel_img)
+        skel = np.zeros(skel_img.shape, np.uint8)
+        ret, skel_img = cv2.threshold(skel_img, thresholdValue, maxValue, 0)
+        # skel_img = cv2.bitwise_not(skel_img)
+        element = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+        done = False
+        while not done:
+            eroded = cv2.erode(skel_img, element)
+            temp = cv2.dilate(eroded, element)
+            temp = cv2.subtract(skel_img, temp)
+            skel = cv2.bitwise_or(skel, temp)
+            skel_img = eroded.copy()
+
+            zeros = size - cv2.countNonZero(skel_img)
+            if zeros == size:
+                done = True
+        return skel

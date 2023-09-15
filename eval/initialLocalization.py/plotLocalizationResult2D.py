@@ -9,7 +9,7 @@ try:
     from src.evaluation.initialLocalization.initialLocalizationEvaluation import (
         InitialLocalizationEvaluation,
     )
-    from src.visualization.plotImg import *
+    from src.visualization.plot2D import *
 except:
     print("Imports for plotting localization results 2D failed.")
     raise
@@ -20,9 +20,9 @@ eval = InitialLocalizationEvaluation()
 controlOpt = {
     "dataSetsToLoad": [5],
     # "resultsToLoad": [1],
-    "save": True,
-    "showPlot": False,
-    "block": False,
+    "save": False,
+    "showPlot": True,
+    "block": True,
     "saveFolder": "data/eval/initialLocalization/plots/initialLocalizationResults",
     "saveName": "initialLocalizationResultImg",
     "verbose": True,
@@ -63,52 +63,37 @@ if __name__ == "__main__":
             result = eval.loadResults(resultFilePath)
             try:
                 # make plot
-                # load image
-                frame = result["frame"]
-                dataSetPath = result["dataSetPath"]
-                modelParameters = result["modelParameters"]
-                q = result["localizationResult"]["q"]
-                model = eval.generateModel(modelParameters)
-                model.setGeneralizedCoordinates(q)
-                (
-                    positions3D,
-                    adjacencyMatrix,
-                ) = model.getJointPositionsAndAdjacencyMatrix()
-                positions2D = eval.reprojectFrom3DRobotBase(positions3D, dataSetPath)
-                rgbImg = eval.getDataSet(frame, dataSetPath)[0]  # load image
                 lineColor = styleOpt["lineColor"]
                 circleColor = styleOpt["circleColor"]
                 lineThickness = styleOpt["lineThickness"]
                 circleRadius = styleOpt["circleRadius"]
-                rgbImg = plotGraphImg(
-                    rgbImg=rgbImg,
-                    positions2D=positions2D,
-                    adjacencyMatrix=adjacencyMatrix,
-                    lineColor=lineColor,
-                    circleColor=circleColor,
-                    lineThickness=lineThickness,
-                    circleRadius=circleRadius,
+                rgbImg = eval.plotLocalizationResult2D(
+                    result,
+                    lineColor,
+                    circleColor,
+                    lineThickness,
+                    circleRadius,
                 )
-                if controlOpt["showPlot"]:
-                    eval.plotImageWithMatplotlib(rgbImg, block=controlOpt["block"])
-                    if not controlOpt["block"]:
-                        plt.close("all")
                 # save image
                 if controlOpt["save"]:
                     id = "_".join(resultFile.split("_")[0:3])
                     fileName = id + "_" + controlOpt["saveName"]
-                    dataSetName = dataSetPath.split("/")[-2]
+                    dataSetName = result["dataSetPath"].split("/")[-2]
                     folderPath = os.path.join(controlOpt["saveFolder"], dataSetName)
                     savePath = os.path.join(folderPath, fileName)
                     if not os.path.exists(folderPath):
                         os.makedirs(folderPath, exist_ok=True)
                     eval.saveImage(rgbImg, savePath)
-                if controlOpt["verbose"]:
-                    print(
-                        "Saved image for initial localization result {} for at {}.".format(
-                            resultFile, savePath
+                    if controlOpt["verbose"]:
+                        print(
+                            "Saved image for initial localization result {} for at {}.".format(
+                                resultFile, savePath
+                            )
                         )
-                    )
+                if controlOpt["showPlot"]:
+                    eval.plotImageWithMatplotlib(rgbImg, block=controlOpt["block"])
+                    if not controlOpt["block"]:
+                        plt.close("all")
             except:
                 failedFrames.append(result["frame"])
         if len(failedFrames) > 0:

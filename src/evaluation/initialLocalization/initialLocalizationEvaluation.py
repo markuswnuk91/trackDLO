@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation/initialLocalization", ""))
     from src.evaluation.evaluation import Evaluation
+    from src.visualization.plot2D import *
 except:
     print("Imports for class InitialLocalizationEvaluation failed.")
     raise
@@ -187,46 +188,47 @@ class InitialLocalizationEvaluation(Evaluation):
             )
         plt.show(block=block)
 
-    def evaluateReprojectionError(self, initialLocalizationResult):
-        evalResult = {}
-        # get the file name corresponding to this result
-        dataSetFilePath = initialLocalizationResult["filePath"]
-        dataSetPath = initialLocalizationResult["dataSetPath"]
-        q = initialLocalizationResult["localizationResult"]["q"]
-        modelParameters = initialLocalizationResult["modelParameters"]
-        # load the corresponding ground trtuh label coordinates
-        (
-            groundTruthLabelCoordinates_2D,
-            missingLabels,
-        ) = self.loadGroundTruthLabelPixelCoordinates(dataSetFilePath)
-        # get the local branch coordinates
-        markerBranchLocalCoordinates = self.getMarkerBranchLocalCoordinates(dataSetPath)
-        # get predicted 3D coordinates
-        model = self.generateModel(modelParameters)
-        modelInfo = self.dataHandler.loadModelParameters("model.json", dataSetPath)
-        markerCoordinates_3D = model.computeForwardKinematicsFromBranchLocalCoordinates(
-            q=q,
-            branchLocalCoordinates=markerBranchLocalCoordinates,
-        )
-        # reproject in 2D pixel coordinates
-        markerCoordinates_2D = self.reprojectFrom3DRobotBase(
-            markerCoordinates_3D, dataSetPath
-        )
-        # evaluate reprojection error
-        reprojectionErrors = groundTruthLabelCoordinates_2D - markerCoordinates_2D
-        meanReprojectionError = np.mean(np.linalg.norm(reprojectionErrors, axis=1))
+    # deprecated reporjection error caluclation (does account for missing labes)
+    # def evaluateReprojectionError(self, initialLocalizationResult):
+    #     evalResult = {}
+    #     # get the file name corresponding to this result
+    #     dataSetFilePath = initialLocalizationResult["filePath"]
+    #     dataSetPath = initialLocalizationResult["dataSetPath"]
+    #     q = initialLocalizationResult["localizationResult"]["q"]
+    #     modelParameters = initialLocalizationResult["modelParameters"]
+    #     # load the corresponding ground trtuh label coordinates
+    #     (
+    #         groundTruthLabelCoordinates_2D,
+    #         missingLabels,
+    #     ) = self.loadGroundTruthLabelPixelCoordinates(dataSetFilePath)
+    #     # get the local branch coordinates
+    #     markerBranchLocalCoordinates = self.getMarkerBranchLocalCoordinates(dataSetPath)
+    #     # get predicted 3D coordinates
+    #     model = self.generateModel(modelParameters)
+    #     modelInfo = self.dataHandler.loadModelParameters("model.json", dataSetPath)
+    #     markerCoordinates_3D = model.computeForwardKinematicsFromBranchLocalCoordinates(
+    #         q=q,
+    #         branchLocalCoordinates=markerBranchLocalCoordinates,
+    #     )
+    #     # reproject in 2D pixel coordinates
+    #     markerCoordinates_2D = self.reprojectFrom3DRobotBase(
+    #         markerCoordinates_3D, dataSetPath
+    #     )
+    #     # evaluate reprojection error
+    #     reprojectionErrors = groundTruthLabelCoordinates_2D - markerCoordinates_2D
+    #     meanReprojectionError = np.mean(np.linalg.norm(reprojectionErrors, axis=1))
 
-        evalResult["filePath"] = dataSetFilePath
-        evalResult["dataSetPath"] = dataSetPath
-        evalResult["q"] = q
-        evalResult["modelParameters"] = modelParameters
-        evalResult["groundTruthLabelCoordinates_2D"] = groundTruthLabelCoordinates_2D
-        evalResult["markerBranchLocalCoordinates"] = markerBranchLocalCoordinates
-        evalResult["markerCoordinates_3D"] = markerCoordinates_3D
-        evalResult["markerCoordinates_2D"] = markerCoordinates_2D
-        evalResult["reprojectionErrors"] = reprojectionErrors
-        evalResult["meanReprojectionError"] = meanReprojectionError
-        return evalResult
+    #     evalResult["filePath"] = dataSetFilePath
+    #     evalResult["dataSetPath"] = dataSetPath
+    #     evalResult["q"] = q
+    #     evalResult["modelParameters"] = modelParameters
+    #     evalResult["groundTruthLabelCoordinates_2D"] = groundTruthLabelCoordinates_2D
+    #     evalResult["markerBranchLocalCoordinates"] = markerBranchLocalCoordinates
+    #     evalResult["markerCoordinates_3D"] = markerCoordinates_3D
+    #     evalResult["markerCoordinates_2D"] = markerCoordinates_2D
+    #     evalResult["reprojectionErrors"] = reprojectionErrors
+    #     evalResult["meanReprojectionError"] = meanReprojectionError
+    #     return evalResult
 
     def calculateReprojectionError(self, initialLocalizationEvaluationResult):
         dataSetPath = initialLocalizationEvaluationResult["dataSetPath"]
@@ -271,8 +273,11 @@ class InitialLocalizationEvaluation(Evaluation):
         result = {
             "reprojectionErrors": reprojectionErrors,
         }
-        result["groundTruthMarkerCoordiantes2D"] = groundTruthMarkerCoordinates2D
+        result["groundTruthMarkerCoordinates2D"] = groundTruthMarkerCoordinates2D
         result["predictedMarkerCoordinates2D"] = predictedMarkerCoordinates2D
+        result[
+            "correspondingPredictedMarkerCoordinates2D"
+        ] = predictedMarkerCoordinates2D[markerCoordinateIndices, :]
         result["predictedMarkerPositions3D"] = predictedMarkerPositions3D
         result["meanReprojectionError"] = np.mean(reprojectionErrors)
         result["stdReprojectionError"] = np.std(reprojectionErrors)
@@ -280,24 +285,47 @@ class InitialLocalizationEvaluation(Evaluation):
         result["markerLocalCoordinates"] = markerLocalCoordinates
         return result
 
+    def extractReferencePositions(self, result):
+        configuration = {}
+        dataSetPath = result["dataSetPath"]
+        modelParameters = result["modelParameters"]
+        q = result["localizationResult"]["q"]
+        model = self.generateModel(modelParameters)
+        model.setGeneralizedCoordinates(q)
+        (
+            positions3D,
+            adjacencyMatrix,
+        ) = model.getJointPositionsAndAdjacencyMatrix()
+        positions2D = self.reprojectFrom3DRobotBase(positions3D, dataSetPath)
+        model = self.generateModel(modelParameters)
+        model.setGeneralizedCoordinates(q)
+        (
+            positions3D,
+            adjacencyMatrix,
+        ) = model.getJointPositionsAndAdjacencyMatrix()
+        positions2D = self.reprojectFrom3DRobotBase(positions3D, dataSetPath)
+
+        configuration["q"] = q
+        configuration["jointCoordinates3D"] = positions3D
+        configuration["jointCoordinates2D"] = positions2D
+        configuration["adjacencyMatrix"] = adjacencyMatrix
+        return configuration
+
     def plotLocalizationResult2D(
         self,
-        frame,
-        dataSetPath,
-        positions3D,
-        adjacencyMatrix,
+        result,
         lineColor=[0, 81 / 255, 158 / 255],
         circleColor=[0, 81 / 255, 158 / 255],
         lineThickness=5,
         circleRadius=10,
     ):
-        # reproject joints in 2D pixel coordinates
-        positions2D = self.reprojectFrom3DRobotBase(positions3D, dataSetPath)
-
-        # load image
+        frame = result["frame"]
+        dataSetPath = result["dataSetPath"]
+        referencePositions = self.extractReferencePositions(result)
+        adjacencyMatrix = referencePositions["adjacencyMatrix"]
+        positions2D = referencePositions["jointCoordinates2D"]
         rgbImg = self.getDataSet(frame, dataSetPath)[0]  # load image
-
-        rgbImg = self.drawConfiguration2D(
+        rgbImg = plotGraph2D(
             rgbImg=rgbImg,
             positions2D=positions2D,
             adjacencyMatrix=adjacencyMatrix,
@@ -305,5 +333,58 @@ class InitialLocalizationEvaluation(Evaluation):
             circleColor=circleColor,
             lineThickness=lineThickness,
             circleRadius=circleRadius,
+        )
+        return rgbImg
+
+    def plotReprojectionErrors2D(
+        self,
+        result,
+        modelColor=[0, 81 / 255, 158 / 255],
+        predictedMarkerColor=[1, 0, 1],
+        groundTruthMarkerColor=[1, 0, 1],
+        correspondaneColor=[1, 0, 0],
+        modelLineWidth=5,
+        correspondanceLineWidht=5,
+        predictionCircleRadius=10,
+        groundTruthCircleRadius=10,
+    ):
+        frame = result["frame"]
+        dataSetPath = result["dataSetPath"]
+        # get model configuraiton
+        referencePositions = self.extractReferencePositions(result)
+        adjacencyMatrix = referencePositions["adjacencyMatrix"]
+        positions2D = referencePositions["jointCoordinates2D"]
+
+        # compute reprojection error
+        reprojectionErrorResult = self.calculateReprojectionError(result)
+
+        predictionPixelCoordinates = reprojectionErrorResult[
+            "correspondingPredictedMarkerCoordinates2D"
+        ]
+        groundTruthPixelCoordinates = reprojectionErrorResult[
+            "groundTruthMarkerCoordinates2D"
+        ]
+
+        # load image
+        rgbImg = self.getDataSet(frame, dataSetPath)[0]
+        # plot model configuraiton
+        rgbImg = plotGraph2D(
+            rgbImg=rgbImg,
+            positions2D=positions2D,
+            adjacencyMatrix=adjacencyMatrix,
+            lineColor=modelColor,
+            circleColor=modelColor,
+            lineThickness=modelLineWidth,
+            circleRadius=1,
+        )
+        # plot corresondances
+        rgbImg = plotCorrespondances2D(
+            rgbImg=rgbImg,
+            predictionPixelCoordinates=predictionPixelCoordinates,
+            groundTruthPixelCoordinates=groundTruthPixelCoordinates,
+            predictionColor=predictedMarkerColor,
+            groundTruthColor=groundTruthMarkerColor,
+            correspondanceColor=correspondaneColor,
+            correspondanceLineWidth=correspondanceLineWidht,
         )
         return rgbImg

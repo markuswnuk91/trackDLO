@@ -8,7 +8,7 @@ except:
     raise
 
 
-def plotGraphImg(
+def plotGraph2D(
     rgbImg,
     positions2D,
     adjacencyMatrix,

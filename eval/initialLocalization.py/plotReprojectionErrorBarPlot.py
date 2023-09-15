@@ -2,7 +2,7 @@ import sys
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-
+import tikzplotlib
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -17,18 +17,22 @@ global eval
 eval = InitialLocalizationEvaluation()
 
 controlOpt = {
-    "resultsToLoad": 2,
+    "resultsToLoad": [-1],
     "save": True,
     "showPlot": True,
     "block": False,
-    "saveFolder": "data/eval/initialLocalization/plots/initialLocalizationResults",
+    "saveFolder": "data/eval/initialLocalization/plots/reprojectionErrorBarPlots",
     "saveName": "initialLocalizationResultImg",
+    "saveAsTikz": True,
     "verbose": True,
 }
 
 resultFolderPaths = [
-    # "data/eval/initialLocalization/results/20230516_112207_YShape",
-    # "data/eval/initialLocalization/results/20230807_150735_partial",
+    "data/eval/initialLocalization/results/20230516_112207_YShape",
+    "data/eval/initialLocalization/results/20230516_113957_Partial",
+    "data/eval/initialLocalization/results/20230516_115857_arena",
+    "data/eval/initialLocalization/results/20230603_143937_modelY",
+    "data/eval/initialLocalization/results/20230807_150735_partial",
     "data/eval/initialLocalization/results/20230603_140143_arena",
 ]
 
@@ -61,6 +65,14 @@ def createReprojectionErrorBoxPlot(
 
 
 if __name__ == "__main__":
+    if controlOpt["resultsToLoad"][0] == -1:
+        dataSetsToEvaluate = resultFolderPaths
+    else:
+        dataSetsToEvaluate = [
+            dataSetPath
+            for i, dataSetPath in enumerate(resultFolderPaths)
+            if i in controlOpt["resultsToLoad"]
+        ]
     # load results
     for resultFolderPath in resultFolderPaths:
         resultFiles = eval.list_result_files(resultFolderPath)
@@ -80,14 +92,13 @@ if __name__ == "__main__":
         frames = np.array(frames)
         means = np.array(means)
         stds = np.array(stds)
-        if controlOpt["showPlot"]:
-            fig, ax = createReprojectionErrorBoxPlot(
-                frames=frames,
-                means=means,
-                stds=stds,
-            )
-        plt.show()
-        # save plot
+        fig, ax = createReprojectionErrorBoxPlot(
+            frames=frames,
+            means=means,
+            stds=stds,
+        )
+
+        # # save plot
         if controlOpt["save"]:
             dataSetPath = result["dataSetPath"]
             id = "_".join(resultFile.split("_")[0:3])
@@ -97,10 +108,15 @@ if __name__ == "__main__":
             savePath = os.path.join(folderPath, fileName)
             if not os.path.exists(folderPath):
                 os.makedirs(folderPath, exist_ok=True)
-            eval.saveImage(rgbImg, savePath)
+            plt.savefig(savePath)
+            # save as tixfigure
+            if controlOpt["saveAsTikz"]:
+                tikzplotlib.save(savePath + ".tex")
         if controlOpt["verbose"]:
             print(
                 "Saved image for initial localization result {} for at {}.".format(
                     resultFile, savePath
                 )
             )
+        if controlOpt["showPlot"]:
+            plt.show()

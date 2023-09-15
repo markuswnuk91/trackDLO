@@ -5,7 +5,7 @@
     ],
     "dataSetToLoad": 1,
     "resultFolderPath":"data/eval/initialLocalization/",
-    "invalidFrames": [19,29,31,45,48,49],
+    "invalidFrames": [19, 29, 31, 45, 48, 49],
     "preprocessingParameters": {
         "hsvFilterParameters" : {
             "hueMin": 0,
@@ -58,6 +58,10 @@
         },
         "downsamplingParameters" : {
             "nthElement" : 10
+        },
+        "skeletonizationParameters" : {
+            "thresholdValue" : 167,
+            "maxValue": 255
         }
     },
     "modelGeneration":{
@@ -69,7 +73,7 @@
     },
     "topologyExtraction":{
         "somParameters" : {
-            "numSeedPoints": 700,
+            "numSeedPoints": 300,
             "alpha": 0.9,
             "alphaAnnealing": 1,
             "sigma2": 0.3,
@@ -79,7 +83,7 @@
             "max_iterations": 30
         },
         "l1Parameters" : {
-            "numSeedPoints": 500,
+            "numSeedPoints": 200,
             "h": 0.01,
             "hAnnealing": 0.7,
             "hMin": 0.001,

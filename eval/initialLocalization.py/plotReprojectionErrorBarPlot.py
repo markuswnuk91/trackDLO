@@ -22,7 +22,7 @@ controlOpt = {
     "showPlot": True,
     "block": False,
     "saveFolder": "data/eval/initialLocalization/plots/reprojectionErrorBarPlots",
-    "saveName": "initialLocalizationResultImg",
+    "saveName": "reprojectionErrors",
     "saveAsTikz": True,
     "verbose": True,
 }
@@ -101,8 +101,7 @@ if __name__ == "__main__":
         # # save plot
         if controlOpt["save"]:
             dataSetPath = result["dataSetPath"]
-            id = "_".join(resultFile.split("_")[0:3])
-            fileName = id + "_" + controlOpt["saveName"]
+            fileName = controlOpt["saveName"]
             dataSetName = dataSetPath.split("/")[-2]
             folderPath = os.path.join(controlOpt["saveFolder"], dataSetName)
             savePath = os.path.join(folderPath, fileName)

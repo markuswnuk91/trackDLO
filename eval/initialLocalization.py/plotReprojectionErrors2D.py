@@ -10,6 +10,7 @@ try:
         InitialLocalizationEvaluation,
     )
     from src.visualization.plot2D import *
+    from src.visualization.colors import *
 except:
     print("Imports for plotting localization results 2D failed.")
     raise
@@ -18,7 +19,7 @@ global eval
 eval = InitialLocalizationEvaluation()
 
 controlOpt = {
-    "dataSet": 4,
+    "dataSet": 5,
     "frames": [1],
     "save": False,
     "showPlot": True,
@@ -38,10 +39,13 @@ resultFolderPaths = [
 ]
 
 styleOpt = {
-    "lineColor": [0, 1, 0],
-    "lineThickness": 5,
-    "circleColor": [0, 81 / 255, 158 / 255],
-    "circleRadius": 10,
+    "grayscale": False,
+    "modelColor": colors["blue"],
+    "correspondanceColor": [1, 0, 0.3],
+    "modelLineWidth": 7,
+    "correspondanceLineWidht": 5,
+    "predictionCircleRadius": 7,
+    "groundTruthCircleRadius": 7,
 }
 
 if __name__ == "__main__":
@@ -54,12 +58,17 @@ if __name__ == "__main__":
         result = eval.loadResults(resultFilePath)
         # try:
         # make plot
-        lineColor = styleOpt["lineColor"]
-        circleColor = styleOpt["circleColor"]
-        lineThickness = styleOpt["lineThickness"]
-        circleRadius = styleOpt["circleRadius"]
         rgbImg = eval.plotReprojectionErrors2D(
             result,
+            modelColor=styleOpt["modelColor"],
+            predictedMarkerColor=styleOpt["correspondanceColor"],
+            groundTruthMarkerColor=styleOpt["correspondanceColor"],
+            correspondaneColor=styleOpt["correspondanceColor"],
+            modelLineWidth=styleOpt["modelLineWidth"],
+            correspondanceLineWidht=styleOpt["correspondanceLineWidht"],
+            predictionCircleRadius=styleOpt["predictionCircleRadius"],
+            groundTruthCircleRadius=styleOpt["groundTruthCircleRadius"],
+            grayscale=styleOpt["grayscale"],
         )
         # save image
         if controlOpt["save"]:

@@ -347,6 +347,7 @@ class InitialLocalizationEvaluation(Evaluation):
         correspondanceLineWidht=5,
         predictionCircleRadius=10,
         groundTruthCircleRadius=10,
+        grayscale=False,
     ):
         frame = result["frame"]
         dataSetPath = result["dataSetPath"]
@@ -366,10 +367,15 @@ class InitialLocalizationEvaluation(Evaluation):
         ]
 
         # load image
-        rgbImg = self.getDataSet(frame, dataSetPath)[0]
+        img = self.getDataSet(frame, dataSetPath)[0]
+
+        if grayscale:
+            img = np.tile(
+                cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)[:, :, np.newaxis], [1, 1, 3]
+            )
         # plot model configuraiton
         rgbImg = plotGraph2D(
-            rgbImg=rgbImg,
+            rgbImg=img,
             positions2D=positions2D,
             adjacencyMatrix=adjacencyMatrix,
             lineColor=modelColor,
@@ -379,12 +385,14 @@ class InitialLocalizationEvaluation(Evaluation):
         )
         # plot corresondances
         rgbImg = plotCorrespondances2D(
-            rgbImg=rgbImg,
+            rgbImg=img,
             predictionPixelCoordinates=predictionPixelCoordinates,
             groundTruthPixelCoordinates=groundTruthPixelCoordinates,
             predictionColor=predictedMarkerColor,
             groundTruthColor=groundTruthMarkerColor,
             correspondanceColor=correspondaneColor,
             correspondanceLineWidth=correspondanceLineWidht,
+            predictionCircleRadius=predictionCircleRadius,
+            groundTruthCircleRadius=groundTruthCircleRadius,
         )
         return rgbImg

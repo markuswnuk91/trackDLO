@@ -3,6 +3,7 @@ import numpy as np
 import math
 import dartpy as dart
 from warnings import warn
+from scipy.spatial.transform import Rotation as R
 
 try:
     sys.path.append(os.getcwd().replace("/src/simulation", ""))
@@ -963,6 +964,46 @@ class BranchedDeformableLinearObject(BDLOTopology):
         else:
             raise NotImplementedError
         return q.flatten()
+
+    def samplePointsForCorrespondanceEstimation(self, q, S):
+        # sample points from templateTopology
+        B = []
+        cartesianPositions = []
+        for branch in self.getBranches():
+            if self.isOuterBranch(branch):
+                branchIndex = self.getBranchIndex(branch)
+                # get cartesian positions
+                for s in S:
+                    cartesianPosition = (
+                        self.getCartesianPositionFromBranchLocalCoordinate(
+                            branchIndex, s
+                        )
+                    )
+                    cartesianPositions.append(cartesianPosition)
+                    B.append(branchIndex)
+            elif self.isInnerBranch(branch):
+                branchIndex = self.getBranchIndex(branch)
+                # get cartesian positions
+                s = 0.5
+                cartesianPosition = self.getCartesianPositionFromBranchLocalCoordinate(
+                    branchIndex, s
+                )
+                cartesianPositions.append(cartesianPosition)
+                B.append(branchIndex)
+        return np.array(cartesianPositions), B
+
+    def convertRotVecToBallJointPositions(self, angle, axis):
+        rotMat = R.from_rotvec(angle * axis).as_matrix()
+        return dart.dynamics.BallJoint.convertToPositions(rotMat)
+
+    def convertExtrinsicEulerAnglesToBallJointPositions(
+        self, xRotAngle, yRotAngle, zRotAngle, degreesInRad=True
+    ):
+        if degreesInRad:
+            rotMat = R.from_euler("xyz", [xRotAngle, yRotAngle, zRotAngle]).as_matrix()
+        else:
+            raise NotImplementedError
+        return dart.dynamics.BallJoint.convertToPositions(rotMat)
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

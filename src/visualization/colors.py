@@ -18,6 +18,13 @@ colors = {
     "uniSLightBlue60": [102 / 255, 216 / 255, 255 / 255],
     "uniSLightBlue40": [153 / 255, 229 / 255, 255 / 255],
     "uniSLightBlue20": [204 / 255, 242 / 255, 255 / 255],
+    "susieluBlue": [0, 0, 255 / 255],
+    "susieluPurple": [157 / 255, 2 / 255, 215 / 255],
+    "susieluMagenta": [205 / 255, 52 / 255, 181 / 255],
+    "susieluPink": [234 / 255, 95 / 255, 148 / 255],
+    "susieluOrange": [250 / 255, 135 / 255, 117 / 255],
+    "susieluLightOrange": [255 / 255, 177 / 255, 78 / 255],
+    "susieluGold": [255 / 255, 215 / 255, 0],
 }
 
 colorPalettes = {

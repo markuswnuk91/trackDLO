@@ -325,6 +325,10 @@ class Evaluation(object):
                 disparityMap,
                 skeletonizationParameters=parameters["skeletonizationParameters"],
             )
+        elif segmentationMethod == "unfiltered":
+            points, colors = preProcessor.calculatePointCloudUnfiltered(
+                rgbImage, disparityMap
+            )
         else:
             raise NotImplementedError
         # downsampling

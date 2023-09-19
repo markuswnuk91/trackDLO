@@ -212,6 +212,34 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
         )
         return points, colors
 
+    def calculatePointCloudUnfiltered(
+        self,
+        rgbImage: np.array,
+        disparityMap: np.array,
+        qmatrix: np.ndarray = None,
+        boundingBoxParameters=None,
+    ):
+        if boundingBoxParameters is None:
+            boundingBoxParameters = self.boundingBoxParameters
+        if qmatrix is None:
+            qmatrix = self.cameraParameters["qmatrix"]
+        # PointCloud
+        points, colors = self.calculatePointCloud(
+            rgbImage,
+            disparityMap,
+            qmatrix,
+        )
+        # Bounding Box Filter
+        (xMin, xMax, yMin, yMax, zMin, zMax) = self.getParametersFromDict_BoundingBox(
+            boundingBoxParameters
+        )
+        mask_BoundingBox = self.getMaskFromBoundingBox(
+            points, xMin, xMax, yMin, yMax, zMin, zMax
+        )
+        points = points[mask_BoundingBox, :]
+        colors = colors[mask_BoundingBox, :]
+        return points, colors
+
     def calculatePointCloudFiltered_2D_3D(
         self,
         rgbImage: np.array,

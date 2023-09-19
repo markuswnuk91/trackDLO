@@ -274,7 +274,7 @@ if __name__ == "__main__":
                     if visOpt["visTopologyExtractionResult"]:
                         # visualize result
                         fig, ax = setupLatexPlot3D()
-                        plotGraph(
+                        plotGraph3D(
                             ax=ax,
                             X=extractedTopology.X,
                             adjacencyMatrix=extractedTopology.featureMatrix,

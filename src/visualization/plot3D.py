@@ -6,6 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 try:
     sys.path.append(os.getcwd().replace("/src/visualization", ""))
     from src.visualization.plotUtils import *
+    from src.visualization.colors import *
 except:
     print("Imports for Plot3D File failed.")
     raise
@@ -133,7 +134,6 @@ def plotPointSet(
     markerStyle=None,
     alpha=None,
     label: str = None,
-    axisEqual=None,
 ):
     size = 20 if size is None else size
     markerStyle = "o" if markerStyle is None else markerStyle
@@ -257,6 +257,29 @@ def plotPointSets(
             markerStyle=yMarkerStyle,
             alpha=yAlpha,
         )
+
+
+def plotPointCloud(
+    ax,
+    points,
+    colors,
+    size=None,
+    markerStyle=None,
+    alpha=None,
+):
+    markerStyle = "o" if markerStyle is None else markerStyle
+    size = 5 if size is None else size
+    alpha = 1 if alpha is None else alpha
+    ax.scatter(
+        points[:, 0],
+        points[:, 1],
+        points[:, 2],
+        c=colors,
+        s=size,
+        alpha=alpha,
+        marker=markerStyle,
+    )
+    return ax
 
 
 def plotLine(
@@ -449,18 +472,25 @@ def plotVector(ax, origin, direction, length=None, color=None):
     )
 
 
-def plotGraph(
+def plotGraph3D(
     ax,
     X,
     adjacencyMatrix,
-    pointCcolor=[0, 0, 1],
-    lineColor=[0, 0, 1],
-    pointSize=10,
-    lineWidth=1.5,
-    pointAlpha=1,
-    lineAlpha=1,
+    pointColor=None,
+    lineColor=None,
+    pointSize=None,
+    lineWidth=None,
+    pointAlpha=None,
+    lineAlpha=None,
 ):
-    plotPointSet(ax=ax, X=X, color=pointCcolor, size=pointSize, alpha=pointAlpha)
+    pointColor = [0, 0, 1] if pointColor is None else pointColor
+    lineColor = [0, 0, 1] if lineColor is None else lineColor
+    pointSize = 10 if pointSize is None else pointSize
+    lineWidth = 1.5 if lineWidth is None else lineWidth
+    pointAlpha = 1 if pointAlpha is None else pointAlpha
+    lineAlpha = 1 if lineAlpha is None else lineAlpha
+
+    plotPointSet(ax=ax, X=X, color=pointColor, size=pointSize, alpha=pointAlpha)
     i = 0
     j = 0
     I, J = adjacencyMatrix.shape
@@ -505,6 +535,56 @@ def plotTopology3D(
         )
         plotPointSet(ax, X=points, color=color, size=pointSize, alpha=pointAlpha)
     return
+
+
+def plotBranchWiseColoredTopology3D(
+    ax,
+    topology,
+    colorPalette=None,
+    lineWidth=None,
+    pointSize=None,
+    lineAlpha=None,
+    plotPoints=False,
+    pointAlpha=None,
+):
+    if colorPalette is None:
+        colorPalette = colorPalettes["viridis"]
+
+    connections = topology.getAdjacentPointPairsAndBranchCorrespondance()
+    numBranches = topology.getNumBranches()
+    colorScaleCoordinates = np.linspace(0, 1, numBranches)
+    branchColors = []
+    for s in colorScaleCoordinates:
+        branchColors.append(colorPalette.to_rgba(s)[:3])
+    for connection in connections:
+        stackedPair = np.stack(connection[:2])
+        branchIndex = connection[2]
+        # plotColor = [
+        #     sm.to_rgba(branchNumber)[0],
+        #     sm.to_rgba(branchNumber)[1],
+        #     sm.to_rgba(branchNumber)[2],
+        # ]
+        plotLine(
+            ax=ax,
+            pointPair=stackedPair,
+            color=branchColors[branchIndex],
+            linewidth=lineWidth,
+            alpha=lineAlpha,
+        )
+        if plotPoints:
+            plotPoint(
+                ax=ax,
+                x=stackedPair[0, :],
+                color=branchColors[branchIndex],
+                size=pointSize,
+            )
+            plotPoint(
+                ax=ax,
+                x=stackedPair[1, :],
+                color=branchColors[branchIndex],
+                size=pointSize,
+            )
+    return ax
 
 
 def plotCorrespondances3D(

@@ -8,6 +8,7 @@ try:
     sys.path.append(os.getcwd().replace("/src/evaluation/initialLocalization", ""))
     from src.evaluation.evaluation import Evaluation
     from src.visualization.plot2D import *
+    from src.visualization.plot3D import *
 except:
     print("Imports for class InitialLocalizationEvaluation failed.")
     raise
@@ -396,3 +397,31 @@ class InitialLocalizationEvaluation(Evaluation):
             groundTruthCircleRadius=groundTruthCircleRadius,
         )
         return rgbImg
+
+    def plotLocalizationResult3D(
+        self,
+        ax,
+        result,
+        pointColor=None,
+        lineColor=None,
+        pointSize=None,
+        lineWidth=None,
+        pointAlpha=None,
+        lineAlpha=None,
+    ):
+        referencePositions = self.extractReferencePositions(result)
+        adjacencyMatrix = referencePositions["adjacencyMatrix"]
+        positions3D = referencePositions["jointCoordinates3D"]
+
+        plotGraph3D(
+            ax=ax,
+            X=positions3D,
+            adjacencyMatrix=adjacencyMatrix,
+            pointColor=pointColor,
+            lineColor=lineColor,
+            pointSize=pointSize,
+            lineWidth=lineWidth,
+            pointAlpha=pointAlpha,
+            lineAlpha=lineAlpha,
+        )
+        return ax

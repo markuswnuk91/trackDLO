@@ -19,14 +19,15 @@ global eval
 eval = InitialLocalizationEvaluation()
 
 controlOpt = {
-    "dataSetsToLoad": [4],
-    "resultsToLoad": [0],
-    "save": True,
+    "dataSetsToLoad": [2],  # [4]
+    "resultsToLoad": [3],  # [0]
+    "save": False,
     "showInputImage": False,
     "block": False,
     "plotSkeletonizationResult": False,
     "plotTopologyExtractionResult": False,
-    "plotCorrespondanceEstimationResult": True,
+    "plotCorrespondanceEstimationResult": False,
+    "plotLocalizationResult3D": True,
     "verbose": True,
 }
 
@@ -40,6 +41,22 @@ resultFolderPaths = [
 ]
 
 styleOpt = {
+    "localizationResult3D": {
+        "modelPointSize": 3,
+        "modelLineWidth": 1.7,
+        "pointCloudSize": 3,
+        "pointCloudColor": colors["red"],
+        "pointCloudAlpha": 0.5,
+        "pointCloudMarkerStyle": "o",
+        "pointCloudDownSampleFactor": 7,
+        "makeBackgroundGray": True,
+        "backgroundColor": [0.75, 0.75, 0.75],
+        "azimuth": 70,
+        "elevation": 30,
+        "axisLimX": [0.0875, 0.725],
+        "axisLimY": [-0.22, 0.43],
+        "axisLimZ": [0.2, 0.75],
+    },
     "subplot_position_left": 0,
     "subplot_position_bottom": 0,
     "subplot_position_right": 1,
@@ -175,12 +192,16 @@ def plotCorrespondanceEstimationResult(result):
     templateTopologySamplePoints = []
     # orient the model
     q = templateTopology.getGeneralizedCoordinates()
-    # q[5] = np.mean(targetPoints, axis=0)[2]
-    offset = -1
-    q[3] = np.mean(targetPoints, axis=0)[0] + offset
-    # q[0:3] = templateTopology.convertExtrinsicEulerAnglesToBallJointPositions(
-    #     xRotAngle=0, yRotAngle=np.pi / 2, zRotAngle=-np.pi / 2
-    # )
+    q[0:3] = templateTopology.convertExtrinsicEulerAnglesToBallJointPositions(
+        xRotAngle=0, yRotAngle=np.pi / 2, zRotAngle=np.pi / 2
+    )
+    # shift model into position
+    meanTargets = np.mean(targetPoints, axis=0)
+    meanTemplate = np.mean(templateTopology.computeForwardKinematics(q)[0], axis=0)
+    offset = -0.6
+    q[3] = q[3] + (meanTargets - meanTemplate)[0] + offset
+    q[4] = q[4] + (meanTargets - meanTemplate)[1]
+    q[5] = q[5] + (meanTargets - meanTemplate)[2]
     templateTopology.setGeneralizedCoordinates(q)
     (
         templateTopologySamplePoints,
@@ -217,7 +238,87 @@ def plotCorrespondanceEstimationResult(result):
             yColor=branchColors[branchIndex],
             correspondanceColor=branchColors[branchIndex],
             lineAlpha=correspondanceAlpha,
+            ySize=5,
         )
+    plt.show(block=True)
+    return fig, ax
+
+
+def plotLocalizationResult3D(result):
+    fig, ax = setupLatexPlot3D()
+    eval.config = result["config"]
+    Y, colors = eval.getPointCloud(
+        result["frame"],
+        result["dataSetPath"],
+        segmentationMethod="unfiltered",
+    )
+    # downsample point cloud
+    Y = Y[:: styleOpt["localizationResult3D"]["pointCloudDownSampleFactor"], :]
+    colors = colors[
+        :: styleOpt["localizationResult3D"]["pointCloudDownSampleFactor"], :
+    ]
+    # remove values with low z value
+    keepIdxs = np.where(Y[:, 2] >= 0.25)[0]
+    Y = Y[keepIdxs, :]
+    colors = colors[keepIdxs, :]
+
+    # color background gray
+    if styleOpt["localizationResult3D"]["makeBackgroundGray"]:
+        colors[
+            ((colors[:, 0] <= 0.7) | (colors[:, 1] >= 0.5) & (colors[:, 2] >= 0.5))
+        ] = np.array(styleOpt["localizationResult3D"]["backgroundColor"])
+    plotPointCloud(
+        ax=ax,
+        points=Y,
+        colors=colors,
+        size=styleOpt["localizationResult3D"]["pointCloudSize"],
+        alpha=styleOpt["localizationResult3D"]["pointCloudAlpha"],
+    )
+    # plotPointSet(
+    #     ax=ax,
+    #     X=Y,
+    #     size=styleOpt["localizationResult3D"]["pointCloudSize"],
+    #     color=styleOpt["localizationResult3D"]["pointCloudColor"],
+    #     alpha=styleOpt["localizationResult3D"]["pointCloudAlpha"],
+    #     markerStyle=styleOpt["localizationResult3D"]["pointCloudMarkerStyle"],
+    # )
+    modelParameters = result["modelParameters"]
+    model = eval.generateModel(modelParameters)
+    q = result["localizationResult"]["q"]
+    model.setGeneralizedCoordinates(q)
+    colorPalette = colorPalettes["viridis"]
+    plotBranchWiseColoredTopology3D(
+        ax=ax,
+        topology=model,
+        colorPalette=colorPalette,
+        lineWidth=styleOpt["localizationResult3D"]["modelLineWidth"],
+        pointSize=styleOpt["localizationResult3D"]["modelPointSize"],
+        zOrder=1000,
+    )
+    ax.set_xlim(
+        styleOpt["localizationResult3D"]["axisLimX"][0],
+        styleOpt["localizationResult3D"]["axisLimX"][1],
+    )
+    ax.set_ylim(
+        styleOpt["localizationResult3D"]["axisLimY"][0],
+        styleOpt["localizationResult3D"]["axisLimY"][1],
+    )
+    ax.set_zlim(
+        styleOpt["localizationResult3D"]["axisLimZ"][0],
+        styleOpt["localizationResult3D"]["axisLimZ"][1],
+    )
+    ax.view_init(
+        elev=styleOpt["localizationResult3D"]["elevation"],
+        azim=styleOpt["localizationResult3D"]["azimuth"],
+    )
+    ax.set_position(
+        [
+            styleOpt["subplot_position_left"],
+            styleOpt["subplot_position_bottom"],
+            styleOpt["subplot_position_right"],
+            styleOpt["subplot_position_top"],
+        ]
+    )
     plt.show(block=True)
     return fig, ax
 
@@ -317,6 +418,11 @@ if __name__ == "__main__":
                         fig_correspondanceEstimation,
                         ax_correspondanceEstimation,
                     ) = plotCorrespondanceEstimationResult(result)
+
+                if controlOpt["plotLocalizationResult3D"]:
+                    fig_localization3D, ax_localization3D = plotLocalizationResult3D(
+                        result
+                    )
                 # save images
                 if controlOpt["save"]:
                     id = "_".join(resultFile.split("_")[0:3])

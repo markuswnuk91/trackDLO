@@ -9,6 +9,7 @@ except:
     raise
 
 colors = {
+    "black": [0, 0, 0],
     "red": [1, 0, 0],
     "blue": [0, 0, 1],
     "uniSAnthrazit": [62 / 255, 68 / 255, 76 / 255],

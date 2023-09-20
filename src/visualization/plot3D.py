@@ -69,8 +69,9 @@ def plotPoint(
     label: str = None,
     size=None,
     marker="o",
-    zorder=1,
+    zOrder=None,
 ):
+    zOrder = 1 if zOrder is None else zOrder
     edgeColor = color if edgeColor is None else edgeColor
     size = 20 if size is None else size
     if len(x) == 3:
@@ -84,7 +85,7 @@ def plotPoint(
                 s=size,
                 edgecolors=edgeColor,
                 marker=marker,
-                zorder=zorder,
+                zorder=zOrder,
             )
         else:
             ax.scatter(
@@ -97,7 +98,7 @@ def plotPoint(
                 s=size,
                 edgecolors=edgeColor,
                 marker=marker,
-                zorder=zorder,
+                zorder=zOrder,
             )
     elif len(x) == 2:
         if label is None:
@@ -109,7 +110,7 @@ def plotPoint(
                 s=size,
                 edgecolors=edgeColor,
                 marker=marker,
-                zorder=zorder,
+                zorder=zOrder,
             )
         else:
             ax.scatter(
@@ -121,7 +122,7 @@ def plotPoint(
                 s=size,
                 edgecolors=edgeColor,
                 marker=marker,
-                zorder=zorder,
+                zorder=zOrder,
             )
 
 
@@ -289,10 +290,12 @@ def plotLine(
     color=None,
     alpha=None,
     linewidth=None,
+    zOrder=None,
 ):
     color = [0, 0, 1] if color is None else color
     alpha = 1 if alpha is None else alpha
     linewidth = 1.5 if linewidth is None else linewidth
+    zOrder = 1 if zOrder is None else zOrder
 
     if pointPair.shape[1] == 2:
         ax.plot(
@@ -302,6 +305,7 @@ def plotLine(
             label=label,
             alpha=alpha,
             linewidth=linewidth,
+            zorder=zOrder,
         )
     elif pointPair.shape[1] == 3:
         ax.plot3D(
@@ -312,6 +316,7 @@ def plotLine(
             label=label,
             alpha=alpha,
             linewidth=linewidth,
+            zorder=zOrder,
         )
 
 
@@ -544,11 +549,13 @@ def plotBranchWiseColoredTopology3D(
     lineWidth=None,
     pointSize=None,
     lineAlpha=None,
-    plotPoints=False,
+    plotPoints=True,
     pointAlpha=None,
+    zOrder=None,
 ):
     if colorPalette is None:
         colorPalette = colorPalettes["viridis"]
+    zOrder = zOrder if zOrder is None else zOrder
 
     connections = topology.getAdjacentPointPairsAndBranchCorrespondance()
     numBranches = topology.getNumBranches()
@@ -570,20 +577,42 @@ def plotBranchWiseColoredTopology3D(
             color=branchColors[branchIndex],
             linewidth=lineWidth,
             alpha=lineAlpha,
+            zOrder=zOrder,
         )
         if plotPoints:
-            plotPoint(
-                ax=ax,
-                x=stackedPair[0, :],
-                color=branchColors[branchIndex],
-                size=pointSize,
-            )
+            # plotPoint(
+            #     ax=ax,
+            #     x=stackedPair[0, :],
+            #     color=branchColors[branchIndex],
+            #     size=pointSize,
+            #     zOrder=zOrder,
+            # )
             plotPoint(
                 ax=ax,
                 x=stackedPair[1, :],
                 color=branchColors[branchIndex],
                 size=pointSize,
+                zOrder=zOrder,
             )
+            ax.plot(
+                [stackedPair[0, 0]],
+                [stackedPair[0, 1]],
+                [stackedPair[0, 2]],
+                marker="o",
+                zorder=zOrder,
+                color=branchColors[branchIndex],
+                markersize=pointSize,
+            )
+            ax.plot(
+                [stackedPair[1, 0]],
+                [stackedPair[1, 1]],
+                [stackedPair[1, 2]],
+                marker="o",
+                zorder=zOrder,
+                color=branchColors[branchIndex],
+                markersize=pointSize,
+            )
+
     return ax
 
 

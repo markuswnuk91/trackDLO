@@ -39,9 +39,9 @@ resultFolderPaths = [
 ]
 
 styleOpt = {
-    "lineColor": colors["blue"],
+    "lineColor": thesisColors["blue"],
     "lineThickness": 3,
-    "circleColor": colors["blue"],
+    "circleColor": thesisColors["blue"],
     "circleRadius": 10,
 }
 

@@ -297,6 +297,7 @@ class InitialLocalizationEvaluation(Evaluation):
             positions3D,
             adjacencyMatrix,
         ) = model.getJointPositionsAndAdjacencyMatrix()
+
         positions2D = self.reprojectFrom3DRobotBase(positions3D, dataSetPath)
         model = self.generateModel(modelParameters)
         model.setGeneralizedCoordinates(q)
@@ -306,10 +307,17 @@ class InitialLocalizationEvaluation(Evaluation):
         ) = model.getJointPositionsAndAdjacencyMatrix()
         positions2D = self.reprojectFrom3DRobotBase(positions3D, dataSetPath)
 
+        (
+            _,
+            branchCorrespondances,
+            branchCorrespondanceMatrix,
+        ) = model.getBranchCorrespondancesForJoints()
+
         configuration["q"] = q
         configuration["jointCoordinates3D"] = positions3D
         configuration["jointCoordinates2D"] = positions2D
         configuration["adjacencyMatrix"] = adjacencyMatrix
+        configuration["branchCorrespondanceMatrix"] = branchCorrespondanceMatrix
         return configuration
 
     def plotLocalizationResult2D(
@@ -317,15 +325,81 @@ class InitialLocalizationEvaluation(Evaluation):
         result,
         lineColor=[0, 81 / 255, 158 / 255],
         circleColor=[0, 81 / 255, 158 / 255],
-        lineThickness=5,
-        circleRadius=10,
+        lineThickness=None,
+        circleRadius=None,
     ):
+        lineThickness = 5 if lineThickness is None else lineThickness
+        circleRadius = 10 if circleRadius is None else circleRadius
+
         frame = result["frame"]
         dataSetPath = result["dataSetPath"]
         referencePositions = self.extractReferencePositions(result)
         adjacencyMatrix = referencePositions["adjacencyMatrix"]
         positions2D = referencePositions["jointCoordinates2D"]
         rgbImg = self.getDataSet(frame, dataSetPath)[0]  # load image
+        rgbImg = plotGraph2D(
+            rgbImg=rgbImg,
+            positions2D=positions2D,
+            adjacencyMatrix=adjacencyMatrix,
+            lineColor=lineColor,
+            circleColor=circleColor,
+            lineThickness=lineThickness,
+            circleRadius=circleRadius,
+        )
+        return rgbImg
+
+    def plotBranchWiseColoredLocalizationResult2D(
+        self,
+        result,
+        colorPalette=None,
+        lineThickness=None,
+        circleRadius=None,
+    ):
+        colorPalette = (
+            thesisColorPalettes["viridis"] if colorPalette is None else colorPalette
+        )
+        lineThickness = 5 if lineThickness is None else lineThickness
+        circleRadius = 10 if circleRadius is None else circleRadius
+
+        frame = result["frame"]
+        dataSetPath = result["dataSetPath"]
+        rgbImg = self.getDataSet(frame, dataSetPath)[0]  # load image
+
+        referencePositions = self.extractReferencePositions(result)
+        adjacencyMatrix = referencePositions["adjacencyMatrix"]
+        positions2D = referencePositions["jointCoordinates2D"]
+        branchCorrespondanceMatrix = referencePositions["branchCorrespondanceMatrix"]
+        numBranches = branchCorrespondanceMatrix.shape[1]
+
+        colorScaleCoordinates = np.linspace(0, 1, numBranches)
+        branchColors = []
+        for s in colorScaleCoordinates:
+            branchColors.append(colorPalette.to_rgba(s)[:3])
+
+        for branchIndex in range(0, numBranches):
+            indices = np.where(branchCorrespondanceMatrix[:, branchIndex] == 1)[0]
+            branchPositions = positions2D[indices, :]
+            branchAdjacencyMatrix = np.array(
+                [[adjacencyMatrix[row][col] for col in indices] for row in indices]
+            )
+            rgbImg = plotGraph2D(
+                rgbImg=rgbImg,
+                positions2D=branchPositions,
+                adjacencyMatrix=branchAdjacencyMatrix,
+                lineColor=branchColors[branchIndex],
+                circleColor=branchColors[branchIndex],
+                lineThickness=lineThickness,
+                circleRadius=circleRadius,
+            )
+        return rgbImg
+        # topology = self.generateModel(result["modelParameters"])
+        # numBranches = topology.getNumBranches()
+        # colorScaleCoordinates = np.linspace(0, 1, numBranches)
+        # branchColors = []
+        # for s in colorScaleCoordinates:
+        #     branchColors.append(colorPalette.to_rgba(s)[:3])
+        # connections = topology.getAdjacentPointPairsAndBranchCorrespondance()
+
         rgbImg = plotGraph2D(
             rgbImg=rgbImg,
             positions2D=positions2D,

@@ -43,15 +43,15 @@ resultFolderPaths = [
 ]
 
 styleOpt = {
-    "lineColor": colors["blue"],
+    "lineColor": thesisColors["blue"],
     "lineThickness": 8,
-    "circleColor": colors["blue"],
+    "circleColor": thesisColors["blue"],
     "circleRadius": 20,
-    "pointCloudColor": colors["red"],
+    "pointCloudColor": thesisColors["red"],
     "pointCloudAlpha": 0.3,
     "pointCloudSize": 1,
     "pointCloudMarkerStyle": ".",
-    "pointCloudEdgeColor": colors["red"],
+    "pointCloudEdgeColor": thesisColors["red"],
     "azimuth": 70,
     "elevation": 30,
 }

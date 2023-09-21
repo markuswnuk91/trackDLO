@@ -8,7 +8,7 @@ except:
     print("Imports for Colors File failed.")
     raise
 
-colors = {
+thesisColors = {
     "black": [0, 0, 0],
     "red": [1, 0, 0],
     "blue": [0, 0, 1],
@@ -28,9 +28,13 @@ colors = {
     "susieluGold": [255 / 255, 215 / 255, 0],
 }
 
-colorPalettes = {
+thesisColorPalettes = {
     "viridis": plt.cm.ScalarMappable(
         cmap=matplotlib.colormaps["viridis"],
         norm=matplotlib.colors.Normalize(vmin=0, vmax=1),
-    )
+    ),
+    "blues": plt.cm.ScalarMappable(
+        cmap=matplotlib.colormaps["Blues"],
+        norm=matplotlib.colors.Normalize(vmin=0, vmax=1),
+    ),
 }

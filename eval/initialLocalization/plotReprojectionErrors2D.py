@@ -40,7 +40,7 @@ resultFolderPaths = [
 
 styleOpt = {
     "grayscale": False,
-    "modelColor": colors["blue"],
+    "modelColor": thesisColors["blue"],
     "correspondanceColor": colors["susieluGold"],
     "modelLineWidth": 3,
     "correspondanceLineWidht": 3,

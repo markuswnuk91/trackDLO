@@ -60,6 +60,32 @@ def setupLatexPlot3D(
     return fig, ax
 
 
+def plotSinglePoint(
+    ax,
+    x,
+    color=[0, 0, 1],
+    edgeColor=None,
+    alpha=1,
+    label: str = None,
+    size=None,
+    marker=None,
+    zOrder=None,
+):
+    zOrder = 1 if zOrder is None else zOrder
+    edgeColor = color if edgeColor is None else edgeColor
+    size = 20 if size is None else size
+    marker = "o" if marker is None else marker
+    ax.plot(
+        x[0],
+        x[1],
+        x[2],
+        marker=marker,
+        zorder=zOrder,
+        color=color,
+        markersize=size,
+    )
+
+
 def plotPoint(
     ax,
     x,
@@ -135,11 +161,13 @@ def plotPointSet(
     markerStyle=None,
     alpha=None,
     label: str = None,
+    zOrder=None,
 ):
     size = 20 if size is None else size
     markerStyle = "o" if markerStyle is None else markerStyle
     alpha = 1 if alpha is None else alpha
     edgeColor = color if edgeColor is None else edgeColor
+    zOrder = 1 if zOrder is None else zOrder
 
     if X.shape[1] == 3:
         if label is None:
@@ -152,6 +180,7 @@ def plotPointSet(
                 s=size,
                 marker=markerStyle,
                 edgecolors=edgeColor,
+                zorder=zOrder,
             )
         else:
             ax.scatter(
@@ -164,6 +193,7 @@ def plotPointSet(
                 s=size,
                 marker=markerStyle,
                 edgecolor=None,
+                zorder=zOrder,
             )
 
     elif X.shape[1] == 2:
@@ -176,6 +206,7 @@ def plotPointSet(
                 s=size,
                 marker=markerStyle,
                 edgecolors=edgeColor,
+                zorder=zOrder,
             )
         else:
             ax.scatter(
@@ -187,6 +218,7 @@ def plotPointSet(
                 s=size,
                 marker=markerStyle,
                 edgecolor=None,
+                zorder=zOrder,
             )
     else:
         raise NotImplementedError
@@ -487,6 +519,7 @@ def plotGraph3D(
     lineWidth=None,
     pointAlpha=None,
     lineAlpha=None,
+    zOrder=None,
 ):
     pointColor = [0, 0, 1] if pointColor is None else pointColor
     lineColor = [0, 0, 1] if lineColor is None else lineColor
@@ -494,8 +527,10 @@ def plotGraph3D(
     lineWidth = 1.5 if lineWidth is None else lineWidth
     pointAlpha = 1 if pointAlpha is None else pointAlpha
     lineAlpha = 1 if lineAlpha is None else lineAlpha
-
-    plotPointSet(ax=ax, X=X, color=pointColor, size=pointSize, alpha=pointAlpha)
+    zOrder = 1 if zOrder is None else zOrder
+    plotPointSet(
+        ax=ax, X=X, color=pointColor, size=pointSize, alpha=pointAlpha, zOrder=zOrder
+    )
     i = 0
     j = 0
     I, J = adjacencyMatrix.shape
@@ -508,6 +543,7 @@ def plotGraph3D(
                     color=lineColor,
                     linewidth=lineWidth,
                     alpha=lineAlpha,
+                    zOrder=zOrder,
                 )
     return
 
@@ -554,7 +590,7 @@ def plotBranchWiseColoredTopology3D(
     zOrder=None,
 ):
     if colorPalette is None:
-        colorPalette = colorPalettes["viridis"]
+        colorPalette = thesisColorPalettes["viridis"]
     zOrder = zOrder if zOrder is None else zOrder
 
     connections = topology.getAdjacentPointPairsAndBranchCorrespondance()
@@ -587,13 +623,13 @@ def plotBranchWiseColoredTopology3D(
             #     size=pointSize,
             #     zOrder=zOrder,
             # )
-            plotPoint(
-                ax=ax,
-                x=stackedPair[1, :],
-                color=branchColors[branchIndex],
-                size=pointSize,
-                zOrder=zOrder,
-            )
+            # plotPoint(
+            #     ax=ax,
+            #     x=stackedPair[1, :],
+            #     color=branchColors[branchIndex],
+            #     size=pointSize,
+            #     zOrder=zOrder,
+            # )
             ax.plot(
                 [stackedPair[0, 0]],
                 [stackedPair[0, 1]],

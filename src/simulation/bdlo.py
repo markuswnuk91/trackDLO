@@ -531,6 +531,43 @@ class BranchedDeformableLinearObject(BDLOTopology):
             )
         return correspondingBranches[0]
 
+    def getBranchCorrespondancesForBodyNodes(self):
+        correspondingBranchIndices = []
+        bodyNodeIndices = []
+        for bodyNodeIndex in range(self.skel.getNumBodyNodes()):
+            for branchIndex, branch in enumerate(self.branches):
+                if (
+                    bodyNodeIndex
+                    in branch.getBranchInfo()["correspondingBodyNodeIndices"]
+                ):
+                    bodyNodeIndices.append(bodyNodeIndex)
+                    correspondingBranchIndices.append(branchIndex)
+        return (bodyNodeIndices, correspondingBranchIndices)
+
+    def getBranchCorrespondancesForJoints(self):
+        correspondingBranchIndices = []
+        jointIndices = list(range(0, self.skel.getNumBodyNodes() + 1))
+        numBranches = self.getNumBranches()
+        correspondanceMatrix = np.zeros((len(jointIndices), numBranches))
+        for i, bodyNodeIndex in enumerate(range(self.skel.getNumBodyNodes())):
+            parentBodyNode = self.skel.getBodyNode(bodyNodeIndex).getParentBodyNode()
+            for branchIndex, branch in enumerate(self.branches):
+                if (
+                    bodyNodeIndex
+                    in branch.getBranchInfo()["correspondingBodyNodeIndices"]
+                ):
+                    if parentBodyNode is not None:
+                        parentBodyNodeIndex = parentBodyNode.getIndexInSkeleton()
+                        correspondanceMatrix[parentBodyNodeIndex + 1, branchIndex] = 1
+                    else:
+                        correspondanceMatrix[i, branchIndex] = 1
+                    correspondanceMatrix[i + 1, branchIndex] = 1
+        for i in range(0, len(correspondanceMatrix)):
+            correspondingBranchIndices.append(
+                np.where(correspondanceMatrix[i, :] == 1)[0].tolist()[0]
+            )
+        return (jointIndices, correspondingBranchIndices, correspondanceMatrix)
+
     # custom functions for plotting
     def getAdjacentPointPairs(self, q=None):
         if q is not None:

@@ -24,10 +24,10 @@ controlOpt = {
     "save": True,
     "saveAsPGF": False,
     "showInputImage": False,
-    "showPlots": True,
-    "plotTopologyExtractionResult": False,
-    "plotCorrespondanceEstimationResult": False,
-    "plotLocalizationResult3D": False,
+    "showPlots": False,
+    "plotTopologyExtractionResult": True,
+    "plotCorrespondanceEstimationResult": True,
+    "plotLocalizationResult3D": True,
     "plotLocalizationResult2D": True,
     "verbose": True,
 }
@@ -46,7 +46,7 @@ styleOpt = {
         "zoomFactor": 1.5,
         "plotEnvironment": True,
         "highlightWireHarness": False,
-        "colorPalette": thesisColorPalettes["blues"],
+        "colorPalette": thesisColorPalettes["red"],
         "colorPaletteStartValue": 0.5,
         "colorPaletteEndValue": 1,
         "leafNodeSize": 10,
@@ -64,7 +64,7 @@ styleOpt = {
         "zRotAngle": np.pi / 2,
         "xOffset": -0.6,
         "colorPalette": thesisColorPalettes["viridis"],
-        "extractedTopologyColor": thesisColors["blue"],
+        "extractedTopologyColor": thesisColors["red"],
         "correspondanceAlpha": 0.3,
         "templatePointSize": 5,
         "extractedPointSize": 5,
@@ -88,6 +88,7 @@ styleOpt = {
         "axisLimY": [-0.22, 0.43],
         "axisLimZ": [0.2, 0.75],
     },
+    "localizationResult2D": {"colorPalette": thesisColorPalettes["viridis"]},
     "subplot_position_left": 0,
     "subplot_position_bottom": 0,
     "subplot_position_right": 1,
@@ -567,7 +568,12 @@ if __name__ == "__main__":
                             )
                 if controlOpt["plotLocalizationResult2D"]:
                     localizationResult2DImg = (
-                        eval.plotBranchWiseColoredLocalizationResult2D(result)
+                        eval.plotBranchWiseColoredLocalizationResult2D(
+                            result,
+                            colorPalette=styleOpt["localizationResult2D"][
+                                "colorPalette"
+                            ],
+                        )
                     )
                     localizationResult2DImg
                     if controlOpt["showPlots"]:

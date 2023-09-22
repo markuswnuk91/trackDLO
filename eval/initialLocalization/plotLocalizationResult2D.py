@@ -19,10 +19,11 @@ global eval
 eval = InitialLocalizationEvaluation()
 
 controlOpt = {
-    "dataSetsToLoad": [5],
+    "dataSetsToLoad": [-1],
     "resultsToLoad": [-1],
-    "save": False,
-    "showPlot": True,
+    "save": True,
+    "plotOptions": "multiChrome",  # monoChrome, multiChrome
+    "showPlot": False,
     "block": True,
     "saveFolder": "data/eval/initialLocalization/plots/initialLocalizationResults2D",
     "saveName": "initialLocalizationResultImg",
@@ -43,6 +44,7 @@ styleOpt = {
     "lineThickness": 3,
     "circleColor": thesisColors["blue"],
     "circleRadius": 10,
+    "colorPalette": thesisColorPalettes["viridis"],
 }
 
 if __name__ == "__main__":
@@ -55,7 +57,7 @@ if __name__ == "__main__":
             if i in controlOpt["dataSetsToLoad"]
         ]
     # load results
-    for resultFolderPath in dataSetsToEvaluate:
+    for nDataSet, resultFolderPath in enumerate(dataSetsToEvaluate):
         if controlOpt["resultsToLoad"][0] == -1:
             resultFiles = eval.list_result_files(resultFolderPath)
         else:
@@ -66,7 +68,7 @@ if __name__ == "__main__":
                 if i in controlOpt["resultsToLoad"]
             ]
         failedFrames = []
-        for resultFile in resultFiles:
+        for nResult, resultFile in enumerate(resultFiles):
             resultFilePath = os.path.join(resultFolderPath, resultFile)
             result = eval.loadResults(resultFilePath)
             try:
@@ -75,13 +77,22 @@ if __name__ == "__main__":
                 circleColor = styleOpt["circleColor"]
                 lineThickness = styleOpt["lineThickness"]
                 circleRadius = styleOpt["circleRadius"]
-                rgbImg = eval.plotLocalizationResult2D(
-                    result,
-                    lineColor,
-                    circleColor,
-                    lineThickness,
-                    circleRadius,
-                )
+                if controlOpt["plotOptions"] == "monoChrome":
+                    rgbImg = eval.plotLocalizationResult2D(
+                        result,
+                        lineColor,
+                        circleColor,
+                        lineThickness,
+                        circleRadius,
+                    )
+                elif controlOpt["plotOptions"] == "multiChrome":
+                    rgbImg = eval.plotBranchWiseColoredLocalizationResult2D(
+                        result,
+                        colorPalette=styleOpt["colorPalette"],
+                    )
+                else:
+                    raise NotImplementedError
+
                 # save image
                 if controlOpt["save"]:
                     id = "_".join(resultFile.split("_")[0:3])
@@ -94,8 +105,12 @@ if __name__ == "__main__":
                     eval.saveImage(rgbImg, savePath)
                     if controlOpt["verbose"]:
                         print(
-                            "Saved image for initial localization result {} for at {}.".format(
-                                resultFile, savePath
+                            "Saved image {}/{} for data set {}/{} initial localization at {}.".format(
+                                nResult,
+                                len(resultFiles),
+                                nDataSet,
+                                len(dataSetsToEvaluate),
+                                savePath,
                             )
                         )
                 if controlOpt["showPlot"]:

@@ -38,8 +38,8 @@ visOpt = {
 }
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": True,
-    "saveRegistrationsAsImage": True,
+    "trackingResults": False,
+    "saveRegistrationsAsImage": False,
     #    "evaluationResults": True,
 }
 registrationsToRun = [

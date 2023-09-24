@@ -266,6 +266,10 @@ class Evaluation(object):
         return False
 
     # data loading
+    def getFrameFromFileName(self, dataSetPath, fileName):
+        fileIndex = self.dataHandler.getFileIndexFromNameOrIndex(fileName, dataSetPath)
+        return fileIndex
+
     def getDataSet(self, fileIdentifier=None, dataSetFolderPath=None):
         if fileIdentifier is None:
             fileIdentifier = self.currentLoadFileIdentifier
@@ -588,10 +592,12 @@ class Evaluation(object):
         filteredPointSet = lof.sampleLOF(pointSet)
         runtimeLOF_end = time.time()
         outliers = lof.Outliers
+        inlierIndices = lof.inlierIndices
         runtime = runtimeLOF_end - runtimeLOF_start
         lofResult = {
             "filteredPointSet": filteredPointSet,
             "outliers": outliers,
+            "inilerIndies": inlierIndices,
             "runtime": runtime,
         }
         return lofResult

@@ -34,7 +34,8 @@ class LocalOutlierFactorFilter(Downsampling):
         )
         self.filterResult = self.lofFilter.fit_predict(self.Y)
         self.negOutlierScore = self.lofFilter.negative_outlier_factor_
-        self.T = self.Y[np.where(self.filterResult != -1)[0], :]
+        self.inlierIndices = np.where(self.filterResult != -1)[0]
+        self.T = self.Y[self.inlierIndices, :]
         self.Outliers = self.Y[np.where(self.filterResult != 1)[0], :]
 
         if callable(self.callback):

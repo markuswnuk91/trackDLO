@@ -25,7 +25,7 @@ except:
 
 runOpt = {
     "dataSetsToEvaluate": [0],
-    "framesToEvaluate": [19, 29, 31, 45, 48, 49],
+    "framesToEvaluate": [28],
     "runInitializationExperiment": True,
     # "runSom": False,
     "run2DSkeletonization": True,
@@ -36,7 +36,7 @@ runOpt = {
     #    "evaluation": True
 }
 saveOpt = {
-    "saveResults": True,
+    "saveResults": False,
     "resultRootFolderPath": "data/eval/initialLocalization/results",
     "resultFileType": ".pkl",
     "overwrite": True,
@@ -58,8 +58,8 @@ failedFrames = []
 
 dataSetPaths = [
     # "data/darus_data_download/data/202230603_Configurations_mounted/20230603_143937_modelY/",
-    "data/darus_data_download/data/20230807_Configurations_mounted/20230807_150735_partial/",
-    # "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/",
+    # "data/darus_data_download/data/20230807_Configurations_mounted/20230807_150735_partial/",
+    "data/darus_data_download/data/202230603_Configurations_mounted/20230603_140143_arena/",
     # "data/darus_data_download/data/20230516_Configurations_labeled/20230516_112207_YShape/",
     # "data/darus_data_download/data/20230516_Configurations_labeled/20230516_113957_Partial/",  # finished 10.09.2023
     # "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/", # finished 12.09.2023
@@ -144,7 +144,7 @@ if __name__ == "__main__":
                     result["modelParameters"] = modelParameters
 
                     # load data
-                    if "run2DSkeletonization":
+                    if runOpt["run2DSkeletonization"]:
                         pointCloud = eval.getPointCloud(
                             frame, dataSetPath, segmentationMethod="skeletonized"
                         )

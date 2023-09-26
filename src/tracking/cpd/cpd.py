@@ -90,7 +90,14 @@ class CoherentPointDrift(NonRigidRegistration):
     """
 
     def __init__(
-        self, alpha=None, beta=None, low_rank=False, num_eig=100, *args, **kwargs
+        self,
+        alpha=None,
+        beta=None,
+        low_rank=False,
+        num_eig=100,
+        log=False,
+        *args,
+        **kwargs
     ):
         super().__init__(*args, **kwargs)
         if alpha is not None and (not isinstance(alpha, numbers.Number) or alpha <= 0):
@@ -123,6 +130,10 @@ class CoherentPointDrift(NonRigidRegistration):
             self.E = 0.0
         self.initializeCorrespondances()
         self.initializeWeights()
+        if self.logging:
+            self.log["W"] = [self.W]
+            self.log["G"] = self.G
+            self.log["sigma2"] = [self.sigma2]
 
     def initializeWeights(self):
         self.W = np.zeros((self.N, self.D))
@@ -214,6 +225,11 @@ class CoherentPointDrift(NonRigidRegistration):
             )
         self.computeTargets()
         self.update_variance()
+        if self.logging:
+            self.log["W"].append(self.W)
+            self.log["sigma2"].append(self.sigma2)
+            self.log["iteration"].append(self.iteration)
+            self.log["T"] = [self.T]
 
     def computeTargets(self, X=None):
         """
@@ -289,3 +305,16 @@ class CoherentPointDrift(NonRigidRegistration):
             Deformable transformation matrix.
         """
         return self.G, self.W
+
+    def getResults(self):
+        result = {
+            "X": self.X,
+            "T": self.T,
+            "W": self.W,
+            "G": self.G,
+            "sigma2": self.sigma2,
+            "runtimes": self.runTimes,
+        }
+        if self.logging:
+            result["log"] = self.log
+        return result

@@ -75,6 +75,7 @@ class StructurePreservedRegistration(NonRigidRegistration):
         knn=None,
         tauAnnealing=None,
         lambdaAnnealing=None,
+        log=False,
         *args,
         **kwargs
     ):
@@ -163,6 +164,11 @@ class StructurePreservedRegistration(NonRigidRegistration):
         self.G = gaussian_kernel(self.X, self.beta)
         self.Phi = Mlle(self.X, knn, 2).getAlignmentMatrix()
 
+        if self.logging:
+            self.log["W"] = [self.W]
+            self.log["G"] = self.G
+            self.log["sigma2"] = [self.sigma2]
+
     def initializeCorrespondances(self):
         self.P = np.zeros((self.N, self.M))
         self.Pden = np.zeros((self.M))
@@ -235,6 +241,11 @@ class StructurePreservedRegistration(NonRigidRegistration):
         # set the new targets
         self.computeTargets()
         self.update_variance()
+        if self.logging:
+            self.log["W"].append(self.W)
+            self.log["T"].append(self.T)
+            self.log["sigma2"].append(self.sigma2)
+            self.log["iteration"].append(self.iteration)
 
     def update_variance(self):
         """
@@ -275,3 +286,16 @@ class StructurePreservedRegistration(NonRigidRegistration):
             Deformable transformation matrix.
         """
         return self.G, self.W
+
+    def getResults(self):
+        result = {
+            "X": self.X,
+            "T": self.T,
+            "W": self.W,
+            "G": self.G,
+            "sigma2": self.sigma2,
+            "runtimes": self.runTimes,
+        }
+        if self.logging:
+            result["log"] = self.log
+        return result

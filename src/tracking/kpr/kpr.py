@@ -93,15 +93,19 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         damping=None,
         stiffnessMatrix=None,
         gravity=None,
+        constrainedNodeIndices=None,
+        constrainedPositions=None,
         wCorrespondance=None,
         wStiffness=None,
         wGravity=None,
+        wConstraint=None,
         minDampingFactor=None,
         dampingAnnealing=None,
         stiffnessAnnealing=None,
         gravitationalAnnealing=None,
         normalize=None,
         ik_iterations=None,
+        log=None,
         *args,
         **kwargs
     ):
@@ -111,7 +115,7 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         self.qInit = qInit
         self.q = qInit.copy()
         self.dq = np.zeros(self.q.shape[0])
-        self.deltaq = np.delete(qInit.copy(), [3, 4, 5])
+        self.log = False if log is None else True
         self.model = model
         X = model.getPositions(self.qInit)
         super().__init__(X=X, *args, **kwargs)
@@ -124,10 +128,17 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             1 * np.eye(self.Dof) if stiffnessMatrix is None else stiffnessMatrix
         )
         self.gravity = np.array([0, 0, 0]) if gravity is None else gravity
-
+        self.constraintNodeIndices = (
+            None if constrainedNodeIndices is None else constrainedNodeIndices
+        )
+        self.constrainedPositions = (
+            None if constrainedPositions is None else constrainedPositions
+        )
         self.wCorrespondance = 1 if wCorrespondance is None else wCorrespondance
         self.wStiffness = 1 if wStiffness is None else wStiffness
         self.wGravity = 1 if wGravity is None else wGravity
+        self.wConstraint = 1 if wConstraint is None else wConstraint
+
         self.minDampingFactor = 1 if minDampingFactor is None else minDampingFactor
         self.dampingAnnealing = 0.97 if dampingAnnealing is None else dampingAnnealing
         self.stiffnessAnnelealing = (
@@ -138,6 +149,10 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         )
         self.diff = np.inf
         self.L = -np.inf
+
+        if self.logging:
+            self.log["q"] = [self.q]
+            self.log["sigma2"] = [self.sigma2]
 
         self.initializeCorrespondances()
 
@@ -276,6 +291,27 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             A += self.sigma2 * wStiffness * stiffnessMatrix
             B += self.sigma2 * wStiffness * stiffnessMatrix @ (self.qInit - self.q)
 
+            # position constraints
+            if self.constraintNodeIndices is not None:
+                for i, constraintNodeIndex in enumerate(self.constraintNodeIndices):
+                    Jc = self.model.getJacobian(self.q, constraintNodeIndex)
+                    A += self.wConstraint * Jc.T @ Jc
+                    B += (
+                        self.wConstraint
+                        * Jc.T
+                        @ (
+                            self.constrainedPositions[i]
+                            - self.T[constraintNodeIndex, :]
+                        )
+                    )
+
+            # B += (
+            #     self.sigma2
+            #     * wStiffness
+            #     * stiffnessMatrix
+            #     @ (np.zeros(len(self.q)) - self.q)
+            # )
+
             # t_matrix_assembly_end = time.time()
             # print(
             #     "Time for matrix assembly: {}".format(
@@ -297,6 +333,10 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             self.computeTargets()
 
         self.update_variance()
+        if self.logging:
+            self.log["q"].append(self.q)
+            self.log["sigma2"].append(self.sigma2)
+            self.log["T"].append(self.T)
 
     def update_variance(self):
         """
@@ -337,3 +377,15 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         self.q: numpy array of corresponding generalized coordinates
         """
         return self.T, self.q
+
+    def getResults(self):
+        result = {
+            "X": self.X,
+            "T": self.T,
+            "q": self.q,
+            "sigma2": self.sigma2,
+            "runtimes": self.runTimes,
+        }
+        if self.logging:
+            result["log"] = self.log
+        return result

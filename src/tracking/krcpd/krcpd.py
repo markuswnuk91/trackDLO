@@ -24,6 +24,7 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         dampingAnnealing=None,
         ik_iterations=None,
         confidenceBasedUpdate=None,
+        log=False,
         *args,
         **kwargs
     ):
@@ -45,6 +46,12 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
             dampingAnnealing=dampingAnnealing,
             ik_iterations=ik_iterations,
         )
+        if self.logging:
+            self.log["q"] = [self.q]
+            self.log["sigma2"] = [self.sigma2]
+            self.log["W"] = [self.W]
+            self.log["G"] = self.G
+            self.log["Xreg"] = [self.Xreg]
 
     def initializeKinematicRegularizationParameters(
         self,
@@ -204,8 +211,12 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
         # ) + (self.P1 / np.max(self.P1))[:, None] * self.W
 
         self.computeTargets()
-
         self.update_variance()
+        if self.logging:
+            self.log["q"].append(self.q)
+            self.log["sigma2"].append(self.sigma2)
+            self.log["T"].append(self.T)
+            self.log["Xreg"].append(self.Xreg)
 
     def computeRegularizedConfiguration(self, q=None):
         if q is not None:
@@ -251,6 +262,21 @@ class KinematicRegularizedCoherentPointDrift(CoherentPointDrift):
                     self.Q, np.matmul(self.S, np.matmul(self.Q.T, self.W))
                 )
                 return
+
+    def getResults(self):
+        result = {
+            "X": self.X,
+            "T": self.T,
+            "W": self.W,
+            "G": self.G,
+            "Xreg": self.Xreg,
+            "q": self.q,
+            "sigma2": self.sigma2,
+            "runtimes": self.runTimes,
+        }
+        if self.logging:
+            result["log"] = self.log
+        return result
 
     # def update_variance(self):
     #     """

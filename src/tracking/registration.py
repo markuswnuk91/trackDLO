@@ -49,6 +49,7 @@ class NonRigidRegistration(object):
         sigma2=None,
         mu=None,
         normalize=0,
+        logging=False,
         *args,
         **kwargs
     ):
@@ -124,6 +125,14 @@ class NonRigidRegistration(object):
         self.runTimes["correspondanceEstimation"] = []
         self.runTimes["parameterUpdate"] = []
         self.runTimes["targetComputation"] = []
+        self.logging = logging
+        if self.logging:
+            self.log = {
+                "X": [self.X],
+                "Y": [self.Y],
+                "T": [self.T],
+                "iteration": [self.iteration],
+            }
 
     def register(self, checkConvergence=True, customCallback=None, *args, **kwargs):
         """

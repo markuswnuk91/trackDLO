@@ -1032,6 +1032,83 @@ class Evaluation(object):
     # -------------------------------------------------------------------------
     # TRACKING FUNCTIONS
     # -------------------------------------------------------------------------
+    def setupRegistration(
+        self,
+        method,
+        registrationConfig,
+        logging=True,
+        visualizeIterations=None,
+        visualizationCallback=None,
+        savePath=None,
+        pauseInterval=None,
+    ):
+        visualizeIterations = (
+            True if visualizeIterations is None else visualizeIterations
+        )
+        if method == "cpd":
+            registrationConfig["parameters"] = (
+                self.config["cpdParameters"]
+                if "parameters" not in registrationConfig
+                else registrationConfig["parameters"]
+            )
+            reg = CoherentPointDrift(
+                Y=registrationConfig["Y"],
+                X=registrationConfig["X"],
+                logging=logging,
+                **registrationConfig["parameters"],
+            )
+        elif method == "spr":
+            registrationConfig["parameters"] = (
+                self.config["sprParameters"]
+                if "parameters" not in registrationConfig
+                else registrationConfig["parameters"]
+            )
+            reg = StructurePreservedRegistration(
+                Y=registrationConfig["Y"],
+                X=registrationConfig["X"],
+                logging=logging,
+                **registrationConfig["parameters"],
+            )
+        elif method == "kpr":
+            registrationConfig["parameters"] = (
+                self.config["kprParameters"]
+                if "parameters" not in registrationConfig
+                else registrationConfig["parameters"]
+            )
+            parameters = registrationConfig["parameters"]
+            if "constraints" in registrationConfig:
+                parameters.update(registrationConfig["constraints"])
+                
+            reg = KinematicsPreservingRegistration(
+                Y=registrationConfig["Y"],
+                qInit=registrationConfig["qInit"],
+                model=registrationConfig["model"],
+                logging=logging,
+                **parameters,
+            )
+        elif method == "krcpd":
+            registrationConfig["parameters"] = (
+                self.config["krcpdParameters"]
+                if "parameters" not in registrationConfig
+                else registrationConfig["parameters"]
+            )
+            reg = KinematicRegularizedCoherentPointDrift(
+                Y=registrationConfig["Y"],
+                qInit=registrationConfig["qInit"],
+                model=registrationConfig["model"],
+                logging=logging,
+                **registrationConfig["parameters"],
+            )
+        else:
+            raise NotImplementedError
+        if visualizeIterations:
+            if visualizationCallback is None:
+                visualizationCallback = self.getVisualizationCallback(
+                    reg, savePath=savePath, pauseInterval=pauseInterval
+                )
+            reg.registerCallback(visualizationCallback)
+        return reg
+
     def runRegistration(
         self,
         registration,
@@ -1319,7 +1396,7 @@ class Evaluation(object):
         fig=None,
         ax=None,
         dim=None,
-        pauseInterval=0.1,
+        pauseInterval=None,
         savePath=None,
         *args,
         **kwargs
@@ -1329,6 +1406,7 @@ class Evaluation(object):
                 dim = classHandle.Y.shape[1]
             except:
                 dim = 3
+        pauseInterval = 0.1 if pauseInterval is None else pauseInterval
         fig, ax = self.setupFigure(fig, ax, dim)
         if callbackFunction is None:
             visCallback = self.setupVisualizationCallback(

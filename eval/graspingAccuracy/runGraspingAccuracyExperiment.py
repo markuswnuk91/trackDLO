@@ -8,8 +8,7 @@ try:
     from src.evaluation.graspingAccuracy.graspingAccuracyEvaluation import (
         GraspingAccuracyEvaluation,
     )
-
-    from src.localization.downsampling.mlle.mlle import Mlle
+    from src.tracking.kpr.kinematicsModel import KinematicsModelDart
 
     # visualization
     from src.visualization.plot3D import *
@@ -18,8 +17,9 @@ except:
     raise
 
 runOpt = {
-    "dataSetsToEvaluate": [0],
-    "runInitialLoclization": True,
+    "dataSetsToEvaluate": [-1],
+    "runInitialLocalization": False,
+    "runTracking": True,
     "localizationOptions": {
         "initializationFrame": 0,
         "run2DSkeletonization": False,
@@ -29,11 +29,18 @@ runOpt = {
         "runLocalization": True,
     },
     "trackingOptions": {
-        "registrationMethods": ["cpd", "spr", "krp", "krcpd"],
+        "registrationMethods": [
+            "cpd",
+            "spr",
+            "kpr",
+            "krcpd",
+        ],  # "cpd", "spr", "kpr", "krcpd"
+        "modelBasedMethods": ["kpr", "krcpd"],
     },
+    "verbose": True,
 }
 saveOpt = {
-    "saveLocalizationResults": True,
+    "saveLocalizationResults": False,
     "saveTrackingResults": True,
     "resultFolderPath": "data/eval/graspingAccuracy/results",
     "resultFileType": ".pkl",
@@ -46,14 +53,15 @@ visOpt = {
     "visTopologyExtractionResult": True,
     "visLocalizationIterations": True,
     "visLocalizationResult": True,
+    "visTrackingIterations": True,
 }
 dataSetPaths = [
-    "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_130903_modelY/",
-    "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_131545_modelY/",
-    "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_154903_modelY/",
-    "data/darus_data_download/data/20230807_RoboticWireHarnessMounting/20230807_142319_partial/",
-    "data/darus_data_download/data/20230807_RoboticWireHarnessMounting/20230807_142909_partial/",
-    "data/darus_data_download/data/20230807_RoboticWireHarnessMounting/20230807_143737_partial/",
+    # "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_130903_modelY/",
+    # "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_131545_modelY/",
+    # "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_154903_modelY/",
+    # "data/darus_data_download/data/20230807_RoboticWireHarnessMounting/20230807_142319_partial/",
+    # "data/darus_data_download/data/20230807_RoboticWireHarnessMounting/20230807_142909_partial/",
+    # "data/darus_data_download/data/20230807_RoboticWireHarnessMounting/20230807_143737_partial/",
     "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_140014_arena/",
     "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_141025_arena/",
     "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_142058_arena/",
@@ -101,7 +109,7 @@ if __name__ == "__main__":
         result["modelParameters"] = modelParameters
 
         # run initialization
-        if runOpt["runInitialLoclization"]:
+        if runOpt["runInitialLocalization"]:
             frame = runOpt["localizationOptions"]["initializationFrame"]
             fileName = eval.getFileName(frame, dataSetPath)
             filePath = eval.getFilePath(frame, dataSetPath)
@@ -253,7 +261,110 @@ if __name__ == "__main__":
                 raise ValueError(
                     "No result exists yet. Run localization first to proceede."
                 )
-        # run tracking on subsequent images
-        # track with different algorithms
 
-        # save tracking result for every frame
+        if runOpt["runTracking"]:
+            # setup tracking problem
+            framesToTrack = list(range(0, eval.getNumImageSetsInDataSet(dataSetPath)))[
+                ::3
+            ]
+            methodsToEvaluate = runOpt["trackingOptions"]["registrationMethods"]
+            modelBasedMethods = runOpt["trackingOptions"]["modelBasedMethods"]
+            result["trackingResults"] = {}
+            for method in methodsToEvaluate:
+                result["trackingResults"][method] = {
+                    "method": method,
+                    "modelParameters": modelParameters,
+                    "registrationResults": [],
+                    "B": result["initializationResult"]["localizationResult"]["BInit"],
+                    "S": result["initializationResult"]["localizationResult"]["S"],
+                    "adjacencyMatrix": model.getBodyNodeNodeAdjacencyMatrix(),
+                }
+                for numFrame, frame in enumerate(framesToTrack):
+                    # load point cloud data
+                    Y, colors = eval.getPointCloud(frame, dataSetPath)
+
+                    # setup result
+                    registrationResult = {
+                        "frame": frame,
+                        "fileName": eval.getFileName(frame, dataSetPath),
+                        "filePath": eval.getFilePath(frame, dataSetPath),
+                    }
+                    # setup registration
+                    registrationConfig = {}
+                    registrationConfig["Y"] = Y
+                    if numFrame == 0 and method in modelBasedMethods:
+                        qInit = result["initializationResult"]["localizationResult"][
+                            "qInit"
+                        ]
+                        registrationConfig["qInit"] = qInit
+                    elif numFrame == 0 and method not in modelBasedMethods:
+                        XInit = result["initializationResult"]["localizationResult"][
+                            "XInit"
+                        ]
+                        registrationConfig["X"] = XInit
+                    elif numFrame != 0 and method in modelBasedMethods:
+                        qInit = result["trackingResults"][method][
+                            "registrationResults"
+                        ][-1]["result"]["q"]
+                        registrationConfig["qInit"] = qInit
+
+                        (b, s) = eval.loadGraspingLocalCoordinates(dataSetPath)[
+                            numFrame - 1
+                        ]
+                        graspedBodyNode = (
+                            model.getBodyNodeIndexFromBranchLocalCoodinate(b, s)
+                        )
+                        releasePosition = eval.loadGroundTruthGraspingPose(
+                            dataSetPath, frame - 1
+                        )[1]
+                        registrationConfig["constraints"] = {}
+                        registrationConfig["constraints"]["constrainedNodeIndices"] = [
+                            graspedBodyNode
+                        ]
+                        registrationConfig["constraints"]["constrainedPositions"] = [
+                            releasePosition
+                        ]
+                    else:
+                        XInit = result["trackingResults"][method][
+                            "registrationResults"
+                        ][-1]["result"]["T"]
+                        registrationConfig["X"] = XInit
+
+                    registrationConfig["model"] = KinematicsModelDart(
+                        model.skel.clone()
+                    )
+                    registration = eval.setupRegistration(
+                        method,
+                        registrationConfig,
+                        visualizeIterations=visOpt["visTrackingIterations"],
+                    )
+                    registration.register(checkConvergence=False)
+                    plt.close("all")
+                    registrationResult["result"] = registration.getResults()
+                    # save registration result
+                    result["trackingResults"][method]["registrationResults"].append(
+                        registrationResult
+                    )
+                # save tracking result for frame
+                if saveOpt["saveTrackingResults"]:
+                    # check if result already exist
+                    if os.path.exists(resultFilePath):
+                        existingResults = eval.loadResults(resultFilePath)
+                        if "trackingResults" in existingResults:
+                            existingTrackingResults = eval.loadResults(resultFilePath)[
+                                "trackingResults"
+                            ]
+                            # add exisiting tracking results to result
+                            for existingMethod in existingTrackingResults:
+                                if existingMethod != method:
+                                    result["trackingResults"][
+                                        existingMethod
+                                    ] = existingTrackingResults[existingMethod]
+                    eval.saveWithPickle(
+                        data=result,
+                        filePath=resultFilePath,
+                        recursionLimit=10000,
+                        verbose=True,
+                    )
+    if runOpt["verbose"]:
+        print("Finished evaluation.")

@@ -1078,7 +1078,7 @@ class Evaluation(object):
             parameters = registrationConfig["parameters"]
             if "constraints" in registrationConfig:
                 parameters.update(registrationConfig["constraints"])
-                
+
             reg = KinematicsPreservingRegistration(
                 Y=registrationConfig["Y"],
                 qInit=registrationConfig["qInit"],
@@ -1666,6 +1666,7 @@ class Evaluation(object):
         save=False,
         savePath=None,
         fileName=None,
+        title=None,
         format="png",
         dpi=100,
     ):
@@ -1675,7 +1676,11 @@ class Evaluation(object):
             if fileName is None
             else fileName
         )
-        fig = plt.figure(frameon=False)
+
+        if title is None:
+            fig = plt.figure(frameon=False)
+        else:
+            fig = plt.figure(title, frameon=False)
         fig.set_size_inches(imageWitdthInInches, imageHeightInInches)
         ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
         ax.set_axis_off()
@@ -1697,6 +1702,7 @@ class Evaluation(object):
                 format=format,
                 dpi=dpi,
             )
+
         if show:
             plt.show(block=block)
         else:

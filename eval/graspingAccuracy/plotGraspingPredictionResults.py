@@ -27,15 +27,17 @@ controlOpt = {
 }
 
 saveOpt = {
-    "saveFileName": "registrationResult2D",
-    "saveFolder": "data/eval/graspingAccuracy/plots/registrationResults2D",
-    "saveName": "result",
+    "saveFolder": "data/eval/graspingAccuracy/plots/graspingPredictionResult",
+    "saveFileName": "graspingPrediction",
 }
 
 styleOpt = {
-    "colorPalette": thesisColorPalettes["viridis"],
+    "groundTruthColor": thesisColors["uniSLightBlue"],
+    "predictionColor": thesisColors["blue"],
+    "gipperWidth3D": 0.1,
+    "fingerWidth2D": 0.5,
+    "centerThickness": 10,
     "lineThickness": 5,
-    "circleRadius": 10,
 }
 
 resultFileName = "result.pkl"
@@ -52,70 +54,58 @@ resultFolderPaths = [
 ]
 
 
-def plotBranchWiseColoredRegistrationResult2D(
+def plotPredictedGraspingPose(
     result,
     method,
     num,
-    colorPalette=None,
-    lineThickness=None,
-    circleRadius=None,
 ):
-    colorPalette = (
-        thesisColorPalettes["viridis"] if colorPalette is None else colorPalette
-    )
-    lineThickness = 5 if lineThickness is None else lineThickness
-    circleRadius = 10 if circleRadius is None else circleRadius
-
-    trackingResult = result["trackingResults"][method]
     registrationResult = result["trackingResults"][method]["registrationResults"][num]
     frame = registrationResult["frame"]
     dataSetPath = result["dataSetPath"]
-    rgbImg = eval.getDataSet(frame, dataSetPath)[0]  # load image
 
-    adjacencyMatrix = trackingResult["adjacencyMatrix"]
-    positions3D = registrationResult["result"]["T"]
-    positions2D = eval.reprojectFrom3DRobotBase(positions3D, dataSetPath)
-    B = trackingResult["B"]
-    numBranches = len(set(B))
+    # ground truth
+    (
+        groundTruthGraspingPose,
+        groundTruthGraspingPosition,
+        groundTruthGraspingRotationMatrix,
+    ) = eval.loadGroundTruthGraspingPose(
+        dataSetPath, frame + 1
+    )  # ground truth grasping position is given by the frame after the prediction frame
+    groundTruthGraspingAxis = groundTruthGraspingRotationMatrix[:3, 0]
+    # prediction
+    graspingLocalCoordinates = eval.loadGraspingLocalCoordinates(dataSetPath)
+    graspingLocalCoordinate = graspingLocalCoordinates[num]
+    T = registrationResult["result"]["T"]
+    B = result["trackingResults"][method]["B"]
+    S = result["initializationResult"]["localizationResult"]["SInit"]
+    (
+        predictedGraspingPosition,
+        predictedGraspingAxis,
+    ) = eval.predictGraspingPositionAndAxisFromRegistrationTargets(
+        T, B, S, graspingLocalCoordinate
+    )
 
-    colorScaleCoordinates = np.linspace(0, 1, numBranches)
-    branchColors = []
-    for s in colorScaleCoordinates:
-        branchColors.append(colorPalette.to_rgba(s)[:3])
-
-    branchNodeIndices = np.where(np.sum(adjacencyMatrix, axis=1) >= 3)[0]
-    for branchIndex in range(0, numBranches):
-        indices = np.where(np.array(B) == branchIndex)[0]
-        # add indices of adjacent branches
-        for branchNodeIndex in branchNodeIndices:
-            adjacentNodeIndices = np.where(adjacencyMatrix[branchNodeIndex, :] != 0)[0]
-            for adjacentNodeIndex in adjacentNodeIndices:
-                if (B[adjacentNodeIndex] == branchIndex) and (
-                    not (branchNodeIndex in indices)
-                ):
-                    indices = np.append(indices, branchNodeIndex)
-        branchPositions = positions2D[indices, :]
-        branchAdjacencyMatrix = np.array(
-            [[adjacencyMatrix[row][col] for col in indices] for row in indices]
-        )
-        rgbImg = plotGraph2D(
-            rgbImg=rgbImg,
-            positions2D=branchPositions,
-            adjacencyMatrix=branchAdjacencyMatrix,
-            lineColor=branchColors[branchIndex],
-            circleColor=branchColors[branchIndex],
-            lineThickness=lineThickness,
-            circleRadius=circleRadius,
-        )
-        for branchNodeIndex in branchNodeIndices:
-            circleColor = tuple([x * 255 for x in branchColors[B[branchNodeIndex]]])
-            cv2.circle(
-                rgbImg,
-                positions2D[branchNodeIndex, :],
-                circleRadius,
-                circleColor,
-                thickness=-1,
-            )
+    graspingPositions3D = np.vstack(
+        (groundTruthGraspingPosition, predictedGraspingPosition)
+    )
+    graspingAxes3D = np.vstack((groundTruthGraspingAxis, predictedGraspingAxis))
+    colors = [styleOpt["groundTruthColor"], styleOpt["predictionColor"]]
+    gipperWidth3D = styleOpt["gipperWidth3D"]
+    fingerWidth2D = styleOpt["fingerWidth2D"]
+    centerThickness = styleOpt["centerThickness"]
+    lineThickness = styleOpt["lineThickness"]
+    rgbImg = eval.visualizeGraspingPoses2D(
+        frame=frame,
+        dataSetPath=dataSetPath,
+        graspingPositions3D=graspingPositions3D,
+        graspingAxes3D=graspingAxes3D,
+        colors=colors,
+        gipperWidth3D=gipperWidth3D,
+        fingerWidth2D=fingerWidth2D,
+        centerThickness=centerThickness,
+        lineThickness=lineThickness,
+        markerFill=-1,
+    )
     return rgbImg
 
 
@@ -142,26 +132,24 @@ if __name__ == "__main__":
         for nMethod, method in enumerate(methodsToEvaluate):
             numRegistrationResults = eval.getNumRegistrationResults(result)
             if controlOpt["registrationResultsToEvaluate"][0] == -1:
-                registrationResultsToEvaluate = list(range(0, numRegistrationResults))
+                registrationResultsToEvaluate = list(
+                    range(
+                        0, numRegistrationResults - 1
+                    )  # do not evaluate last registration result since this is only the final frame
+                )
             else:
                 registrationResultsToEvaluate = controlOpt[
                     "registrationResultsToEvaluate"
                 ]
             for nRegistrationResult in registrationResultsToEvaluate:
-                colorPalette = styleOpt["colorPalette"]
-                lineThickness = styleOpt["lineThickness"]
-                circleRadius = styleOpt["circleRadius"]
-                rgbImg = plotBranchWiseColoredRegistrationResult2D(
+                rgbImg = plotPredictedGraspingPose(
                     result,
                     method,
                     nRegistrationResult,
-                    colorPalette=colorPalette,
-                    lineThickness=lineThickness,
-                    circleRadius=circleRadius,
                 )
                 if controlOpt["showPlot"]:
                     eval.plotImageWithMatplotlib(
-                        rgbImg, title="registration result " + method, block=True
+                        rgbImg, title="grasping prediction " + method, block=True
                     )
 
                 if controlOpt["save"]:
@@ -171,7 +159,7 @@ if __name__ == "__main__":
                             nRegistrationResult
                         ]["fileName"].split("_")[0:3]
                     )
-                    fileName = fileID + "_" + saveOpt["saveName"]
+                    fileName = fileID + "_" + saveOpt["saveFileName"]
                     saveFolderPath = saveOpt["saveFolder"]
                     saveFolderPath = os.path.join(saveFolderPath, dataSetName, method)
                     saveFilePath = os.path.join(saveFolderPath, fileName)

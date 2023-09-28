@@ -269,12 +269,12 @@ class GraspingAccuracyEvaluation(Evaluation):
             "graspingPositionErrors": graspingPositionError,
             "graspingAngularErrorsInRad": graspingAngularErrorInRad,
             "graspingAngularErrorsInGrad": graspingAngularErrorInGrad,
-            "projectedGraspingAngularErrorsOnXInRad": projectedAngularGraspingErrorXInGrad,
+            "projectedGraspingAngularErrorsOnXInRad": projectedAngularGraspingErrorXInRad,
             "projectedGraspingAngularErrorsOnXInGrad": projectedAngularGraspingErrorXInGrad,
-            "projectedGraspingAngularErrorsOnYInRad": projectedAngularGraspingErrorYInGrad,
-            "projectedGraspingAngularErrorsOnYInGrad": projectedAngularGraspingErrorYInRad,
-            "projectedGraspingAngularErrorsOnZInRad": projectedAngularGraspingErrorZInGrad,
-            "projectedGraspingAngularErrorsOnZInGrad": projectedAngularGraspingErrorZInRad,
+            "projectedGraspingAngularErrorsOnYInRad": projectedAngularGraspingErrorYInRad,
+            "projectedGraspingAngularErrorsOnYInGrad": projectedAngularGraspingErrorYInGrad,
+            "projectedGraspingAngularErrorsOnZInRad": projectedAngularGraspingErrorZInRad,
+            "projectedGraspingAngularErrorsOnZInGrad": projectedAngularGraspingErrorZInGrad,
         }
         return graspingAccuracyError
 

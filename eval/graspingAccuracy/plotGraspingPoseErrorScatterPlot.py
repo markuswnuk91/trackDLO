@@ -31,7 +31,19 @@ saveOpt = {
     "saveFileName": "graspingPrediction",
 }
 
-styleOpt = {}
+styleOpt = {
+    "methodColors": {
+        "cpd": thesisColors["susieluMagenta"],
+        "spr": thesisColors["susieluGold"],
+        "kpr": thesisColors["susieluBlue"],
+    },
+    "modelMarkers": {
+        "modelY": "o",
+        "partial": "^",
+        "arena": "s",
+    },
+    "alpha": 0.7,
+}
 
 resultFileName = "result.pkl"
 resultFolderPaths = [
@@ -85,121 +97,52 @@ def evaluateGraspingAccuracy(
     return graspingAccuracy
 
 
-def scatterPlotGraspingErrors(results):
-    alpha = 0.3
-    (
-        translationalGraspingErrors,
-        rotationalGraspingErrors,
-        correspondingMethods,
-        correspondingModelNames,
-    ) = accumulateGraspingErrors(results)
+def scatterPlotGraspingErrors(
+    translationalGraspingErrors,
+    rotationalGraspingErrors,
+    correspondingMethods,
+    correspondingModelNames,
+    colors=None,
+    markers=None,
+    alpha=0.3,
+):
+    if colors is None:
+        colors = []
+        for method in correspondingMethods:
+            if method == "cpd":
+                colors.append([1, 0, 0, alpha])
+            elif method == "spr":
+                colors.append([0, 0, 1, alpha])
+            elif method == "kpr":
+                colors.append([0, 1, 0, alpha])
+            elif method == "krcpd":
+                colors.append([1, 1, 0, alpha])
+            else:
+                colors.append([0.7, 0.7, 0.7, alpha])
+    if markers is None:
+        markers = []
+        for model in correspondingModelNames:
+            if model == "modelY":
+                markers.append("o")
+            elif model == "partial":
+                markers.append("^")
+            elif model == "arena":
+                markers.append("s")
+            elif model == "singleDLO":
+                markers.append("D")
 
-    colors = []
-    for method in correspondingMethods:
-        if method == "cpd":
-            colors.append([1, 0, 0, alpha])
-        elif method == "spr":
-            colors.append([0, 0, 1, alpha])
-        elif method == "krcpd":
-            colors.append([0, 1, 0, alpha])
-        elif method == "krcpd4BDLO":
-            colors.append([1, 1, 0, alpha])
-        else:
-            colors.append([0.7, 0.7, 0.7, alpha])
-    # for model in correspondingModelNames:
-    #     if model == "modelY":
-    #         colors.append([1, 0, 0, alpha])
-    #     elif model == "partialWireHarness":
-    #         colors.append([0, 0, 1, alpha])
-    #     elif model == "arenaWireHarness":
-    #         colors.append([0, 1, 0, alpha])
-    #     elif model == "singleDLO":
-    #         colors.append([1, 1, 0, alpha])
-    #     else:
-    #         colors.append([0.7, 0.7, 0.7, 0.1])
-
-    markers = []
-    # for method in correspondingMethods:
-    #     if method == "cpd":
-    #         markers.append("^")
-    #     elif method == "spr":
-    #         markers.append("s")
-    #     elif method == "krcpd":
-    #         markers.append("o")
-    #     elif method == "krcpd4BDLO":
-    #         markers.append("D")
-    #     else:
-    #         markers.append(".")
-    for model in correspondingModelNames:
-        if model == "modelY":
-            markers.append("o")
-        elif model == "partialWireHarness":
-            markers.append("^")
-        elif model == "arenaWireHarness":
-            markers.append("s")
-        elif model == "singleDLO":
-            markers.append("D")
-        else:
-            colors.append([0.7, 0.7, 0.7, 0.1])
-    for i, marker in enumerate(markers):
+    for i, (transplationalError, rotationalError) in enumerate(
+        zip(translationalGraspingErrors, rotationalGraspingErrors)
+    ):
         plt.scatter(
-            rotationalGraspingErrors[i],
-            translationalGraspingErrors[i],
-            c=colors[i],
-            marker=marker,
+            transplationalError,
+            rotationalError,
+            color=colors[i],
+            marker=markers[i],
+            alpha=alpha,
         )
     plt.show(block=True)
     return
-
-
-def accumulateGraspingErrors(results):
-    translationalGraspingErrors = []
-    rotationalGraspingErrors = []
-    correspondingMethods = []
-    correspondingModelNames = []
-    for dataSetIndex, result in enumerate(results):
-        for registrationMethodIndex, registrationMethodResult in enumerate(
-            result["graspingAccuracyResults"]
-        ):
-            registrationMethod = registrationMethodResult["method"]
-            numGraspingPositions = len(
-                registrationMethodResult["graspingPositionErrors"]
-            )
-            for graspingIndex in range(0, numGraspingPositions):
-                # get translational grasping error
-                translationalGraspingError = results[dataSetIndex][
-                    "graspingAccuracyResults"
-                ][registrationMethodIndex]["graspingPositionErrors"][graspingIndex]
-                translationalGraspingErrors.append(translationalGraspingError)
-
-                if translationalGraspingError > 1.5:
-                    print("Here")
-                # get rotational grasping error
-                rotationalGraspingError = results[dataSetIndex][
-                    "graspingAccuracyResults"
-                ][registrationMethodIndex]["graspingAngularErrors"]["rad"][
-                    graspingIndex
-                ]
-                rotationalGraspingErrors.append(rotationalGraspingError)
-
-                # get model type
-                modelName = results[dataSetIndex]["graspingAccuracyResults"][
-                    registrationMethodIndex
-                ]["trackingResult"]["initializationResult"]["modelParameters"][
-                    "modelInfo"
-                ][
-                    "name"
-                ]
-                correspondingModelNames.append(modelName)
-
-                # get corresponding method
-                correspondingMethods.append(registrationMethod)
-    return (
-        translationalGraspingErrors,
-        rotationalGraspingErrors,
-        correspondingMethods,
-        correspondingModelNames,
-    )
 
 
 if __name__ == "__main__":
@@ -212,6 +155,15 @@ if __name__ == "__main__":
             if i in controlOpt["resultsToLoad"]
         ]
 
+    graspingAccuracyResults = []
+    translationalGraspingErrors = []
+    rotationalGraspingErrors = []
+    methods = []
+    dataSets = []
+    models = []
+    grasps = []
+    plotColors = []
+    plotMarkers = []
     for nResult, resultFolderPath in enumerate(resultsToEvaluate):
         resultFilePath = os.path.join(resultFolderPath, resultFileName)
         result = eval.loadResults(resultFilePath)
@@ -238,6 +190,19 @@ if __name__ == "__main__":
                 graspingAccuracyError = evaluateGraspingAccuracy(
                     result, method, nRegistrationResult
                 )
+                graspingAccuracyResults.append(graspingAccuracyError)
+                translationalGraspingErrors.append(
+                    graspingAccuracyError["graspingPositionErrors"]
+                )
+                rotationalGraspingErrors.append(
+                    graspingAccuracyError["graspingAngularErrorsInGrad"]
+                )
+                methods.append(method)
+                grasps.append(nRegistrationResult)
+                modelName = result["dataSetName"].split("_")[-1]
+                models.append(modelName)
+                plotColors.append(styleOpt["methodColors"][method])
+                plotMarkers.append(styleOpt["modelMarkers"][modelName])
     # if controlOpt["showPlot"]:
 
     # if controlOpt["save"]:
@@ -266,5 +231,19 @@ if __name__ == "__main__":
     #                 saveFilePath,
     #             )
     #         )
+    meanTranslationalErrors = np.mean(translationalGraspingErrors)
+    stdTranslationalErrors = np.std(translationalGraspingErrors)
+    meanRotationalErrors = np.mean(rotationalGraspingErrors)
+    stdRotationalErrors = np.std(rotationalGraspingErrors)
+    scatterPlotGraspingErrors(
+        translationalGraspingErrors=translationalGraspingErrors,
+        rotationalGraspingErrors=rotationalGraspingErrors,
+        correspondingMethods=methods,
+        correspondingModelNames=models,
+        colors=plotColors,
+        markers=plotMarkers,
+        alpha=styleOpt["alpha"],
+    )
+
     if controlOpt["verbose"]:
         print("Finished result generation.")

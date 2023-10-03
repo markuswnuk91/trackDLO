@@ -32,6 +32,7 @@ saveOpt = {
 }
 
 styleOpt = {
+    "plotRegistrationResult": True,
     "groundTruthColor": thesisColors["uniSLightBlue"],
     "predictionColor": thesisColors["blue"],
     "gipperWidth3D": 0.1,
@@ -94,13 +95,37 @@ def plotPredictedGraspingPose(
     fingerWidth2D = styleOpt["fingerWidth2D"]
     centerThickness = styleOpt["centerThickness"]
     lineThickness = styleOpt["lineThickness"]
-    rgbImg = eval.visualizeGraspingPoses2D(
-        frame=frame,
-        dataSetPath=dataSetPath,
-        graspingPositions3D=graspingPositions3D,
-        graspingAxes3D=graspingAxes3D,
+
+    rgbImg = eval.getDataSet(frame, dataSetPath)[0]
+
+    positions2D = eval.reprojectFrom3DRobotBase(T, dataSetFolderPath=dataSetPath)
+    adjacencyMatrix = result["trackingResults"][method]["adjacencyMatrix"]
+    plotRegistrationResult = True
+    if styleOpt["plotRegistrationResult"]:
+        rgbImg = eval.plotBranchWiseColoredRegistrationResult(
+            rgbImg, positions2D, adjacencyMatrix, B
+        )
+
+    # reproject grasping positions in image
+    graspingPositions2D = eval.reprojectFrom3DRobotBase(
+        graspingPositions3D, dataSetPath
+    )
+    # reproject grasping axes in image
+    graspingAxesStartPoints3D = graspingPositions3D - gipperWidth3D / 2 * graspingAxes3D
+    graspingAxesEndPoints3D = graspingPositions3D + gipperWidth3D / 2 * graspingAxes3D
+    graspingAxesStartPoints2D = eval.reprojectFrom3DRobotBase(
+        graspingAxesStartPoints3D, dataSetPath
+    )
+    graspingAxesEndPoints2D = eval.reprojectFrom3DRobotBase(
+        graspingAxesEndPoints3D, dataSetPath
+    )
+    # 2D grasping axes
+    graspingAxes2D = graspingAxesEndPoints2D - graspingAxesStartPoints2D
+    rgbImg = eval.drawGraspingPoses2D(
+        rgbImage=rgbImg,
+        graspingPositions2D=graspingPositions2D,
+        graspingAxes2D=graspingAxes2D,
         colors=colors,
-        gipperWidth3D=gipperWidth3D,
         fingerWidth2D=fingerWidth2D,
         centerThickness=centerThickness,
         lineThickness=lineThickness,

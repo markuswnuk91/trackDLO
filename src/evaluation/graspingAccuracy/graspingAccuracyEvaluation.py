@@ -8,6 +8,8 @@ import cv2
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation/graspingAccuracy", ""))
     from src.evaluation.evaluation import Evaluation
+    from src.visualization.plot3D import *
+    from src.visualization.plot2D import *
 except:
     print("Imports for class TrackingEvaluation failed.")
     raise
@@ -460,3 +462,64 @@ class GraspingAccuracyEvaluation(Evaluation):
                 lineThickness,
             )
         return rgbImage
+
+    def plotBranchWiseColoredRegistrationResult(
+        self,
+        rgbImg,
+        positions2D,
+        adjacencyMatrix,
+        B,
+        colorPalette=None,
+        lineThickness=None,
+        circleRadius=None,
+    ):
+        colorPalette = (
+            thesisColorPalettes["viridis"] if colorPalette is None else colorPalette
+        )
+        lineThickness = 5 if lineThickness is None else lineThickness
+        circleRadius = 10 if circleRadius is None else circleRadius
+
+        # transform positions3D
+        numBranches = len(set(B))
+
+        colorScaleCoordinates = np.linspace(0, 1, numBranches)
+        branchColors = []
+        for s in colorScaleCoordinates:
+            branchColors.append(colorPalette.to_rgba(s)[:3])
+
+        branchNodeIndices = np.where(np.sum(adjacencyMatrix, axis=1) >= 3)[0]
+        for branchIndex in range(0, numBranches):
+            indices = np.where(np.array(B) == branchIndex)[0]
+            # add indices of adjacent branches
+            for branchNodeIndex in branchNodeIndices:
+                adjacentNodeIndices = np.where(
+                    adjacencyMatrix[branchNodeIndex, :] != 0
+                )[0]
+                for adjacentNodeIndex in adjacentNodeIndices:
+                    if (B[adjacentNodeIndex] == branchIndex) and (
+                        not (branchNodeIndex in indices)
+                    ):
+                        indices = np.append(indices, branchNodeIndex)
+            branchPositions = positions2D[indices, :]
+            branchAdjacencyMatrix = np.array(
+                [[adjacencyMatrix[row][col] for col in indices] for row in indices]
+            )
+            rgbImg = plotGraph2D(
+                rgbImg=rgbImg,
+                positions2D=branchPositions,
+                adjacencyMatrix=branchAdjacencyMatrix,
+                lineColor=branchColors[branchIndex],
+                circleColor=branchColors[branchIndex],
+                lineThickness=lineThickness,
+                circleRadius=circleRadius,
+            )
+            for branchNodeIndex in branchNodeIndices:
+                circleColor = tuple([x * 255 for x in branchColors[B[branchNodeIndex]]])
+                cv2.circle(
+                    rgbImg,
+                    positions2D[branchNodeIndex, :],
+                    circleRadius,
+                    circleColor,
+                    thickness=-1,
+                )
+        return rgbImg

@@ -32,8 +32,8 @@ runOpt = {
         "registrationMethods": [
             "cpd",
             "spr",
-            "kpr",
-            "krcpd",
+            # "kpr",
+            # "krcpd",
         ],  # "cpd", "spr", "kpr", "krcpd"
         "modelBasedMethods": ["kpr", "krcpd"],
     },
@@ -62,9 +62,9 @@ dataSetPaths = [
     # "data/darus_data_download/data/20230807_RoboticWireHarnessMounting/20230807_142319_partial/",
     # "data/darus_data_download/data/20230807_RoboticWireHarnessMounting/20230807_142909_partial/",
     # "data/darus_data_download/data/20230807_RoboticWireHarnessMounting/20230807_143737_partial/",
-    "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_140014_arena/",
-    "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_141025_arena/",
-    "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_142058_arena/",
+    # "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_140014_arena/",
+    # "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_141025_arena/",
+    # "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_142058_arena/",
 ]
 
 if __name__ == "__main__":

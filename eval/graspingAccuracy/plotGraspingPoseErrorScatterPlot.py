@@ -2,6 +2,9 @@ import sys
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
+from collections import defaultdict
+from scipy.optimize import curve_fit
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -21,7 +24,8 @@ controlOpt = {
     "resultsToLoad": [-1],
     "methodsToEvaluate": ["cpd", "spr", "kpr"],
     "registrationResultsToEvaluate": [-1],
-    "showPlot": False,
+    "showPlot": True,
+    "makeScatterPlot": False,
     "save": True,
     "verbose": True,
 }
@@ -39,10 +43,17 @@ styleOpt = {
     },
     "modelMarkers": {
         "modelY": "o",
-        "partial": "^",
-        "arena": "s",
+        "partial": "o",  # "s"
+        "arena": "o",  # "^"
     },
     "alpha": 0.7,
+    "markersize": 20,
+    "legendMarkerSize": 5,
+    "translationalErrorThreshold": 0.05,  # None: do not plot
+    "rotationalErrorThreshold": 45,  # None: do not plot
+    "translationalThresholdLineColor": [1, 0, 0],
+    "rotationalThresholdLineColor": [1, 0, 0],
+    "thresholdLineStyle": "--",
 }
 
 resultFileName = "result.pkl"
@@ -105,7 +116,13 @@ def scatterPlotGraspingErrors(
     colors=None,
     markers=None,
     alpha=0.3,
+    translationalThreshold=None,
+    rotationalThreshold=None,
+    translationalThresholdLineColor=None,
+    rotationalThresholdLineColor=None,
+    thresholdLineStyle=None,
 ):
+    fig, ax = setupLatexPlot2D()
     if colors is None:
         colors = []
         for method in correspondingMethods:
@@ -131,18 +148,106 @@ def scatterPlotGraspingErrors(
             elif model == "singleDLO":
                 markers.append("D")
 
+    translationalThresholdLineColor = (
+        [1, 0, 0]
+        if translationalThresholdLineColor is None
+        else translationalThresholdLineColor
+    )
+    rotationalThresholdLineColor = (
+        [1, 0, 0]
+        if rotationalThresholdLineColor is None
+        else rotationalThresholdLineColor
+    )
+    thresholdLineStyle = "-" if thresholdLineStyle is None else thresholdLineStyle
+
     for i, (transplationalError, rotationalError) in enumerate(
         zip(translationalGraspingErrors, rotationalGraspingErrors)
     ):
-        plt.scatter(
+        ax.scatter(
             transplationalError,
             rotationalError,
             color=colors[i],
             marker=markers[i],
             alpha=alpha,
+            s=styleOpt["markersize"],
         )
-    plt.show(block=True)
-    return
+    # create legend
+    methodsToList = list(set(correspondingMethods))
+    legendSymbols = []
+    for label in methodsToList:
+        legendSymbol = Line2D(
+            [],
+            [],
+            marker=markers[correspondingMethods.index(label)],
+            color=colors[correspondingMethods.index(label)],
+            linestyle="None",
+            label=label,
+            markersize=styleOpt["legendMarkerSize"],
+        )
+        legendSymbols.append(legendSymbol)
+
+    # threshold
+    if translationalThreshold is not None and rotationalThreshold is not None:
+        plt.axvline(
+            x=translationalThreshold,
+            ymin=0,
+            ymax=(rotationalThreshold - ax.get_ylim()[0])
+            / (ax.get_ylim()[1] - ax.get_ylim()[0]),
+            color=translationalThresholdLineColor,
+            linestyle=thresholdLineStyle,
+        )
+        plt.axhline(
+            y=rotationalThreshold,
+            xmin=0,
+            xmax=(translationalThreshold - ax.get_xlim()[0])
+            / (ax.get_xlim()[1] - ax.get_xlim()[0]),
+            color=rotationalThresholdLineColor,
+            linestyle=thresholdLineStyle,
+        )
+    ax.legend(handles=legendSymbols)
+    return fig, ax
+
+
+def graspingErrorsHistogram(
+    translationalGraspingErrors,
+    correspondingMethods,
+    correspondingModelNames,
+    n_bins=30,
+):
+    # Ensure that the two lists have the same length
+    assert len(translationalGraspingErrors) == len(correspondingMethods)
+
+    # Create a defaultdict with lists as default values
+    grouped_vals = defaultdict(list)
+
+    # Iterate through both lists simultaneously using zip
+    for method, val in zip(correspondingMethods, translationalGraspingErrors):
+        grouped_vals[method].append(val)
+
+    # Convert defaultdict to a regular dict (optional)
+    grouped_vals = dict(grouped_vals)
+    cols = []
+    for key in grouped_vals:
+        cols.append(grouped_vals[key])
+    x = np.vstack((cols)).T
+    # x = x - np.mean(x, axis=0)
+    fig, ax = setupLatexPlot2D()
+    ax.hist(x, n_bins, density=True, histtype="bar")
+
+    # # fit a folded gaussian
+    # # Define a gaussian function with offset
+    # def gaussian_func(x, a, x0, sigma, c):
+    #     return a * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + c
+
+    # x_cpd = x[:, 0]
+    # initial_guess = [0, 20, np.mean(x_cpd), 0]
+    # popt, pcov = curve_fit(gaussian_func, x, y, p0=initial_guess)
+
+    # xplot = np.linspace(0, 30, 1000)
+    # plt.scatter(x, y)
+    # plt.plot(xplot, gaussian_func(xplot, *popt))
+
+    return fig, ax
 
 
 if __name__ == "__main__":
@@ -235,15 +340,29 @@ if __name__ == "__main__":
     stdTranslationalErrors = np.std(translationalGraspingErrors)
     meanRotationalErrors = np.mean(rotationalGraspingErrors)
     stdRotationalErrors = np.std(rotationalGraspingErrors)
-    scatterPlotGraspingErrors(
+    if controlOpt["makeScatterPlot"]:
+        fig_scatterPlot, ax_scatterPlot = scatterPlotGraspingErrors(
+            translationalGraspingErrors=translationalGraspingErrors,
+            rotationalGraspingErrors=rotationalGraspingErrors,
+            correspondingMethods=methods,
+            correspondingModelNames=models,
+            colors=plotColors,
+            markers=plotMarkers,
+            alpha=styleOpt["alpha"],
+            translationalThreshold=styleOpt["translationalErrorThreshold"],
+            rotationalThreshold=styleOpt["rotationalErrorThreshold"],
+            translationalThresholdLineColor=styleOpt["translationalThresholdLineColor"],
+            rotationalThresholdLineColor=styleOpt["rotationalThresholdLineColor"],
+            thresholdLineStyle=styleOpt["thresholdLineStyle"],
+        )
+        if controlOpt["showPlot"]:
+            plt.show(block=True)
+
+    fig_histogram, ax_histogram = graspingErrorsHistogram(
         translationalGraspingErrors=translationalGraspingErrors,
-        rotationalGraspingErrors=rotationalGraspingErrors,
         correspondingMethods=methods,
         correspondingModelNames=models,
-        colors=plotColors,
-        markers=plotMarkers,
-        alpha=styleOpt["alpha"],
     )
-
+    plt.show(block=True)
     if controlOpt["verbose"]:
         print("Finished result generation.")

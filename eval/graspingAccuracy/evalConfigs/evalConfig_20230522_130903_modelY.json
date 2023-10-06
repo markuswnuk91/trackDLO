@@ -93,7 +93,7 @@
     "cpdParameters" : {
         "max_iterations":30,
         "alpha": 10, 
-        "beta": 1,
+        "beta": 0.5,
         "mu": 0.1,
         "normalize": 0,
         "sigma2": 0.01
@@ -102,7 +102,7 @@
         "max_iterations":30,
         "tauFactor": 1000,
         "lambdaFactor": 10,
-        "beta": 1,
+        "beta": 0.5,
         "knn":7,
         "mu": 0.1,
         "tauAnnealing":1,

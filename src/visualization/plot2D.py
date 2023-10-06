@@ -14,8 +14,8 @@ except:
 def setupLatexPlot2D(
     figureWidth=483.6969,
     figureHeight=None,
-    axisLimX=[0, 1],
-    axisLimY=[0, 1],
+    axisLimX=None,
+    axisLimY=None,
     xlabel="$x$",
     ylabel="$y$",
     xTickStep=None,
@@ -27,13 +27,15 @@ def setupLatexPlot2D(
         fig = plt.figure(figsize=set_size(width=figureWidth))
     ax = fig.add_subplot()
 
-    # set axis limits
-    ax.set_xlim(axisLimX[0], axisLimX[1])
-    ax.set_ylim(axisLimY[0], axisLimY[1])
+    if axisLimX is not None:
+        # set axis limits
+        ax.set_xlim(axisLimX[0], axisLimX[1])
+        ax.set_ylim(axisLimY[0], axisLimY[1])
 
-    # set axis lables
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    if axisLimY is not None:
+        # set axis lables
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
     # set x ticks
     if xTickStep is not None:

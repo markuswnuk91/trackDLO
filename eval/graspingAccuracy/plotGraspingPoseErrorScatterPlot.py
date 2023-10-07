@@ -3,8 +3,10 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from collections import defaultdict
 from scipy.optimize import curve_fit
+from scipy.stats import norm
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -185,7 +187,7 @@ def scatterPlotGraspingErrors(
             markersize=styleOpt["legendMarkerSize"],
         )
         legendSymbols.append(legendSymbol)
-
+    ax.legend(handles=legendSymbols)
     # threshold
     if translationalThreshold is not None and rotationalThreshold is not None:
         plt.axvline(
@@ -204,7 +206,6 @@ def scatterPlotGraspingErrors(
             color=rotationalThresholdLineColor,
             linestyle=thresholdLineStyle,
         )
-    ax.legend(handles=legendSymbols)
     return fig, ax
 
 
@@ -212,7 +213,7 @@ def graspingErrorsHistogram(
     translationalGraspingErrors,
     correspondingMethods,
     correspondingModelNames,
-    n_bins=30,
+    n_bins=20,
 ):
     # Ensure that the two lists have the same length
     assert len(translationalGraspingErrors) == len(correspondingMethods)
@@ -227,26 +228,47 @@ def graspingErrorsHistogram(
     # Convert defaultdict to a regular dict (optional)
     grouped_vals = dict(grouped_vals)
     cols = []
+    histogramColors = []
     for key in grouped_vals:
         cols.append(grouped_vals[key])
+        histogramColors.append(styleOpt["methodColors"][key])
     x = np.vstack((cols)).T
+
     # x = x - np.mean(x, axis=0)
     fig, ax = setupLatexPlot2D()
-    ax.hist(x, n_bins, density=True, histtype="bar")
+    hist_handle = ax.hist(
+        x, n_bins, density=False, histtype="bar", color=histogramColors
+    )
 
-    # # fit a folded gaussian
-    # # Define a gaussian function with offset
-    # def gaussian_func(x, a, x0, sigma, c):
-    #     return a * np.exp(-((x - x0) ** 2) / (2 * sigma**2)) + c
+    # # plot gaussian
+    # x_axis = np.linspace(hist_handle[1][0], hist_handle[1][-1], 1000)
+    # fitLineStyle = "--"
+    # for method in grouped_vals:
+    #     mu = np.mean(grouped_vals[method])
+    #     std = np.std(grouped_vals[method])
+    #     p = norm.pdf(x_axis, mu, std)
+    #     ax.plot(
+    #         x_axis, p, color=styleOpt["methodColors"][method], linestyle=fitLineStyle
+    #     )
 
-    # x_cpd = x[:, 0]
-    # initial_guess = [0, 20, np.mean(x_cpd), 0]
-    # popt, pcov = curve_fit(gaussian_func, x, y, p0=initial_guess)
-
-    # xplot = np.linspace(0, 30, 1000)
-    # plt.scatter(x, y)
-    # plt.plot(xplot, gaussian_func(xplot, *popt))
-
+    # create legend
+    legendSymbols = []
+    for method in grouped_vals:
+        legendSymbol = Patch(
+            facecolor=styleOpt["methodColors"][method],
+            label=method,
+        )
+        legendSymbols.append(legendSymbol)
+    # for method in grouped_vals:
+    #     legendSymbol = Line2D(
+    #         [],
+    #         [],
+    #         color=styleOpt["methodColors"][method],
+    #         linestyle=fitLineStyle,
+    #         label="fitted gaussian, " + method,
+    #     )
+    #     legendSymbols.append(legendSymbol)
+    ax.legend(handles=legendSymbols)
     return fig, ax
 
 

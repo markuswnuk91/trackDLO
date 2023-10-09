@@ -241,15 +241,33 @@ def graspingErrorsHistogram(
     )
 
     # # plot gaussian
-    # x_axis = np.linspace(hist_handle[1][0], hist_handle[1][-1], 1000)
-    # fitLineStyle = "--"
-    # for method in grouped_vals:
-    #     mu = np.mean(grouped_vals[method])
-    #     std = np.std(grouped_vals[method])
-    #     p = norm.pdf(x_axis, mu, std)
-    #     ax.plot(
-    #         x_axis, p, color=styleOpt["methodColors"][method], linestyle=fitLineStyle
-    #     )
+
+    x_axis = np.linspace(hist_handle[1][0], hist_handle[1][-1], 1000)
+    fitLineStyle = "--"
+    scalefactor = len(x) * np.mean(np.diff(hist_handle[1]))
+    for method in grouped_vals:
+        mu = np.mean(grouped_vals[method])
+        std = np.std(grouped_vals[method])
+        p = norm.pdf(x_axis, mu, std)
+        # scale density to counts
+        ax.plot(
+            x_axis,
+            p * scalefactor,
+            color=styleOpt["methodColors"][method],
+            linestyle=fitLineStyle,
+        )
+
+    # add density as secondary axis
+    def counts_to_density(counts):
+        return counts / scalefactor
+
+    def density_to_counts(density):
+        return density * scalefactor
+
+    secax_y = ax.secondary_yaxis(
+        "right", functions=(counts_to_density, density_to_counts)
+    )
+    secax_y.set_ylabel(r"probability density")
 
     # create legend
     legendSymbols = []
@@ -259,15 +277,15 @@ def graspingErrorsHistogram(
             label=method,
         )
         legendSymbols.append(legendSymbol)
-    # for method in grouped_vals:
-    #     legendSymbol = Line2D(
-    #         [],
-    #         [],
-    #         color=styleOpt["methodColors"][method],
-    #         linestyle=fitLineStyle,
-    #         label="fitted gaussian, " + method,
-    #     )
-    #     legendSymbols.append(legendSymbol)
+    for method in grouped_vals:
+        legendSymbol = Line2D(
+            [],
+            [],
+            color=styleOpt["methodColors"][method],
+            linestyle=fitLineStyle,
+            label="fitted gaussian, " + method,
+        )
+        legendSymbols.append(legendSymbol)
     ax.legend(handles=legendSymbols)
     return fig, ax
 

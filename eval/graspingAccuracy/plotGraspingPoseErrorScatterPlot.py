@@ -7,6 +7,9 @@ from matplotlib.patches import Patch
 from collections import defaultdict
 from scipy.optimize import curve_fit
 from scipy.stats import norm
+import tikzplotlib
+
+from matplotlib.ticker import MaxNLocator
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -27,14 +30,19 @@ controlOpt = {
     "methodsToEvaluate": ["cpd", "spr", "kpr"],
     "registrationResultsToEvaluate": [-1],
     "showPlot": True,
-    "makeScatterPlot": False,
+    "makeScatterPlot": True,
+    "makeHistogramPlot": True,
     "save": True,
+    "saveAsTikz": False,  # does not work with dashed lines, and does not plot legend
+    "saveAsPGF": True,
     "verbose": True,
 }
 
 saveOpt = {
-    "saveFolder": "data/eval/graspingAccuracy/plots/graspingPredictionResult",
-    "saveFileName": "graspingPrediction",
+    "saveFolder": "data/eval/graspingAccuracy/plots/graspingAccuracyEvaluationResults",
+    "saveFileNameScatterPlot": "graspingErrorsScatterPlot",
+    "saveFileNameHistogramTranslational": "translationalGraspingErrorsHistogram",
+    "saveFileNameHistogramRotaional": "rotationalGraspingErrorsHistogram",
 }
 
 styleOpt = {
@@ -56,8 +64,38 @@ styleOpt = {
     "translationalThresholdLineColor": [1, 0, 0],
     "rotationalThresholdLineColor": [1, 0, 0],
     "thresholdLineStyle": "--",
+    "histogramFitLineStyle": "--",
 }
-
+textwidth_in_pt = 483.6969
+figureScaling = 0.45
+latexFontSize_in_pt = 14
+latexFootNoteFontSize_in_pt = 10
+desiredFigureWidth = figureScaling * textwidth_in_pt
+desiredFigureHeight = figureScaling * textwidth_in_pt
+tex_fonts = {
+    #    "pgf.texsystem": "pdflatex",
+    # Use LaTeX to write all text
+    "text.usetex": True,
+    "font.family": "serif",
+    # Use 10pt font in plots, to match 10pt font in document
+    "axes.labelsize": latexFontSize_in_pt,
+    "font.size": latexFontSize_in_pt,
+    # Make the legend/label fonts a little smaller
+    "legend.fontsize": latexFootNoteFontSize_in_pt,
+    "xtick.labelsize": latexFootNoteFontSize_in_pt,
+    "ytick.labelsize": latexFootNoteFontSize_in_pt,
+}
+if controlOpt["saveAsPGF"]:
+    matplotlib.use("pgf")
+    matplotlib.rcParams.update(
+        {
+            "pgf.texsystem": "pdflatex",
+            "font.family": "serif",
+            "text.usetex": True,
+            "pgf.rcfonts": False,
+        }
+    )
+    matplotlib.rcParams.update(tex_fonts)
 resultFileName = "result.pkl"
 resultFolderPaths = [
     "data/eval/graspingAccuracy/results/20230522_130903_modelY",
@@ -70,6 +108,16 @@ resultFolderPaths = [
     "data/eval/graspingAccuracy/results/20230522_141025_arena",
     "data/eval/graspingAccuracy/results/20230522_142058_arena",
 ]
+
+
+def tikzplotlib_fix_ncols(obj):
+    """
+    workaround for matplotlib 3.6 renamed legend's _ncol to _ncols, which breaks tikzplotlib
+    """
+    if hasattr(obj, "_ncols"):
+        obj._ncol = obj._ncols
+    for child in obj.get_children():
+        tikzplotlib_fix_ncols(child)
 
 
 def evaluateGraspingAccuracy(
@@ -124,7 +172,9 @@ def scatterPlotGraspingErrors(
     rotationalThresholdLineColor=None,
     thresholdLineStyle=None,
 ):
-    fig, ax = setupLatexPlot2D()
+    fig, ax = setupLatexPlot2D(
+        figureWidth=1.5 * desiredFigureWidth, figureHeight=desiredFigureHeight
+    )
     if colors is None:
         colors = []
         for method in correspondingMethods:
@@ -188,6 +238,13 @@ def scatterPlotGraspingErrors(
         )
         legendSymbols.append(legendSymbol)
     ax.legend(handles=legendSymbols)
+
+    # axis legend
+    ax.set_xlabel(r"translational errors in $m$")
+    if controlOpt["saveAsPGF"]:
+        ax.set_ylabel(r"rotational error in $^\circ$")
+    else:
+        ax.set_ylabel(r"rotational error in $°$")
     # threshold
     if translationalThreshold is not None and rotationalThreshold is not None:
         plt.axvline(
@@ -206,23 +263,26 @@ def scatterPlotGraspingErrors(
             color=rotationalThresholdLineColor,
             linestyle=thresholdLineStyle,
         )
+
     return fig, ax
 
 
 def graspingErrorsHistogram(
-    translationalGraspingErrors,
+    errors,
     correspondingMethods,
     correspondingModelNames,
     n_bins=20,
+    mode="translational",
+    plotLegend=True,
 ):
     # Ensure that the two lists have the same length
-    assert len(translationalGraspingErrors) == len(correspondingMethods)
+    assert len(errors) == len(correspondingMethods)
 
     # Create a defaultdict with lists as default values
     grouped_vals = defaultdict(list)
 
     # Iterate through both lists simultaneously using zip
-    for method, val in zip(correspondingMethods, translationalGraspingErrors):
+    for method, val in zip(correspondingMethods, errors):
         grouped_vals[method].append(val)
 
     # Convert defaultdict to a regular dict (optional)
@@ -235,7 +295,9 @@ def graspingErrorsHistogram(
     x = np.vstack((cols)).T
 
     # x = x - np.mean(x, axis=0)
-    fig, ax = setupLatexPlot2D()
+    fig, ax = setupLatexPlot2D(
+        figureWidth=desiredFigureWidth, figureHeight=desiredFigureHeight
+    )
     hist_handle = ax.hist(
         x, n_bins, density=False, histtype="bar", color=histogramColors
     )
@@ -243,7 +305,7 @@ def graspingErrorsHistogram(
     # # plot gaussian
 
     x_axis = np.linspace(hist_handle[1][0], hist_handle[1][-1], 1000)
-    fitLineStyle = "--"
+    fitLineStyle = styleOpt["histogramFitLineStyle"]
     scalefactor = len(x) * np.mean(np.diff(hist_handle[1]))
     for method in grouped_vals:
         mu = np.mean(grouped_vals[method])
@@ -267,26 +329,37 @@ def graspingErrorsHistogram(
     secax_y = ax.secondary_yaxis(
         "right", functions=(counts_to_density, density_to_counts)
     )
-    secax_y.set_ylabel(r"probability density")
 
-    # create legend
-    legendSymbols = []
-    for method in grouped_vals:
-        legendSymbol = Patch(
-            facecolor=styleOpt["methodColors"][method],
-            label=method,
-        )
-        legendSymbols.append(legendSymbol)
-    for method in grouped_vals:
-        legendSymbol = Line2D(
-            [],
-            [],
-            color=styleOpt["methodColors"][method],
-            linestyle=fitLineStyle,
-            label="fitted gaussian, " + method,
-        )
-        legendSymbols.append(legendSymbol)
-    ax.legend(handles=legendSymbols)
+    # set axis labels
+    if mode == "translational":
+        ax.set_xlabel(r"translational errors in $m$")
+    elif mode == "rotational":
+        if controlOpt["saveAsPGF"]:
+            ax.set_xlabel(r"rotational errors in $^\circ$")
+        else:
+            ax.set_xlabel(r"rotational errors in $^°$")
+    ax.set_ylabel("counts")
+    secax_y.set_ylabel(r"probability density")
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))  # make y axis only integers
+    if plotLegend:
+        # create legend
+        legendSymbols = []
+        for method in grouped_vals:
+            legendSymbol = Patch(
+                facecolor=styleOpt["methodColors"][method],
+                label=method,
+            )
+            legendSymbols.append(legendSymbol)
+        for method in grouped_vals:
+            legendSymbol = Line2D(
+                [],
+                [],
+                color=styleOpt["methodColors"][method],
+                linestyle=fitLineStyle,
+                label="fitted gaussian, " + method,
+            )
+            legendSymbols.append(legendSymbol)
+        ax.legend(handles=legendSymbols)
     return fig, ax
 
 
@@ -380,6 +453,7 @@ if __name__ == "__main__":
     stdTranslationalErrors = np.std(translationalGraspingErrors)
     meanRotationalErrors = np.mean(rotationalGraspingErrors)
     stdRotationalErrors = np.std(rotationalGraspingErrors)
+
     if controlOpt["makeScatterPlot"]:
         fig_scatterPlot, ax_scatterPlot = scatterPlotGraspingErrors(
             translationalGraspingErrors=translationalGraspingErrors,
@@ -395,14 +469,65 @@ if __name__ == "__main__":
             rotationalThresholdLineColor=styleOpt["rotationalThresholdLineColor"],
             thresholdLineStyle=styleOpt["thresholdLineStyle"],
         )
-        if controlOpt["showPlot"]:
-            plt.show(block=True)
-
-    fig_histogram, ax_histogram = graspingErrorsHistogram(
-        translationalGraspingErrors=translationalGraspingErrors,
-        correspondingMethods=methods,
-        correspondingModelNames=models,
-    )
-    plt.show(block=True)
+        if controlOpt["save"]:
+            saveFileNameScatter = saveOpt["saveFileNameScatterPlot"]
+            saveFolder = saveOpt["saveFolder"]
+            savePathScatter = os.path.join(saveFolder, saveFileNameScatter)
+            if not os.path.exists(saveFolder):
+                os.makedirs(saveFolder, exist_ok=True)
+            fig_scatterPlot.savefig(savePathScatter)
+            # save as tixfigure
+            if controlOpt["saveAsTikz"]:
+                tikzplotlib_fix_ncols(fig_scatterPlot)
+                tikzplotlib.save(
+                    figure=fig_scatterPlot,
+                    filepath=savePathScatter + ".tex",
+                )
+            if controlOpt["saveAsPGF"]:
+                fig_scatterPlot.savefig(
+                    savePathScatter + ".pgf",
+                    bbox_inches="tight",
+                )
+        # if controlOpt["showPlot"]:
+        #     plt.show(block=True)
+    if controlOpt["makeHistogramPlot"]:
+        fig_histogram_trans, ax_histogram_trans = graspingErrorsHistogram(
+            errors=translationalGraspingErrors,
+            correspondingMethods=methods,
+            correspondingModelNames=models,
+            mode="translational",
+        )
+        fig_histogram_rot, ax_histogram_rot = graspingErrorsHistogram(
+            errors=rotationalGraspingErrors,
+            correspondingMethods=methods,
+            correspondingModelNames=models,
+            mode="rotational",
+            plotLegend=False,
+        )
+        if controlOpt["save"]:
+            saveFileNameTrans = saveOpt["saveFileNameHistogramTranslational"]
+            saveFileNameRot = saveOpt["saveFileNameHistogramRotaional"]
+            saveFolder = saveOpt["saveFolder"]
+            savePathTrans = os.path.join(saveFolder, saveFileNameTrans)
+            savePathRot = os.path.join(saveFolder, saveFileNameRot)
+            if not os.path.exists(saveFolder):
+                os.makedirs(saveFolder, exist_ok=True)
+            fig_histogram_trans.savefig(savePathTrans)
+            fig_histogram_rot.savefig(savePathRot)
+            if controlOpt["saveAsPGF"]:
+                fig_histogram_trans.savefig(savePathTrans + ".pgf", bbox_inches="tight")
+                fig_histogram_rot.savefig(savePathRot + ".pgf", bbox_inches="tight")
+            # save as tixfigure
+            if controlOpt["saveAsTikz"]:
+                tikzplotlib_fix_ncols(fig_histogram_trans)
+                tikzplotlib.save(
+                    figure=fig_histogram_trans, filepath=savePathTrans + ".tex"
+                )
+                tikzplotlib_fix_ncols(fig_histogram_rot)
+                tikzplotlib.save(
+                    figure=fig_histogram_rot, filepath=savePathRot + ".tex"
+                )
+    if controlOpt["showPlot"]:
+        plt.show(block=True)
     if controlOpt["verbose"]:
         print("Finished result generation.")

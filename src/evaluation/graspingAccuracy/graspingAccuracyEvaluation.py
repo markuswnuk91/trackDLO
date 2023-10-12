@@ -289,6 +289,46 @@ class GraspingAccuracyEvaluation(Evaluation):
         existingMethods = self.getRegistrationMethods(result)
         return len(result["trackingResults"][existingMethods[0]]["registrationResults"])
 
+    def evaluateGraspingAccuracy(
+        self,
+        result,
+        method,
+        num,
+    ):
+        registrationResult = result["trackingResults"][method]["registrationResults"][
+            num
+        ]
+        frame = registrationResult["frame"]
+        dataSetPath = result["dataSetPath"]
+
+        # ground truth
+        (
+            groundTruthGraspingPose,
+            groundTruthGraspingPosition,
+            groundTruthGraspingRotationMatrix,
+        ) = self.loadGroundTruthGraspingPose(
+            dataSetPath, frame + 1
+        )  # ground truth grasping position is given by the frame after the prediction frame
+        groundTruthGraspingAxis = groundTruthGraspingRotationMatrix[:3, 0]
+        # prediction
+        graspingLocalCoordinates = self.loadGraspingLocalCoordinates(dataSetPath)
+        graspingLocalCoordinate = graspingLocalCoordinates[num]
+        T = registrationResult["result"]["T"]
+        B = result["trackingResults"][method]["B"]
+        S = result["initializationResult"]["localizationResult"]["SInit"]
+        (
+            predictedGraspingPosition,
+            predictedGraspingAxis,
+        ) = self.predictGraspingPositionAndAxisFromRegistrationTargets(
+            T, B, S, graspingLocalCoordinate
+        )
+        graspingAccuracy = self.calculateGraspingAccuracyError(
+            predictedGraspingPosition=predictedGraspingPosition,
+            predictedGraspingAxis=predictedGraspingAxis,
+            groundTruthGraspingPose=groundTruthGraspingPose,
+        )
+        return graspingAccuracy
+
     # def drawGraspingPoses(
     #     self,
     #     rgbImage,

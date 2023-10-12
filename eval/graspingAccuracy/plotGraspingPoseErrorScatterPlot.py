@@ -31,6 +31,7 @@ controlOpt = {
     "registrationResultsToEvaluate": [-1],
     "showPlot": True,
     "makeScatterPlot": True,
+    "makeOutlierRatioBarPlot": True,
     "makeHistogramPlot": True,
     "save": True,
     "saveAsTikz": False,  # does not work with dashed lines, and does not plot legend
@@ -41,6 +42,7 @@ controlOpt = {
 saveOpt = {
     "saveFolder": "data/eval/graspingAccuracy/plots/graspingAccuracyEvaluationResults",
     "saveFileNameScatterPlot": "graspingErrorsScatterPlot",
+    "saveFileNameOutlierRatio": "successRateBarPlot",
     "saveFileNameHistogramTranslational": "translationalGraspingErrorsHistogram",
     "saveFileNameHistogramRotaional": "rotationalGraspingErrorsHistogram",
 }
@@ -173,7 +175,7 @@ def scatterPlotGraspingErrors(
     thresholdLineStyle=None,
 ):
     fig, ax = setupLatexPlot2D(
-        figureWidth=1.5 * desiredFigureWidth, figureHeight=desiredFigureHeight
+        figureWidth=desiredFigureWidth, figureHeight=desiredFigureHeight
     )
     if colors is None:
         colors = []
@@ -363,6 +365,86 @@ def graspingErrorsHistogram(
     return fig, ax
 
 
+def outlierRatioBarPlot(
+    translationalGraspingErrors,
+    rotationalGraspingErrors,
+    correspondingMethods,
+    translationalThreshold=None,
+    rotationalThreshold=None,
+    barWidth=None,
+    spacingFactor=None,
+    methodsToEvaluate=None,
+):
+    barWidth = 0.5 if barWidth is None else barWidth
+    spacingFactor = 1 if spacingFactor is None else spacingFactor
+    methodsToEvaluate = (
+        controlOpt["methodsToEvaluate"]
+        if methodsToEvaluate is None
+        else methodsToEvaluate
+    )
+    fig, ax = setupLatexPlot2D(
+        figureWidth=desiredFigureWidth, figureHeight=desiredFigureHeight
+    )
+
+    inlierCount = {}
+    outlierCount = {}
+    for method in methodsToEvaluate:
+        inlierCount[method] = 0
+        outlierCount[method] = 0
+    for i, (transplationalError, rotationalError, method) in enumerate(
+        zip(translationalGraspingErrors, rotationalGraspingErrors, correspondingMethods)
+    ):
+        if (
+            transplationalError > translationalThreshold
+            or rotationalError > rotationalThreshold
+        ):
+            outlierCount[method] += 1
+        else:
+            inlierCount[method] += 1
+
+    XTicks = np.arange(len(methodsToEvaluate)) * spacingFactor
+    barColors = []
+    for x, method in zip(XTicks, methodsToEvaluate):
+        barValue = inlierCount[method]
+        absValue = inlierCount[method] + outlierCount[method]
+        bottomValue = barValue / absValue
+        successBar = plt.bar(
+            x, bottomValue, barWidth, color=styleOpt["methodColors"][method]
+        )
+        plt.bar(
+            x,
+            ((absValue - barValue) / absValue),
+            barWidth,
+            bottom=bottomValue,
+            color="gray",
+        )
+        barColors.append(styleOpt["methodColors"][method])
+
+    ax.set_xlabel("methods")
+    ax.set_ylabel("Success rate")
+    ax.set_xticks(XTicks, [x.upper() for x in methodsToEvaluate])
+    ax.set_ylim([0, 1.3])
+    ax.legend()
+    pa1 = Patch(facecolor=barColors[0], edgecolor="black")
+    pa2 = Patch(facecolor=barColors[1], edgecolor="black")
+    pa3 = Patch(facecolor=barColors[2], edgecolor="black")
+    pb1 = Patch(facecolor="gray", edgecolor="gray")
+    ax.legend(
+        handles=[pa1, pa2, pa3, pb1],
+        labels=[
+            methodsToEvaluate[0],
+            methodsToEvaluate[1],
+            methodsToEvaluate[2],
+            "not successful",
+        ],
+        ncol=2,
+        # handletextpad=0.5,
+        # handlelength=1.0,
+        # columnspacing=-0.5,
+    )
+    return fig, ax
+
+
 if __name__ == "__main__":
     if controlOpt["resultsToLoad"][0] == -1:
         resultsToEvaluate = resultFolderPaths
@@ -490,6 +572,34 @@ if __name__ == "__main__":
                 )
         # if controlOpt["showPlot"]:
         #     plt.show(block=True)
+    if controlOpt["makeOutlierRatioBarPlot"]:
+        fig_success_rate_plot, _ = outlierRatioBarPlot(
+            translationalGraspingErrors=translationalGraspingErrors,
+            rotationalGraspingErrors=rotationalGraspingErrors,
+            correspondingMethods=methods,
+            translationalThreshold=styleOpt["translationalErrorThreshold"],
+            rotationalThreshold=styleOpt["rotationalErrorThreshold"],
+        )
+        if controlOpt["save"]:
+            saveFileNameOutlierRatio = saveOpt["saveFileNameOutlierRatio"]
+            saveFolder = saveOpt["saveFolder"]
+            savePathOutlierRatio = os.path.join(saveFolder, saveFileNameOutlierRatio)
+            if not os.path.exists(saveFolder):
+                os.makedirs(saveFolder, exist_ok=True)
+            fig_success_rate_plot.savefig(savePathOutlierRatio, bbox_inches="tight")
+            # save as tixfigure
+            if controlOpt["saveAsTikz"]:
+                tikzplotlib_fix_ncols(fig_success_rate_plot)
+                tikzplotlib.save(
+                    figure=fig_success_rate_plot,
+                    filepath=savePathScatter + ".tex",
+                )
+            if controlOpt["saveAsPGF"]:
+                fig_success_rate_plot.savefig(
+                    savePathOutlierRatio + ".pgf",
+                    bbox_inches="tight",
+                )
+    # histograms
     if controlOpt["makeHistogramPlot"]:
         fig_histogram_trans, ax_histogram_trans = graspingErrorsHistogram(
             errors=translationalGraspingErrors,

@@ -82,7 +82,6 @@ def createSuccessRateBarPlot(
     dataSetResult,
     methodsToEvaluate=None,
     barWidth=0.5,
-    spacingFactor=1,
 ):
     trackingResults = dataSetResult["trackingResults"]
     methodsToEvaluate = (

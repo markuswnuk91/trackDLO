@@ -30,9 +30,10 @@ controlOpt = {
     "methodsToEvaluate": ["cpd", "spr", "kpr"],
     "registrationResultsToEvaluate": [-1],
     "showPlot": True,
-    "makeScatterPlot": True,
+    "makeScatterPlot": False,
     "makeOutlierRatioBarPlot": True,
-    "makeHistogramPlot": True,
+    "makeHistogramPlot": False,
+    "makeGraspingAccuracyBoxPlot": False,
     "save": True,
     "saveAsTikz": False,  # does not work with dashed lines, and does not plot legend
     "saveAsPGF": True,
@@ -45,6 +46,8 @@ saveOpt = {
     "saveFileNameOutlierRatio": "successRateBarPlot",
     "saveFileNameHistogramTranslational": "translationalGraspingErrorsHistogram",
     "saveFileNameHistogramRotaional": "rotationalGraspingErrorsHistogram",
+    "saveFileNameBoxPlotTranslational": "translationalGraspingAccuracyBoxPlot",
+    "saveFileNameBoxPlotRotational": "rotationalGraspingAccuracyBoxPlot",
 }
 
 styleOpt = {
@@ -80,8 +83,8 @@ tex_fonts = {
     "text.usetex": True,
     "font.family": "serif",
     # Use 10pt font in plots, to match 10pt font in document
-    "axes.labelsize": latexFontSize_in_pt,
-    "font.size": latexFontSize_in_pt,
+    "axes.labelsize": latexFootNoteFontSize_in_pt,
+    "font.size": latexFootNoteFontSize_in_pt,
     # Make the legend/label fonts a little smaller
     "legend.fontsize": latexFootNoteFontSize_in_pt,
     "xtick.labelsize": latexFootNoteFontSize_in_pt,
@@ -242,7 +245,7 @@ def scatterPlotGraspingErrors(
     ax.legend(handles=legendSymbols)
 
     # axis legend
-    ax.set_xlabel(r"translational errors in $m$")
+    ax.set_xlabel(r"translational error in $m$")
     if controlOpt["saveAsPGF"]:
         ax.set_ylabel(r"rotational error in $^\circ$")
     else:
@@ -312,24 +315,26 @@ def graspingErrorsHistogram(
     for method in grouped_vals:
         mu = np.mean(grouped_vals[method])
         std = np.std(grouped_vals[method])
-        p = norm.pdf(x_axis, mu, std)
+        pdf = norm.pdf(x_axis, mu, std)
+        probability = pdf * np.mean(np.diff(hist_handle[1]))
+        estimatedCounts = probability * len(x)
         # scale density to counts
         ax.plot(
             x_axis,
-            p * scalefactor,
+            estimatedCounts,
             color=styleOpt["methodColors"][method],
             linestyle=fitLineStyle,
         )
 
     # add density as secondary axis
-    def counts_to_density(counts):
-        return counts / scalefactor
+    def counts_to_probability(counts):
+        return counts / len(x)
 
-    def density_to_counts(density):
-        return density * scalefactor
+    def probability_to_counts(probability):
+        return probability * len(x)
 
     secax_y = ax.secondary_yaxis(
-        "right", functions=(counts_to_density, density_to_counts)
+        "right", functions=(counts_to_probability, probability_to_counts)
     )
 
     # set axis labels
@@ -337,11 +342,11 @@ def graspingErrorsHistogram(
         ax.set_xlabel(r"translational errors in $m$")
     elif mode == "rotational":
         if controlOpt["saveAsPGF"]:
-            ax.set_xlabel(r"rotational errors in $^\circ$")
+            ax.set_xlabel(r"rotational error in $^\circ$")
         else:
-            ax.set_xlabel(r"rotational errors in $^°$")
+            ax.set_xlabel(r"rotational error in $^°$")
     ax.set_ylabel("counts")
-    secax_y.set_ylabel(r"probability density")
+    secax_y.set_ylabel(r"probability")
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))  # make y axis only integers
     if plotLegend:
         # create legend
@@ -424,6 +429,9 @@ def outlierRatioBarPlot(
     ax.set_ylabel("Success rate")
     ax.set_xticks(XTicks, [x.upper() for x in methodsToEvaluate])
     ax.set_ylim([0, 1.3])
+    ax.set_yticks(
+        [0, 0.25, 0.5, 0.75, 1], [r"$0\%$", r"$25\%$", r"$50\%$", r"75\%", r"100\%"]
+    )
     ax.legend()
     pa1 = Patch(facecolor=barColors[0], edgecolor="black")
     pa2 = Patch(facecolor=barColors[1], edgecolor="black")
@@ -442,6 +450,56 @@ def outlierRatioBarPlot(
         # handlelength=1.0,
         # columnspacing=-0.5,
     )
+    return fig, ax
+
+
+def plotGraspingAccuracyBoxPlot(
+    graspingErrors, correspondingMethods, medianColor=[0, 0, 0], mode="translational"
+):
+    # Ensure that the two lists have the same length
+    assert len(graspingErrors) == len(correspondingMethods)
+
+    # Create a defaultdict with lists as default values
+    grouped_vals = defaultdict(list)
+
+    # Iterate through both lists simultaneously using zip
+    for method, val in zip(correspondingMethods, graspingErrors):
+        grouped_vals[method].append(val)
+
+    # Convert defaultdict to a regular dict (optional)
+    grouped_vals = dict(grouped_vals)
+
+    fig, ax = setupLatexPlot2D(
+        figureWidth=desiredFigureWidth, figureHeight=desiredFigureHeight
+    )
+
+    data = []
+    labels = []
+    colors = []
+
+    facealpha = 0.3
+    linealpha = 1
+
+    for method in grouped_vals:
+        data.append(grouped_vals[method])
+        labels.append(method.upper())
+        colors.append(styleOpt["methodColors"][method])
+    boxPlot = ax.boxplot(
+        data,
+        patch_artist=True,  # fill with color
+        labels=labels,
+    )
+    for median, color in zip(boxPlot["medians"], colors):
+        median.set_color(medianColor)
+    for patch, color in zip(boxPlot["boxes"], colors):
+        patch.set_facecolor(np.concatenate((color, [facealpha])))
+        patch.set_edgecolor(np.concatenate((color, [linealpha])))
+    if mode == "translational":
+        ax.set_ylabel(r"grasping accuracy in $m$")
+    elif mode == "rotational":
+        ax.set_ylabel(r"grasping accuracy in $\circ$")
+    else:
+        raise NotImplementedError
     return fig, ax
 
 
@@ -637,6 +695,29 @@ if __name__ == "__main__":
                 tikzplotlib.save(
                     figure=fig_histogram_rot, filepath=savePathRot + ".tex"
                 )
+    # box plots
+    if controlOpt["makeGraspingAccuracyBoxPlot"]:
+        fig_box_trans, _ = plotGraspingAccuracyBoxPlot(
+            graspingErrors=translationalGraspingErrors,
+            correspondingMethods=methods,
+        )
+        fig_box_rot, _ = plotGraspingAccuracyBoxPlot(
+            graspingErrors=rotationalGraspingErrors,
+            correspondingMethods=methods,
+        )
+        if controlOpt["save"]:
+            saveFileNameTrans = saveOpt["saveFileNameBoxPlotTranslational"]
+            saveFileNameRot = saveOpt["saveFileNameBoxPlotRotational"]
+            saveFolder = saveOpt["saveFolder"]
+            savePathTrans = os.path.join(saveFolder, saveFileNameTrans)
+            savePathRot = os.path.join(saveFolder, saveFileNameRot)
+            if not os.path.exists(saveFolder):
+                os.makedirs(saveFolder, exist_ok=True)
+            fig_box_trans.savefig(savePathTrans)
+            fig_box_rot.savefig(savePathRot)
+            if controlOpt["saveAsPGF"]:
+                fig_box_trans.savefig(savePathTrans + ".pgf", bbox_inches="tight")
+                fig_box_rot.savefig(savePathRot + ".pgf", bbox_inches="tight")
     if controlOpt["showPlot"]:
         plt.show(block=True)
     if controlOpt["verbose"]:

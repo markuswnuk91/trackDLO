@@ -1655,6 +1655,17 @@ class Evaluation(object):
         )
         cv2.waitKey(0)
 
+    def convertImageToFigure(
+        self,
+        img,
+    ):
+        fig = plt.figure(frameon=False)
+        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
+        ax.set_axis_off()
+        fig.add_axes(ax)
+        ax.imshow(img)
+        return fig, ax
+
     def plotImageWithMatplotlib(
         self,
         rgbImage,

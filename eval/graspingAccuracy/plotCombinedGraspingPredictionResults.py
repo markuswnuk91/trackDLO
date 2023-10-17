@@ -2,6 +2,7 @@ import sys
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.patches import Patch
 
 try:
     sys.path.append(os.getcwd().replace("/eval", ""))
@@ -22,7 +23,7 @@ controlOpt = {
     "methodsToEvaluate": ["cpd", "spr", "kpr"],
     "registrationResultsToEvaluate": [-1],
     "saveManipulationImg": True,
-    "showPlot": False,
+    "showPlot": True,
     "save": True,
     "verbose": True,
 }
@@ -43,6 +44,8 @@ styleOpt = {
     "fingerWidth2D": 0.5,
     "centerThickness": 10,
     "lineThickness": 5,
+    "addLegend": True,
+    "dpi": 150,
 }
 
 resultFileName = "result.pkl"
@@ -57,6 +60,35 @@ resultFolderPaths = [
     "data/eval/graspingAccuracy/results/20230522_141025_arena",
     "data/eval/graspingAccuracy/results/20230522_142058_arena",
 ]
+
+textwidth_in_pt = 483.6969
+figureScaling = 0.45
+latexFontSize_in_pt = 14
+latexFootNoteFontSize_in_pt = 10
+desiredFigureWidth = figureScaling * textwidth_in_pt
+desiredFigureHeight = figureScaling * textwidth_in_pt
+tex_fonts = {
+    #    "pgf.texsystem": "pdflatex",
+    # Use LaTeX to write all text
+    "text.usetex": True,
+    "font.family": "serif",
+    # Use 10pt font in plots, to match 10pt font in document
+    "axes.labelsize": latexFootNoteFontSize_in_pt,
+    "font.size": latexFootNoteFontSize_in_pt,
+    # Make the legend/label fonts a little smaller
+    "legend.fontsize": latexFootNoteFontSize_in_pt,
+    "xtick.labelsize": latexFootNoteFontSize_in_pt,
+    "ytick.labelsize": latexFootNoteFontSize_in_pt,
+}
+matplotlib.rcParams.update(
+    {
+        "pgf.texsystem": "pdflatex",
+        "font.family": "serif",
+        "text.usetex": True,
+        "pgf.rcfonts": False,
+    }
+)
+matplotlib.rcParams.update(tex_fonts)
 
 
 def plotPredictedGraspingPose(
@@ -85,6 +117,18 @@ def plotPredictedGraspingPose(
         markerFill=-1,
     )
     return rgbImg
+
+
+def addLegend(ax, methods):
+    patches = []
+    labels = []
+    for method in methods:
+        patches.append(
+            Patch(facecolor=styleOpt["predictionColors"][method], edgecolor="black")
+        )
+        labels.append(method.upper())
+    ax.legend(handles=patches, labels=labels)
+    return fig, ax
 
 
 if __name__ == "__main__":
@@ -187,11 +231,11 @@ if __name__ == "__main__":
                     graspingAxes2D=graspingAxes2D,
                     predictionColor=styleOpt["predictionColors"][method],
                 )
+            fig, ax = eval.convertImageToFigure(rgbImg)
+            if styleOpt["addLegend"] and nRegistrationResult == 0:
+                ax = addLegend(ax, methodsToEvaluate)
             if controlOpt["showPlot"]:
-                eval.plotImageWithMatplotlib(
-                    rgbImg, title="grasping prediction", block=True
-                )
-
+                fig.show()
             if controlOpt["save"]:
                 dataSetName = result["dataSetName"]
                 fileName = (
@@ -208,7 +252,15 @@ if __name__ == "__main__":
                 )
                 if not os.path.exists(saveFolderPath_prediction):
                     os.makedirs(saveFolderPath_prediction, exist_ok=True)
-                eval.saveImage(rgbImg, saveFilePath_prediction)
+                fig.savefig(
+                    saveFilePath_prediction + ".png",
+                    format="png",
+                    bbox_inches="tight",
+                    dpi=styleOpt["dpi"],
+                )
+                plt.close("all")
+                # eval.saveImage(rgbImg, saveFilePath_prediction)
+
                 if controlOpt["verbose"]:
                     print(
                         "Saved prediction {}/{} of result {}/{} at {}".format(
@@ -234,7 +286,15 @@ if __name__ == "__main__":
                     )
                 if not os.path.exists(saveFolderPath_manipulation):
                     os.makedirs(saveFolderPath_manipulation, exist_ok=True)
-                eval.saveImage(graspImg, saveFilePath_manipulation)
+                # eval.saveImage(graspImg, saveFilePath_manipulation)
+                fig, ax = eval.convertImageToFigure(graspImg)
+                fig.savefig(
+                    saveFilePath_manipulation + ".png",
+                    format="png",
+                    bbox_inches="tight",
+                    dpi=styleOpt["dpi"],
+                )
+                plt.close("all")
                 if controlOpt["verbose"]:
                     print(
                         "Saved grasp img {}/{} of result {}/{} at {}".format(

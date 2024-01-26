@@ -46,7 +46,7 @@ vis = True  # enable for visualization
 
 # new simplified version
 length = 1
-bending_radius = 0.02
+bending_radius = 0.013
 max_tolerated_error = 0.01
 
 numSegments = determineNumSegments(

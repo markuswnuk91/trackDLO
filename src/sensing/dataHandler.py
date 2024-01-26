@@ -100,6 +100,11 @@ class DataHandler(object):
             imageArray = cv2.imread(folderPath + fileName, cv2.IMREAD_GRAYSCALE)
         return imageArray
 
+    def loadImage(self, filePath):
+        image = cv2.imread(filePath, cv2.IMREAD_COLOR)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        return image
+
     def loadDisparityDataFromTIF(self, fileName, folderPath=None):
         if folderPath is None:
             folderPath = self.defaultLoadFolderPath_Data

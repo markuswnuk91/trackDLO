@@ -475,22 +475,34 @@ def plotCube(ax, x_Min, x_Max, y_Min, y_Max, z_Min, z_Max, color="r", alpha=0.2)
     z_range = np.array([z_Min, z_Max])
 
     xx, yy = np.meshgrid(x_range, y_range)
-    ax.plot_wireframe(xx, yy, z_range[0] * np.ones(4).reshape(2, 2), color="r")
-    ax.plot_surface(xx, yy, z_range[0] * np.ones(4).reshape(2, 2), color="r", alpha=0.2)
-    ax.plot_wireframe(xx, yy, z_range[1] * np.ones(4).reshape(2, 2), color="r")
-    ax.plot_surface(xx, yy, z_range[1] * np.ones(4).reshape(2, 2), color="r", alpha=0.2)
+    ax.plot_wireframe(xx, yy, z_range[0] * np.ones(4).reshape(2, 2), color=color)
+    ax.plot_surface(
+        xx, yy, z_range[0] * np.ones(4).reshape(2, 2), color=color, alpha=alpha
+    )
+    ax.plot_wireframe(xx, yy, z_range[1] * np.ones(4).reshape(2, 2), color=color)
+    ax.plot_surface(
+        xx, yy, z_range[1] * np.ones(4).reshape(2, 2), color=color, alpha=alpha
+    )
 
     yy, zz = np.meshgrid(y_range, z_range)
-    ax.plot_wireframe(x_range[0] * np.ones(4).reshape(2, 2), yy, zz, color="r")
-    ax.plot_surface(x_range[0] * np.ones(4).reshape(2, 2), yy, zz, color="r", alpha=0.2)
-    ax.plot_wireframe(x_range[1] * np.ones(4).reshape(2, 2), yy, zz, color="r")
-    ax.plot_surface(x_range[1] * np.ones(4).reshape(2, 2), yy, zz, color="r", alpha=0.2)
+    ax.plot_wireframe(x_range[0] * np.ones(4).reshape(2, 2), yy, zz, color=color)
+    ax.plot_surface(
+        x_range[0] * np.ones(4).reshape(2, 2), yy, zz, color=color, alpha=alpha
+    )
+    ax.plot_wireframe(x_range[1] * np.ones(4).reshape(2, 2), yy, zz, color=color)
+    ax.plot_surface(
+        x_range[1] * np.ones(4).reshape(2, 2), yy, zz, color=color, alpha=alpha
+    )
 
     xx, zz = np.meshgrid(x_range, z_range)
-    ax.plot_wireframe(xx, y_range[0] * np.ones(4).reshape(2, 2), zz, color="r")
-    ax.plot_surface(xx, y_range[0] * np.ones(4).reshape(2, 2), zz, color="r", alpha=0.2)
-    ax.plot_wireframe(xx, y_range[1] * np.ones(4).reshape(2, 2), zz, color="r")
-    ax.plot_surface(xx, y_range[1] * np.ones(4).reshape(2, 2), zz, color="r", alpha=0.2)
+    ax.plot_wireframe(xx, y_range[0] * np.ones(4).reshape(2, 2), zz, color=color)
+    ax.plot_surface(
+        xx, y_range[0] * np.ones(4).reshape(2, 2), zz, color=color, alpha=alpha
+    )
+    ax.plot_wireframe(xx, y_range[1] * np.ones(4).reshape(2, 2), zz, color=color)
+    ax.plot_surface(
+        xx, y_range[1] * np.ones(4).reshape(2, 2), zz, color=color, alpha=alpha
+    )
 
 
 def plotVector(ax, origin, direction, length=None, color=None):

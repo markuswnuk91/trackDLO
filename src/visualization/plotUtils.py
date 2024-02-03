@@ -78,3 +78,52 @@ def set_axes_equal(ax):
         set_axes_equal3D(ax)
     else:
         ax.set_aspect("equal", adjustable="box")
+
+
+def get_axis_limits(points):
+    x_max = np.max(points[:, 0])
+    x_min = np.min(points[:, 0])
+    y_max = np.max(points[:, 1])
+    y_min = np.min(points[:, 1])
+    z_max = np.max(points[:, 2])
+    z_min = np.min(points[:, 2])
+    return {
+        "xMin": x_min,
+        "xMax": x_max,
+        "yMin": y_min,
+        "yMax": y_max,
+        "zMin": z_min,
+        "zMax": z_max,
+    }
+
+
+def center_point_cloud(points):
+    centroid = np.mean(points, axis=0)
+    return points - centroid
+
+
+def scale_axes_to_fit(ax, points, zoom=1):
+    ax.set_position(
+        [
+            0,
+            0,
+            1,
+            1,
+        ]
+    )
+    axis_limits = get_axis_limits(points)
+    ax_range = np.max(
+        np.array(
+            (
+                axis_limits["xMax"] - axis_limits["xMin"],
+                axis_limits["yMax"] - axis_limits["yMin"],
+                axis_limits["zMax"] - axis_limits["zMin"],
+            )
+        )
+    )
+    centroid = np.mean(points, axis=0)
+    ax_offset = 2 * zoom
+    ax.set_xlim(centroid[0] - ax_range / ax_offset, centroid[0] + ax_range / ax_offset)
+    ax.set_ylim(centroid[1] - ax_range / ax_offset, centroid[1] + ax_range / ax_offset)
+    ax.set_zlim(centroid[2] - ax_range / ax_offset, centroid[2] + ax_range / ax_offset)
+    return ax

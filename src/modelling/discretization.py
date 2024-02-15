@@ -211,6 +211,14 @@ def circular_line(r, s):
     return x, y
 
 
+def calc_geometric_error(minimal_bending_radius, n_segments):
+    segment_length = 2 * minimal_bending_radius * np.sin(np.pi / (2 * n_segments))
+    geometric_error = minimal_bending_radius - np.sqrt(
+        minimal_bending_radius**2 - (segment_length / 2) ** 2
+    )
+    return geometric_error
+
+
 def determineNumSegments(
     total_length,
     minimal_bending_radius,
@@ -219,9 +227,10 @@ def determineNumSegments(
     n_segments = 1
     l_circle = np.pi * minimal_bending_radius
     l_segments = np.pi * minimal_bending_radius / n_segments
-    s_space = np.linspace(0, 1, 100)
+    s_space = np.linspace(0, 1, 1000)
 
     all_errors = []
+    geometrically_calculated_errors = []
     n_iterations = 20
     for iteration, n_segments in enumerate(range(1, n_iterations)):
         errors = []
@@ -240,6 +249,9 @@ def determineNumSegments(
         # plt.plot(np.array(P_circle)[:, 0], np.array(P_circle)[:, 1], color="red")
         # plt.plot(np.array(P_piecewise)[:, 0], np.array(P_piecewise)[:, 1], color="blue")
         # plt.close("all")
+        geometrically_calculated_errors.append(
+            calc_geometric_error(minimal_bending_radius, n_segments)
+        )
         all_errors.append(errors)
         print("Iteration {}/{}".format(iteration + 1, n_iterations - 1))
 

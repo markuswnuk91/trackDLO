@@ -120,7 +120,6 @@ if __name__ == "__main__":
             X=discreteY,
             # Y=continuousModel.evalPositions(np.linspace(0, continuousModel.L, 100)),
             Y=Y,
-            waitTime=-1,
             linewidthX=3.0,
             linewidthY=2.0,
             alphaX=0.8,
@@ -136,8 +135,8 @@ if __name__ == "__main__":
             loc="upper right",
             bbox_to_anchor=(1, 0.8),
         )
-        plotPointSet(ax=ax, X=discreteY, waitTime=None, size=80, alpha=0.5)
-
+        plotPointSet(ax=ax, X=discreteY, size=80, alpha=0.5)
+        plt.show(block=True)
         # save figures
         if saveFigs:
             plt.savefig(

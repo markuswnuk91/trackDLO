@@ -322,11 +322,13 @@ def plotLine(
     color=None,
     alpha=None,
     linewidth=None,
+    lineStyle=None,
     zOrder=None,
 ):
     color = [0, 0, 1] if color is None else color
     alpha = 1 if alpha is None else alpha
     linewidth = 1.5 if linewidth is None else linewidth
+    lineStyle = "-" if lineStyle is None else lineStyle
     zOrder = 1 if zOrder is None else zOrder
 
     if pointPair.shape[1] == 2:
@@ -337,6 +339,7 @@ def plotLine(
             label=label,
             alpha=alpha,
             linewidth=linewidth,
+            linestyle=lineStyle,
             zorder=zOrder,
         )
     elif pointPair.shape[1] == 3:
@@ -348,6 +351,7 @@ def plotLine(
             label=label,
             alpha=alpha,
             linewidth=linewidth,
+            linestyle=lineStyle,
             zorder=zOrder,
         )
 
@@ -359,7 +363,6 @@ def plotPointSetAsLine(
     color=[0, 0, 1],
     alpha=1,
     linewidth=1.5,
-    waitTime=None,
 ):
     if label is None:
         ax.plot3D(
@@ -375,14 +378,6 @@ def plotPointSetAsLine(
             alpha=alpha,
             linewidth=linewidth,
         )
-
-    if waitTime is not None and waitTime != -1:
-        plt.draw()
-        plt.pause(waitTime)
-    elif waitTime == None:
-        plt.show(block=True)
-    elif waitTime == -1:
-        plt.show(block=False)
 
 
 def plotPointSetsAsLine(
@@ -668,7 +663,7 @@ def plotCorrespondances3D(
     ax,
     X,
     Y,
-    C,
+    C=None,
     xColor=None,
     yColor=None,
     correspondanceColor=None,
@@ -679,6 +674,8 @@ def plotCorrespondances3D(
     yAlpha=None,
     lineAlpha=None,
 ):
+    (N, D) = X.shape
+    C = np.eye(N, N) if C is None else C
     xColor = [0, 0, 1] if xColor is None else xColor
     yColor = [1, 0, 0] if yColor is None else yColor
     correspondanceColor = (

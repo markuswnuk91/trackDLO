@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib as matplotlib
 
 
 def set_size(width, height=None, fraction=1, subplots=(1, 1)):
@@ -121,9 +122,49 @@ def scale_axes_to_fit(ax, points, zoom=1):
             )
         )
     )
-    centroid = np.mean(points, axis=0)
+    # centroid = np.mean(points, axis=0)
+    centroid = 0.5 * np.array(
+        (
+            axis_limits["xMax"] + axis_limits["xMin"],
+            axis_limits["yMax"] + axis_limits["yMin"],
+            axis_limits["zMax"] + axis_limits["zMin"],
+        )
+    )
     ax_offset = 2 * zoom
     ax.set_xlim(centroid[0] - ax_range / ax_offset, centroid[0] + ax_range / ax_offset)
     ax.set_ylim(centroid[1] - ax_range / ax_offset, centroid[1] + ax_range / ax_offset)
     ax.set_zlim(centroid[2] - ax_range / ax_offset, centroid[2] + ax_range / ax_offset)
     return ax
+
+
+def set_text_to_latex_font(scale_text=None, scale_axes_labelsize=None):
+
+    scale_text = 1 if scale_text is None else scale_text
+    textwidth_in_pt = 483.6969
+    figureScaling = 0.45
+    latexFontSize_in_pt = 14 * scale_text
+    scale_axes_labelsize = 1 if scale_axes_labelsize is None else scale_axes_labelsize
+    latexFootNoteFontSize_in_pt = 10 * scale_text
+    tex_fonts = {
+        #    "pgf.texsystem": "pdflatex",
+        # Use LaTeX to write all text
+        "text.usetex": True,
+        "font.family": "serif",
+        # Use 10pt font in plots, to match 10pt font in document
+        "axes.labelsize": latexFontSize_in_pt * scale_axes_labelsize,
+        "font.size": latexFontSize_in_pt,
+        # Make the legend/label fonts a little smaller
+        "legend.fontsize": latexFontSize_in_pt,
+        "xtick.labelsize": latexFontSize_in_pt,
+        "ytick.labelsize": latexFontSize_in_pt,
+    }
+    # matplotlib.use("pgf")
+    matplotlib.rcParams.update(
+        {
+            "pgf.texsystem": "pdflatex",
+            "font.family": "serif",
+            "text.usetex": True,
+            "pgf.rcfonts": False,
+        }
+    )
+    matplotlib.rcParams.update(tex_fonts)

@@ -700,7 +700,7 @@ class BranchedDeformableLinearObject(BDLOTopology):
         return (bodyNodeTransform @ relativeTransformToParentJoint)[:3, 3]
 
     def getCartesianPositionSegmentEnd(self, bodyNodeIndex: int):
-        """returns the cartesian position of the beginning of a segment
+        """returns the cartesian position of the end of a segment
 
         Args:
             bodyNodeIndex (int): the index of the bodyNode
@@ -986,9 +986,9 @@ class BranchedDeformableLinearObject(BDLOTopology):
             while iteration < numIterations:
                 self.skel.setPositions(q)
                 for i, bodyNode in enumerate(self.skel.getBodyNodes()):
-                    currentPositions[
-                        3 * i : 3 * i + 3
-                    ] = bodyNode.getTransform().translation()[:, None]
+                    currentPositions[3 * i : 3 * i + 3] = (
+                        bodyNode.getTransform().translation()[:, None]
+                    )
                     jacobians[3 * i : 3 * i + 3, :] = self.skel.getWorldJacobian(
                         bodyNode, np.array((0, 0, 0))
                     )[3:6, :]
@@ -1041,6 +1041,20 @@ class BranchedDeformableLinearObject(BDLOTopology):
         else:
             raise NotImplementedError
         return dart.dynamics.BallJoint.convertToPositions(rotMat)
+
+    def getSamplePositionsFromLocalCoordinates(self, S):
+        K = self.getNumBranches()
+        XSamples = []
+        for b in range(0, K):
+            if self.isOuterBranch(self.getBranch(b)):
+                for s in S:
+                    x = self.getCartesianPositionFromBranchLocalCoordinate(b, s)
+                    XSamples.append(x)
+            elif self.isInnerBranch(self.getBranch(b)):
+                s = 0.5
+                x = self.getCartesianPositionFromBranchLocalCoordinate(b, s)
+                XSamples.append(x)
+        return np.array(XSamples)
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

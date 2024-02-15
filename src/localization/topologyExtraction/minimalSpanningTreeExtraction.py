@@ -137,3 +137,6 @@ class MinimalSpanningTreeExtraction(object):
             X=reducedPointSet, featureMatrix=reducedAdjacencyMatrix
         )
         return extractedTopology
+
+    def getMinimalSpanningTreeAdjacencyMatrix(self, X):
+        return minimalSpanningTree(distance_matrix(X, X))

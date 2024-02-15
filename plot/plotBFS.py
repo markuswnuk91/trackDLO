@@ -10,11 +10,12 @@ try:
     from src.modelling.topologyModel import topologyModel
     from src.simulation.bdloTemplates import initArenaWireHarness
     from src.visualization.plot3D import *
+    from src.visualization.plot2D import *
 except:
     print("Imports for plotting BFS example failed.")
     raise
 
-saveFig = True
+saveFig = False
 # saving paths
 savePath = "/mnt/c/Users/ac129490/Documents/Dissertation/Thesis/62bebc3388a16f7dcc7f9153/figures/plots/"
 fileName = "plotExampleBFS"
@@ -61,7 +62,7 @@ if __name__ == "__main__":
     )  # make unique coordinates
 
     # colormap
-    colorMap = matplotlib.colormaps["viridis"]
+    colorMap = matplotlib.colormaps["Blues"]
     lowerLim = 0
     upperLim = np.round(exampleTopology.getNumBranches() - 1)
     norm = matplotlib.colors.Normalize(vmin=lowerLim, vmax=upperLim)  # Normalizer

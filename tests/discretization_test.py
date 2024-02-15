@@ -54,5 +54,5 @@ numSegments = determineNumSegments(
     minimal_bending_radius=bending_radius,
     max_tolerated_error=max_tolerated_error,
 )
-
+plt.show(block=True)
 print(numSegments)

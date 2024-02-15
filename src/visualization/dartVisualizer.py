@@ -48,6 +48,29 @@ class DartVisualizer(object):
     def addSkeleton(self, skel):
         self.world.addSkeleton(skel)
 
+    def addPointCloud(self, points, colors=None):
+        """
+        Visualize a PointCloud in DART
+        """
+        colors = [0, 0, 0] if colors is None else colors
+        pointCloudShape = dart.dynamics.PointCloudShape(0.005)
+        frame = dart.dynamics.SimpleFrame(
+            dart.dynamics.Frame.World(), name="PointCloud"
+        )
+        frame.setShape(pointCloudShape)
+        pointCloudShape.addPoint(points)
+        visual = frame.createVisualAspect()
+
+        if isinstance(colors, np.ndarray) and colors.shape[0] > 1:
+            pointCloudShape.setColorMode(dart.dynamics.PointCloudShape.BIND_PER_POINT)
+            createMyColorMap = np.ones((4, len(colors[0])))
+            createMyColorMap[:3, :] = colors / 255
+            pointCloudShape.setColors(createMyColorMap.T)
+        else:
+            visual.setColor(colors)
+
+        self.world.addSimpleFrame(frame)
+
     def run(self, visualize=True):
         while True:
             self.node.customPreRefresh()
@@ -141,9 +164,9 @@ class DartVisualizer(object):
         ) and numIter < numIterMax:
             for bodyNodeIndex in range(0, skel.getNumBodyNodes()):
                 bodyNode = skel.getBodyNode(bodyNodeIndex)
-                currentPositions[
-                    bodyNodeIndex, :
-                ] = bodyNode.getTransform().translation()
+                currentPositions[bodyNodeIndex, :] = (
+                    bodyNode.getTransform().translation()
+                )
                 currentVeclocities[bodyNodeIndex, :] = bodyNode.getLinearVelocity()
                 force = (
                     kp
@@ -212,3 +235,11 @@ class DartScene(DartVisualizer):
         dir = os.path.dirname(savePath)
         file_name = os.path.basename(savePath)
         self.viewer.record(dir, file_name)
+
+    def setModelColor(self, color=None):
+        color = [0, 0, 1] if color is None else color
+        bodyNodes = self.skel.getBodyNodes()
+        for bodyNode in bodyNodes:
+            shapeNodes = bodyNode.getShapeNodes()
+            for shapeNode in shapeNodes:
+                shapeNode.getVisualAspect().setColor(color)

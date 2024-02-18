@@ -29,21 +29,42 @@ class ForceUpdate(object):
         qd,
         qd_dot,
         qd_ddot,
-        method="PD",
+        skel,
+        method="StablePD",  #  PD, FeedbackLinearization, StablePD,
     ):
         # update skeleton
-        self.updateSkeleton(q, q_dot, q_ddot)
+        # self.updateSkeleton(q, q_dot, q_ddot)
         # compute forces
         if method == "FeedbackLinearization":
             # reference : Shiyu Jin et al., Real-time State Estimation of Deformable Objects with Dynamical Simulation, IROS, 2020
+            # q += q_dot * self.skel.getTimeStep()
             tau = (
-                self.skel.getMassMatrix() @ qd_ddot
-                + self.skel.getCoriolisAndGravityForces()
-                + self.Kp * (qd - q)
-                + self.Kd * (qd_dot - q_dot)
+                skel.getMassMatrix() @ skel.getAccelerations()
+                + skel.getCoriolisAndGravityForces()
+                + self.Kp * (qd - skel.getPositions())
+                + self.Kd * (qd_dot - skel.getVelocities())
             )
         if method == "PD":
-            # reference : Shiyu Jin et al., Real-time State Estimation of Deformable Objects with Dynamical Simulation, IROS, 2020
             tau = self.Kp * (qd - q) - self.Kd * (q_dot)
 
+        if method == "StablePD":
+            q = skel.getPositions()
+            q += skel.getVelocities() * self.skel.getTimeStep()
+            qError = qd - q
+            dqError = -skel.getVelocities()
+            M = skel.getMassMatrix()
+            Cg = skel.getCoriolisAndGravityForces()
+            tau = np.zeros((skel.getNumDofs()))
+            tau = M @ (self.Kp * qError + self.Kd * dqError) + Cg
+            # # cartesian controller
+            # cartesianError = qd[3:6] - q[3:6]
+            # cartesianVelocityError = qd_dot[3:6] - q_dot[3:6]
+            # tau[3:6] = self.skel.getMass() * (
+            #     self.Kp * qError[3:6] + self.Kd * dqError[3:6]
+            # )
+
+            # # joint space controller
+            # tau[6:] = (
+            #     M[6:, 6:] @ (self.Kp * qError[6:] + self.Kd * dqError[6:]) + Cg[6:]
+            # )
         return tau

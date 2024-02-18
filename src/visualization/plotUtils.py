@@ -137,6 +137,29 @@ def scale_axes_to_fit(ax, points, zoom=1):
     return ax
 
 
+def get_tex_fonts():
+    textwidth_in_pt = 483.6969
+    figureScaling = 0.45
+    latexFontSize_in_pt = 14
+    latexFootNoteFontSize_in_pt = 10
+    desiredFigureWidth = figureScaling * textwidth_in_pt
+    desiredFigureHeight = figureScaling * textwidth_in_pt
+    tex_fonts = {
+        #    "pgf.texsystem": "pdflatex",
+        # Use LaTeX to write all text
+        "text.usetex": True,
+        "font.family": "serif",
+        # Use 10pt font in plots, to match 10pt font in document
+        "axes.labelsize": latexFontSize_in_pt,
+        "font.size": latexFontSize_in_pt,
+        # Make the legend/label fonts a little smaller
+        "legend.fontsize": latexFootNoteFontSize_in_pt,
+        "xtick.labelsize": latexFootNoteFontSize_in_pt,
+        "ytick.labelsize": latexFootNoteFontSize_in_pt,
+    }
+    return tex_fonts
+
+
 def set_text_to_latex_font(scale_text=None, scale_axes_labelsize=None):
 
     scale_text = 1 if scale_text is None else scale_text

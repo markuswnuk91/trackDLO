@@ -13,10 +13,13 @@ except:
     raise
 
 visualize = True
+method = "StablePD"  # PD, LinearizedFeedback, StablePD
+Kp = 300  # 0.1
+Kd = 100  # 0.01
 
 
 class TrackingWorldNode(dart.gui.osg.RealTimeWorldNode):
-    def __init__(self, world, skel, Kp=3, Kd=0.01):
+    def __init__(self, world, skel, Kp=Kp, Kd=Kd):
         super(TrackingWorldNode, self).__init__(world)
         self.skel = skel
         self.ForceUpdate = ForceUpdate(skel.clone(), Kp, Kd)
@@ -27,23 +30,31 @@ class TrackingWorldNode(dart.gui.osg.RealTimeWorldNode):
         q_dot = self.skel.getVelocities()
         q_ddot = self.skel.getAccelerations()
         qd = np.zeros(self.skel.getNumDofs())
-        qd[5] = 0.1
+        qd[0] = 1
+        qd[3] = -1
         qd[6] = 1
         qd[9] = -1
+        qd[15] = 0
         qd_dot = np.zeros(self.skel.getNumDofs())
         qd_ddot = np.zeros(self.skel.getNumDofs())
         tauExt = self.ForceUpdate.computeExternalForceUpdateInGeneralizedCoordinates(
-            q, q_dot, q_ddot, qd, qd_dot, qd_ddot
+            q, q_dot, q_ddot, qd, qd_dot, qd_ddot, skel=self.skel, method=method
         )
         self.skel.setForces(tauExt)
-        self.skel.computeInverseDynamics()
 
 
 def testForceController():
     # create world
     world = dart.simulation.World()
     # create dlo
-    dlo = DeformableLinearObject(10, density=1)
+    dlo = DeformableLinearObject(
+        10,
+        density=10,
+        bendingStiffness=0,
+        torsionalStiffness=0,
+        bendingDampingCoeffs=0,
+        torsionalDampingCoeffs=0,
+    )
     # setup viewer
     viewer = dart.gui.osg.Viewer()
     grid = dart.gui.osg.GridVisual()

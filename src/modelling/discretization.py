@@ -223,6 +223,7 @@ def determineNumSegments(
     total_length,
     minimal_bending_radius,
     max_tolerated_error,
+    verbose=False,
 ):
     n_segments = 1
     l_circle = np.pi * minimal_bending_radius
@@ -253,7 +254,8 @@ def determineNumSegments(
             calc_geometric_error(minimal_bending_radius, n_segments)
         )
         all_errors.append(errors)
-        print("Iteration {}/{}".format(iteration + 1, n_iterations - 1))
+        if verbose:
+            print("Iteration {}/{}".format(iteration + 1, n_iterations - 1))
 
     # determine max errors
     max_errors = []
@@ -262,7 +264,7 @@ def determineNumSegments(
         max_error = np.max(errors)
         max_errors.append(max_error)
     n = np.array(list(range(1, len(max_errors) + 1)))
-    plt.plot(n, max_errors, color="red")
+    # plt.plot(n, max_errors, color="red")
 
     # fit a exponential function
     def func(x, a, b, c):

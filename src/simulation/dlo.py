@@ -201,10 +201,11 @@ class DeformableLinearObject(object):
         self.segmentLengths.append(segmentLength)
 
         # set shapes
-        if (segmentLength - 2 * radius) <= 0:
+        jointRadius = 0.5 * radius
+        if (segmentLength - 2 * jointRadius) <= 0:
             bodyLength = segmentLength
         else:
-            bodyLength = segmentLength - 2 * radius
+            bodyLength = segmentLength - 2 * jointRadius
         self.setBodyShape_Cylinder(
             rootbody,
             radius=radius,
@@ -219,7 +220,7 @@ class DeformableLinearObject(object):
         tf.set_translation(bodyNodeCenter)
         rootjoint.setTransformFromChildBodyNode(tf)
 
-        self.setJointShape_Ball(body=rootbody, radius=radius, color=color)
+        self.setJointShape_Ball(body=rootbody, radius=jointRadius, color=color)
 
     def addBody(
         self,
@@ -266,10 +267,11 @@ class DeformableLinearObject(object):
         body.setCollidable(self.collidable)
         self.segmentLengths.append(segmentLength)
 
-        if (segmentLength - 2 * radius) <= 0:
+        jointRadius = 0.5 * radius
+        if (segmentLength - 2 * jointRadius) <= 0:
             bodyLength = segmentLength
         else:
-            bodyLength = segmentLength - 2 * radius
+            bodyLength = segmentLength - 2 * jointRadius
         self.setBodyShape_Cylinder(
             body,
             radius=radius,
@@ -283,7 +285,7 @@ class DeformableLinearObject(object):
         tf.set_translation(bodyNodeCenter)
         joint.setTransformFromChildBodyNode(tf)
 
-        self.setJointShape_Ball(body=body, radius=radius, color=color)
+        self.setJointShape_Ball(body=body, radius=jointRadius, color=color)
 
     def setJointShape_Ball(self, body, radius, color=[0, 0, 1]):
         ballShape = dart.dynamics.SphereShape(radius)

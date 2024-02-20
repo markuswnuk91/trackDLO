@@ -1042,6 +1042,29 @@ class BranchedDeformableLinearObject(BDLOTopology):
             raise NotImplementedError
         return dart.dynamics.BallJoint.convertToPositions(rotMat)
 
+    def convertIntrinsicEulerAnglesToBallJointPositions(
+        self, xRotAngle, yRotAngle, zRotAngle, degreesInRad=True
+    ):
+        if degreesInRad:
+            rotMat = R.from_euler("XYZ", [xRotAngle, yRotAngle, zRotAngle]).as_matrix()
+        else:
+            raise NotImplementedError
+        return dart.dynamics.BallJoint.convertToPositions(rotMat)
+
+    def setInitialPose(
+        self, initialPosition=np.array([0, 0, 0]), initialRotation=np.array([0, 0, 0])
+    ):
+        for i, pos in enumerate(initialPosition):
+            self.skel.setPosition(i + 3, pos)
+
+        q_rot = self.convertIntrinsicEulerAnglesToBallJointPositions(
+            initialRotation[0], initialRotation[1], initialRotation[2]
+        )
+        for i, rot in enumerate(q_rot):
+            q = self.skel.getPosition(i)
+            self.skel.setPosition(i, q + rot)
+        return
+
     def getSamplePositionsFromLocalCoordinates(self, S):
         K = self.getNumBranches()
         XSamples = []
@@ -1055,6 +1078,13 @@ class BranchedDeformableLinearObject(BDLOTopology):
                 x = self.getCartesianPositionFromBranchLocalCoordinate(b, s)
                 XSamples.append(x)
         return np.array(XSamples)
+
+    def setColor(self, color):
+        bodyNodes = self.skel.getBodyNodes()
+        for bodyNode in bodyNodes:
+            bodyNode.getShapeNode(0).getVisualAspect().setColor(color)
+            bodyNode.getShapeNode(1).getVisualAspect().setColor(color)
+        return
 
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):

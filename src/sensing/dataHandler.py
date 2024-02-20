@@ -162,6 +162,27 @@ class DataHandler(object):
             )
         return modelParameters
 
+    def getModelParameters(self, folderPath=None):
+        """returns the paramters to generate a BDLO model
+
+        Args:
+            folderPath (string): path to the folder containing a model.json file
+
+        Returns:
+            modelParameters (dict): models required for model generation
+        """
+        if folderPath is None:
+            folderPath = self.defaultLoadFolderPath
+        modelInfo = self.loadModelParameters("model.json", folderPath)
+        branchSpecs = list(modelInfo["branchSpecifications"].values())
+        adjacencyMatrix = modelInfo["topologyModel"]
+        modelParameters = {
+            "modelInfo": modelInfo,
+            "adjacencyMatrix": adjacencyMatrix,
+            "branchSpecs": branchSpecs,
+        }
+        return modelParameters
+
     def loadMarkerInformation(self, fileName, folderPath=None):
         if folderPath is None:
             folderPath = self.defaultLoadFolderPath

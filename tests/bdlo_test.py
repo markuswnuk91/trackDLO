@@ -265,5 +265,5 @@ if __name__ == "__main__":
     # test_TopologyGeneration_BranchedTopology()
     # test_TopologyGeneration_ElementaryGraph()
     # test_TopologyGeneration_ICRATopology()
-    # test_TopologyGeneration_ArenaTopology()
+    test_TopologyGeneration_ArenaTopology()
     test_CartesianPositionFunctions()

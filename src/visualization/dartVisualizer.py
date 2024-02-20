@@ -71,6 +71,30 @@ class DartVisualizer(object):
 
         self.world.addSimpleFrame(frame)
 
+    def addBox(
+        self,
+        sideLengths,
+        offset=None,
+        rotation=None,
+        color=None,
+    ):
+        color = [0, 0, 0] if color is None else color
+        offset = [0, 0, 0] if offset is None else offset
+        rotation = np.eye(3) if rotation is None else rotation
+
+        frame = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), name="Box")
+        boxShape = dart.dynamics.BoxShape(sideLengths)
+        boxShape.addDataVariance(dart.dynamics.BoxShape.DYNAMIC_COLOR)
+        frame.setShape(boxShape)
+
+        frame.createVisualAspect()
+        frame.getVisualAspect().setColor(color)
+
+        frame.setRelativeTranslation(offset)
+        frame.setRelativeRotation(rotation)
+        self.world.addSimpleFrame(frame)
+        return
+
     def run(self, visualize=True):
         while True:
             self.node.customPreRefresh()

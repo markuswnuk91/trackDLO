@@ -100,7 +100,7 @@ class CoherentPointDrift(NonRigidRegistration):
         **kwargs
     ):
         super().__init__(*args, **kwargs)
-        if alpha is not None and (not isinstance(alpha, numbers.Number) or alpha <= 0):
+        if alpha is not None and (not isinstance(alpha, numbers.Number) or alpha < 0):
             raise ValueError(
                 "Expected a positive value for regularization parameter alpha. Instead got: {}".format(
                     alpha

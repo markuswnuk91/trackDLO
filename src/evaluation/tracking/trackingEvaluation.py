@@ -18,7 +18,6 @@ try:
 
     from src.visualization.plot3D import *
     from src.visualization.plot2D import *
-    from src.visualization.plotImg import *
 except:
     print("Imports for class TrackingEvaluation failed.")
     raise
@@ -204,12 +203,12 @@ class TrackingEvaluation(Evaluation):
             reprojectionErrorResult["labeledFrames"] = framesToEvaluate
             reprojectionErrorResult["means"] = np.array(meanReprojectionErrorPerFrame)
             reprojectionErrorResult["stds"] = np.array(stdReprojectionErrorPerFrame)
-            reprojectionErrorResult[
-                "predictedMarkerCoordinates2D"
-            ] = predictedCoordinates2DPerFrame
-            reprojectionErrorResult[
-                "groundTruthMarkerCoordinates2D"
-            ] = groundTruthCoordinates2DPerFrame
+            reprojectionErrorResult["predictedMarkerCoordinates2D"] = (
+                predictedCoordinates2DPerFrame
+            )
+            reprojectionErrorResult["groundTruthMarkerCoordinates2D"] = (
+                groundTruthCoordinates2DPerFrame
+            )
             reprojectionErrorResult["reprojectionErrors"] = reprojectionErrorsPerFrame
             reprojectionErrorResult["targetPositions3D"] = targetPositions3D
             reprojectionErrorResult["B"] = B
@@ -236,9 +235,9 @@ class TrackingEvaluation(Evaluation):
             numCorrespondances = numPoints_Y * numPoints_X
             numCorrespondancesPerIteration.append(numCorrespondances)
         runtimeResults["numPointsPerIteration"] = numPointsPerIterations_Y
-        runtimeResults[
-            "numCorrespondancesPerIteration"
-        ] = numCorrespondancesPerIteration
+        runtimeResults["numCorrespondancesPerIteration"] = (
+            numCorrespondancesPerIteration
+        )
         return runtimeResults
 
     # ---------------------------------------------------------------------------

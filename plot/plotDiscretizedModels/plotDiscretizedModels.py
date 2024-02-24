@@ -53,6 +53,7 @@ if __name__ == "__main__":
         bdloModel = BranchedDeformableLinearObject(**modelParameters)
 
         # load model
+        print(total_length)
         print(numSegments)
         bdloModel.setInitialPose(
             initialPosition=[0.4, 0.4, 0.3], initialRotation=[np.pi / 2, 0, np.pi / 2]

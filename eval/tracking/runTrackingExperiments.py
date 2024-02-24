@@ -43,9 +43,9 @@ saveOpt = {
     #    "evaluationResults": True,
 }
 registrationsToRun = [
-    "cpd",
+    # "cpd",
     # "spr",
-    # "kpr",
+    "kpr",
     # "krcpd",
     # "krcpd4BDLO",
 ]  # cpd, spr, krcpd, krcpd4BDLO
@@ -411,6 +411,8 @@ if __name__ == "__main__":
                                 registrationMethod
                             )
                         )
+                else:
+                    registrationsSavePath = None
                 trackingResult = eval.runTracking(
                     dataSetPath=dataSetPath,
                     bdloModelParameters=bdloModelParameters,
@@ -436,9 +438,9 @@ if __name__ == "__main__":
                             existingTrackingResults = results["trackingResults"]
                             for method in existingTrackingResults:
                                 if method not in registrationsToRun:
-                                    results["trackingResults"][
-                                        method
-                                    ] = existingTrackingResults[method]
+                                    results["trackingResults"][method] = (
+                                        existingTrackingResults[method]
+                                    )
                         else:
                             results["trackingResults"] = {}
                         results["trackingResults"][registrationMethod] = trackingResult

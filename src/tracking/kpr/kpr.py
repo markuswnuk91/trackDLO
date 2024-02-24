@@ -267,71 +267,89 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         # # set the new targets
         # self.computeTargets()
 
-        for n in range(0, self.ik_iterations):
-            delta_x_desired = np.mean(
-                self.PY / np.sum(self.P, axis=1)[:, np.newaxis], axis=0
-            ) - np.mean(self.T, axis=0)
-            dq_trans = delta_x_desired
-            self.q[3:6] = self.q[3:6] + dq_trans
-            self.computeTargets()
-            A = np.zeros((self.Dof, self.Dof))
-            B = np.zeros(self.Dof)
-            Jn_list = []
-            JnTJn_list = []
+        # # --------------------------------------
+        # for n in range(0, self.ik_iterations):
+        #     delta_x_desired = np.mean(
+        #         self.PY / np.sum(self.P, axis=1)[:, np.newaxis], axis=0
+        #     ) - np.mean(self.T, axis=0)
+        #     dq_trans = delta_x_desired
+        #     self.q[3:6] = self.q[3:6] + dq_trans
+        #     self.computeTargets()
+        #     A = np.zeros((self.Dof, self.Dof))
+        #     B = np.zeros(self.Dof)
+        #     Jn_list = []
+        #     JnTJn_list = []
 
+        #     for n in range(0, self.N):
+        #         Jn = self.model.getJacobian(self.q, n)
+        #         JnTJn = Jn.T @ Jn
+        #         JnTJn_weighted = JnTJn * self.P1[n]
+        #         A += JnTJn_weighted
+        #         Jn_list.append(self.model.getJacobian(self.q, n))
+        #         JnTJn_list.append(JnTJn)
+        #         B += Jn.T @ (self.P[n, :] @ (self.Y - self.T[n, :])).T
+
+        #     A += self.sigma2 * wStiffness * stiffnessMatrix
+        #     B += self.sigma2 * wStiffness * stiffnessMatrix @ (self.qInit - self.q)
+
+        #     # position constraints
+        #     if self.constraintNodeIndices is not None:
+        #         for i, constraintNodeIndex in enumerate(self.constraintNodeIndices):
+        #             Jc = self.model.getJacobian(self.q, constraintNodeIndex)
+        #             A += self.wConstraint * Jc.T @ Jc
+        #             B += (
+        #                 self.wConstraint
+        #                 * Jc.T
+        #                 @ (
+        #                     self.constrainedPositions[i]
+        #                     - self.T[constraintNodeIndex, :]
+        #                 )
+        #             )
+
+        #     # B += (
+        #     #     self.sigma2
+        #     #     * wStiffness
+        #     #     * stiffnessMatrix
+        #     #     @ (np.zeros(len(self.q)) - self.q)
+        #     # )
+
+        #     # t_matrix_assembly_end = time.time()
+        #     # print(
+        #     #     "Time for matrix assembly: {}".format(
+        #     #         t_matrix_assembly_end - t_matrix_assembly_start
+        #     #     )
+        #     # )
+        #     # t_pinv_start = time.time()
+        #     AInvDamped = dampedPseudoInverse(A, jacobianDamping)
+        #     # t_pinv_end = time.time()
+        #     # print("Time for matrix inversion: {}".format(t_pinv_end - t_pinv_start))
+        #     # ridge = Lasso(alpha=0.1)
+        #     # ridge.fit(A, B)
+        #     # self.dq = ridge.coef_
+        #     self.dq = AInvDamped @ B
+        #     self.dq[3:6] = np.zeros(3)
+        #     # update degrees of freedom
+        #     self.updateDegreesOfFreedom()
+        #     # set the new targets
+        #     self.computeTargets()
+        # self.update_variance()
+        # ----------------------------------
+        dP1 = np.diag(self.P1)
+        dP1Inv = np.linalg.inv(dP1)
+        X_d = self.T + dP1Inv @ (self.PY - np.dot(dP1, self.T))
+        for nit in range(0, self.ik_iterations):
+            J = []
             for n in range(0, self.N):
-                Jn = self.model.getJacobian(self.q, n)
-                JnTJn = Jn.T @ Jn
-                JnTJn_weighted = JnTJn * self.P1[n]
-                A += JnTJn_weighted
-                Jn_list.append(self.model.getJacobian(self.q, n))
-                JnTJn_list.append(JnTJn)
-                B += Jn.T @ (self.P[n, :] @ (self.Y - self.T[n, :])).T
-
-            A += self.sigma2 * wStiffness * stiffnessMatrix
-            B += self.sigma2 * wStiffness * stiffnessMatrix @ (self.qInit - self.q)
-
-            # position constraints
-            if self.constraintNodeIndices is not None:
-                for i, constraintNodeIndex in enumerate(self.constraintNodeIndices):
-                    Jc = self.model.getJacobian(self.q, constraintNodeIndex)
-                    A += self.wConstraint * Jc.T @ Jc
-                    B += (
-                        self.wConstraint
-                        * Jc.T
-                        @ (
-                            self.constrainedPositions[i]
-                            - self.T[constraintNodeIndex, :]
-                        )
-                    )
-
-            # B += (
-            #     self.sigma2
-            #     * wStiffness
-            #     * stiffnessMatrix
-            #     @ (np.zeros(len(self.q)) - self.q)
+                J_n = self.model.getJacobian(self.q, n)
+                J.append(J_n)
+            J = np.vstack(J)
+            # self.dq[:6] = dampedPseudoInverse(J[:, :6], 0.7) @ (
+            #     X_d.flatten() - self.T.flatten()
             # )
-
-            # t_matrix_assembly_end = time.time()
-            # print(
-            #     "Time for matrix assembly: {}".format(
-            #         t_matrix_assembly_end - t_matrix_assembly_start
-            #     )
-            # )
-            # t_pinv_start = time.time()
-            AInvDamped = dampedPseudoInverse(A, jacobianDamping)
-            # t_pinv_end = time.time()
-            # print("Time for matrix inversion: {}".format(t_pinv_end - t_pinv_start))
-            # ridge = Lasso(alpha=0.1)
-            # ridge.fit(A, B)
-            # self.dq = ridge.coef_
-            self.dq = AInvDamped @ B
-            self.dq[3:6] = np.zeros(3)
-            # update degrees of freedom
+            self.dq = dampedPseudoInverse(J, 0.1) @ (X_d - self.T).flatten()
+            self.dq[3:6] = np.mean(dP1Inv @ self.PY, axis=0) - np.mean(self.T, axis=0)
             self.updateDegreesOfFreedom()
-            # set the new targets
             self.computeTargets()
-
         self.update_variance()
         if self.logging:
             self.log["q"].append(self.q)
@@ -364,7 +382,7 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         self.sigma2 = (xPx - 2 * trPXY + yPy) / (self.Np * self.D)
 
         if self.sigma2 <= 0:
-            self.sigma2 = self.tolerance / 10
+            self.sigma2 = self.tolerance
 
         # self.diff = np.abs(self.sigma2 - qprev) # comment in to use variance to test convergence
 

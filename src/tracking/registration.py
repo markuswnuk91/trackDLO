@@ -262,6 +262,7 @@ class NonRigidRegistration(object):
             self.P1 = np.sum(self.P, axis=1)
             self.Np = np.sum(self.P1)
             self.PY = np.matmul(self.P, self.Y)
+        return self.P
 
     def computeTargets(self):
         """

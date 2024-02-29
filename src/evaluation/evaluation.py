@@ -1159,6 +1159,7 @@ class Evaluation(object):
         registrationResult["runtimes"] = registration.runTimes[
             "runtimesPerRegistration"
         ]
+        registrationResult["P"] = registration.P.copy()
         return registrationResult
 
     def runTracking(

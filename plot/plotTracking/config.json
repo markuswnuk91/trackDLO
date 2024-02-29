@@ -89,7 +89,7 @@
     },
 
     "cpdParameters" : {
-        "max_iterations":10,
+        "max_iterations":100,
         "alpha": 1, 
         "beta": 0.5,
         "mu": 0.1,
@@ -97,7 +97,7 @@
         "sigma2": 0.001
     },
     "sprParameters" : {
-        "max_iterations":1,
+        "max_iterations":100,
         "tauFactor": 1000,
         "lambdaFactor": 1,
         "beta": 0.5,
@@ -110,15 +110,15 @@
     },
     "kprParameters" : {
         "max_iterations":100,
-        "wStiffness":1,
-        "stiffnessAnnealing": 0.7,
+        "wStiffness":1000,
+        "stiffnessAnnealing": 0.9,
         "ik_iterations":10,
         "damping":0.1,
         "dampingAnnealing":0.7,
         "minDampingFactor": 0.1,
         "mu": 0.01,
         "normalize": 0,
-        "sigma2": 0.001
+        "sigma2": 0.01
     },
     "krcpdParameters" : {
         "max_iterations":1,

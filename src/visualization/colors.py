@@ -33,12 +33,24 @@ thesisColorPalettes = {
         cmap=matplotlib.colormaps["viridis"],
         norm=matplotlib.colors.Normalize(vmin=0, vmax=1),
     ),
+    "viridis_r": plt.cm.ScalarMappable(
+        cmap=matplotlib.colormaps["viridis_r"],
+        norm=matplotlib.colors.Normalize(vmin=0, vmax=1),
+    ),
     "blue": plt.cm.ScalarMappable(
         cmap=matplotlib.colormaps["Blues"],
         norm=matplotlib.colors.Normalize(vmin=0, vmax=1),
     ),
     "red": plt.cm.ScalarMappable(
         cmap=matplotlib.colormaps["Reds"],
+        norm=matplotlib.colors.Normalize(vmin=0, vmax=1),
+    ),
+    "grey": plt.cm.ScalarMappable(
+        cmap=matplotlib.colormaps["Greys"],
+        norm=matplotlib.colors.Normalize(vmin=0, vmax=1),
+    ),
+    "green": plt.cm.ScalarMappable(
+        cmap=matplotlib.colormaps["Greens"],
         norm=matplotlib.colors.Normalize(vmin=0, vmax=1),
     ),
 }

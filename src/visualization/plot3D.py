@@ -7,6 +7,7 @@ try:
     sys.path.append(os.getcwd().replace("/src/visualization", ""))
     from src.visualization.plotUtils import *
     from src.visualization.colors import *
+    from src.modelling.topologyModel import topologyModel
 except:
     print("Imports for Plot3D File failed.")
     raise
@@ -15,6 +16,7 @@ except:
 def setupLatexPlot3D(
     figureWidth=483.6969,
     figureHeight=None,
+    widthHeightRatio=None,
     axisLimX=[0, 1],
     axisLimY=[0, 1],
     axisLimZ=[0, 1],
@@ -26,10 +28,12 @@ def setupLatexPlot3D(
     yTickStep=None,
     zTickStep=None,
 ):
+    widthHeightRatio = 1 if widthHeightRatio is None else widthHeightRatio
     if figureHeight is not None:
-        fig = plt.figure(figsize=set_size(width=figureWidth, height=figureHeight))
+        width, height = set_size(width=figureWidth, height=figureHeight)
     else:
-        fig = plt.figure(figsize=set_size(width=figureWidth))
+        width, height = set_size(width=figureWidth)
+    fig = plt.figure(figsize=(width, height))
     ax = fig.add_subplot(projection="3d")
 
     # set view angle
@@ -159,6 +163,7 @@ def plotPointSet(
     edgeColor=None,
     size=None,
     markerStyle=None,
+    lineWidth=None,
     alpha=None,
     label: str = None,
     zOrder=None,
@@ -168,7 +173,7 @@ def plotPointSet(
     alpha = 1 if alpha is None else alpha
     edgeColor = color if edgeColor is None else edgeColor
     zOrder = 1 if zOrder is None else zOrder
-
+    lineWidth = 1.5 if lineWidth is None else lineWidth
     if X.shape[1] == 3:
         if label is None:
             ax.scatter(
@@ -180,6 +185,7 @@ def plotPointSet(
                 s=size,
                 marker=markerStyle,
                 edgecolors=edgeColor,
+                linewidth=lineWidth,
                 zorder=zOrder,
             )
         else:
@@ -516,6 +522,72 @@ def plotVector(ax, origin, direction, length=None, color=None):
     )
 
 
+def plotArrow3D(
+    ax,
+    startPoint,
+    endPoint,
+    size=None,
+    color=None,
+    alpha=None,
+    fillColor=None,
+    arrowStyle=None,
+    lineStyle=None,
+):
+    color = [0, 0, 0] if color is None else color
+    alpha = 1 if alpha is None else alpha
+    size = 20 if size is None else size
+    arrowStyle = "-|>" if arrowStyle is None else arrowStyle
+    lineStyle = "dashed" if lineStyle is None else lineStyle
+    fillColor = None if fillColor is None else fillColor
+    drawArrow3D(
+        ax,
+        startPoint[0],
+        startPoint[1],
+        startPoint[2],
+        endPoint[0] - startPoint[0],
+        endPoint[1] - startPoint[1],
+        endPoint[2] - startPoint[2],
+        mutation_scale=size,
+        arrowstyle=arrowStyle,
+        linestyle=lineStyle,
+        ec=color,
+        fc=fillColor,
+        alpha=alpha,
+    )
+
+
+def plotArrows3D(
+    ax,
+    startPoints,
+    endPoints,
+    size=None,
+    color=None,
+    alpha=None,
+    fillColor=None,
+    arrowStyle=None,
+    lineStyle=None,
+):
+    color = [0, 0, 0] if color is None else color
+    alpha = 1 if alpha is None else alpha
+    size = 20 if size is None else size
+    arrowStyle = "-|>" if arrowStyle is None else arrowStyle
+    lineStyle = "-" if lineStyle is None else lineStyle
+    fillColor = None if fillColor is None else fillColor
+    for x_start, x_end in zip(startPoints, endPoints):
+        # if np.linalg.norm(x_old - x_new) > 0.05:
+        plotArrow3D(
+            ax=ax,
+            startPoint=x_start,
+            endPoint=x_start,
+            size=size,
+            color=color,
+            alpha=alpha,
+            fillColor=fillColor,
+            arrowStyle=arrowStyle,
+            lineStyle=lineStyle,
+        )
+
+
 def plotGraph3D(
     ax,
     X,
@@ -524,6 +596,7 @@ def plotGraph3D(
     lineColor=None,
     pointSize=None,
     lineWidth=None,
+    lineStyle=None,
     pointAlpha=None,
     lineAlpha=None,
     zOrder=None,
@@ -534,15 +607,14 @@ def plotGraph3D(
     lineWidth = 1.5 if lineWidth is None else lineWidth
     pointAlpha = 1 if pointAlpha is None else pointAlpha
     lineAlpha = 1 if lineAlpha is None else lineAlpha
+    lineStyle = "-" if lineStyle is None else lineStyle
     zOrder = 1 if zOrder is None else zOrder
     plotPointSet(
         ax=ax, X=X, color=pointColor, size=pointSize, alpha=pointAlpha, zOrder=zOrder
     )
-    i = 0
-    j = 0
     I, J = adjacencyMatrix.shape
     for i in range(0, I):
-        for j in range(0, J):
+        for j in range(i, J):
             if adjacencyMatrix[i, j] != 0:
                 plotLine(
                     ax=ax,
@@ -550,9 +622,55 @@ def plotGraph3D(
                     color=lineColor,
                     linewidth=lineWidth,
                     alpha=lineAlpha,
+                    lineStyle=lineStyle,
                     zOrder=zOrder,
                 )
     return
+
+
+# def plotBranchColoredGraph3D(
+#     ax,
+#     X,
+#     adjacencyMatrix,
+#     colorPalette=None
+#     pointColor=None,
+#     lineColor=None,
+#     pointSize=None,
+#     lineWidth=None,
+#     pointAlpha=None,
+#     lineAlpha=None,
+#     zOrder=None,
+# ):
+#     colorPalette = thesisColorPalettes["viridis"] if colorPalette is None else colorPalette
+#     pointColor = [0, 0, 1] if pointColor is None else pointColor
+#     lineColor = [0, 0, 1] if lineColor is None else lineColor
+#     pointSize = 10 if pointSize is None else pointSize
+#     lineWidth = 1.5 if lineWidth is None else lineWidth
+#     pointAlpha = 1 if pointAlpha is None else pointAlpha
+#     lineAlpha = 1 if lineAlpha is None else lineAlpha
+#     zOrder = 1 if zOrder is None else zOrder
+
+#     topology = topologyModel(adjacencyMatrix=adjacencyMatrix)
+#     topology.getBranchIndices()
+#     plotPointSet(
+#         ax=ax, X=X, color=pointColor, size=pointSize, alpha=pointAlpha, zOrder=zOrder
+#     )
+#     i = 0
+#     j = 0
+#     I, J = adjacencyMatrix.shape
+#     for i in range(0, I):
+#         for j in range(0, J):
+#             if adjacencyMatrix[i, j] != 0:
+#                 plotLine(
+#                     ax=ax,
+#                     pointPair=np.vstack((X[i, :], X[j, :])),
+#                     color=lineColor,
+#                     linewidth=lineWidth,
+#                     alpha=lineAlpha,
+#                     zOrder=zOrder,
+#                 )
+#                 plotPoint(ax=ax,color=)
+#     return
 
 
 def plotTopology3D(
@@ -599,7 +717,7 @@ def plotBranchWiseColoredTopology3D(
     if colorPalette is None:
         colorPalette = thesisColorPalettes["viridis"]
     zOrder = zOrder if zOrder is None else zOrder
-
+    pointAlpha = 1 if pointAlpha is None else pointAlpha
     connections = topology.getAdjacentPointPairsAndBranchCorrespondance()
     numBranches = topology.getNumBranches()
     colorScaleCoordinates = np.linspace(0, 1, numBranches)
@@ -642,6 +760,7 @@ def plotBranchWiseColoredTopology3D(
                 [stackedPair[0, 1]],
                 [stackedPair[0, 2]],
                 marker="o",
+                alpha=pointAlpha,
                 zorder=zOrder,
                 color=branchColors[branchIndex],
                 markersize=pointSize,
@@ -651,6 +770,7 @@ def plotBranchWiseColoredTopology3D(
                 [stackedPair[1, 1]],
                 [stackedPair[1, 2]],
                 marker="o",
+                alpha=pointAlpha,
                 zorder=zOrder,
                 color=branchColors[branchIndex],
                 markersize=pointSize,
@@ -692,5 +812,50 @@ def plotCorrespondances3D(
             color=correspondanceColor,
             linewidth=linewidth,
             alpha=lineAlpha,
+        )
+    return
+
+
+def plotCorrespondancesAsArrows3D(
+    ax,
+    X,
+    Y,
+    C=None,
+    xColor=None,
+    yColor=None,
+    correspondanceColor=None,
+    xSize=None,
+    ySize=None,
+    linestyle=None,
+    linewidth=None,
+    headSize=None,
+    xAlpha=None,
+    yAlpha=None,
+    lineAlpha=None,
+):
+    (N, D) = X.shape
+    C = np.eye(N, N) if C is None else C
+    xColor = [0, 0, 1] if xColor is None else xColor
+    yColor = [1, 0, 0] if yColor is None else yColor
+    correspondanceColor = (
+        [0.3, 0.3, 0.3] if correspondanceColor is None else correspondanceColor
+    )
+    linestyle = "-" if linestyle is None else linestyle
+    headSize = 20 if headSize is None else headSize
+    XCorresponding = C @ X
+    for x, y in zip(XCorresponding, Y):
+        plotPoint(ax=ax, x=x, color=xColor, alpha=xAlpha, size=xSize)
+        plotPoint(ax=ax, x=y, color=yColor, alpha=yAlpha, size=ySize)
+        drawArrow3D(
+            ax,
+            x[0],
+            x[1],
+            x[2],
+            y[0] - x[0],
+            y[1] - x[1],
+            y[2] - x[2],
+            mutation_scale=20,
+            arrowstyle="-|>",
+            linestyle=linestyle,
         )
     return

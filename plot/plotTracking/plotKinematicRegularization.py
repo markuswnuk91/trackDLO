@@ -92,6 +92,61 @@ def determineCorrespondanceColors(model, Y, P=None):
         return X_colors
 
 
+def colorBranchesWithLinearColorMap(model, Y, P):
+    bodyNodeIndices, correspondingBranches = (
+        model.getBranchCorrespondancesForBodyNodes()
+    )
+    branchColorMap = styleOpt["branchColorMap"]
+    bodyNodeIndices, correspondingBranches = (
+        model.getBranchCorrespondancesForBodyNodes()
+    )
+    # branchColors = []
+    # for branchIndex in range(0, model.getNumBranches()):
+    #     branchColor = styleOpt["branchColorMap"].to_rgba(
+    #         branchIndex / (model.getNumBranches() - 1)
+    #     )
+    #     branchColors.append(branchColor[:3])
+    # branchColorMaps = []
+    # for i, branchColor in enumerate(branchColors):
+    #     branchColor = np.array(branchColor + (1,))
+    #     endColor = branchColor + 0.7 * (np.array([1, 1, 1, 1]) - branchColor)
+    #     branchColorMap = LinearSegmentedColormap.from_list(
+    #         "branchColorMap_i", [branchColor, endColor]
+    #     )
+    #     norm = Normalize(vmin=0, vmax=1)  # Normalize values between 0 and 1
+    #     mapper = ScalarMappable(norm=norm, cmap=branchColorMap)
+    #     branchColorMaps.append(mapper)
+    X_colors = []
+    for n in bodyNodeIndices:
+        branchIndex = correspondingBranches[n]
+        nodeIndicesInBranchList = model.getBranchBodyNodeIndices(branchIndex)
+        nodeIndexInBranch = np.where(np.array(nodeIndicesInBranchList) == n)[0]
+        if model.isOuterBranch(model.getBranch(branchIndex)):
+            if branchIndex != 0:
+                nodeColor = branchColorMap.to_rgba(
+                    nodeIndexInBranch[0] / (len(nodeIndicesInBranchList) - 1)
+                )
+            else:
+                nodeColor = branchColorMap.to_rgba(
+                    (len(nodeIndicesInBranchList) - nodeIndexInBranch[0])
+                    / len(nodeIndicesInBranchList)
+                )
+        else:
+            nodeColor = branchColorMap.to_rgba(0)
+        X_colors.append(nodeColor)
+    if P is not None:
+        Y_colors = []
+        for m, y in enumerate(Y):
+            y_color = np.zeros(4)
+            for n in bodyNodeIndices:
+                y_color += P[n, m] * np.array(list(X_colors[n]))
+            y_color += (1 - np.sum(P[:, m])) * np.array([0.5, 0.5, 0.5, 0.9])
+            Y_colors.append(y_color)
+        return np.array(X_colors)[:, :3], np.array(Y_colors)[:, :3]
+    else:
+        return np.array(X_colors)[:, :3]
+
+
 if __name__ == "__main__":
     # load point set
     eval = TrackingEvaluation(evalConfigPath)
@@ -543,10 +598,11 @@ if __name__ == "__main__":
     if runOpt["plotKinematicRegularization"]:
         n_th_element = 5
         pointCloudColor = [1, 0, 0]
-        pointCloudAlpha = 0.5
+        pointCloudAlpha = 0.3
         nodeColor = [0, 0, 1]
         lineWidth = 2
-        set_text_to_latex_font(scale_text=1.3)
+        offset = np.array([-0.1, 0.0, 0])
+        set_text_to_latex_font(scale_text=1.5)
         oldConfigurationAlpha = 0.1
         X_init = initializationResult["localization"]["X"]
         q_init = initializationResult["localization"]["q"]
@@ -662,15 +718,18 @@ if __name__ == "__main__":
         reg = NonRigidRegistration(**{"X": X_pre, "Y": Y_pre})
         reg.sigma2 = 0.001
         fig_regularization_init, ax = setupLatexPlot3D()
-        X_colors, Y_colors = determineCorrespondanceColors(
-            model, Y_pre, P=reg.estimateCorrespondance()
+        # X_colors, Y_colors = determineCorrespondanceColors(
+        #     model, Y_pre, P=reg.estimateCorrespondance()
+        # )
+        X_colors, Y_colors = colorBranchesWithLinearColorMap(
+            model, Y_pre, reg.estimateCorrespondance().copy()
         )
         plotPointSet(
             ax=ax,
             X=X_pre,
             color=[1, 1, 1],
             size=nodeSize,
-            edgeColor=nodeColor,
+            edgeColor=X_colors,
             lineWidth=lineWidth,
         )
         plotPointSet(
@@ -684,7 +743,7 @@ if __name__ == "__main__":
             lineAlpha=0.5,
             lineStyle="--",
         )
-        scale_axes_to_fit(ax=ax, points=Y_pre, zoom=zoom)
+        scale_axes_to_fit(ax=ax, points=Y_pre + offset, zoom=zoom)
         ax.view_init(elev=90, azim=0)
         plt.axis("off")
         # create legend
@@ -692,20 +751,20 @@ if __name__ == "__main__":
         pointCloudMarker = mlines.Line2D(
             [],
             [],
-            color=[1, 0, 0],
+            color=pointCloudColor,
             marker=".",
             linestyle="None",
             markersize=1,
-            label=r"Point cloud",
+            label=r"Point cloud $\mathbf{Y}^t$",
         )
         gaussianCentroidMarker = mlines.Line2D(
             [],
             [],
             color=[1, 1, 1],
-            markeredgecolor=[0, 0, 1],
+            markeredgecolor=styleOpt["branchColorMap"].to_rgba(0)[:3],
             marker="o",
             linestyle="None",
-            label=r"Gaussian centroids",
+            label=r"Gaussian centroids  $\mathbf{X}^t$",
         )
         legendSymbols.append(pointCloudMarker)
         legendSymbols.append(gaussianCentroidMarker)
@@ -724,14 +783,17 @@ if __name__ == "__main__":
         reg.T = gmmResult["T"]
         reg.Y = gmmResult["Y"]
         reg.sigma2 = gmmResult["sigma2"]
-        X_colors, Y_colors = determineCorrespondanceColors(
-            model, Y_occluded, P=reg.estimateCorrespondance().copy()
+        X_colors, Y_colors = colorBranchesWithLinearColorMap(
+            model, Y_occluded, reg.estimateCorrespondance().copy()
         )
+        # determineCorrespondanceColors(
+        #     model, Y_occluded, P=reg.estimateCorrespondance().copy()
+        # )
         plotPointSet(
             ax=ax,
             X=gmmResult["T"],
             color=[1, 1, 1],
-            edgeColor=nodeColor,
+            edgeColor=X_colors,
             lineWidth=lineWidth,
         )
         plotPointSet(
@@ -751,15 +813,41 @@ if __name__ == "__main__":
         )
         ax.view_init(elev=90, azim=0)
         plt.axis("off")
-        scale_axes_to_fit(ax=ax, points=Y_pre, zoom=zoom)
+        scale_axes_to_fit(ax=ax, points=Y_pre + offset, zoom=zoom)
+        # create legend
+        legendSymbols = []
+        pointCloudMarker = mlines.Line2D(
+            [],
+            [],
+            color=pointCloudColor,
+            marker=".",
+            linestyle="None",
+            markersize=1,
+            label=r"Point cloud $\mathbf{Y}^{t+1}$",
+        )
+        gaussianCentroidMarker = mlines.Line2D(
+            [],
+            [],
+            color=[1, 1, 1],
+            markeredgecolor=styleOpt["branchColorMap"].to_rgba(0)[:3],
+            marker="o",
+            linestyle="None",
+            label=r"Gaussian centroids  $\mathbf{X}^{t+1}$",
+        )
+        legendSymbols.append(pointCloudMarker)
+        legendSymbols.append(gaussianCentroidMarker)
+        ax.legend(handles=legendSymbols, loc="upper left")
 
         # plot spr result
         fig_regularization_spr, ax = setupLatexPlot3D()
         reg.T = sprResult["T"]
         reg.Y = sprResult["Y"]
         reg.sigma2 = sprResult["sigma2"]
-        X_colors, Y_colors = determineCorrespondanceColors(
-            model, Y_occluded, P=reg.estimateCorrespondance().copy()
+        # X_colors, Y_colors = determineCorrespondanceColors(
+        #     model, Y_occluded, P=reg.estimateCorrespondance().copy()
+        # )
+        X_colors, Y_colors = colorBranchesWithLinearColorMap(
+            model, Y_occluded, sprResult["P"]
         )
         # plotPointSet(
         #     ax=ax, X=sprResult["X"], color=[1, 1, 1], edgeColor=[0, 0, 1], alpha=0.3
@@ -768,7 +856,7 @@ if __name__ == "__main__":
             ax=ax,
             X=sprResult["T"],
             color=[1, 1, 1],
-            edgeColor=[0, 0, 1],
+            edgeColor=X_colors,
             lineWidth=lineWidth,
         )
         plotPointSet(
@@ -801,9 +889,32 @@ if __name__ == "__main__":
             lineStyle="--",
         )
         # plotPointSet(ax=ax, X=Y_occluded, size=1, color=[1, 0, 0])
-        scale_axes_to_fit(ax=ax, points=Y_occluded, zoom=zoom)
+        scale_axes_to_fit(ax=ax, points=Y_occluded + offset, zoom=zoom)
         ax.view_init(elev=90, azim=0)
         plt.axis("off")
+        # create legend
+        legendSymbols = []
+        pointCloudMarker = mlines.Line2D(
+            [],
+            [],
+            color=pointCloudColor,
+            marker=".",
+            linestyle="None",
+            markersize=1,
+            label=r"Point cloud $\mathbf{Y}^{t+1}$",
+        )
+        gaussianCentroidMarker = mlines.Line2D(
+            [],
+            [],
+            color=[1, 1, 1],
+            markeredgecolor=styleOpt["branchColorMap"].to_rgba(0)[:3],
+            marker="o",
+            linestyle="None",
+            label=r"Gaussian centroids  $\mathbf{X}^{t+1}$",
+        )
+        legendSymbols.append(pointCloudMarker)
+        legendSymbols.append(gaussianCentroidMarker)
+        ax.legend(handles=legendSymbols, loc="upper left")
 
         # plot kpr result
         fig_regularization_kpr, ax = setupLatexPlot3D()
@@ -811,14 +922,17 @@ if __name__ == "__main__":
         reg.Y = kprResult["Y"]
         reg.sigma2 = kprResult["sigma2"]
         P_kpr = reg.estimateCorrespondance().copy()
-        X_colors, Y_colors = determineCorrespondanceColors(
-            model, Y_occluded, P=kprResult["P"]
+        # X_colors, Y_colors = determineCorrespondanceColors(
+        #     model, Y_occluded, P=kprResult["P"]
+        # )
+        X_colors, Y_colors = colorBranchesWithLinearColorMap(
+            model, Y_occluded, kprResult["P"]
         )
         plotPointSet(
             ax=ax,
             X=kprResult["T"],
             color=[1, 1, 1],
-            edgeColor=nodeColor,
+            edgeColor=X_colors,
             lineWidth=lineWidth,
         )
         plotPointSet(
@@ -845,9 +959,32 @@ if __name__ == "__main__":
         #     X=kprResult["T"],
         #     adjacencyMatrix=model.getBodyNodeNodeAdjacencyMatrix(),
         # )
-        scale_axes_to_fit(ax=ax, points=Y_occluded, zoom=zoom)
+        scale_axes_to_fit(ax=ax, points=Y_occluded + offset, zoom=zoom)
         ax.view_init(elev=90, azim=0)
         plt.axis("off")
+        # create legend
+        legendSymbols = []
+        pointCloudMarker = mlines.Line2D(
+            [],
+            [],
+            color=pointCloudColor,
+            marker=".",
+            linestyle="None",
+            markersize=1,
+            label=r"Point cloud $\mathbf{Y}^{t+1}$",
+        )
+        gaussianCentroidMarker = mlines.Line2D(
+            [],
+            [],
+            color=[1, 1, 1],
+            markeredgecolor=styleOpt["branchColorMap"].to_rgba(0)[:3],
+            marker="o",
+            linestyle="None",
+            label=r"Gaussian centroids  $\mathbf{X}^{t+1}$",
+        )
+        legendSymbols.append(pointCloudMarker)
+        legendSymbols.append(gaussianCentroidMarker)
+        ax.legend(handles=legendSymbols, loc="upper left")
 
         if saveOpt["savePlots"]:
             fig_regularization_init.savefig(

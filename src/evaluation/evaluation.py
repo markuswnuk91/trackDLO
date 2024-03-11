@@ -296,6 +296,16 @@ class Evaluation(object):
         rgbImg, _ = self.getDataSet(frame, dataSetFolderPath)
         return rgbImg
 
+    def getPreprocessor(self, configFilePath="config/calibration/"):
+        parameters = self.config["preprocessingParameters"]
+        preProcessor = PreProcessing(
+            defaultLoadFolderPath=configFilePath,
+            hsvFilterParameters=parameters["hsvFilterParameters"],
+            roiFilterParameters=parameters["roiFilterParameters"],
+            hsvPassThroughFilters=parameters["hsvPassThroughFilters"],
+        )
+        return preProcessor
+
     def getPointCloud(
         self, fileIdentifier, dataSetFolderPath, segmentationMethod="standard"
     ):

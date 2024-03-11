@@ -35,11 +35,20 @@ class PreProcessing(PointCloudProcessing, ImageProcessing):
             else calibrationParameters
         )
 
-        self.cameraParameters = (
-            self.loadCameraParameters("cameraParameters.json")
-            if cameraParameters is None
-            else cameraParameters
-        )
+        if self.defaultLoadFolderPath is None:
+            self.cameraParameters = (
+                self.loadCameraParameters(
+                    fileName="cameraParameters.json", folderPath="config/calibration/"
+                )
+                if cameraParameters is None
+                else cameraParameters
+            )
+        else:
+            self.cameraParameters = (
+                self.loadCameraParameters(fileName="cameraParameters.json")
+                if cameraParameters is None
+                else cameraParameters
+            )
         self.hsvFilterParameters = (
             self.getFilterDefaultValues_HSV()
             if hsvFilterParameters is None

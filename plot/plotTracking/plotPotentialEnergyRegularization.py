@@ -24,19 +24,19 @@ except:
     print("Imports for plotting kinematic regulatization for tracking chapter failed.")
     raise
 runOpt = {
-    "runInitialization": False,
+    "runInitialization": True,
     "runRegistrations": False,
     "saveInitializationResult": True,
     "saveRegistrationResults": True,
-    "plotCorrespondances": False,
-    "plotModelFitting": False,
-    "plotKinematicRegularization": True,
+    "runStiffness": True,
+    "runGravity": True,
+    "runServoConstraints": True,
 }
 visOpt = {"visualizeInitialLocalizationResult": False}
 saveOpt = {
     "savePlots": False,
-    "initializationResultPath": "data/plots/kinematicRegularization",
-    "saveFolderPath": "imgs/kinematicRegularization",
+    "initializationResultPath": "data/plots/physicalPlausibility",
+    "saveFolderPath": "imgs/physicalPlausibility",
     "dpi": 300,
 }
 styleOpt = {"branchColorMap": thesisColorPalettes["viridis"]}
@@ -44,11 +44,10 @@ n_th_element = 10
 nodeSize = 30
 edgeSize = 2
 evalConfigPath = "plot/plotTracking/config.json"
-# filePath = "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120351_790481_image_rgb.png"
-filePath_unoccluded = "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120411_389179_image_rgb.png"
-# "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_140014_arena/data/20230522_140157_033099_image_rgb.png"
-filePath_occluded = "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120419_158610_image_rgb.png"
-# "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_140014_arena/data/20230522_140355_166626_image_rgb.png"
+# filePath_unoccluded = "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120411_389179_image_rgb.png"
+filePath_unoccluded = "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_140014_arena/data/20230522_140238_164143_image_rgb.png"
+# filePath_occluded = "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120419_158610_image_rgb.png"
+filePath_occluded = "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_140014_arena/data/20230522_140313_145359_image_rgb.png"
 
 
 def determineCorrespondanceColors(model, Y, P=None):
@@ -154,6 +153,8 @@ if __name__ == "__main__":
     fileName_unoccluded = os.path.basename(filePath_unoccluded)
     dataSetFolderPath = os.path.dirname(os.path.dirname(filePath_unoccluded)) + "/"
     (Y, Y_colors) = eval.getPointCloud(fileName_unoccluded, dataSetFolderPath)
+    fileName_occluded = os.path.basename(filePath_occluded)
+    (Y_occluded, _) = eval.getPointCloud(fileName_occluded, dataSetFolderPath)
     # get inital configuration
     if runOpt["runInitialization"]:
         initializationResult = eval.runInitialization(
@@ -214,24 +215,88 @@ if __name__ == "__main__":
         ax.view_init(elev=90, azim=0)
         plt.show(block=True)
     kinematicModel = KinematicsModelDart(model.skel.clone())
-    kprParameters = {
-        "max_iterations": 100,
-        "wStiffness": 100,
-        "stiffnessAnnealing": 1,
-        "ik_iterations": 10,
-        "damping": 0.01,
-        "dampingAnnealing": 0.7,
-        "minDampingFactor": 0.01,
-        "mu": 0.01,
-        "normalize": 0,
-        "sigma2": 0.01,
-    }
-    kpr = KinematicsPreservingRegistration(
-        Y=Y_occluded,
-        qInit=initializationResult["localization"]["qInit"],
-        model=kinematicModel,
-        **kprParameters,
-    )
-    kpr.registerCallback(eval.getVisualizationCallback(kpr))
-    # kpr.register()
-    kprResult = eval.runRegistration(registration=kpr, checkConvergence=False)
+
+    if runOpt["runStiffness"]:
+        # stiffness regularizaiton
+        kprParameters_stiffness = {
+            "max_iterations": 100,
+            "wStiffness": 100,
+            "stiffnessAnnealing": 1,
+            "ik_iterations": 10,
+            "damping": 0.01,
+            "dampingAnnealing": 0.7,
+            "minDampingFactor": 0.01,
+            "mu": 0.01,
+            "normalize": 0,
+            "sigma2": 0.001,
+        }
+        kpr_stiffness = KinematicsPreservingRegistration(
+            Y=Y_occluded,
+            qInit=initializationResult["localization"]["qInit"],
+            model=kinematicModel,
+            **kprParameters_stiffness,
+        )
+        kpr_stiffness.registerCallback(eval.getVisualizationCallback(kpr_stiffness))
+        # kpr.register()
+        registrationResult_stiffness = eval.runRegistration(
+            registration=kpr_stiffness, checkConvergence=False
+        )
+
+    if runOpt["runGravity"]:
+        # gravitational regularization
+        kprParameters_gravity = {
+            "max_iterations": 100,
+            "wStiffness": 10,
+            "stiffnessAnnealing": 0.9,
+            "ik_iterations": 10,
+            "damping": 0.1,
+            "dampingAnnealing": 0.7,
+            "minDampingFactor": 0.01,
+            "mu": 0.01,
+            "normalize": 0,
+            "sigma2": 0.01,
+            "gravity": np.array([0, 0, -9.81]),
+            "wGravity": 1,
+            "gravitationalAnnealing": 1,
+        }
+        kpr_gravity = KinematicsPreservingRegistration(
+            Y=Y_occluded,
+            qInit=initializationResult["localization"]["qInit"],
+            model=kinematicModel,
+            **kprParameters_gravity,
+        )
+        kpr_gravity.registerCallback(eval.getVisualizationCallback(kpr_gravity))
+        # kpr.register()
+        registrationResult_gravitys = eval.runRegistration(
+            registration=kpr_gravity, checkConvergence=False
+        )
+
+    if runOpt["runServoConstraints"]:
+        # servo constraints
+        kprParameters_servo = {
+            "max_iterations": 100,
+            "wStiffness": 1,
+            "stiffnessAnnealing": 1,
+            "ik_iterations": 5,
+            "damping": 1,
+            "dampingAnnealing": 1,
+            "minDampingFactor": 0.01,
+            "mu": 0.01,
+            "normalize": 0,
+            "sigma2": 0.01,
+            "gravitationalAnnealing": 1,
+            "wConstraint": 100,
+            "constrainedNodeIndices": [33],
+            "constrainedPositions": [np.array([0, 0, 1])],
+        }
+        kpr_servo = KinematicsPreservingRegistration(
+            Y=Y_occluded,
+            qInit=initializationResult["localization"]["qInit"],
+            model=kinematicModel,
+            **kprParameters_servo,
+        )
+        kpr_servo.registerCallback(eval.getVisualizationCallback(kpr_servo))
+        # kpr.register()
+        registrationResult_servo = eval.runRegistration(
+            registration=kpr_servo, checkConvergence=False
+        )

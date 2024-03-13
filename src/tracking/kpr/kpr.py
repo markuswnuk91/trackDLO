@@ -131,9 +131,14 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         self.constraintNodeIndices = (
             None if constrainedNodeIndices is None else constrainedNodeIndices
         )
-        self.constrainedPositions = (
-            None if constrainedPositions is None else constrainedPositions
-        )
+        if isinstance(constrainedPositions, (list, type(None))):
+            self.constrainedPositions = (
+                None if constrainedPositions is None else constrainedPositions
+            )
+        else:
+            raise ValueError(
+                "Expected to obtain a list of np.arrays for as costraied positions."
+            )
         self.wCorrespondance = 1 if wCorrespondance is None else wCorrespondance
         self.wStiffness = 1 if wStiffness is None else wStiffness
         self.wGravity = 1 if wGravity is None else wGravity
@@ -279,7 +284,6 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             B = np.zeros(self.Dof)
             Jn_list = []
             JnTJn_list = []
-
             for n in range(0, self.N):
                 Jn = self.model.getJacobian(self.q, n)
                 JnTJn = Jn.T @ Jn
@@ -287,7 +291,9 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
                 A += JnTJn_weighted
                 Jn_list.append(self.model.getJacobian(self.q, n))
                 JnTJn_list.append(JnTJn)
-                B += Jn.T @ (self.P[n, :] @ (self.Y - self.T[n, :])).T
+                B += Jn.T @ (
+                    self.P[n, :] @ (self.Y - self.T[n, :])
+                ).T + wGravity * self.sigma2 * (Jn.T @ self.gravity)
 
             A += self.sigma2 * wStiffness * stiffnessMatrix
             B += self.sigma2 * wStiffness * stiffnessMatrix @ (self.qInit - self.q)
@@ -305,7 +311,6 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
                             - self.T[constraintNodeIndex, :]
                         )
                     )
-
             # B += (
             #     self.sigma2
             #     * wStiffness
@@ -327,9 +332,6 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             # ridge.fit(A, B)
             # self.dq = ridge.coef_
             self.dq = AInvDamped @ B
-            # self.dq[3:6] = np.zeros(3)
-            dP1 = np.diag(self.P1)
-            dP1Inv = np.linalg.inv(dP1)
             self.dq[3:6] = np.mean(
                 (self.PY - np.diag(self.P1) @ self.T), axis=0
             ) / np.sum(self.P)

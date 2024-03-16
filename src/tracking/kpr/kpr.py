@@ -90,9 +90,11 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         self,
         qInit,
         model,
+        q0=None,
         damping=None,
         stiffnessMatrix=None,
         gravity=None,
+        groundLevel=None,
         constrainedNodeIndices=None,
         constrainedPositions=None,
         wCorrespondance=None,
@@ -115,6 +117,8 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         self.qInit = qInit
         self.q = qInit.copy()
         self.dq = np.zeros(self.q.shape[0])
+        self.q0 = qInit if q0 is None else q0
+        self.groundLevel = np.array([0, 0, 0]) if groundLevel is None else groundLevel
         self.log = False if log is None else True
         self.model = model
         X = model.getPositions(self.qInit)
@@ -291,12 +295,16 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
                 A += JnTJn_weighted
                 Jn_list.append(self.model.getJacobian(self.q, n))
                 JnTJn_list.append(JnTJn)
-                B += Jn.T @ (
-                    self.P[n, :] @ (self.Y - self.T[n, :])
-                ).T + wGravity * self.sigma2 * (Jn.T @ self.gravity)
+                B += Jn.T @ (self.P[n, :] @ (self.Y - self.T[n, :])).T
+                # A += wGravity * JnTJn
+                B += (
+                    self.sigma2
+                    * wGravity
+                    * (Jn.T @ (self.gravity * (self.groundLevel - self.T[n, :])))
+                )
 
             A += self.sigma2 * wStiffness * stiffnessMatrix
-            B += self.sigma2 * wStiffness * stiffnessMatrix @ (self.qInit - self.q)
+            B += self.sigma2 * wStiffness * stiffnessMatrix @ (self.q0 - self.q)
 
             # position constraints
             if self.constraintNodeIndices is not None:

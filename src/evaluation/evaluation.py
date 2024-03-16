@@ -227,6 +227,10 @@ class Evaluation(object):
         labelInformation = self.dataHandler.loadFromJson(filePath)
         return labelInformation
 
+    def loadRobotState(self, filePath):
+        robotState = self.dataHandler.loadFromJson(filePath)
+        return robotState
+    
     def getLastLoadedDataPath(self):
         return self.getFilePath(
             self.currentLoadFileIdentifier, self.currentDataSetLoadPath

@@ -2,6 +2,8 @@ import sys, os
 import numpy as np
 import dartpy as dart
 import time
+from warnings import warn
+from scipy.spatial.transform import Rotation as R
 
 try:
     sys.path.append(os.getcwd().replace("/src/visualization", ""))
@@ -108,7 +110,8 @@ class DartVisualizer(object):
         self.viewer.setCameraHomePosition(eye, center, up)
 
     def showFrame(self, x=0, y=0, width=1200, height=900):
-        self.viewer.setUpViewInWindow(x, y, width, height)
+        if self.viewer is None:
+            self.viewer.setUpViewInWindow(x, y, width, height)
         self.viewer.frame()
 
     def runVisualization(self, x=0, y=0, width=1200, height=900):
@@ -226,10 +229,14 @@ class DartVisualizer(object):
 
 
 class DartScene(DartVisualizer):
-    def __init__(self, skel, q, loadRobot=True, loadCell=True, loadBoard=True):
+    def __init__(
+        self, skel, q, skelAlpha=None, loadRobot=True, loadCell=True, loadBoard=True
+    ):
         super().__init__()
 
         self.skel = skel
+        if skelAlpha is not None:
+            self.skel.setAlpha(skelAlpha)
         self.addSkeleton(self.skel)
         self.skel.setPositions(q)
 
@@ -254,6 +261,14 @@ class DartScene(DartVisualizer):
             boardSkel = urdfLoader.loadClipBoard()
             self.addSkeleton(boardSkel)
 
+    def loadFixture(self, x=0, y=0, z=0, rx=0, ry=0, rz=0, alpha=1):
+        urdfLoader = URDFLoader()
+        fixtureSkel = urdfLoader.loadFixture()
+        fixtureSkel.getRootJoint().setPositions(np.array([rx, ry, rz, x, y, z]))
+        fixtureSkel.setAlpha(alpha)
+        self.addSkeleton(fixtureSkel)
+        return
+
     def saveScene(self, savePath):
         self.showFrame()
         dir = os.path.dirname(savePath)
@@ -267,3 +282,12 @@ class DartScene(DartVisualizer):
             shapeNodes = bodyNode.getShapeNodes()
             for shapeNode in shapeNodes:
                 shapeNode.getVisualAspect().setColor(color)
+
+    def setRobotPosition(self, q_robot):
+        if self.robotSkel is not None:
+            self.robotSkel.setPositions(q_robot)
+        else:
+            warn(
+                "No robot loaded in Simulation yet. Cannot set robot position. First load the robot."
+            )
+        return

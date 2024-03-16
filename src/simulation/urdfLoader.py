@@ -166,10 +166,12 @@ class URDFLoader(object):
 
         skel.getRootJoint().setActuatorType(dart.dynamics.Joint.ActuatorType.LOCKED)
 
+        body = skel.getBodyNode(0)
+        body.setCollidable(False)
         return skel
 
-    def loadClip(self, clipNum = 1, modified = False, urdfFilePath = None): 
-        urdfFilePath = self.urdfFilePath if urdfFilePath is None else urdfFilePath 
+    def loadClip(self, clipNum=1, modified=False, urdfFilePath=None):
+        urdfFilePath = self.urdfFilePath if urdfFilePath is None else urdfFilePath
         folderName = "Clip" + str(clipNum)
         fileName = "Clip" + str(clipNum)
         if modified:
@@ -177,13 +179,13 @@ class URDFLoader(object):
             fileName = fileName + "_" + "modified"
         # Load the CableY from URDF File and place it accordingly to the demonstrator
         loader = dart.utils.DartLoader()
-        directoryPath = os.path.join(urdfFilePath,folderName)
+        directoryPath = os.path.join(urdfFilePath, folderName)
 
         # Raise error if Package Path is not available
         if not os.path.isdir(directoryPath):
             raise NotADirectoryError("Package path %s does not exist." % directoryPath)
 
-        packageName = "package://" + fileName + "/" + fileName +  ".urdf"
+        packageName = "package://" + fileName + "/" + fileName + ".urdf"
 
         loader.addPackageDirectory(folderName, directoryPath)
         skel = loader.parseSkeleton(packageName)

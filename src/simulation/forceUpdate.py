@@ -11,10 +11,12 @@ class ForceUpdate(object):
     -------------
     """
 
-    def __init__(self, dartSkel, Kp=None, Kd=None, *args, **kwargs):
+    def __init__(self, dartSkel, Kp=None, Kd=None, forceLimit=None, *args, **kwargs):
         self.skel = dartSkel
         self.Kp = 1 if Kp is None else Kp
         self.Kd = 0.1 if Kd is None else Kd
+        self.forceLimit = 0.1 if forceLimit is None else forceLimit
+        self.velocityLimit = np.pi / 10
 
     def updateSkeleton(self, q, q_dot, q_ddot):
         self.skel.setPositions(q)
@@ -35,6 +37,10 @@ class ForceUpdate(object):
         # update skeleton
         # self.updateSkeleton(q, q_dot, q_ddot)
         # compute forces
+        if np.any(np.abs(q_dot) > self.velocityLimit):
+            for i, vel in enumerate(q_dot):
+                q_dot[i] = np.sign(vel) * self.velocityLimit
+
         if method == "FeedbackLinearization":
             # reference : Shiyu Jin et al., Real-time State Estimation of Deformable Objects with Dynamical Simulation, IROS, 2020
             # q += q_dot * self.skel.getTimeStep()
@@ -45,7 +51,7 @@ class ForceUpdate(object):
                 + self.Kd * (qd_dot - skel.getVelocities())
             )
         if method == "PD":
-            tau = self.Kp * (qd - q) - self.Kd * (q_dot)
+            tau = self.Kp * (qd - q) - self.Kd * q_dot
 
         if method == "StablePD":
             q = skel.getPositions()
@@ -67,4 +73,8 @@ class ForceUpdate(object):
             # tau[6:] = (
             #     M[6:, 6:] @ (self.Kp * qError[6:] + self.Kd * dqError[6:]) + Cg[6:]
             # )
+        if np.any(np.abs(tau) > self.forceLimit):
+            indices = np.where(np.abs(tau) > self.forceLimit)[0]
+            for index in indices:
+                tau[index] = np.sign(tau[index]) * self.forceLimit
         return tau

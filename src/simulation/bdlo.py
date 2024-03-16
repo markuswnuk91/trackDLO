@@ -1086,6 +1086,12 @@ class BranchedDeformableLinearObject(BDLOTopology):
             bodyNode.getShapeNode(1).getVisualAspect().setColor(color)
         return
 
+    def setStiffnessForAllDof(self, stiffness):
+        dofs = self.skel.getDofs()
+        for dof in dofs:
+            dof.setSpringStiffness(stiffness)
+        return
+
 
 # class BranchedDeformableLinearObject(DeformableLinearObject):
 #     """

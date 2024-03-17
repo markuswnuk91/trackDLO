@@ -230,7 +230,15 @@ class DartVisualizer(object):
 
 class DartScene(DartVisualizer):
     def __init__(
-        self, skel, q, skelAlpha=None, loadRobot=True, loadCell=True, loadBoard=True
+        self,
+        skel,
+        q,
+        loadRobot=True,
+        loadCell=True,
+        loadBoard=True,
+        skelAlpha=None,
+        robotAlpha=None,
+        clipBoardAlpha=None,
     ):
         super().__init__()
 
@@ -249,6 +257,8 @@ class DartScene(DartVisualizer):
             # qRobot[6] = 1
             # qRobot[7] = 0
             self.robotSkel.setPositions(qRobot)
+            if robotAlpha is not None:
+                self.robotSkel.setAlpha(robotAlpha)
             self.addSkeleton(self.robotSkel)
 
         # load cell
@@ -259,6 +269,8 @@ class DartScene(DartVisualizer):
         # load board
         if loadBoard:
             boardSkel = urdfLoader.loadClipBoard()
+            if clipBoardAlpha is not None:
+                boardSkel.setAlpha(clipBoardAlpha)
             self.addSkeleton(boardSkel)
 
     def loadFixture(self, x=0, y=0, z=0, rx=0, ry=0, rz=0, alpha=1):

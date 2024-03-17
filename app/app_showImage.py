@@ -7,7 +7,7 @@ try:
 except:
     print("Imports for show image application failed.")
     raise
-image_file_path = "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_141025_arena/data/20230522_141433_852919_image_rgb.png"
+image_file_path = "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_141025_arena/data/20230522_141412_477433_image_rgb.png"
 
 if __name__ == "__main__":
 

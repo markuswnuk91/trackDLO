@@ -13,6 +13,17 @@ except:
     raise
 
 
+def print_axis_view_settings(ax):
+    print("axis limits:\n")
+    print(ax.get_xlim())
+    print(ax.get_ylim())
+    print(ax.get_zlim())
+
+    print("azimut and elevation:\n")
+    print(ax.azim)
+    print(ax.elev)
+
+
 def setupLatexPlot3D(
     figureWidth=483.6969,
     figureHeight=None,
@@ -87,6 +98,7 @@ def plotSinglePoint(
         zorder=zOrder,
         color=color,
         markersize=size,
+        markeredgecolor=edgeColor,
     )
 
 

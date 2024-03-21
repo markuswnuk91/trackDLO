@@ -28,6 +28,8 @@ class DartVisualizer(object):
         self.viewer.addAttachment(grid)
         self.viewer.setCameraHomePosition([8.0, 8.0, 4.0], [0, 0, -2.5], [0, 0, 1])
 
+        self.arrowList = []
+
     def setupViewer(
         self,
         worldNode,
@@ -50,12 +52,13 @@ class DartVisualizer(object):
     def addSkeleton(self, skel):
         self.world.addSkeleton(skel)
 
-    def addPointCloud(self, points, colors=None):
+    def addPointCloud(self, points, colors=None, size=None):
         """
         Visualize a PointCloud in DART
         """
         colors = [0, 0, 0] if colors is None else colors
-        pointCloudShape = dart.dynamics.PointCloudShape(0.005)
+        size = 0.005 if size is None else size
+        pointCloudShape = dart.dynamics.PointCloudShape(size)
         frame = dart.dynamics.SimpleFrame(
             dart.dynamics.Frame.World(), name="PointCloud"
         )
@@ -96,6 +99,61 @@ class DartVisualizer(object):
         frame.setRelativeRotation(rotation)
         self.world.addSimpleFrame(frame)
         return
+
+    def addSphere(
+        self,
+        radius,
+        offset=None,
+        color=None,
+    ):
+        color = [0, 0, 0] if color is None else color
+        offset = [0, 0, 0] if offset is None else offset
+
+        frame = dart.dynamics.SimpleFrame(dart.dynamics.Frame.World(), name="Sphere")
+        shape = dart.dynamics.SphereShape(radius)
+        shape.addDataVariance(dart.dynamics.BoxShape.DYNAMIC_COLOR)
+        frame.setShape(shape)
+
+        frame.createVisualAspect()
+        frame.getVisualAspect().setColor(color)
+
+        frame.setRelativeTranslation(offset)
+        self.world.addSimpleFrame(frame)
+        return
+
+    def addArrow(
+        self,
+        startPoint,
+        endPoint,
+        color=None,
+        radius=None,
+    ):
+        radius = 0.001 if radius is None else radius
+        color = [1, 0, 0] if color is None else color
+        arrowName = "arrow_" + str(len(self.arrowList))
+        arrowShapeProperties = dart.dynamics.ArrowShapeProperties(radius=radius)
+        simpleFrame = dart.dynamics.SimpleFrame(
+            dart.dynamics.Frame.World(), name=arrowName
+        )
+        simpleFrame.setShape(
+            dart.dynamics.ArrowShape(
+                startPoint,
+                endPoint,
+                arrowShapeProperties,
+            )
+        )
+        visual = simpleFrame.createVisualAspect()
+        visual.setColor(color)
+        self.world.addSimpleFrame(simpleFrame)
+        self.arrowList.append(simpleFrame)
+        return simpleFrame
+
+    def removeArrow(self, arrow):
+        self.world.removeSimpleFrame(arrow)
+        self.arrowList.remove(arrow)
+
+    def removearrow(self, name):
+        self.world.removeSimpleFrame()
 
     def run(self, visualize=True):
         while True:

@@ -3,6 +3,7 @@ import os
 import numpy as np
 import dartpy as dart
 from scipy.spatial.transform import Rotation as R
+from PIL import Image
 
 try:
     sys.path.append(os.getcwd().replace("/plot", ""))
@@ -25,12 +26,12 @@ runOpt = {
     "saveInitializationResult": True,
     "runRegistration": False,
     "saveRegistrationResult": True,
+    "runPointCloudVisualization": False,
     "runContactVisualization": True,
-    "runImpedanceControllerVisualization": False,
 }
 
 saveOpt = {
-    "savePlots": False,
+    "savePlots": True,
     "initializationResultPath": "data/plots/physicsSimulation",
     "saveFolderPath": "imgs/physicsSimulation",
     "dpi": 300,
@@ -42,19 +43,28 @@ filePath_RobotState = "data/darus_data_download/data/20230522_RoboticWireHarness
 evalConfigPath = "plot/plotTracking/config.json"
 setupDescriptionPath = "data/darus_data_download/data/20230522_RoboticWireHarnessMounting/20230522_141025_arena/setup.json"
 
+camEye = [0.35, 1.7, 1.7]
+camCenter = [0.35, 0, 0]
+camUp = [0, 0, 1]
+refImg = Image.open(saveOpt["saveFolderPath"] + "/realScene.png")
+width = refImg.size[0]
+height = refImg.size[1]
 
-def setupDartScene():
+
+def setupDartScene(skelAlpha=None, robotAlpha=None):
+    skelAlpha = 0.3 if skelAlpha is None else skelAlpha
+    robotAlpha = 0.5 if robotAlpha is None else robotAlpha
     robotState = eval.loadRobotState(filePath=filePath_RobotState)
     q_robot = robotState["q"]
     q_robot.append(0)
     q_robot.append(0)
     model.setStiffnessForAllDof(0)
-    model.setColor([1, 0.3, 0.3])
+    model.setColor([0.3, 0.3, 1])
     dartScene = DartScene(
         skel=model.skel.clone(),
         q=registrationResult["q"],
-        skelAlpha=0.3,
-        robotAlpha=0.5,
+        skelAlpha=skelAlpha,
+        robotAlpha=robotAlpha,
         loadCell=False,
     )
     dataHandler = DataHandler()
@@ -81,7 +91,7 @@ def setupDartScene():
     dartScene.setRobotPosition(robotState["q"])
 
     # dartScene.setCameraPosition(eye=[3, 0.3, 2], center=[0, 0, 0], up=[0, 0, 1])
-    dartScene.setCameraPosition(eye=[0.5, 1.8, 1.8], center=[0.5, 0, 0], up=[0, 0, 1])
+    dartScene.setCameraPosition(eye=camEye, center=camCenter, up=camUp)
     return dartScene
 
 
@@ -192,15 +202,39 @@ if __name__ == "__main__":
     constaintNodeIndices.append(constaintNodeIndices[-1] - 1)
     constaintPositions.append(constaintPositions[-1] + np.array([0, -0.05, 0]))
 
-    if runOpt["runImpedanceControllerVisualization"]:
+    if runOpt["runPointCloudVisualization"]:
+        pointCloudApha = 1
         pointCloudColor = [1, 0, 0]
-        dartScene = setupDartScene()
+        dartScene = setupDartScene(skelAlpha=0.3, robotAlpha=0.5)
         forceUpdate = ForceUpdate(
             dartSkel=model.skel.clone(), Kp=0.1, Kd=0.1, forceLimit=0.1
         )
+        dartScene.addPointCloud(points=Y_occluded, colors=[1, 0, 0], size=0.003)
+        for target in registrationResult["T"]:
+            dartScene.addSphere(radius=0.008, color=[0, 0, 1], offset=target)
+        # dartScene.addPointCloud(
+        #     points=registrationResult["T"], colors=[0, 0, 1], size=0.01
+        # )
+
+        if saveOpt["savePlots"]:
+            dartScene.showFrame()
+            saveFilePath = (
+                saveOpt["saveFolderPath"] + "/impedanceControllerVisualization"
+            )
+
+            dartScene.saveFrame(
+                saveFilePath,
+                eye=camEye,
+                center=camCenter,
+                up=camUp,
+                width=width,
+                height=height,
+            )
+        for step in range(0, 1000):
+            dartScene.showFrame()
 
     if runOpt["runContactVisualization"]:
-        pointCloudColor = [1, 0, 0]
+        pointCloudColor = [1, 0.1, 0.1]
         pointCloudApha = 1
         dartScene = setupDartScene()
         forceUpdate = ForceUpdate(
@@ -264,12 +298,36 @@ if __name__ == "__main__":
             contacts = dartScene.world.getLastCollisionResult().getContacts()
             contactPoints = []
             contactNormals = []
-            for i in range(0, len(contacts)):
-                contactPoints.append(contacts[i].point)
-                contactNormals.append(contacts[i].normal)
+            if len(dartScene.arrowList) > 0:
+                for arrow in dartScene.arrowList:
+                    dartScene.removeArrow(arrow)
+            for j in range(0, len(contacts)):
+                contactPoints.append(contacts[j].point)
+                contactNormals.append(contacts[j].normal)
+            for contactPoint, contactNormal in zip(
+                contactPoints[::5], contactNormals[::5]
+            ):
+                if np.linalg.norm(contactPoint) > 0.3:
+                    dartScene.addArrow(
+                        contactPoint,
+                        contactPoint
+                        - 0.05 * contactNormal / np.linalg.norm(contactNormal),
+                        pointCloudColor,
+                        radius=0.0015,
+                    )
             contactPoints = [
                 c.point for c in dartScene.world.getLastCollisionResult().getContacts()
             ]
-            contactPointCloudShape.setPoint(contactPoints)
+            # contactPointCloudShape.setPoint(contactPoints)
             dartScene.showFrame()
+
+            if saveOpt["savePlots"] and (step % 10 == 0) and step > 300:
+                dartScene.saveFrame(
+                    saveOpt["saveFolderPath"] + "/contactSim_" + str(step),
+                    eye=camEye,
+                    center=camCenter,
+                    up=camUp,
+                    width=width,
+                    height=height,
+                )
     print("Done.")

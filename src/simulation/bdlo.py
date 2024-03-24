@@ -1087,9 +1087,17 @@ class BranchedDeformableLinearObject(BDLOTopology):
         return
 
     def setStiffnessForAllDof(self, stiffness):
-        dofs = self.skel.getDofs()
-        for dof in dofs:
-            dof.setSpringStiffness(stiffness)
+        for i in range(0, self.skel.getNumJoints()):
+            joint = self.skel.getJoint(i)
+            for j in range(0, joint.getNumDofs()):
+                joint.setSpringStiffness(j, stiffness)
+        return
+
+    def setDampingForAllDof(self, damping):
+        for i in range(0, self.skel.getNumJoints()):
+            joint = self.skel.getJoint(i)
+            for j in range(0, joint.getNumDofs()):
+                joint.setDampingCoefficient(j, damping)
         return
 
 

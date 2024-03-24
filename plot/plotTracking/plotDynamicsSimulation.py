@@ -31,7 +31,7 @@ runOpt = {
 }
 
 saveOpt = {
-    "savePlots": True,
+    "savePlots": False,
     "initializationResultPath": "data/plots/physicsSimulation",
     "saveFolderPath": "imgs/physicsSimulation",
     "dpi": 300,
@@ -59,10 +59,12 @@ def setupDartScene(skelAlpha=None, robotAlpha=None):
     q_robot.append(0)
     q_robot.append(0)
     model.setStiffnessForAllDof(0)
+    model.setDampingForAllDof(0)
     model.setColor([0.3, 0.3, 1])
+    q = registrationResult["q"]
     dartScene = DartScene(
         skel=model.skel.clone(),
-        q=registrationResult["q"],
+        q=q,
         skelAlpha=skelAlpha,
         robotAlpha=robotAlpha,
         loadCell=False,
@@ -238,7 +240,7 @@ if __name__ == "__main__":
         pointCloudApha = 1
         dartScene = setupDartScene()
         forceUpdate = ForceUpdate(
-            dartSkel=model.skel.clone(), Kp=0.1, Kd=0.1, forceLimit=0.1
+            dartSkel=model.skel.clone(), Kp=10, Kd=1, forceLimit=100000
         )
 
         contactPointCloudShape = dart.dynamics.PointCloudShape(0.008)
@@ -256,11 +258,14 @@ if __name__ == "__main__":
         )
         dartScene.world.addSimpleFrame(pointCloudSimpleFrame)
 
+        q_old = dartScene.skel.getPositions().copy()
+        # dartScene.skel.setPositions(np.zeros(dartScene.skel.getNumDofs()))
+        qd = registrationResult["q"]
+        qd[5] -= 0.3
         for step in range(0, 1000):
             q = dartScene.skel.getPositions().copy()
             q_dot = dartScene.skel.getVelocities().copy()
             q_ddot = dartScene.skel.getAccelerations().copy()
-            qd = registrationResult["q"]
             qd_dot = np.zeros(dartScene.skel.getNumDofs())
             qd_ddot = np.zeros(dartScene.skel.getNumDofs())
             tauExt = forceUpdate.computeExternalForceUpdateInGeneralizedCoordinates(
@@ -270,17 +275,85 @@ if __name__ == "__main__":
                 qd,
                 qd_dot,
                 qd_ddot,
+                q_old=q_old,
                 skel=dartScene.skel,
-                method="PD",
+                method="StablePD",
             )
+            q_old = q.copy()
+            dartScene.skel.setForces(tauExt)
             # tauExt[:6] = np.zeros(6)
-            tauExt[6] = 0
+            # tauExt -= dartScene.skel.getGravityForces()
             # for i, dof in enumerate(dartScene.skel.getDof()):
             #     dof.setForce(float(0.0))
             # for i in range(6, dartScene.skel.getNumDofs() - 6):
             #     dof = dartScene.skel.getDof(i)
             #     dof.setForce(tauExt[i])
-            dartScene.skel.setForces(tauExt)
+            # dartScene.skel.setForces(dartScene.skel.getCoriolisAndGravityForces()
+            # dartScene.skel.setForces(tauExt)
+
+            # tauImp = np.zeros(dartScene.skel.getNumDofs())
+            # tauImp += dartScene.skel.getCoriolisAndGravityForces()
+            # tauImp -= dartScene.skel.getGravityForces()
+            # dartScene.skel.setForces(tauImp)
+            # # do not compensate gravity to visualize contacts
+            # # q = dartScene.skel.getPositions()
+            # # q += dartScene.skel.getVelocities() * dartScene.skel.getTimeStep()
+            # # qError = qd - q
+            # # Kp = 1000
+            # # tauImp += dartScene.skel.getMassMatrix() @ (Kp * qError)
+            # # tauImp += dartScene.skel.getMassMatrix() @ dartScene.skel.getAccelerations()
+            # for bodyNode, target in zip(
+            #     dartScene.skel.getBodyNodes(),
+            #     registrationResult["T"] + np.array([0, 0, -0.1]),
+            # ):
+            #     Kp = 100
+            #     Kd = 10
+            #     pos = bodyNode.getTransform().translation()
+            #     vel = bodyNode.getLinearVelocity()
+            #     pos += vel * dartScene.skel.getTimeStep()
+            #     acc = bodyNode.getLinearAcceleration()
+            #     vel += dartScene.skel.getLinearJacobian(bodyNode) @ (
+            #         dartScene.skel.getInvMassMatrix()
+            #         @ (
+            #             -dartScene.skel.getCoriolisAndGravityForces()
+            #             + dartScene.skel.getExternalForces()
+            #         )
+            #         * dartScene.skel.getTimeStep()
+            #     )
+            #     f = (
+            #         dartScene.skel.getLinearJacobian(bodyNode)
+            #         @ dartScene.skel.getMassMatrix()
+            #         @ dartScene.skel.getLinearJacobian(bodyNode).T
+            #         @ (Kp * (target - pos) - Kd * vel)
+            #     )
+            #     # f = Kp * (target - pos) - Kd * vel
+            #     tauImp += dartScene.skel.getMassMatrix() @ (
+            #         dartScene.skel.getLinearJacobian(bodyNode).T @ f
+            #     )
+            #     # tauImp += dartScene.skel.getLinearJacobian(bodyNode).T @ f
+
+            #     bodyNode.addExtForce(f)
+
+            # q = (
+            #     dartScene.skel.getPositions()
+            #     + dartScene.skel.getVelocities() * dartScene.skel.getTimeStep()
+            # )
+            # q_ddot = np.linalg.inv(
+            #     (
+            #         dartScene.skel.getMassMatrix()
+            #         + Kd * dartScene.skel.getTimeStep() * np.eye(len(q))
+            #     )
+            # ) @ (
+            #     -dartScene.skel.getCoriolisForces()
+            #     - Kp * (q - qd)
+            #     - Kd * dartScene.skel.getVelocities()
+            #     - dartScene.skel.getExternalForces()
+            # )
+            # tauImp = Kp * (qd - q) - (
+            #     Kd * dartScene.skel.getVelocities()
+            #     + q_ddot * dartScene.skel.getTimeStep()
+            # )
+            # dartScene.skel.setForces(tauImp)
 
             for i, bodyNodeIndex in enumerate(constaintNodeIndices):
                 bn = dartScene.skel.getBodyNode(bodyNodeIndex)
@@ -305,15 +378,15 @@ if __name__ == "__main__":
                 contactPoints.append(contacts[j].point)
                 contactNormals.append(contacts[j].normal)
             for contactPoint, contactNormal in zip(
-                contactPoints[::5], contactNormals[::5]
+                contactPoints[::2], contactNormals[::2]
             ):
                 if np.linalg.norm(contactPoint) > 0.3:
                     dartScene.addArrow(
                         contactPoint,
                         contactPoint
-                        - 0.05 * contactNormal / np.linalg.norm(contactNormal),
+                        - 0.08 * contactNormal / np.linalg.norm(contactNormal),
                         pointCloudColor,
-                        radius=0.0015,
+                        radius=0.0018,
                     )
             contactPoints = [
                 c.point for c in dartScene.world.getLastCollisionResult().getContacts()

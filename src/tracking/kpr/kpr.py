@@ -296,11 +296,16 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
                 Jn_list.append(self.model.getJacobian(self.q, n))
                 JnTJn_list.append(JnTJn)
                 B += Jn.T @ (self.P[n, :] @ (self.Y - self.T[n, :])).T
-                # A += wGravity * JnTJn
                 B += (
                     self.sigma2
                     * wGravity
-                    * (Jn.T @ (self.gravity * (self.groundLevel - self.T[n, :])))
+                    * Jn.T
+                    @ (
+                        (
+                            self.gravity
+                            @ np.diag(np.sign((self.groundLevel - self.T[n, :])))
+                        )
+                    )
                 )
 
             A += self.sigma2 * wStiffness * stiffnessMatrix

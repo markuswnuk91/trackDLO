@@ -1,60 +1,39 @@
 # TODOs
 
-## Plotting
-- [x] Setup callback: set assignment of variables to input arguments outside of base class
-- [ ] Make nice looking design for DLO plots for thesis
-- [x] Make Plot for discretization criteria: Continous DLO and corresponding discrete DLO
-- [x] Plot for model generation / BDLO Topologies
-- [x] Plot for Localization (Raw point coud --> random sample --> SOM --> L1 --> MinSpanTree)
+## Plotting script for evaluation metrics
+- [ ] Define name for error metric that measures cartesian distances between corresponding locations on the wire harness
+- [ ] Plot error error metric measuring cartesian distances between corresponding parts of the wire harness
+- [ ] Plot error metric measuring cartesian distance between two poses
+- [ ] Plot error metric measruing rotational distance between two poses
 
-## Modelling
-- [x] Code discrete DLO class
-- [x] discrete DLO class
-- [x] topology model for BDLO
+## Figure for ground truth by markers and labeling
 
-## Reconstruction
-- [x] reconstuction for continous DLO representation
-- [x] reconstuction for discrete DLO representation
-- [x] reconstruction for BDLO representation
+## Initialization experiments
+- [ ] write section
+- [ ] rework figure of low vs high noise and outlier ratio: more clearly convey the point that different backgrounds determine the ration of noise and outliers. (E.g. statistical graph showing the percentage of points that are outliers, or grah that shows the percentage of occlusion?) OR jsut reduce the complexity of the figure highlighting noise and outliers graphically.
+- [ ] Rework figure for representing the experiment workflow --> reduce to one example.
+- [ ] Rework figure for representing results as images --> reduce size by giving 3 esamples from low nosie and 3 examples from high noise.
+- [ ] Rework representation of results --> figure + diagram spit into low and high disturabene.
+- [ ] Change color scheme of figures
+- [ ] Rework table for result representation
+- [ ] Rework tabe for runtime evaluation
 
-## Simulation
-- [x] DLO model generation
-- [x] BDLO model generation
+## Tracking experiments
+- [ ] write section
+- [ ] figure for input data
+- [ ] rework figure for CPD / SPR / KPR comparison
+    - enlarge 3D visualization --> no axes
+    - color code the individual branches
+    - Do not visualize the reprojected result
+    - only one column with images make the rest be 3D plots
+- [ ] add figure to highlight differences between the 3 methods --> pick one frame where CPD / SPR perfrom badly --> showcase why.
+- [ ] change color scheme of the evaluation
+    - CPD -> black
+    - SPR -> dark blue
+    - KPR -> light blue
 
-## Tracking
-- [x] implement cpd
-- [x] implement spr
-- [x] implement bspr
-- [x] implement jacobian based registration methods
-- [ ] implement branched based correspondance estimation 
-
-## Localization
-- [x] transfer Self Organizing Map algorithm
-- [x] transfer L1-Median algorithm
-- [x] transfer MLLE algorithm
-- [x] implement filters
-- [x] transfer Minimum Spanning-Tree algorithms
-- [x] branch wise correspondance estimation
-- [x] heuristic for restarting downsampling if less or more branches than expected are foudn (less branches --> double the number of input points, more branches --> half the number of seedPoints)
-- [ ] localization based on reconstruction for BDLO
-
-## Validation
-- [x] determine Validation scenarios
-- [ ] implement evaluation 
-    - [ ] comparison of tracking performance of different algorithms (on static configurations and dynamic manipulation sequence)
-    - [ ] evaluation of accuracy and robustness of initial localization (on static configurations)
-    - [ ] comparison of tracking performance with and without inital localization (on static configurations)
-    - [ ] evaluation of overall pipeline (localizaiton + tracking) for robotic manipulation (grasping error)
-
-- [ ] determine performance metrics
-    - [x] Accuracy
-        - overall tracking error (coverage of point cloud by model)
-        - length error (error betwwen known length and measured length)
-        - uniformity error (error betwwen points)
-        - label error (error between label in point cloud and label on model)
-        - translational grasping error (translational error between estimated grasping position and measured grasping position)
-        - angular grasping error (angular error between estimated grasping position and measured grasping position)
-    - [ ] Runtime   
-
-## Data Acquisiton
-- [x] acquire data sets
+## Tracking experiments on pose estimation
+- [ ] write section
+- [ ] fill out result tables
+- [ ] Replot images with  color scheme for (CPD, SPR, KPR)
+- [ ] Plot a legend that clearly conveys the color scheme --> not in images

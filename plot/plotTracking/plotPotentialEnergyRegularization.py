@@ -33,13 +33,13 @@ runOpt = {
     "saveRegistrationResults": True,
     "runKPR": False,
     "runStiffness": False,
-    "runGravity": False,
+    "runGravity": True,
     "runServoConstraints": False,
     "physicsSimulation": False,
 }
 visOpt = {"visualizeInitialLocalizationResult": False}
 saveOpt = {
-    "savePlots": True,
+    "savePlots": False,
     "initializationResultPath": "data/plots/physicalPlausibility",
     "saveFolderPath": "imgs/physicalPlausibility",
     "dpi": 300,
@@ -320,7 +320,7 @@ if __name__ == "__main__":
             "gravity": np.array([0, 0, 9.81]),
             "wGravity": 10,
             "gravitationalAnnealing": 1,
-            "groundLevel": np.array([0, 0, -1]),
+            "groundLevel": np.array([0, 0, 0.0]),
             # "q0": model.getGeneralizedCoordinates(),
             # "wConstraint": 1000,
             # "constrainedNodeIndices": constaintNodeIndices,

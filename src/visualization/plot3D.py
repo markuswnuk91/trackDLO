@@ -2,7 +2,7 @@ import sys, os
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
-
+from warnings import warn
 try:
     sys.path.append(os.getcwd().replace("/src/visualization", ""))
     from src.visualization.plotUtils import *
@@ -624,6 +624,9 @@ def plotGraph3D(
     plotPointSet(
         ax=ax, X=X, color=pointColor, size=pointSize, alpha=pointAlpha, zOrder=zOrder
     )
+    #check if matrix is symmetric
+    if not np.allclose(adjacencyMatrix, adjacencyMatrix.T, rtol=1e-05, atol=1e-08):
+        warn("Provided adjacency matrix is not symmetric!")
     I, J = adjacencyMatrix.shape
     for i in range(0, I):
         for j in range(i, J):

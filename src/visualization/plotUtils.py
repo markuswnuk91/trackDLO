@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib as matplotlib
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d.proj3d import proj_transform
+from matplotlib.lines import Line2D
 
 
 def set_size(width, height=None, fraction=1, subplots=(1, 1)):
@@ -227,3 +228,20 @@ def drawArrow3D(ax, x, y, z, dx, dy, dz, *args, **kwargs):
 
     arrow = Arrow3D(x, y, z, dx, dy, dz, *args, **kwargs)
     ax.add_artist(arrow)
+
+
+def configureLegendSymbol(style, marker=None, markersize=None, color=None):
+    marker = "o" if marker is None else marker
+    color = [0, 0, 1] if color is None else color
+    markersize = 10 if markersize is None else markersize
+    if style == "pointWithLine":
+        legendSymbol = Line2D(
+            [0], [0], marker=marker, markersize=markersize, color=color
+        )
+    elif style == "pointWithoutLine":
+        legendSymbol = Line2D(
+            [0], [0], marker=marker, markersize=markersize, color=color, lw=0
+        )
+    elif style == "line":
+        legendSymbol = Line2D([0], [0], color=color)
+    return legendSymbol

@@ -123,12 +123,20 @@ if __name__ == "__main__":
                 color=color,
                 lineStyle=lineStyle,
             )
-        legendSymbol = Line2D(
+    markerConfig_1 = Line2D(
             [],
             [],
             color=color,
             linestyle="-",
         )
+    markerConfig_2 = 
+    markerCorrespondance = markerConfig_1 = Line2D(
+            [],
+            [],
+            color=color,
+            linestyle="-",
+        )
+    legendSymbols = [markerConfig_1, markerConfig_2, markerCorrespondance]
         legendSymbols.append(legendSymbol)
     legendSymbols.append(
         Line2D(

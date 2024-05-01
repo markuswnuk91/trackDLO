@@ -230,7 +230,7 @@ class Evaluation(object):
     def loadRobotState(self, filePath):
         robotState = self.dataHandler.loadFromJson(filePath)
         return robotState
-    
+
     def getLastLoadedDataPath(self):
         return self.getFilePath(
             self.currentLoadFileIdentifier, self.currentDataSetLoadPath
@@ -1734,8 +1734,14 @@ class Evaluation(object):
         else:
             plt.close(fig)
 
-    def saveImage(self, rgbImage, savePath, fileType=".png"):
-        cv2.imwrite(savePath + fileType, cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB))
+    def saveImage(self, rgbImage, savePath, fileType=".png", verbose=False):
+        success = cv2.imwrite(
+            savePath + fileType, cv2.cvtColor(rgbImage, cv2.COLOR_BGR2RGB)
+        )
+        if verbose and success:
+            print("Image successfulley written to: {}".format(savePath + fileType))
+        elif verbose and not success:
+            print("Failed writing image to {}".format(savePath + fileType))
 
     def plotTimeSeries(self, timeSeriesDataY, timeSeriesDataX=None, block=False):
         """Plots a time series of the given data

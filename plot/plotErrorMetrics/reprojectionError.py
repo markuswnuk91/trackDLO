@@ -9,6 +9,7 @@ try:
     from src.evaluation.initialLocalization.initialLocalizationEvaluation import (
         InitialLocalizationEvaluation,
     )
+    from src.visualization.plotUtils import *
     from src.visualization.plot3D import *
     from src.visualization.plot2D import *
     from src.visualization.colors import *
@@ -19,6 +20,7 @@ except:
 # configs
 global eval
 eval = InitialLocalizationEvaluation()
+runOpt = {"showPlots": True, "savePlots": True}
 resultFolderPaths = [
     "data/eval/initialLocalization/results/20230516_112207_YShape",
     "data/eval/initialLocalization/results/20230603_143937_modelY",
@@ -28,6 +30,7 @@ resultFolderPaths = [
     "data/eval/initialLocalization/results/20230516_115857_arena",
     "data/eval/initialLocalization/results/20230603_140143_arena",
 ]
+saveFolderPaths = ["imgs/errorMetrics/reprojectionError"]
 stlyeConfig = {
     "dataSet": 0,
     "frameConfig_1": 0,
@@ -35,7 +38,11 @@ stlyeConfig = {
     "colorConfig_1": [0, 0, 1],
     "colorConfig_2": [1, 0, 0],
     "colorErrors": [0.2, 0.2, 0.2],
+    "elev": 40,
+    "azim": 115,
+    "dpi": 150,
 }
+set_text_to_latex_font(scale_axes_labelsize=1.2)
 
 
 def plotReprojectionErrors(
@@ -82,7 +89,86 @@ def plotReprojectionErrors(
         predictionCircleRadius=10,
         groundTruthCircleRadius=10,
     )
-    return img
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    fig.subplots_adjust(
+        left=0.2, bottom=0.1, right=None, top=None, wspace=None, hspace=None
+    )
+    ax.set_xlabel("$[u] = px$")
+    ax.set_ylabel("$[v] = px$")
+    ax.imshow(img, cmap="gray", aspect="auto")
+    return fig, ax
+
+
+def plotPointWiseCartesianDistance(resultConfig_1, resultConfig_2):
+    fig, ax = setupLatexPlot3D(
+        figureWidth=600, xlabel="$[x] = m$", ylabel="$[y] = m$", zlabel="$[z] = m$"
+    )
+    # Y, _ = eval.getPointCloud(result["frame"], result["dataSetPath"])
+    model = eval.generateModel(resultConfig_1["modelParameters"])
+
+    # draw configuration 1
+    q = resultConfig_1["localizationResult"]["q"]
+    model.setGeneralizedCoordinates(q)
+    X_1, adjacencyMatrix = model.getJointPositionsAndAdjacencyMatrix()
+    adjacencyMatrix = adjacencyMatrix + adjacencyMatrix.T  # make matrix symmetric
+    plotGraph3D(
+        ax=ax,
+        X=X_1,
+        adjacencyMatrix=adjacencyMatrix,
+        pointColor=stlyeConfig["colorConfig_1"],
+    )
+
+    # fig, ax = setupLatexPlot3D()
+    # Y, _ = eval.getPointCloud(result["frame"], result["dataSetPath"])
+    model = eval.generateModel(resultConfig_2["modelParameters"])
+
+    # draw configuration 2
+    q = resultConfig_2["localizationResult"]["q"]
+    model.setGeneralizedCoordinates(q)
+    X_2, adjacencyMatrix = model.getJointPositionsAndAdjacencyMatrix()
+    adjacencyMatrix = adjacencyMatrix + adjacencyMatrix.T  # make matrix symmetric
+    plotGraph3D(
+        ax=ax,
+        X=X_2,
+        adjacencyMatrix=adjacencyMatrix,
+        pointColor=stlyeConfig["colorConfig_2"],
+        lineColor=stlyeConfig["colorConfig_2"],
+    )
+
+    plotCorrespondances3D(
+        ax=ax,
+        X=X_1,
+        Y=X_2,
+        C=np.eye(len(X_1)),
+        xColor=stlyeConfig["colorConfig_1"],
+        yColor=stlyeConfig["colorConfig_2"],
+        correspondanceColor=stlyeConfig["colorErrors"],
+    )
+    scale_axes_to_fit(ax=ax, points=X_1, zoom=1)
+    ax.view_init(elev=stlyeConfig["elev"], azim=stlyeConfig["azim"])
+    fig.subplots_adjust(
+        left=None, bottom=0.1, right=None, top=None, wspace=None, hspace=None
+    )
+
+    # create legend
+    markerConfig_1 = configureLegendSymbol(
+        style="pointWithLine", color=stlyeConfig["colorConfig_1"]
+    )
+    markerConfig_2 = configureLegendSymbol(
+        style="pointWithLine", color=stlyeConfig["colorConfig_2"]
+    )
+    markerCorrespondances = configureLegendSymbol(
+        style="line", color=stlyeConfig["colorErrors"]
+    )
+    legendSymbols = [markerConfig_1, markerConfig_2, markerCorrespondances]
+    ax.legend(
+        handles=legendSymbols,
+        labels=["Configuration 1", "Configuration 2", "Pointwise distances"],
+        # loc="upper right",
+        loc="upper center",
+    )
+    return fig, ax
 
 
 if __name__ == "__main__":
@@ -102,7 +188,27 @@ if __name__ == "__main__":
     backgroundImg = eval.getImage(
         resultConfig_2["frame"], resultConfig_2["dataSetPath"]
     )
-    reprojectionErrorImg = plotReprojectionErrors(
+    fig_2D, ax_2D = plotReprojectionErrors(
         img=backgroundImg, resultConfig_1=resultConfig_1, resultConfig_2=resultConfig_2
     )
-    eval.plotImageWithMatplotlib(rgbImage=reprojectionErrorImg, block=True)
+    fig_3D, ax_3D = plotPointWiseCartesianDistance(resultConfig_1, resultConfig_2)
+    if runOpt["showPlots"]:
+        plt.show(block=True)
+
+    if runOpt["savePlots"]:
+        # save image
+        savePath_2D = os.path.join(saveFolderPaths[0], "reprojectionError2D.pdf")
+        fig_2D.savefig(
+            savePath_2D, dpi=stlyeConfig["dpi"], format="pdf", bbox_inches="tight"
+        )
+
+        savePath_3D = os.path.join(saveFolderPaths[0], "cartesianDistances3D.pdf")
+        fig_3D.savefig(
+            savePath_3D,
+            dpi=stlyeConfig["dpi"],
+            format="pdf",
+            bbox_inches="tight",
+            pad_inches=0.3,
+        )
+        # eval.saveImage(rgbImage=reprojectionErrorImg, savePath=savePath, verbose=True)
+    print("Done.")

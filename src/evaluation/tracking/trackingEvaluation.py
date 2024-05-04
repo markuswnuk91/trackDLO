@@ -427,7 +427,7 @@ class TrackingEvaluation(Evaluation):
         # load image
         rgbImg = self.getDataSet(frame, dataSetPath)[0]  # load image
 
-        rgbImg = plotGraph2D(
+        rgbImg = plotGraph2_CV(
             rgbImg=rgbImg,
             positions2D=positions2D,
             adjacencyMatrix=adjacencyMatrix,

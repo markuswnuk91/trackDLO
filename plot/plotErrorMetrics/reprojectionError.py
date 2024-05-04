@@ -54,7 +54,7 @@ def plotReprojectionErrors(
     referencePositionsConfig_1 = eval.extractReferencePositions(resultConfig_1)
     adjacencyMatrixConfig_1 = referencePositionsConfig_1["adjacencyMatrix"]
     positions2DConfig_1 = referencePositionsConfig_1["jointCoordinates2D"]
-    img = plotGraph2D(
+    img = plotGraph2_CV(
         rgbImg=img,
         positions2D=positions2DConfig_1,
         adjacencyMatrix=adjacencyMatrixConfig_1,
@@ -68,7 +68,7 @@ def plotReprojectionErrors(
     referencePositionsConfig_2 = eval.extractReferencePositions(resultConfig_2)
     adjacencyMatrixConfig_2 = referencePositionsConfig_2["adjacencyMatrix"]
     positions2DConfig_2 = referencePositionsConfig_2["jointCoordinates2D"]
-    img = plotGraph2D(
+    img = plotGraph2_CV(
         rgbImg=img,
         positions2D=positions2DConfig_2,
         adjacencyMatrix=adjacencyMatrixConfig_2,
@@ -78,7 +78,7 @@ def plotReprojectionErrors(
         circleRadius=1,
     )
     # plot corresondances
-    img = plotCorrespondances2D(
+    img = plotCorrespondances2D_CV(
         rgbImg=img,
         predictionPixelCoordinates=positions2DConfig_1,
         groundTruthPixelCoordinates=positions2DConfig_2,

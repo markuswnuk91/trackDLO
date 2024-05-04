@@ -276,9 +276,9 @@ class InitialLocalizationEvaluation(Evaluation):
         }
         result["groundTruthMarkerCoordinates2D"] = groundTruthMarkerCoordinates2D
         result["predictedMarkerCoordinates2D"] = predictedMarkerCoordinates2D
-        result[
-            "correspondingPredictedMarkerCoordinates2D"
-        ] = predictedMarkerCoordinates2D[markerCoordinateIndices, :]
+        result["correspondingPredictedMarkerCoordinates2D"] = (
+            predictedMarkerCoordinates2D[markerCoordinateIndices, :]
+        )
         result["predictedMarkerPositions3D"] = predictedMarkerPositions3D
         result["meanReprojectionError"] = np.mean(reprojectionErrors)
         result["stdReprojectionError"] = np.std(reprojectionErrors)
@@ -337,7 +337,7 @@ class InitialLocalizationEvaluation(Evaluation):
         adjacencyMatrix = referencePositions["adjacencyMatrix"]
         positions2D = referencePositions["jointCoordinates2D"]
         rgbImg = self.getDataSet(frame, dataSetPath)[0]  # load image
-        rgbImg = plotGraph2D(
+        rgbImg = plotGraph2_CV(
             rgbImg=rgbImg,
             positions2D=positions2D,
             adjacencyMatrix=adjacencyMatrix,
@@ -382,7 +382,7 @@ class InitialLocalizationEvaluation(Evaluation):
             branchAdjacencyMatrix = np.array(
                 [[adjacencyMatrix[row][col] for col in indices] for row in indices]
             )
-            rgbImg = plotGraph2D(
+            rgbImg = plotGraph2_CV(
                 rgbImg=rgbImg,
                 positions2D=branchPositions,
                 adjacencyMatrix=branchAdjacencyMatrix,
@@ -400,7 +400,7 @@ class InitialLocalizationEvaluation(Evaluation):
         #     branchColors.append(colorPalette.to_rgba(s)[:3])
         # connections = topology.getAdjacentPointPairsAndBranchCorrespondance()
 
-        rgbImg = plotGraph2D(
+        rgbImg = plotGraph2_CV(
             rgbImg=rgbImg,
             positions2D=positions2D,
             adjacencyMatrix=adjacencyMatrix,
@@ -449,7 +449,7 @@ class InitialLocalizationEvaluation(Evaluation):
                 cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)[:, :, np.newaxis], [1, 1, 3]
             )
         # plot model configuraiton
-        rgbImg = plotGraph2D(
+        rgbImg = plotGraph2_CV(
             rgbImg=img,
             positions2D=positions2D,
             adjacencyMatrix=adjacencyMatrix,
@@ -459,7 +459,7 @@ class InitialLocalizationEvaluation(Evaluation):
             circleRadius=1,
         )
         # plot corresondances
-        rgbImg = plotCorrespondances2D(
+        rgbImg = plotCorrespondances2D_CV(
             rgbImg=img,
             predictionPixelCoordinates=predictionPixelCoordinates,
             groundTruthPixelCoordinates=groundTruthPixelCoordinates,

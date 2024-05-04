@@ -2,6 +2,7 @@ import sys, os
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
+from warnings import warn
 
 try:
     sys.path.append(os.getcwd().replace("/src/visualization", ""))
@@ -22,9 +23,11 @@ def setupLatexPlot2D(
     yTickStep=None,
 ):
     if figureHeight is not None:
-        fig = plt.figure(figsize=set_size(width=figureWidth, height=figureHeight))
+        width, height = set_size(width=figureWidth, height=figureHeight)
     else:
-        fig = plt.figure(figsize=set_size(width=figureWidth))
+        width, height = set_size(width=figureWidth)
+
+    fig = plt.figure(figsize=(width, height))
     ax = fig.add_subplot()
 
     if axisLimX is not None:
@@ -54,7 +57,97 @@ def plotImage(rgbImage):
     ax.imshow(rgbImage, aspect="auto")
 
 
+def plotPointSet2D(
+    ax,
+    X,
+    color=[0, 0, 1],
+    edgeColor=None,
+    size=None,
+    markerStyle=None,
+    lineWidth=None,
+    alpha=None,
+    label: str = None,
+    zOrder=None,
+):
+    size = 20 if size is None else size
+    markerStyle = "o" if markerStyle is None else markerStyle
+    alpha = 1 if alpha is None else alpha
+    edgeColor = color if edgeColor is None else edgeColor
+    zOrder = 1 if zOrder is None else zOrder
+    lineWidth = 1.5 if lineWidth is None else lineWidth
+
+    if label is None:
+        ax.scatter(
+            X[:, 0],
+            X[:, 1],
+            color=color,
+            alpha=alpha,
+            s=size,
+            marker=markerStyle,
+            edgecolors=edgeColor,
+            linewidth=lineWidth,
+            zorder=zOrder,
+        )
+    else:
+        ax.scatter(
+            X[:, 0],
+            X[:, 1],
+            color=color,
+            label=label,
+            alpha=alpha,
+            s=size,
+            marker=markerStyle,
+            edgecolor=None,
+            zorder=zOrder,
+        )
+
+
 def plotGraph2D(
+    ax,
+    X,
+    adjacencyMatrix,
+    pointColor=None,
+    lineColor=None,
+    pointSize=None,
+    lineWidth=None,
+    lineStyle=None,
+    pointAlpha=None,
+    lineAlpha=None,
+    zOrder=None,
+):
+    pointColor = [0, 0, 1] if pointColor is None else pointColor
+    lineColor = [0, 0, 1] if lineColor is None else lineColor
+    pointSize = 10 if pointSize is None else pointSize
+    lineWidth = 1.5 if lineWidth is None else lineWidth
+    pointAlpha = 1 if pointAlpha is None else pointAlpha
+    lineAlpha = 1 if lineAlpha is None else lineAlpha
+    lineStyle = "-" if lineStyle is None else lineStyle
+    zOrder = 1 if zOrder is None else zOrder
+
+    ax.scatter(
+        X[:, 0], X[:, 1], color=pointColor, s=pointSize, alpha=pointAlpha, zorder=zOrder
+    )
+    # check if matrix is symmetric
+    if not np.allclose(adjacencyMatrix, adjacencyMatrix.T, rtol=1e-05, atol=1e-08):
+        warn("Provided adjacency matrix is not symmetric. Making it symmetric.")
+        adjacencyMatrix = 0.5 * (adjacencyMatrix + adjacencyMatrix.T)
+    I, J = adjacencyMatrix.shape
+    for i in range(0, I):
+        for j in range(i, J):
+            if adjacencyMatrix[i, j] != 0:
+                ax.plot(
+                    [X[i, 0], X[j, 0]],
+                    [X[i, 1], X[j, 1]],
+                    color=lineColor,
+                    linewidth=lineWidth,
+                    alpha=lineAlpha,
+                    linestyle=lineStyle,
+                    zorder=zOrder,
+                )
+    return ax
+
+
+def plotGraph2_CV(
     rgbImg,
     positions2D,
     adjacencyMatrix,
@@ -102,7 +195,48 @@ def convertColorsOpenCV(colors):
     return convertedColors
 
 
-def plotCorrespondances2D(
+def plotMinimalDistances2D(
+    ax,
+    X,
+    Y,
+    correspondanceMatrix=None,
+    xColor=None,
+    yColor=None,
+    correspondanceColor=None,
+    xSize=None,
+    ySize=None,
+    linewidth=None,
+    xAlpha=None,
+    yAlpha=None,
+    lineAlpha=None,
+):
+    (N, D) = X.shape
+    (M, D) = Y.shape
+    correspondanceMatrix = (
+        np.eye(N, M) if correspondanceMatrix is None else correspondanceMatrix
+    )
+    xColor = [0, 0, 1] if xColor is None else xColor
+    yColor = [1, 0, 0] if yColor is None else yColor
+    correspondanceColor = (
+        [0.3, 0.3, 0.3] if correspondanceColor is None else correspondanceColor
+    )
+
+    for i in range(0, N):
+        for j in range(0, M):
+            if correspondanceMatrix[i, j] != 0:
+                ax.scatter(X[i, 0], X[i, 1], color=xColor, alpha=xAlpha, s=xSize)
+                ax.scatter(Y[j, 0], Y[j, 1], color=yColor, alpha=yAlpha, s=ySize)
+                ax.plot(
+                    [X[i, 0], Y[j, 0]],
+                    [X[i, 1], Y[j, 1]],
+                    color=correspondanceColor,
+                    linewidth=linewidth,
+                    alpha=lineAlpha,
+                )
+    return
+
+
+def plotCorrespondances2D_CV(
     rgbImg,
     predictionPixelCoordinates: np.array,
     groundTruthPixelCoordinates: np.array,

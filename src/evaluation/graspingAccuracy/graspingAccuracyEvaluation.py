@@ -544,7 +544,7 @@ class GraspingAccuracyEvaluation(Evaluation):
             branchAdjacencyMatrix = np.array(
                 [[adjacencyMatrix[row][col] for col in indices] for row in indices]
             )
-            rgbImg = plotGraph2D(
+            rgbImg = plotGraph2_CV(
                 rgbImg=rgbImg,
                 positions2D=branchPositions,
                 adjacencyMatrix=branchAdjacencyMatrix,

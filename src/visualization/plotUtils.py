@@ -48,6 +48,27 @@ def set_size(width, height=None, fraction=1, subplots=(1, 1)):
     return (fig_width_in, fig_height_in)
 
 
+def set_axes_equal2D(ax):
+    """Make axes of 2D plot have equal scale.
+
+    Input
+      ax: a matplotlib axis, e.g., as output from plt.gca().
+    """
+
+    x_limits = ax.get_xlim()
+    y_limits = ax.get_ylim()
+
+    x_range = abs(x_limits[1] - x_limits[0])
+    x_middle = np.mean(x_limits)
+    y_range = abs(y_limits[1] - y_limits[0])
+    y_middle = np.mean(y_limits)
+
+    plot_radius = 0.5 * max(x_range, y_range)
+
+    ax.set_xlim([x_middle - plot_radius, x_middle + plot_radius])
+    ax.set_ylim([y_middle - plot_radius, y_middle + plot_radius])
+
+
 def set_axes_equal3D(ax):
     """Make axes of 3D plot have equal scale so that spheres appear as spheres,
     cubes as cubes, etc..  This is one possible solution to Matplotlib's
@@ -81,7 +102,8 @@ def set_axes_equal(ax):
     if ax.name == "3d":
         set_axes_equal3D(ax)
     else:
-        ax.set_aspect("equal", adjustable="box")
+        set_axes_equal2D(ax)
+        ax.set_aspect("equal")
 
 
 def get_axis_limits(points):

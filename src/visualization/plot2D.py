@@ -33,12 +33,13 @@ def setupLatexPlot2D(
     if axisLimX is not None:
         # set axis limits
         ax.set_xlim(axisLimX[0], axisLimX[1])
-        ax.set_ylim(axisLimY[0], axisLimY[1])
 
     if axisLimY is not None:
-        # set axis lables
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
+        ax.set_ylim(axisLimY[0], axisLimY[1])
+
+    # set axis lables
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
     # set x ticks
     if xTickStep is not None:
@@ -106,7 +107,7 @@ def plotGraph2D(
     ax,
     X,
     adjacencyMatrix,
-    pointColor=None,
+    color=None,
     lineColor=None,
     pointSize=None,
     lineWidth=None,
@@ -115,7 +116,7 @@ def plotGraph2D(
     lineAlpha=None,
     zOrder=None,
 ):
-    pointColor = [0, 0, 1] if pointColor is None else pointColor
+    color = [0, 0, 1] if color is None else color
     lineColor = [0, 0, 1] if lineColor is None else lineColor
     pointSize = 10 if pointSize is None else pointSize
     lineWidth = 1.5 if lineWidth is None else lineWidth
@@ -125,7 +126,7 @@ def plotGraph2D(
     zOrder = 1 if zOrder is None else zOrder
 
     ax.scatter(
-        X[:, 0], X[:, 1], color=pointColor, s=pointSize, alpha=pointAlpha, zorder=zOrder
+        X[:, 0], X[:, 1], color=color, s=pointSize, alpha=pointAlpha, zorder=zOrder
     )
     # check if matrix is symmetric
     if not np.allclose(adjacencyMatrix, adjacencyMatrix.T, rtol=1e-05, atol=1e-08):

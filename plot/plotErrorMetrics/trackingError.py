@@ -34,18 +34,25 @@ resultFolderPaths = [
     "data/eval/initialLocalization/results/20230516_115857_arena",
     "data/eval/initialLocalization/results/20230603_140143_arena",
 ]
-saveFolderPaths = ["imgs/errorMetrics/reprojectionError"]
+saveFolderPaths = ["imgs/errorMetrics/trackingError"]
 styleOpt = {
     "dataSet": 0,
+    "figureWidth": 500,
     "initalPositionOffset": np.array([0.1, -0.1, 0]),
-    "downsamplingFactor": 10,
+    "downsamplingFactor": 9,
     "pointCloudSize": 1,
+    "snapshotFactor": 0.3,
+    "modelColor": [0, 0, 1],
+    "pointCloudColor": [1, 0, 0],
+    "pointCloudAlpha": 0.7,
+    "correspondanceColor": [0.6, 0.6, 0.6],
+    "correspondanceAlpha": 0.3,
     "dpi": 150,
 }
 set_text_to_latex_font(scale_axes_labelsize=1.2)
 
 
-def plotTrackingError(model, q, pointCloud):
+def plotTrackingError(model, q, pointCloud, plotLegend=False):
     model.setGeneralizedCoordinates(q)
     X, A_adj = model.getJointPositionsAndAdjacencyMatrix()
     trackingError = (
@@ -58,12 +65,14 @@ def plotTrackingError(model, q, pointCloud):
     C = np.zeros(shape=(len(X_2D), len(pointCloud_2D)))
     for pcIdx, nodeIdx in enumerate(corresponding_indices):
         C[nodeIdx, pcIdx] = 1
-    fig, ax = setupLatexPlot2D()
-    plotGraph2D(ax=ax, X=X_2D, adjacencyMatrix=A_adj)
+    fig, ax = setupLatexPlot2D(
+        figureWidth=styleOpt["figureWidth"], xlabel="$x$ in $m$", ylabel="$y$ in $m$"
+    )
+    plotGraph2D(ax=ax, X=X_2D, adjacencyMatrix=A_adj, color=styleOpt["modelColor"])
     plotPointSet2D(
         ax=ax,
         X=pointCloud_2D,
-        color=[1, 0, 0],
+        color=styleOpt["pointCloudColor"],
         size=styleOpt["pointCloudSize"],
         alpha=0.3,
     )
@@ -72,15 +81,41 @@ def plotTrackingError(model, q, pointCloud):
         X=X_2D,
         Y=pointCloud_2D,
         correspondanceMatrix=C,
-        correspondanceColor=[0.6, 0.6, 0.6],
+        correspondanceColor=styleOpt["correspondanceColor"],
         xSize=0,
         ySize=0,
         lineAlpha=0.3,
     )
+    ax.set_xlim([-0.1, 0.9])
+    ax.set_ylim([-0.51, 0.49])
     set_axes_equal(ax=ax)
     ax.invert_xaxis()
     ax.invert_yaxis()
-    return fig, ax
+
+    if plotLegend:
+        # create legend
+        markerConfig_1 = configureLegendSymbol(
+            style="pointWithLine", color=styleOpt["modelColor"]
+        )
+        markerConfig_2 = configureLegendSymbol(
+            style="pointWithoutLine", color=styleOpt["pointCloudColor"]
+        )
+        markerCorrespondances = configureLegendSymbol(
+            style="line", color=styleOpt["correspondanceColor"]
+        )
+        legendSymbols = [markerConfig_1, markerConfig_2, markerCorrespondances]
+        ax.legend(
+            handles=legendSymbols,
+            labels=[
+                "Estimated Configuration",
+                "Point cloud",
+                "Minimal distances",
+            ],
+            # loc="upper right",
+            loc="upper left",
+            bbox_to_anchor=[-0.05, 1.2],
+        )
+    return fig, ax, trackingError
 
 
 if __name__ == "__main__":
@@ -131,11 +166,61 @@ if __name__ == "__main__":
 
     # choose three snapshots from localization result
     q_config_1 = q0
-    # q_config_2 = localizationResult["qLog"][int(len(localizationResult["qLog"]) / 2)]
+    q_config_2 = localization.qLog[
+        int(len(localization.qLog) * styleOpt["snapshotFactor"])
+    ]
     q_config_3 = localization.qLog[-1]
 
     # plot tracking error for snapshots
-    plotTrackingError(model, q_config_1, pointCloud=pointCloud)
-    plotTrackingError(model, q_config_3, pointCloud=pointCloud)
-    plt.show(block=True)
+    fig_config_1, ax_config_1, trackingError_config_1 = plotTrackingError(
+        model, q_config_1, pointCloud=pointCloud, plotLegend=True
+    )
+    fig_config_2, ax_config_2, trackingError_config_2 = plotTrackingError(
+        model, q_config_2, pointCloud=pointCloud
+    )
+    fig_config_3, ax_config_3, trackingError_config_3 = plotTrackingError(
+        model, q_config_3, pointCloud=pointCloud
+    )
+
+    if runOpt["savePlots"]:
+        # save config 1
+        savePath_config_1 = os.path.join(
+            saveFolderPaths[0], "trackingError_config_1.pdf"
+        )
+        fig_config_1.savefig(
+            savePath_config_1, dpi=styleOpt["dpi"], format="pdf", bbox_inches="tight"
+        )
+
+        # save config 2
+        trackingErrorString_config_2 = "{:.2f}".format(trackingError_config_2 * 100)
+        savePath_config_2 = os.path.join(
+            saveFolderPaths[0], "trackingError_config_2.pdf"
+        )
+        fig_config_2.savefig(
+            savePath_config_2, dpi=styleOpt["dpi"], format="pdf", bbox_inches="tight"
+        )
+
+        # save config 3
+        trackingErrorString_config_3 = "{:.2f}".format(trackingError_config_3 * 100)
+        savePath_config_3 = os.path.join(
+            saveFolderPaths[0], "trackingError_config_3.pdf"
+        )
+        fig_config_3.savefig(
+            savePath_config_3, dpi=styleOpt["dpi"], format="pdf", bbox_inches="tight"
+        )
+
+        # write trackingErrors
+        trackingErrorString_config_1 = "{:.2f}".format(trackingError_config_1 * 100)
+        trackingErrorString_config_2 = "{:.2f}".format(trackingError_config_2 * 100)
+        trackingErrorString_config_3 = "{:.2f}".format(trackingError_config_3 * 100)
+        with open(os.path.join(saveFolderPaths[0], "trackingErrors.txt"), "w") as file:
+            file.write(
+                "Tracking Error of Config 1 [cm]: \n{:.2f}\n\n Tracking Error of Config 2 [cm]: \n{:.2f}\n\n Tracking Error of Config 3 [cm]: \n{:.2f}\n\n".format(
+                    trackingError_config_1 * 100,
+                    trackingError_config_2 * 100,
+                    trackingError_config_3 * 100,
+                )
+            )
+    if runOpt["showPlots"]:
+        plt.show(block=True)
     print("Done.")

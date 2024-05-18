@@ -12,6 +12,7 @@ thesisColors = {
     "black": [0, 0, 0],
     "red": [1, 0, 0],
     "blue": [0, 0, 1],
+    "green": [0, 1, 0],
     "uniSAnthrazit": [62 / 255, 68 / 255, 76 / 255],
     "uniSBlue": [0 / 255, 81 / 255, 158 / 255],
     "uniSLightBlue": [0 / 255, 190 / 255, 255 / 255],

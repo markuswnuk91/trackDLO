@@ -40,13 +40,13 @@ styleOpt = {
     "figureWidth": 500,
     "initalPositionOffset": np.array([0.1, -0.1, 0]),
     "downsamplingFactor": 9,
-    "pointCloudSize": 1,
+    "pointCloudSize": 3,
     "snapshotFactor": 0.3,
     "modelColor": [0, 0, 1],
     "pointCloudColor": [1, 0, 0],
-    "pointCloudAlpha": 0.7,
-    "correspondanceColor": [0.6, 0.6, 0.6],
-    "correspondanceAlpha": 0.3,
+    "pointCloudAlpha": 0.9,
+    "correspondanceColor": [0.4, 0.4, 0.4],
+    "correspondanceAlpha": 0.1,
     "dpi": 150,
 }
 set_text_to_latex_font(scale_axes_labelsize=1.2)
@@ -98,7 +98,7 @@ def plotTrackingError(model, q, pointCloud, plotLegend=False):
             style="pointWithLine", color=styleOpt["modelColor"]
         )
         markerConfig_2 = configureLegendSymbol(
-            style="pointWithoutLine", color=styleOpt["pointCloudColor"]
+            marker=".", style="pointWithoutLine", color=styleOpt["pointCloudColor"]
         )
         markerCorrespondances = configureLegendSymbol(
             style="line", color=styleOpt["correspondanceColor"]

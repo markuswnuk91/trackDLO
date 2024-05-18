@@ -300,3 +300,127 @@ def plotCorrespondances2D_CV(
             fillMarkers,
         )
     return rgbImg
+
+
+def showImage_CV(rgb_image, title=None, fx=None, fy=None, waitTime=None):
+    title = "Image" if title is None else title
+    fx = 0.25 if fx is None else fx
+    fy = 0.25 if fy is None else fy
+    waitTime = 0 if waitTime is None else waitTime
+    bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)  # convert to bgr for cv2
+    cv2.imshow(title, cv2.resize(bgr_image, None, fx=fx, fy=fy))
+    cv2.waitKey(waitTime)
+    return
+
+
+def plotCircles_CV(
+    rgbImg,
+    centerCoordinates: np.array,
+    circleColor=None,
+    circleRadius=None,
+    circleLineWidth=None,
+    fill=False,
+):
+    circleColor = [0, 0, 1] if circleColor is None else circleColor
+    circleColor = convertColorsOpenCV([circleColor])[0]
+    circleRadius = 10 if circleRadius is None else circleRadius
+    circleLineWidth = 1 if circleLineWidth is None else circleLineWidth
+    circleLineWidth = -1 if fill is True else circleLineWidth
+
+    for center_uv in centerCoordinates:
+        rgbImage = cv2.circle(
+            rgbImg,
+            center_uv,
+            circleRadius,
+            circleColor,
+            circleLineWidth,
+        )
+    return rgbImage
+
+
+def plotGraspingPose2D(
+    rgbImage,
+    graspingPosition2D: np.array,
+    graspingAxis2D: np.array,
+    color: list = None,
+    fingerWidth2D=0.5,
+    centerThickness=10,
+    lineThickness=5,
+    markerFill=-1,
+):
+
+    # convert color to open cv format
+    cvColor = [value * 255 for value in color]
+    # compute orthogonal 2D gripper axis
+    gripperAxis2D = (np.array(([0, 1], [-1, 0])) @ graspingAxis2D.T).T
+    # compute start and end points for gripper
+    gripperStartPoint2D = np.around((graspingPosition2D - 0.5 * gripperAxis2D)).astype(
+        int
+    )
+    gripperEndPoint2D = np.around(graspingPosition2D + 0.5 * gripperAxis2D).astype(int)
+    # compute start and end points for gripper fingers
+    gripperEndFingerStartPoints = np.around(
+        gripperEndPoint2D - 0.5 * fingerWidth2D * graspingAxis2D
+    ).astype(int)
+    gripperEndFingerEndPoints = np.around(
+        gripperEndPoint2D + 0.5 * fingerWidth2D * graspingAxis2D
+    ).astype(int)
+    gripperStartFingerStartPoint = np.around(
+        gripperStartPoint2D - 0.5 * fingerWidth2D * graspingAxis2D
+    ).astype(int)
+    gripperStartFingerEndPoint = np.around(
+        gripperStartPoint2D + 0.5 * fingerWidth2D * graspingAxis2D
+    ).astype(int)
+
+    # draw
+    # grasping center
+    rgbImage = cv2.circle(
+        rgbImage,
+        graspingPosition2D,
+        centerThickness,
+        cvColor,
+        markerFill,
+    )
+    # draw gripper axes
+    rgbImage = cv2.line(
+        rgbImage,
+        (
+            gripperStartPoint2D[0],
+            gripperStartPoint2D[1],
+        ),
+        (
+            gripperEndPoint2D[0],
+            gripperEndPoint2D[1],
+        ),
+        cvColor,
+        lineThickness,
+    )
+    # finger at end
+    rgbImage = cv2.line(
+        rgbImage,
+        (
+            gripperEndFingerStartPoints[0],
+            gripperEndFingerStartPoints[1],
+        ),
+        (
+            gripperEndFingerEndPoints[0],
+            gripperEndFingerEndPoints[1],
+        ),
+        cvColor,
+        lineThickness,
+    )
+    # finger at start
+    rgbImage = cv2.line(
+        rgbImage,
+        (
+            gripperStartFingerStartPoint[0],
+            gripperStartFingerStartPoint[1],
+        ),
+        (
+            gripperStartFingerEndPoint[0],
+            gripperStartFingerEndPoint[1],
+        ),
+        cvColor,
+        lineThickness,
+    )
+    return rgbImage

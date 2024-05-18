@@ -2,11 +2,13 @@
 
 ## Plotting script for evaluation metrics
 - [ ] Define name for error metric that measures cartesian distances between corresponding locations on the wire harness
-- [ ] Plot error error metric measuring cartesian distances between corresponding parts of the wire harness
-- [ ] Plot error metric measuring cartesian distance between two poses
-- [ ] Plot error metric measruing rotational distance between two poses
+- [x] Plot error error metric: Reprojection error
+- [x] Plot error metric: Tracking error
+- [x] Plot error metric: Transtlational & Rotational Pose error
+- [ ] Write section
 
 ## Figure for ground truth by markers and labeling
+- [ ] Figure showcasing ground truth markers and labeling
 
 ## Initialization experiments
 - [ ] write section
@@ -37,3 +39,15 @@
 - [ ] fill out result tables
 - [ ] Replot images with  color scheme for (CPD, SPR, KPR)
 - [ ] Plot a legend that clearly conveys the color scheme --> not in images
+
+## Write summary / discussion
+- [ ] write section
+- [ ] fill out result tables
+- [ ] Replot images with  color scheme for (CPD, SPR, KPR)
+- [ ] Plot a legend that clearly conveys the color scheme --> not in images
+
+## Rework state of the art section
+
+## Rework Fundamendtals section
+
+## Write introduction

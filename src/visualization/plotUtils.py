@@ -4,6 +4,7 @@ import matplotlib as matplotlib
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d.proj3d import proj_transform
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 
 def set_size(width, height=None, fraction=1, subplots=(1, 1)):
@@ -266,4 +267,24 @@ def configureLegendSymbol(style, marker=None, markersize=None, color=None):
         )
     elif style == "line":
         legendSymbol = Line2D([0], [0], color=color)
+    elif style == "errorbar":
+        from matplotlib.container import ErrorbarContainer
+        from matplotlib.collections import LineCollection
+
+        line = Line2D([0], [0], marker=marker, markersize=markersize, color=color, lw=0)
+        barline = LineCollection(np.empty((2, 2, 2)), colors=color)
+        legendSymbol = ErrorbarContainer(
+            (line, [line], [barline]), has_xerr=False, has_yerr=True
+        )
+    return legendSymbol
+
+
+def configureLegendSymbol_Point(marker=None, markersize=None, color=None, alpha=None):
+    marker = "o" if marker is None else marker
+    color = [0, 0, 1] if color is None else color
+    markersize = 10 if markersize is None else markersize
+    alpha = 1 if alpha is None else alpha
+    legendSymbol = Line2D(
+        [0], [0], marker=marker, markersize=markersize, color=color, lw=0, alpha=alpha
+    )
     return legendSymbol

@@ -42,6 +42,10 @@ thesisColorPalettes = {
         cmap=matplotlib.colormaps["Blues"],
         norm=matplotlib.colors.Normalize(vmin=0, vmax=1),
     ),
+    "blue_r": plt.cm.ScalarMappable(
+        cmap=matplotlib.colormaps["Blues_r"],
+        norm=matplotlib.colors.Normalize(vmin=0, vmax=1),
+    ),
     "red": plt.cm.ScalarMappable(
         cmap=matplotlib.colormaps["Reds"],
         norm=matplotlib.colors.Normalize(vmin=0, vmax=1),

@@ -32,12 +32,13 @@ saveOpt = {
     "savePathGraspsImage": "imgs/groundTruthLabels",
 }
 styleOpt = {
+    "labelFrameToLoad": 10,
+    "graspingFrameToLoad": 1,
     "groundTruthLabelColor": thesisColors["green"],
     "groundTruthLabelCircleColor": thesisColors["green"],
     "groundTruthLabelCircleRadius": 27,
     "groundTruthLabelCircleThickness": 7,
     "groundTruthLabelCircleInnerPointSize": 5,
-    "graspingFrameToLoad": 1,
     "groundTruthGraspingPoseColor": thesisColors["green"],
     "gipperWidth3D": 0.1,
     "fingerWidth2D": 0.5,
@@ -124,9 +125,11 @@ if __name__ == "__main__":
     if runOpt["plotManualGroundTruthLabels"]:
         # load label example
         resultFileNames = initEval.list_result_files(groundTruthExamplePath_labels)
-        frameToLoad = 0
         result_labels = initEval.loadResults(
-            os.path.join(groundTruthExamplePath_labels, resultFileNames[frameToLoad])
+            os.path.join(
+                groundTruthExamplePath_labels,
+                resultFileNames[styleOpt["labelFrameToLoad"]],
+            )
         )
         imageFilePath = result_labels["filePath"]
         # plot cirles around ground truth circles (wire harness with ground truth labels)

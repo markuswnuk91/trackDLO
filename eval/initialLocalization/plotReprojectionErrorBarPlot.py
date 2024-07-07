@@ -21,7 +21,7 @@ global REPROJECTION_ERROR_THESHOLD_STD
 
 eval = InitialLocalizationEvaluation()
 REPROJECTION_ERROR_THESHOLD_MEAN = 100
-REPROJECTION_ERROR_THESHOLD_STD = 50
+REPROJECTION_ERROR_THESHOLD_STD = 70
 
 controlOpt = {
     "resultsToLoad": [-1],
@@ -30,7 +30,7 @@ controlOpt = {
     "block": False,
     "saveFolder": "data/eval/initialLocalization/plots/reprojectionErrorBarPlots",
     "saveName": "reprojectionErrors",
-    "saveAsTikz": True,
+    "saveAs": "PDF",  # "TIKZ", "PGF", "PNG", "PDF"
     "verbose": True,
 }
 
@@ -47,11 +47,38 @@ styleOpt = {
     "plotLegendInFrame": 0,
     "colorPalette": thesisColorPalettes["viridis"],
     "outlierColor": [1, 0, 0],
-    "axisRange": [-50, 600],
+    "xAxisRange": [-3, 52],
+    "yAxisRange": [-50, 600],
     "meanMarkerSize": 5,
     "errorMarkerSize": 12,
     "alpha": 0.2,
+    "plotWidth": 1.5 * 0.6 * 6.69423,
+    "plotHeight": 0.6 * 6.69423,
+    "fontsize": 16,
 }
+
+
+def setPlotOptions():
+    if controlOpt["saveAs"] == "PGF":
+        matplotlib.rcParams.update(
+            {
+                "pgf.texsystem": "pdflatex",
+                "font.family": "serif",
+                "text.usetex": True,
+                "pgf.rcfonts": False,
+            }
+        )
+    elif controlOpt["saveAs"] == "PDF":
+        # plt.rcParams["text.latex.preamble"] = [r"\usepackage{DejaVuSansMono}"]
+        # Options
+        params = {
+            "text.usetex": True,
+            "font.size": styleOpt["fontsize"],
+            "font.family": "serif",
+            # "text.latex.unicode": True,
+        }
+        plt.rcParams.update(params)
+    return
 
 
 def createReprojectionErrorBoxPlot(
@@ -62,7 +89,7 @@ def createReprojectionErrorBoxPlot(
     capsize=3,
     createLegend=False,
 ):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(styleOpt["plotWidth"], styleOpt["plotHeight"]))
 
     for i, (frame, mean, std) in enumerate(zip(frames, means, stds)):
         frameColor = styleOpt["colorPalette"].to_rgba(i / len(frames))[:3]
@@ -97,10 +124,12 @@ def createReprojectionErrorBoxPlot(
                 color=meanColor,
             )
 
-    # Set the title, labels, and a legend
-    ax.set_ylim(styleOpt["axisRange"])
+    # Set the title, labels, grind, and legend
+    plt.grid(True)
+    ax.set_xlim(styleOpt["xAxisRange"])
+    ax.set_ylim(styleOpt["yAxisRange"])
     plt.xlabel("frame")
-    plt.ylabel("mean reprojection error /px")
+    plt.ylabel("reprojection error in px")
     # if styleOpt["legende"]:
     #     plt.legend()
     plt.tight_layout()
@@ -123,14 +152,14 @@ def createReprojectionErrorBoxPlot(
             "errorbar", markersize=5, color=styleOpt["outlierColor"]
         )
         legendSymbols.append(errorBarSymbol)
-        legendLabels.append("outliers")
+        legendLabels.append("outlier")
 
         # point symbol
         errorPointHandle = configureLegendSymbol_Point(
             markersize=4, color=symbolColor, alpha=styleOpt["alpha"]
         )
         legendSymbols.append(errorPointHandle)
-        legendLabels.append("individual errors")
+        legendLabels.append("pointwise rep. error")
 
         ax.legend(
             handles=legendSymbols,
@@ -142,6 +171,7 @@ def createReprojectionErrorBoxPlot(
 
 
 if __name__ == "__main__":
+    setPlotOptions()
     if controlOpt["resultsToLoad"][0] == -1:
         dataSetsToEvaluate = resultFolderPaths
     else:
@@ -194,10 +224,16 @@ if __name__ == "__main__":
         fileName = controlOpt["saveName"]
         savePath = os.path.join(folderPath, fileName)
         if controlOpt["save"]:
-            plt.savefig(savePath)
-            # save as tixfigure
-            if controlOpt["saveAsTikz"]:
+            if controlOpt["saveAs"] == "PNG":
+                plt.savefig(savePath)
+            if controlOpt["saveAs"] == "TIKZ":
                 tikzplotlib.save(savePath + ".tex")
+            if controlOpt["saveAs"] == "PGF":
+                plt.savefig(savePath + ".pgf")
+            if controlOpt["saveAs"] == "PGF":
+                plt.savefig(savePath + ".pgf")
+            if controlOpt["saveAs"] == "PDF":
+                plt.savefig(savePath + ".pdf")
             if controlOpt["verbose"]:
                 print(
                     "Saved image for initial localization result {} for at {}.".format(

@@ -211,7 +211,7 @@ if __name__ == "__main__":
         correspondingMethods=methods,
         correspondingModelNames=models,
     )
-    if controlOpt["showPlot"]:
+    if controlOpt["showPlot"] and not controlOpt["saveAsPGF"]:
         plt.show(block=True)
     if controlOpt["verbose"]:
         print("Finished plotting.")

@@ -91,6 +91,9 @@ class Evaluation(object):
     # ---------------------------------------------------------------------------
     # SETUP FUNCITONS
     # ---------------------------------------------------------------------------
+    def setConfig(self, config):
+        self.config = config
+
     def setupColorMaps(self):
         colorMapDict = {}
         # set all colormaps to range from 0 to 1
@@ -313,6 +316,19 @@ class Evaluation(object):
     def getPointCloud(
         self, fileIdentifier, dataSetFolderPath, segmentationMethod="standard"
     ):
+        """gets point cloud data from given file identifiers
+
+        Args:
+            fileIdentifier (string or int): _description_
+            dataSetFolderPath (string): path to the data set folder
+            segmentationMethod (str, optional): standard: applies HSV image filters + downsampling, skeletonized: applies 2D skeletonization + downsampling, unfiltered: does not apply HSV filters but downsaples, original: retuns original point cloud without downsampling. Defaults to "standard".
+
+        Raises:
+            NotImplementedError: _description_
+
+        Returns:
+            _type_: _description_
+        """
         if fileIdentifier is None:
             fileIdentifier = self.currentLoadFileIdentifier
         else:
@@ -347,6 +363,11 @@ class Evaluation(object):
             points, colors = preProcessor.calculatePointCloudUnfiltered(
                 rgbImage, disparityMap
             )
+        elif segmentationMethod == "original":
+            points, colors = preProcessor.calculatePointCloudUnfiltered(
+                rgbImage, disparityMap
+            )
+            return points, colors
         else:
             raise NotImplementedError
         # downsampling

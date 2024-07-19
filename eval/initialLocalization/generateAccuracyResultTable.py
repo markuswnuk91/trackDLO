@@ -48,7 +48,7 @@ referenceNames = [
 modelNames = [
     "$\\mathcal{T}_{s1}$",  # modelY + greenscreen
     "$\\mathcal{T}_{s2}$",  # parial + greenscreen
-    "$\\mathcal{T}_{s1}$",  # arena + greenscreen
+    "$\\mathcal{T}_{s3}$",  # arena + greenscreen
     "$\\mathcal{T}_{s1}$",  # modelY + assembly board
     "$\\mathcal{T}_{s2}$",  # parial + assembly board
     "$\\mathcal{T}_{s3}$",  # arena + assembly board

@@ -111,7 +111,17 @@ def get_runtimes(result):
         result["topologyExtractionResult"]["Y"],
         result["topologyExtractionResult"]["nPaths"],
     )
+    reconstructionResult = mst_reconstruction.extractTopology()
     t_topologyReconstruction_end = time.time()
+    if not (
+        np.allclose(
+            reconstructionResult.featureMatrix,
+            result["topologyExtractionResult"]["extractedTopology"].featureMatrix,
+        )
+    ):
+        raise Exception(
+            "The topology extration results are not matching. Correct runtime assessment cannot be guranteed."
+        )
     topologyReconstruction_results = {
         "total_runtime": t_topologyReconstruction_end - t_topologyReconstruction_start,
         "input_pc_size": len(result["topologyExtractionResult"]["Y"]),
@@ -158,6 +168,7 @@ def query_runtime_data_from_collection(
     collectionOfResults, dataset_keys, processing_step_key
 ):
     runtimes = []
+    pc_sizes = []
     for dataset_key in dataset_keys:
         for i, result in enumerate(collectionOfResults[dataset_key]):
             runtimes.append(result["runtimes"][processing_step_key]["total_runtime"])
@@ -169,8 +180,29 @@ def query_runtime_data_from_collection(
     return query_result
 
 
-def printLatexTable(collectionOfResults):
+def query_point_cloud_data_from_collection(collectionOfResults, dataset_keys):
+    input_pc_sizes = []
+    output_pc_sizes = []
+    for dataset_key in dataset_keys:
+        for i, result in enumerate(collectionOfResults[dataset_key]):
+            input_pc_sizes.append(result["runtimes"]["l1"]["input_pc_size"])
+            output_pc_sizes.append(result["runtimes"]["l1"]["output_pc_size"])
+    query_result = {
+        "input_sizes": input_pc_sizes,
+        "input_mean": int(np.mean(input_pc_sizes)),
+        "input_std": int(np.std(input_pc_sizes)),
+        "input_max": np.max(input_pc_sizes),
+        "input_min": np.min(input_pc_sizes),
+        "output_sizes": output_pc_sizes,
+        "output_mean": int(np.mean(output_pc_sizes)),
+        "output_std": int(np.std(output_pc_sizes)),
+        "output_max": np.max(output_pc_sizes),
+        "output_min": np.min(output_pc_sizes),
+    }
+    return query_result
 
+
+def printLatexTable(collectionOfResults):
     table_data = {}
     processing_steps = [
         "preprocessing",
@@ -188,6 +220,9 @@ def printLatexTable(collectionOfResults):
             dataset_keys=["modelY_gr", "modelY_ab"],
             processing_step_key=processing_step,
         )
+    table_data["T1"]["pc_size"] = query_point_cloud_data_from_collection(
+        collectionOfResults, dataset_keys=["modelY_gr", "modelY_ab"]
+    )
     # partial
     table_data["T2"] = {}
     for processing_step in processing_steps:
@@ -196,6 +231,9 @@ def printLatexTable(collectionOfResults):
             dataset_keys=["partial_gr", "partial_ab"],
             processing_step_key=processing_step,
         )
+    table_data["T2"]["pc_size"] = query_point_cloud_data_from_collection(
+        collectionOfResults, dataset_keys=["partial_gr", "partial_ab"]
+    )
     # arena
     table_data["T3"] = {}
     for processing_step in processing_steps:
@@ -204,16 +242,38 @@ def printLatexTable(collectionOfResults):
             dataset_keys=["arena_gr", "arena_ab"],
             processing_step_key=processing_step,
         )
+    table_data["T3"]["pc_size"] = query_point_cloud_data_from_collection(
+        collectionOfResults, dataset_keys=["arena_gr", "arena_ab"]
+    )
+    latex_table = """\n"""
 
-    latex_table = """
-    \\begin{tabular}{ccccccccc}\\toprule
-    topology & frames &  $t_{\\text{pre}}$	&  $t_{\\text{skel}}$ & $t_{\\text{rec}}$ & $t_{\\text{crp}}$ & $t_{\\text{pose}}$ & $t_{\\text{total}}$ \\\\
-	\\midrule
-    """
     for key in list(table_data.keys()):
 
         model_ref = PYTONREFERENCE_TO_LATEX_MAPPING[key]
         num_frames = len(table_data[key]["preprocessing"]["runtimes"])
+        pc_size_lb = (
+            int(
+                (
+                    table_data[key]["pc_size"]["input_mean"]
+                    - table_data[key]["pc_size"]["input_std"]
+                )
+                / 100
+            )
+            * 100
+        )
+        pc_size_ub = (
+            int(
+                (
+                    table_data[key]["pc_size"]["input_mean"]
+                    + table_data[key]["pc_size"]["input_std"]
+                )
+                / 100
+            )
+        ) * 100
+
+        num_seeds = int(table_data[key]["pc_size"]["output_mean"] / 100) * 100
+
+        # t_pre in s
         t_pre_mean = np.mean(
             (
                 table_data[key]["preprocessing"]["runtimes"]
@@ -224,27 +284,34 @@ def printLatexTable(collectionOfResults):
             table_data[key]["preprocessing"]["runtimes"]
             + table_data[key]["lof"]["runtimes"]
         )
+        # t_skel in s
         t_skel_mean = table_data[key]["l1"]["mean"]
         t_skel_std = table_data[key]["l1"]["std"]
 
+        # t_rec in s
         t_rec_mean = table_data[key]["topologyReconstruction"]["mean"]
         t_rec_std = table_data[key]["topologyReconstruction"]["std"]
 
+        # t_rec in s
         t_corresp_mean = table_data[key]["correspondanceEstimation"]["mean"]
         t_corresp_std = table_data[key]["correspondanceEstimation"]["std"]
-
+        # t_p0se in s
         t_pose_mean = table_data[key]["poseEstimation"]["mean"]
         t_pose_std = table_data[key]["poseEstimation"]["std"]
 
         t_total = np.sum(
-            t_pre_mean + t_skel_mean + t_rec_mean + t_corresp_mean + t_pose_mean
+            t_pre_mean
+            + table_data[key]["l1"]["mean"]
+            + table_data[key]["topologyReconstruction"]["mean"]
+            + table_data[key]["correspondanceEstimation"]["mean"]
+            + table_data[key]["correspondanceEstimation"]["std"]
         )
-        latex_table += f"{model_ref} & {num_frames} & {t_pre_mean:.1f}  &{t_skel_mean:.1f} & {t_rec_mean:.1f} & {t_corresp_mean:.1f} & {t_pose_mean:.1f} & {t_total:.1f}\\\\\n"
-
-    latex_table += """
-    \\bottomrule
-    \\end{tabular}
-    """
+        # latex_table += f"{model_ref} & ${num_frames}$ & ${pc_size_lb}$ - ${pc_size_ub}$ & ${num_seeds}$ & ${t_pre_mean:.2e} \\pm {t_pre_std:.2e}$  &{t_skel_mean:.2e} \\pm {t_skel_std:.2e} & {t_rec_mean:.2e} \\pm {t_rec_std:.2e} & {t_corresp_mean:.2e} \\pm {t_corresp_std:.2e} & {t_pose_mean:.2e} \\pm {t_pose_std:.2e}& {t_total:.2e}\\\\\n"
+        latex_table += f"{model_ref} & ${num_frames}$ & ${pc_size_lb}$ - ${pc_size_ub}$ & ${num_seeds}$ & ${t_pre_mean:.2f} $  & ${t_skel_mean:.2f}$ & ${t_rec_mean:.2f}$ & ${t_corresp_mean:.2f}$ & ${t_pose_mean:.2f}$ & ${t_total:.2f}$\\\\\n"
+    # latex_table += """
+    # \\bottomrule
+    # \\end{tabular}
+    # """
 
     print(latex_table)
 

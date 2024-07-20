@@ -116,7 +116,7 @@ def getReprojectionResultsFromFile_AsDict(resultFolderPath):
 def printLatexTable(collectionOfResultDicts):
     latex_table = """
     \\begin{tabular}{ccccc}\\toprule
-	model		& quality of $\\mathcal{P}$  & num. frames & avg. reprojection error in px & success rate in $\\%$\\\\
+	topology		& quality of $\\mathcal{P}$  & num. frames & avg. reprojection error in px & success rate in $\\%$\\\\
 	\\midrule
     """
     # order given by reference Name list

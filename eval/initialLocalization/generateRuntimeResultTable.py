@@ -270,7 +270,7 @@ def printLatexTable(collectionOfResults):
                 / 100
             )
         ) * 100
-
+        mean_pc_size = int(table_data[key]["pc_size"]["input_mean"] / 100) * 100
         num_seeds = int(table_data[key]["pc_size"]["output_mean"] / 100) * 100
 
         # t_pre in s
@@ -307,7 +307,8 @@ def printLatexTable(collectionOfResults):
             + table_data[key]["correspondanceEstimation"]["std"]
         )
         # latex_table += f"{model_ref} & ${num_frames}$ & ${pc_size_lb}$ - ${pc_size_ub}$ & ${num_seeds}$ & ${t_pre_mean:.2e} \\pm {t_pre_std:.2e}$  &{t_skel_mean:.2e} \\pm {t_skel_std:.2e} & {t_rec_mean:.2e} \\pm {t_rec_std:.2e} & {t_corresp_mean:.2e} \\pm {t_corresp_std:.2e} & {t_pose_mean:.2e} \\pm {t_pose_std:.2e}& {t_total:.2e}\\\\\n"
-        latex_table += f"{model_ref} & ${num_frames}$ & ${pc_size_lb}$ - ${pc_size_ub}$ & ${num_seeds}$ & ${t_pre_mean:.2f} $  & ${t_skel_mean:.2f}$ & ${t_rec_mean:.2f}$ & ${t_corresp_mean:.2f}$ & ${t_pose_mean:.2f}$ & ${t_total:.2f}$\\\\\n"
+        # latex_table += f"{model_ref} & ${num_frames}$ & ${pc_size_lb}$ - ${pc_size_ub}$ & ${num_seeds}$ & ${t_pre_mean:.2f} $  & ${t_skel_mean:.2f}$ & ${t_rec_mean:.2f}$ & ${t_corresp_mean:.2f}$ & ${t_pose_mean:.2f}$ & ${t_total:.2f}$\\\\\n"
+        latex_table += f"{model_ref} & ${num_frames}$ & $~{mean_pc_size}$ & ${num_seeds}$ & ${t_pre_mean:.2f} $  & ${t_skel_mean:.2f}$ & ${t_rec_mean:.2f}$ & ${t_corresp_mean:.2f}$ & ${t_pose_mean:.2f}$ & ${t_total:.2f}$\\\\\n"
     # latex_table += """
     # \\bottomrule
     # \\end{tabular}

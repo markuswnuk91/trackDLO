@@ -568,6 +568,15 @@ class BranchedDeformableLinearObject(BDLOTopology):
             )
         return (jointIndices, correspondingBranchIndices, correspondanceMatrix)
 
+    def getBranchCorrespondancesForSegmentCenters(self):
+        segmentIndices, correspondingBranchIndices, correspondanceMatrix = (
+            self.getBranchCorrespondancesForJoints()
+        )
+        segmentIndices = np.delete(segmentIndices, (0), axis=0)
+        correspondingBranchIndices = np.delete(correspondingBranchIndices, (0), axis=0)
+        correspondanceMatrix = np.delete(correspondanceMatrix, (0), axis=0)
+        return (segmentIndices, correspondingBranchIndices, correspondanceMatrix)
+
     # custom functions for plotting
     def getAdjacentPointPairs(self, q=None):
         if q is not None:
@@ -580,6 +589,21 @@ class BranchedDeformableLinearObject(BDLOTopology):
         return pointPairs
 
     # custom functions for plotting
+    def getAdjacencyMatrix(self):
+        adjacencyMatrix = np.zeros(
+            (self.skel.getNumBodyNodes() + 1, self.skel.getNumBodyNodes() + 1)
+        )
+        for i in range(self.skel.getNumBodyNodes()):
+            bodyNode = self.skel.getBodyNode(i)
+            parentBodyNode = bodyNode.getParentBodyNode()
+            if parentBodyNode is None:
+                adjacencyMatrix[i, i + 1] = 1
+                adjacencyMatrix[i + 1, i] = 1
+            else:
+                j = parentBodyNode.getIndexInSkeleton()
+                adjacencyMatrix[i + 1, j + 1] = 1
+        return adjacencyMatrix
+
     def getJointPositionsAndAdjacencyMatrix(self, q=None):
         if q is not None:
             self.setGeneralizedCoordinates(q)
@@ -622,21 +646,15 @@ class BranchedDeformableLinearObject(BDLOTopology):
         #             if firstInTuple and secondInTuple:
         #                 adjacencyMatrix[i, j] = 1
         jointPositions = []
-        adjacencyMatrix = np.zeros(
-            (self.skel.getNumBodyNodes() + 1, self.skel.getNumBodyNodes() + 1)
-        )
         for i in range(self.skel.getNumBodyNodes()):
             bodyNode = self.skel.getBodyNode(i)
             parentBodyNode = bodyNode.getParentBodyNode()
             if parentBodyNode is None:
                 jointPositions.append(self.getCartesianPositionSegmentStart(i))
                 jointPositions.append(self.getCartesianPositionSegmentEnd(i))
-                adjacencyMatrix[i, i + 1] = 1
-                adjacencyMatrix[i + 1, i] = 1
             else:
                 jointPositions.append(self.getCartesianPositionSegmentEnd(i))
-                j = parentBodyNode.getIndexInSkeleton()
-                adjacencyMatrix[i + 1, j + 1] = 1
+        adjacencyMatrix = self.getAdjacencyMatrix()
 
         # for bodyNodeIndex in range(0, self.skel.getNumBodyNodes()):
         #     startJointPosition = self.getCartesianPositionSegmentStart(bodyNodeIndex)

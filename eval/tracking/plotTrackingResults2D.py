@@ -17,14 +17,17 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [0, 1, 2],
+    "resultsToLoad": [0],  # [0,1,2]
     "methods": ["cpd", "spr", "kpr", "krcpd"],  # "cpd", "spr", "kpr", "krcpd"
     "frames": [5, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650],
-    "save": True,
-    "showPlot": False,
+    # [5, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650], for modelY
+    # [5, 50, 100, 150, 200, 250, 300], for partial
+    "save": False,
+    "showPlot": True,
+    "block": True,
     "saveFolder": "data/eval/tracking/plots/trackingResults2D",
     "saveName": "trackingResult2D",
-    "´postProcessingToAlginPointCloud": False,
+    "postProcessingToAlginPointCloud": False,
 }
 styleOpt = {
     "lineColor": [0, 81 / 255, 158 / 255],
@@ -50,45 +53,50 @@ def loadResult(filePath):
 
 
 def createPlots(dataSetResult, frame, method, verbose=True):
-    dataSetPath = dataSetResult["dataSetPath"]
-    adjacencyMatrix = dataSetResult["trackingResults"][method]["adjacencyMatrix"]
-    T = eval.findCorrespondingEntryFromKeyValuePair(
-        dataSetResult["trackingResults"][method]["registrations"], "frame", frame
-    )["T"]
-    Y = eval.findCorrespondingEntryFromKeyValuePair(
-        dataSetResult["trackingResults"][method]["registrations"], "frame", frame
-    )["Y"]
 
-    if controlOpt["´postProcessingToAlginPointCloud"]:
-        D = distance_matrix(T, Y)
-        C = np.argmin(D, axis=0)
-        N = len(T)
-        predictedPositions = T.copy()
-        for n in range(0, N):
-            incides = np.where(C == n)[0]
-            if len(incides) > 3:
-                Yc = Y[incides, :]
-                predictedPositions[n, :] = np.mean(Yc, axis=0)
-        positions3D = predictedPositions
-    else:
-        positions3D = T
-
-    resultImg = eval.plotTrackingResult2D(
-        frame,
-        dataSetPath,
-        positions3D,
-        adjacencyMatrix,
-        lineColor=styleOpt["lineColor"],
-        circleColor=styleOpt["circleColor"],
-        lineThickness=styleOpt["lineThickness"],
-        circleRadius=styleOpt["circleRadius"],
+    resultImg = eval.plotBranchWiseColoredTrackingResult2D(
+        result=dataSetResult, frame=frame, method=method
     )
+    # adjacencyMatrix = dataSetResult["trackingResults"][method]["adjacencyMatrix"]
+    # T = eval.findCorrespondingEntryFromKeyValuePair(
+    #     dataSetResult["trackingResults"][method]["registrations"], "frame", frame
+    # )["T"]
+    # Y = eval.findCorrespondingEntryFromKeyValuePair(
+    #     dataSetResult["trackingResults"][method]["registrations"], "frame", frame
+    # )["Y"]
+
+    # if controlOpt["postProcessingToAlginPointCloud"]:
+    #     D = distance_matrix(T, Y)
+    #     C = np.argmin(D, axis=0)
+    #     N = len(T)
+    #     predictedPositions = T.copy()
+    #     for n in range(0, N):
+    #         incides = np.where(C == n)[0]
+    #         if len(incides) > 3:
+    #             Yc = Y[incides, :]
+    #             predictedPositions[n, :] = np.mean(Yc, axis=0)
+    #     positions3D = predictedPositions
+    # else:
+    #     positions3D = T
+
+    # resultImg = eval.plotTrackingResult2D(
+    #     frame,
+    #     dataSetPath,
+    #     positions3D,
+    #     adjacencyMatrix,
+    #     lineColor=styleOpt["lineColor"],
+    #     circleColor=styleOpt["circleColor"],
+    #     lineThickness=styleOpt["lineThickness"],
+    #     circleRadius=styleOpt["circleRadius"],
+    # )
     # display Visualization
     if controlOpt["showPlot"]:
-        eval.plotImageWithMatplotlib(resultImg, block=True)
+        eval.plotImageWithMatplotlib(resultImg)
+        plt.show(block=controlOpt["block"])
     # save Visualization
     if controlOpt["save"]:
         filename = controlOpt["saveName"] + "_frame_" + str(frame)
+        dataSetPath = dataSetResult["dataSetPath"]
         dataSetName = dataSetPath.split("/")[-2]
         folderPath = os.path.join(controlOpt["saveFolder"], dataSetName, method)
         if not os.path.exists(folderPath):

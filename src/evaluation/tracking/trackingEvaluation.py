@@ -479,3 +479,55 @@ class TrackingEvaluation(Evaluation):
                     )
         ax.view_init(elev=elevation, azim=azimuth)
         return ax
+
+    def plotBranchWiseColoredTrackingResult2D(
+        self,
+        result,
+        frame,
+        method,
+        colorPalette=None,
+        lineThickness=None,
+        circleRadius=None,
+    ):
+        colorPalette = (
+            thesisColorPalettes["viridis"] if colorPalette is None else colorPalette
+        )
+        lineThickness = 5 if lineThickness is None else lineThickness
+        circleRadius = 10 if circleRadius is None else circleRadius
+
+        # gather parameters
+        frame = frame
+        dataSetPath = result["dataSetPath"]
+        modelParameters = result["trackingResults"][method]["modelParameters"]
+        model = self.generateModel(modelParameters)
+        rgbImg = self.getDataSet(frame, dataSetPath)[0]
+
+        adjacencyMatrix = result["trackingResults"]["spr"]["adjacencyMatrix"]
+        _, _, branchCorrespondanceMatrix = (
+            model.getBranchCorrespondancesForSegmentCenters()
+        )
+        positions3D = result["trackingResults"][method]["registrations"][frame]["T"]
+        positions2D = self.reprojectFrom3DRobotBase(positions3D, dataSetPath)
+        numBranches = branchCorrespondanceMatrix.shape[1]
+
+        colorScaleCoordinates = np.linspace(0, 1, numBranches)
+        branchColors = []
+        for s in colorScaleCoordinates:
+            branchColors.append(colorPalette.to_rgba(s)[:3])
+
+        for branchIndex in range(0, numBranches):
+            indices = np.where(branchCorrespondanceMatrix[:, branchIndex] == 1)[0]
+            branchPositions = positions2D[indices, :]
+            branchAdjacencyMatrix = np.array(
+                [[adjacencyMatrix[row][col] for col in indices] for row in indices]
+            )
+            rgbImg = plotGraph2_CV(
+                rgbImg=rgbImg,
+                positions2D=branchPositions,
+                adjacencyMatrix=branchAdjacencyMatrix,
+                lineColor=branchColors[branchIndex],
+                circleColor=branchColors[branchIndex],
+                lineThickness=lineThickness,
+                circleRadius=circleRadius,
+            )
+        return rgbImg

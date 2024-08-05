@@ -531,3 +531,81 @@ class TrackingEvaluation(Evaluation):
                 circleRadius=circleRadius,
             )
         return rgbImg
+
+    # TODO: Implement general function in plot3D.py
+    def plotBranchWiseColoredTrackingResult3D(
+        self,
+        ax,
+        X,
+        topologyModel,
+        colorPalette=None,
+        lineWidth=None,
+        pointSize=None,
+        lineAlpha=None,
+        plotPoints=True,
+        pointAlpha=None,
+        zOrder=None,
+    ):
+        if colorPalette is None:
+            colorPalette = thesisColorPalettes["viridis"]
+        zOrder = zOrder if zOrder is None else zOrder
+        pointAlpha = 1 if pointAlpha is None else pointAlpha
+        connections = topologyModel.getAdjacentPointPairsAndBranchCorrespondance()
+        numBranches = topologyModel.getNumBranches()
+        colorScaleCoordinates = np.linspace(0, 1, numBranches)
+        branchColors = []
+        for s in colorScaleCoordinates:
+            branchColors.append(colorPalette.to_rgba(s)[:3])
+        for connection in connections:
+            stackedPair = np.stack(connection[:2])
+            branchIndex = connection[2]
+            # plotColor = [
+            #     sm.to_rgba(branchNumber)[0],
+            #     sm.to_rgba(branchNumber)[1],
+            #     sm.to_rgba(branchNumber)[2],
+            # ]
+            plotLine(
+                ax=ax,
+                pointPair=stackedPair,
+                color=branchColors[branchIndex],
+                linewidth=lineWidth,
+                alpha=lineAlpha,
+                zOrder=zOrder,
+            )
+            if plotPoints:
+                # plotPoint(
+                #     ax=ax,
+                #     x=stackedPair[0, :],
+                #     color=branchColors[branchIndex],
+                #     size=pointSize,
+                #     zOrder=zOrder,
+                # )
+                # plotPoint(
+                #     ax=ax,
+                #     x=stackedPair[1, :],
+                #     color=branchColors[branchIndex],
+                #     size=pointSize,
+                #     zOrder=zOrder,
+                # )
+                ax.plot(
+                    [stackedPair[0, 0]],
+                    [stackedPair[0, 1]],
+                    [stackedPair[0, 2]],
+                    marker="o",
+                    alpha=pointAlpha,
+                    zorder=zOrder,
+                    color=branchColors[branchIndex],
+                    markersize=pointSize,
+                )
+                ax.plot(
+                    [stackedPair[1, 0]],
+                    [stackedPair[1, 1]],
+                    [stackedPair[1, 2]],
+                    marker="o",
+                    alpha=pointAlpha,
+                    zorder=zOrder,
+                    color=branchColors[branchIndex],
+                    markersize=pointSize,
+                )
+
+        return ax

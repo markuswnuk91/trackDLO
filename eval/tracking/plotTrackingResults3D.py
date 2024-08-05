@@ -20,9 +20,9 @@ controlOpt = {
     "resultsToLoad": [0],
     "methods": ["cpd", "spr", "krcpd"],  # "cpd", "spr", "kpr", "krcpd"
     "frames": [[0, 5, 100, 250, 400, 500, 650]],
-    "save": True,
+    "save": False,
     "saveAsPGF": False,
-    "showPlot": False,
+    "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/trackingResults3D",
     "saveName": "trackingResult3D",
     "dpi": 100,
@@ -71,23 +71,28 @@ def createPlots(dataSetResult, frame, method, verbose=True):
     targets = registrationResult["T"]
     adjacencyMatrix = dataSetResult["trackingResults"][method]["adjacencyMatrix"]
     dataSetPath = dataSetResult["dataSetPath"]
-    ax = eval.plotTrackingResult3D(
-        ax=ax,
-        pointCloud=pointCloud,
-        targets=targets,
-        adjacencyMatrix=adjacencyMatrix,
-        pointCloudColor=[1, 0, 0],
-        targetColor=[0, 0, 1],
-        lineColor=layoutOpt["lineColor"],
-        pointCloudPointSize=layoutOpt["pointCloudPointSize"],
-        targetPointSize=layoutOpt["targetPointSize"],
-        pointCloudAlpha=layoutOpt["pointCloudAlpha"],
-        targetAlpha=layoutOpt["targetAlpha"],
-        elevation=layoutOpt["elevation"],
-        azimuth=layoutOpt["azimuth"],
-        lineWidth=layoutOpt["lineWidth"],
+    # TODO: use plotBranchWiseColoredTopology3D function for plotting
+    # ax = eval.plotTrackingResult3D(
+    #     ax=ax,
+    #     pointCloud=pointCloud,
+    #     targets=targets,
+    #     adjacencyMatrix=adjacencyMatrix,
+    #     pointCloudColor=[1, 0, 0],
+    #     targetColor=[0, 0, 1],
+    #     lineColor=layoutOpt["lineColor"],
+    #     pointCloudPointSize=layoutOpt["pointCloudPointSize"],
+    #     targetPointSize=layoutOpt["targetPointSize"],
+    #     pointCloudAlpha=layoutOpt["pointCloudAlpha"],
+    #     targetAlpha=layoutOpt["targetAlpha"],
+    #     elevation=layoutOpt["elevation"],
+    #     azimuth=layoutOpt["azimuth"],
+    #     lineWidth=layoutOpt["lineWidth"],
+    # )
+    modelParameters = dataSetResult["trackingResults"][method]["modelParameters"]
+    topologyModel = eval.generateModel(modelParameters)
+    ax = eval.plotBranchWiseColoredTrackingResult3D(
+        ax=ax, X=targets, topology=topologyModel
     )
-
     # customize figure
     ax.axes.set_xlim3d(left=layoutOpt["axLimX"][0], right=layoutOpt["axLimX"][1])
     ax.axes.set_ylim3d(bottom=layoutOpt["axLimY"][0], top=layoutOpt["axLimY"][1])

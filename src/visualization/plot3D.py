@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 from warnings import warn
+
 try:
     sys.path.append(os.getcwd().replace("/src/visualization", ""))
     from src.visualization.plotUtils import *
@@ -624,7 +625,7 @@ def plotGraph3D(
     plotPointSet(
         ax=ax, X=X, color=pointColor, size=pointSize, alpha=pointAlpha, zOrder=zOrder
     )
-    #check if matrix is symmetric
+    # check if matrix is symmetric
     if not np.allclose(adjacencyMatrix, adjacencyMatrix.T, rtol=1e-05, atol=1e-08):
         warn("Provided adjacency matrix is not symmetric!")
     I, J = adjacencyMatrix.shape
@@ -642,6 +643,44 @@ def plotGraph3D(
                 )
     return
 
+# TODO: implement this fuction for tracking Evaluation
+def plotBranchWiseColoredGraph3D(
+    positions3D,
+    adjacencyMatrix,
+    branchCorrespondanceMatrix
+    colorPalette=None,
+    lineThickness=None,
+    circleRadius=None,
+    ):
+        colorPalette = (
+            thesisColorPalettes["viridis"] if colorPalette is None else colorPalette
+        )
+        lineThickness = 5 if lineThickness is None else lineThickness
+        circleRadius = 10 if circleRadius is None else circleRadius
+
+        numBranches = branchCorrespondanceMatrix.shape[1]
+
+        colorScaleCoordinates = np.linspace(0, 1, numBranches)
+        branchColors = []
+        for s in colorScaleCoordinates:
+            branchColors.append(colorPalette.to_rgba(s)[:3])
+
+        for branchIndex in range(0, numBranches):
+            indices = np.where(branchCorrespondanceMatrix[:, branchIndex] == 1)[0]
+            branchPositions = positions3Ds[indices, :]
+            branchAdjacencyMatrix = np.array(
+                [[adjacencyMatrix[row][col] for col in indices] for row in indices]
+            )
+            rgbImg = plotGraph2_CV(
+                rgbImg=rgbImg,
+                positions2D=branchPositions,
+                adjacencyMatrix=branchAdjacencyMatrix,
+                lineColor=branchColors[branchIndex],
+                circleColor=branchColors[branchIndex],
+                lineThickness=lineThickness,
+                circleRadius=circleRadius,
+            )
+        return rgbImg
 
 # def plotBranchColoredGraph3D(
 #     ax,

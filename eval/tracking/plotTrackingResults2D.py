@@ -22,12 +22,11 @@ controlOpt = {
     "frames": [5, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650],
     # [5, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650], for modelY
     # [5, 50, 100, 150, 200, 250, 300], for partial
-    "save": False,
-    "showPlot": True,
-    "block": True,
+    "save": True,
+    "showPlot": False,
+    "block": False,
     "saveFolder": "data/eval/tracking/plots/trackingResults2D",
     "saveName": "trackingResult2D",
-    "postProcessingToAlginPointCloud": False,
 }
 styleOpt = {
     "lineColor": [0, 81 / 255, 158 / 255],

@@ -17,7 +17,7 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [0],
+    "resultsToLoad": [2],
     "methods": ["cpd", "spr", "krcpd"],  # "cpd", "spr", "kpr", "krcpd"
     "frames": [[0, 5, 100, 250, 400, 500, 650]],
     "save": False,
@@ -43,6 +43,10 @@ layoutOpt = {
     "axLimX": [0.3, 0.7],
     "axLimY": [0.1, 0.6],
     "axLimZ": [0.35, 0.75],
+    "camEye": [0.35, 1.7, 1.7],
+    "camCenter": [0.35, 0, 0],
+    "camUp": [0, 0, 1],
+    "colorPalette": thesisColorPalettes["viridis"],
 }
 resultFileName = "result.pkl"
 
@@ -71,7 +75,8 @@ def createPlots(dataSetResult, frame, method, verbose=True):
     targets = registrationResult["T"]
     adjacencyMatrix = dataSetResult["trackingResults"][method]["adjacencyMatrix"]
     dataSetPath = dataSetResult["dataSetPath"]
-    # TODO: use plotBranchWiseColoredTopology3D function for plotting
+    # -----------------------------------------------
+    # depreceted plotting funciton
     # ax = eval.plotTrackingResult3D(
     #     ax=ax,
     #     pointCloud=pointCloud,
@@ -88,10 +93,11 @@ def createPlots(dataSetResult, frame, method, verbose=True):
     #     azimuth=layoutOpt["azimuth"],
     #     lineWidth=layoutOpt["lineWidth"],
     # )
+    # -----------------------------------------------
     modelParameters = dataSetResult["trackingResults"][method]["modelParameters"]
-    topologyModel = eval.generateModel(modelParameters)
+    bdloModel = eval.generateModel(modelParameters)
     ax = eval.plotBranchWiseColoredTrackingResult3D(
-        ax=ax, X=targets, topology=topologyModel
+        ax=ax, X=targets, bdloModel=bdloModel
     )
     # customize figure
     ax.axes.set_xlim3d(left=layoutOpt["axLimX"][0], right=layoutOpt["axLimX"][1])
@@ -123,6 +129,30 @@ def createPlots(dataSetResult, frame, method, verbose=True):
     return None
 
 
+def createSimScene(dataSetResult, frame):
+    registrationResult = eval.findCorrespondingEntryFromKeyValuePair(
+        dataSetResult["trackingResults"]["kpr"]["registrations"], "frame", frame
+    )
+    pointCloud = registrationResult["Y"]
+    modelParameters = dataSetResult["trackingResults"][method]["modelParameters"]
+    bdloModel = eval.generateModel(modelParameters)
+
+    q = registrationResult["q"]
+    bdloModel.setBranchColorsFromColorPalette(layoutOpt["colorPalette"])
+    dartScene = eval.plotTrackingResultDartSim(
+        q=q,
+        bdloModel=bdloModel,
+        pointSet=pointCloud[::5],
+        pointCloudSize=0.005,
+        pointCloudColor=layoutOpt["pointCloudColor"],
+        pointCloudAlpha=0.5,
+        camEye=layoutOpt["camEye"],
+        camCenter=layoutOpt["camCenter"],
+        camUp=layoutOpt["camUp"],
+    )
+    dartScene.runVisualization()
+
+
 if __name__ == "__main__":
     # load all results
     results = []
@@ -134,4 +164,5 @@ if __name__ == "__main__":
     for i, result in enumerate(results):
         for method in controlOpt["methods"]:
             for frame in controlOpt["frames"][i]:
-                createPlots(result, frame, method)
+                # createPlots(result, frame, method)
+                createSimScene(result, frame)

@@ -18,6 +18,7 @@ try:
 
     from src.visualization.plot3D import *
     from src.visualization.plot2D import *
+    from src.visualization.dartVisualizer import DartVisualizer, DartScene
 except:
     print("Imports for class TrackingEvaluation failed.")
     raise
@@ -532,12 +533,11 @@ class TrackingEvaluation(Evaluation):
             )
         return rgbImg
 
-    # TODO: Implement general function in plot3D.py
     def plotBranchWiseColoredTrackingResult3D(
         self,
         ax,
         X,
-        topologyModel,
+        bdloModel,
         colorPalette=None,
         lineWidth=None,
         pointSize=None,
@@ -550,62 +550,61 @@ class TrackingEvaluation(Evaluation):
             colorPalette = thesisColorPalettes["viridis"]
         zOrder = zOrder if zOrder is None else zOrder
         pointAlpha = 1 if pointAlpha is None else pointAlpha
-        connections = topologyModel.getAdjacentPointPairsAndBranchCorrespondance()
-        numBranches = topologyModel.getNumBranches()
-        colorScaleCoordinates = np.linspace(0, 1, numBranches)
-        branchColors = []
-        for s in colorScaleCoordinates:
-            branchColors.append(colorPalette.to_rgba(s)[:3])
-        for connection in connections:
-            stackedPair = np.stack(connection[:2])
-            branchIndex = connection[2]
-            # plotColor = [
-            #     sm.to_rgba(branchNumber)[0],
-            #     sm.to_rgba(branchNumber)[1],
-            #     sm.to_rgba(branchNumber)[2],
-            # ]
-            plotLine(
-                ax=ax,
-                pointPair=stackedPair,
-                color=branchColors[branchIndex],
-                linewidth=lineWidth,
-                alpha=lineAlpha,
-                zOrder=zOrder,
-            )
-            if plotPoints:
-                # plotPoint(
-                #     ax=ax,
-                #     x=stackedPair[0, :],
-                #     color=branchColors[branchIndex],
-                #     size=pointSize,
-                #     zOrder=zOrder,
-                # )
-                # plotPoint(
-                #     ax=ax,
-                #     x=stackedPair[1, :],
-                #     color=branchColors[branchIndex],
-                #     size=pointSize,
-                #     zOrder=zOrder,
-                # )
-                ax.plot(
-                    [stackedPair[0, 0]],
-                    [stackedPair[0, 1]],
-                    [stackedPair[0, 2]],
-                    marker="o",
-                    alpha=pointAlpha,
-                    zorder=zOrder,
-                    color=branchColors[branchIndex],
-                    markersize=pointSize,
-                )
-                ax.plot(
-                    [stackedPair[1, 0]],
-                    [stackedPair[1, 1]],
-                    [stackedPair[1, 2]],
-                    marker="o",
-                    alpha=pointAlpha,
-                    zorder=zOrder,
-                    color=branchColors[branchIndex],
-                    markersize=pointSize,
-                )
 
+        positions3D = X
+        adjacencyMatrix = bdloModel.getBodyNodeNodeAdjacencyMatrix()
+        _, _, branchCorrespondanceMatrix = (
+            bdloModel.getBranchCorrespondancesForSegmentCenters()
+        )
+        ax = plotBranchWiseColoredGraph3D(
+            ax, positions3D, adjacencyMatrix, branchCorrespondanceMatrix
+        )
         return ax
+
+    # TODO implement tracking result representaiton in DART.
+
+    def plotTrackingResultDartSim(
+        self,
+        q,
+        bdloModel,
+        pointSet,
+        colorPalette=None,
+        skelAlpha=None,
+        robotAlpha=None,
+        pointCloudSize=None,
+        pointCloudColor=None,
+        pointCloudAlpha=None,
+        camEye=None,
+        camCenter=None,
+        camUp=None,
+    ):
+        # setup dart scene
+        if colorPalette is None:
+            colorPalette = thesisColorPalettes["viridis"]
+        pointCloudSize = 0.005 if pointCloudSize is None else pointCloudSize
+        pointCloudColor = [1, 0, 0] if pointCloudColor is None else pointCloudColor
+        pointCloudAlpha = 1 if pointCloudAlpha is None else pointCloudAlpha
+        skelAlpha = 1 if skelAlpha is None else skelAlpha
+        robotAlpha = 0.5 if robotAlpha is None else robotAlpha
+        camEye = [3, 0.3, 2] if camEye is None else camEye
+        camCenter = [0, 0, 0] if camCenter is None else camCenter
+        camUp = [0, 0, 1] if camUp is None else camUp
+
+        # set model color
+        bdloModel.setBranchColorsFromColorPalette()
+        dartScene = DartScene(
+            skel=bdloModel.skel.clone(),
+            q=q,
+            skelAlpha=skelAlpha,
+            robotAlpha=robotAlpha,
+            loadCell=False,
+        )
+        dartScene.robotSkel.setMobile(False)
+        dartScene.addPointCloud(
+            points=pointSet,
+            colors=pointCloudColor,
+            alpha=pointCloudAlpha,
+        )
+        # dartScene.setCameraPosition(eye=[3, 0.3, 2], center=[0, 0, 0], up=[0, 0, 1])
+        dartScene.setCameraPosition(eye=camEye, center=camCenter, up=camUp)
+        return dartScene

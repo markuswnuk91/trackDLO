@@ -10,6 +10,7 @@ try:
     from src.simulation.dlo import DeformableLinearObject
     from src.modelling.topologyModel import topologyModel
     from src.utils.utils import dampedPseudoInverse
+    from src.visualization.colors import thesisColorPalettes
 except:
     print("Imports for DLO failed.")
 
@@ -1102,6 +1103,28 @@ class BranchedDeformableLinearObject(BDLOTopology):
         for bodyNode in bodyNodes:
             bodyNode.getShapeNode(0).getVisualAspect().setColor(color)
             bodyNode.getShapeNode(1).getVisualAspect().setColor(color)
+        return
+
+    def setColorForBranch(self, branchIndex, color):
+        branchBodyNodeIndices = self.getBranchBodyNodeIndices(branchIndex)
+        for bodyNodeIdx in branchBodyNodeIndices:
+            bodyNode = self.skel.getBodyNode(bodyNodeIdx)
+            bodyNode.getShapeNode(0).getVisualAspect().setColor(color)
+            bodyNode.getShapeNode(1).getVisualAspect().setColor(color)
+        return
+
+    def setBranchColorsFromColorPalette(self, colorPalette=None):
+        colorPalette = (
+            thesisColorPalettes["viridis"] if colorPalette is None else colorPalette
+        )
+        branchIndices = self.getBranchIndices(self.getBranches())
+        numBranches = len(branchIndices)
+        colorScaleCoordinates = np.linspace(0, 1, numBranches)
+        branchColors = []
+        for s in colorScaleCoordinates:
+            branchColors.append(colorPalette.to_rgba(s)[:3])
+        for branchIndex, branchColors in zip(branchIndices, branchColors):
+            self.setColorForBranch(branchIndex, branchColors)
         return
 
     def setStiffnessForAllDof(self, stiffness):

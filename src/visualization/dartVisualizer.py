@@ -52,12 +52,20 @@ class DartVisualizer(object):
     def addSkeleton(self, skel):
         self.world.addSkeleton(skel)
 
-    def addPointCloud(self, points, colors=None, size=None):
+    def addPointCloud(
+        self,
+        points,
+        colors=None,
+        size=None,
+        alpha=None,
+    ):
         """
         Visualize a PointCloud in DART
         """
         colors = [0, 0, 0] if colors is None else colors
         size = 0.005 if size is None else size
+        alpha = 1 if alpha is None else alpha
+
         pointCloudShape = dart.dynamics.PointCloudShape(size)
         frame = dart.dynamics.SimpleFrame(
             dart.dynamics.Frame.World(), name="PointCloud"
@@ -73,7 +81,7 @@ class DartVisualizer(object):
             pointCloudShape.setColors(createMyColorMap.T)
         else:
             visual.setColor(colors)
-
+            visual.setAlpha(alpha)
         self.world.addSimpleFrame(frame)
 
     def addBox(

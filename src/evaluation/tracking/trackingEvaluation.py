@@ -541,8 +541,6 @@ class TrackingEvaluation(Evaluation):
         colorPalette=None,
         lineWidth=None,
         pointSize=None,
-        lineAlpha=None,
-        plotPoints=True,
         pointAlpha=None,
         zOrder=None,
     ):
@@ -557,7 +555,13 @@ class TrackingEvaluation(Evaluation):
             bdloModel.getBranchCorrespondancesForSegmentCenters()
         )
         ax = plotBranchWiseColoredGraph3D(
-            ax, positions3D, adjacencyMatrix, branchCorrespondanceMatrix
+            ax,
+            positions3D,
+            adjacencyMatrix,
+            branchCorrespondanceMatrix,
+            colorPalette=colorPalette,
+            lineWidth=lineWidth,
+            pointSize=pointSize,
         )
         return ax
 
@@ -567,13 +571,9 @@ class TrackingEvaluation(Evaluation):
         self,
         q,
         bdloModel,
-        pointSet,
         colorPalette=None,
         skelAlpha=None,
         robotAlpha=None,
-        pointCloudSize=None,
-        pointCloudColor=None,
-        pointCloudAlpha=None,
         camEye=None,
         camCenter=None,
         camUp=None,
@@ -581,9 +581,6 @@ class TrackingEvaluation(Evaluation):
         # setup dart scene
         if colorPalette is None:
             colorPalette = thesisColorPalettes["viridis"]
-        pointCloudSize = 0.005 if pointCloudSize is None else pointCloudSize
-        pointCloudColor = [1, 0, 0] if pointCloudColor is None else pointCloudColor
-        pointCloudAlpha = 1 if pointCloudAlpha is None else pointCloudAlpha
         skelAlpha = 1 if skelAlpha is None else skelAlpha
         robotAlpha = 0.5 if robotAlpha is None else robotAlpha
         camEye = [3, 0.3, 2] if camEye is None else camEye
@@ -600,11 +597,5 @@ class TrackingEvaluation(Evaluation):
             loadCell=False,
         )
         dartScene.robotSkel.setMobile(False)
-        dartScene.addPointCloud(
-            points=pointSet,
-            colors=pointCloudColor,
-            alpha=pointCloudAlpha,
-        )
-        # dartScene.setCameraPosition(eye=[3, 0.3, 2], center=[0, 0, 0], up=[0, 0, 1])
         dartScene.setCameraPosition(eye=camEye, center=camCenter, up=camUp)
         return dartScene

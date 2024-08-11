@@ -1708,8 +1708,6 @@ class Evaluation(object):
         imageWitdthInInches=5,
         imageHeightInInches=5,
         grayScale=False,
-        show=True,
-        block=False,
         save=False,
         savePath=None,
         fileName=None,
@@ -1749,11 +1747,7 @@ class Evaluation(object):
                 format=format,
                 dpi=dpi,
             )
-
-        if show:
-            plt.show(block=block)
-        else:
-            plt.close(fig)
+        return fig
 
     def saveImage(self, rgbImage, savePath, fileType=".png", verbose=False):
         success = cv2.imwrite(

@@ -347,11 +347,16 @@ class DartScene(DartVisualizer):
         self.addSkeleton(fixtureSkel)
         return
 
-    def saveScene(self, savePath):
-        self.showFrame()
-        dir = os.path.dirname(savePath)
-        file_name = os.path.basename(savePath)
-        self.viewer.record(dir, file_name)
+    def setupSceneViewInWindow(self, x, y, width, height):
+        self.viewer.setUpViewInWindow(x, y, width, height)
+
+    def saveScene(
+        self, savePath, format=".png", waitForRenderingTime=0.5, waitForSaveTime=3
+    ):
+        self.viewer.frame()
+        self.viewer.captureScreen(savePath + format)
+        self.viewer.frame()
+        return
 
     def setModelColor(self, color=None):
         color = [0, 0, 1] if color is None else color

@@ -334,10 +334,10 @@ class DartScene(DartVisualizer):
 
         # load board
         if loadBoard:
-            boardSkel = urdfLoader.loadClipBoard()
+            self.boardSkel = urdfLoader.loadClipBoard()
             if clipBoardAlpha is not None:
-                boardSkel.setAlpha(clipBoardAlpha)
-            self.addSkeleton(boardSkel)
+                self.boardSkel.setAlpha(clipBoardAlpha)
+            self.addSkeleton(self.boardSkel)
 
     def loadFixture(self, x=0, y=0, z=0, rx=0, ry=0, rz=0, alpha=1):
         urdfLoader = URDFLoader()

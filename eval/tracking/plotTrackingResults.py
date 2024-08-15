@@ -30,14 +30,14 @@ controlOpt = {
     # [TBD], # for arena
     # --------------------------------------------
     # save opts
-    "saveInputs": True,
+    "saveInputs": False,
     "save": True,
     "saveFolder": "data/eval/tracking/plots/trackingResults",
     "saveName": "trackingResult",
     "verbose": True,
     # --------------------------------------------
     # 2D plots
-    "generateResults_2D": True,
+    "generateResults_2D": False,
     "showResult_2D": False,
     "blockResultPlot_2D": True,
     # --------------------------------------------
@@ -49,7 +49,7 @@ controlOpt = {
     "dpi": 300,
     # --------------------------------------------
     # Simulation
-    "generateResults_Sim": True,
+    "generateResults_Sim": False,
     "showResult_Sim": False,
     # --------------------------------------------
 }
@@ -64,11 +64,12 @@ styleOpt_2D = {
 }
 styleOpt_3D = {
     "colorPalette": scriptColorPalette,
-    "modelPointSize": 30,
-    "modelLineWidth": 1.5,
-    "pointCloudSize": 10,
+    "modelPointSize": 90,
+    "modelLineWidth": 3,
+    "pointCloudSize": 30,
     "pointCloudColor": [1, 0, 0],
     "pointCloudAlpha": 0.2,
+    "pointCloudDownsampleFactor": 2,
     "targetAlpha": 1,
     "elevation": 30,  # 30 for isometric view
     "azimuth": 45,  # 45 for isometric view
@@ -87,6 +88,7 @@ styleOpt_Sim = {
     "pointCloudPointSize": 1,
     "targetPointSize": 10,
     "pointCloudAlpha": 0.1,
+    "boardColor": [1, 1, 1],
     "camEye": [0.4, 1.3, 1.3],
     "camCenter": [0.4, 0, 0],
     "camUp": [0, 0, 1],
@@ -182,9 +184,18 @@ def createResultPlot_3D(dataSetResult, frame, method):
         lineWidth=styleOpt_3D["modelLineWidth"],
         pointSize=styleOpt_3D["modelPointSize"],
     )
+    # downsample point cloud
+    # Create a boolean mask that is True for every nth point
+    mask = np.ones(len(pointCloud), dtype=bool)
+    mask[:: styleOpt_3D["pointCloudDownsampleFactor"]] = (
+        False  # Mark every nth point as False
+    )
+
+    # Apply the mask to X
+    downsampledCloud = pointCloud[mask]
     plotPointSet(
         ax=ax,
-        X=pointCloud,
+        X=downsampledCloud,
         color=styleOpt_3D["pointCloudColor"],
         size=styleOpt_3D["pointCloudSize"],
         alpha=styleOpt_3D["pointCloudAlpha"],
@@ -245,7 +256,7 @@ def createResultPlot_Sim(dataSetResult, frame):
         camCenter=styleOpt_Sim["camCenter"],
         camUp=styleOpt_Sim["camUp"],
     )
-
+    dartScene.boardSkel.setColor(styleOpt_Sim["boardColor"])
     # setup image size
     dataSetPath = dataSetResult["dataSetPath"]
     rgbImg = eval.getDataSet(frame, dataSetPath)[0]

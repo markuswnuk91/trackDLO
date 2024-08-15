@@ -595,6 +595,7 @@ class TrackingEvaluation(Evaluation):
             skelAlpha=skelAlpha,
             robotAlpha=robotAlpha,
             loadCell=False,
+            clipBoardAlpha=1,
         )
         dartScene.robotSkel.setMobile(False)
         dartScene.setCameraPosition(eye=camEye, center=camCenter, up=camUp)

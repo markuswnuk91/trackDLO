@@ -19,8 +19,8 @@ eval = TrackingEvaluation()
 controlOpt = {
     "resultsToLoad": [0, 1, 2],
     "highlightFrames": [[], [], []],
-    "save": True,
-    "saveAsTikz": True,
+    "save": False,
+    "saveAsTikz": False,
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/trackingErrorTimeSeries",
     "saveName": "trackingErrorTimeSeries",

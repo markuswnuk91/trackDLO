@@ -40,10 +40,10 @@ class TrackingEvaluation(Evaluation):
     # ERROR METRIC CALCULATION FUNCTIONS
     # ---------------------------------------------------------------------------
 
-    def calculateTrackingErrors(self, trackingResult):
+    def calculateTrackingErrors(self, trackingMethodResults):
         frames = []
         trackingErrors = []
-        for registrationResult in trackingResult["registrations"]:
+        for registrationResult in trackingMethodResults["registrations"]:
             frames.append(
                 self.getFileIdentifierFromFilePath(registrationResult["filePath"])
             )
@@ -53,12 +53,17 @@ class TrackingEvaluation(Evaluation):
             trackingErrors.append(trackingError)
         return trackingErrors
 
-    def calculateGeometricErrors(self, trackingResult):
-        geometricErrorResult = {"mean": [], "accumulated": [], "lengthError": []}
+    def calculateGeometricErrors(self, trackingMethodResults):
+        geometricErrorResult = {
+            "mean": [],
+            "std": [],
+            "accumulated": [],
+            "lengthError": [],
+        }
         accumulatedGeometricErrorPerIteration = []
         meanGeometricErrorPerIteration = []
-        model = self.generateModel(trackingResult["modelParameters"])
-        B = trackingResult["B"]
+        model = self.generateModel(trackingMethodResults["modelParameters"])
+        B = trackingMethodResults["B"]
         branchIndices = list(set(B))
         numBranches = len(branchIndices)
         totalLength = 0
@@ -70,7 +75,7 @@ class TrackingEvaluation(Evaluation):
             nodeIndices = [i for i, x in enumerate(B) if x == branchIndex]
             correspondingNodeIndices.append(nodeIndices)
 
-        registrationResults = trackingResult["registrations"]
+        registrationResults = trackingMethodResults["registrations"]
         XInit = registrationResults[0]["X"]
         for registrationResult in registrationResults:
             T = registrationResult["T"]
@@ -116,18 +121,24 @@ class TrackingEvaluation(Evaluation):
                     np.array(desiredNodeDistances) - np.array(registeredNodeDistances)
                 )
             )
+            stdGeometricError = np.std(
+                np.abs(
+                    np.array(desiredNodeDistances) - np.array(registeredNodeDistances)
+                )
+            )
             estimatedTotalLength = np.sum(estimatedBranchLengths)
             refereceTotalLength = np.sum(referenceBranchLengths)
             branchLengthError = np.abs(refereceTotalLength - estimatedTotalLength)
             geometricErrorResult["accumulated"].append(geometricError)
             geometricErrorResult["mean"].append(meanGeometricError)
             geometricErrorResult["lengthError"].append(branchLengthError)
+            geometricErrorResult["std"].append(stdGeometricError)
         return geometricErrorResult
 
-    def calculateReprojectionErrors(self, trackingMethodResult):
+    def calculateReprojectionErrors(self, trackingMethodResults):
         reprojectionErrorResult = {}
 
-        dataSetPath = trackingMethodResult["dataSetPath"]
+        dataSetPath = trackingMethodResults["dataSetPath"]
         # get label local cooridnates
         markerLocalCoordinates = self.getMarkerBranchLocalCoordinates(dataSetPath)
         # deteremine for which frames labels exist
@@ -148,12 +159,12 @@ class TrackingEvaluation(Evaluation):
             groundTruthPixelCoordinatesForFrame.append(groundTruthPixelCoordinates)
             missingLabelsForFrame.append(missingLabels)
 
-        trackedFrames = trackingMethodResult["frames"]
+        trackedFrames = trackingMethodResults["frames"]
         framesToEvaluate = list(set(labeledFrames) & set(trackedFrames))
         framesToEvaluate.sort()
         evaluatedFrames = []
-        B = trackingMethodResult["B"]
-        S = trackingMethodResult["S"]
+        B = trackingMethodResults["B"]
+        S = trackingMethodResults["S"]
         meanReprojectionErrorPerFrame = []
         stdReprojectionErrorPerFrame = []
         reprojectionErrorsPerFrame = []
@@ -169,7 +180,7 @@ class TrackingEvaluation(Evaluation):
             # get tracking result cooresponding to labeld frame
             correspondingTrackingMethodResult = (
                 self.findCorrespondingEntryFromKeyValuePair(
-                    trackingMethodResult["registrations"], "frame", frame
+                    trackingMethodResults["registrations"], "frame", frame
                 )
             )
             correspondingTrackingMethodResults.append(correspondingTrackingMethodResult)
@@ -217,7 +228,7 @@ class TrackingEvaluation(Evaluation):
             reprojectionErrorResult["evaluatedMarkers"] = evaluatedMarkers
         return reprojectionErrorResult
 
-    def calculateRuntimes(trackingMethodResult):
+    def calculateRuntimes(self, trackingMethodResult):
         runtimeResults = trackingMethodResult["runtimes"]
         runtimeResults["mean"] = np.mean(
             trackingMethodResult["runtimes"]["runtimesPerIteration"]
@@ -240,6 +251,55 @@ class TrackingEvaluation(Evaluation):
             numCorrespondancesPerIteration
         )
         return runtimeResults
+
+    def calculateSuccessRate(
+        self,
+        trackingMethodResult,
+        reprojectionErrorThresholdMean=None,
+        reprojectionErrorThresholdStd=None,
+    ):
+        reprojectionErrorThresholdMean = (
+            100
+            if reprojectionErrorThresholdMean is None
+            else reprojectionErrorThresholdMean
+        )
+        reprojectionErrorThresholdStd = (
+            70
+            if reprojectionErrorThresholdStd is None
+            else reprojectionErrorThresholdStd
+        )
+        reprojectionErrors = self.calculateReprojectionErrors(trackingMethodResult)
+
+        frames = trackingMethodResult["frames"]
+        reprojectionMeans = reprojectionErrors["means"]
+        reprojectionStds = reprojectionErrors["stds"]
+        labeledFrames = reprojectionErrors["labeledFrames"]
+        # Find where the thresholds are surpassed
+        mean_surpass = np.where(reprojectionMeans > reprojectionErrorThresholdMean)[0]
+        std_surpass = np.where(reprojectionStds > reprojectionErrorThresholdStd)[0]
+
+        if len(mean_surpass) > 0 and len(std_surpass) > 0:
+            # Get the first index where either condition is True
+            first_surpass_index = min(np.min(mean_surpass), np.min(std_surpass))
+            # Get the corresponding frame
+            first_unsuccess_frame = labeledFrames[first_surpass_index]
+        elif len(mean_surpass) > 0:
+            first_surpass_index = np.min(mean_surpass)
+            first_unsuccess_frame = labeledFrames[first_surpass_index]
+        elif len(std_surpass) > 0:
+            first_surpass_index = np.min(std_surpass)
+            first_unsuccess_frame = labeledFrames[first_surpass_index]
+        else:
+            first_unsuccess_frame = frames[-1]
+        successRateResults = {
+            "successRate": first_unsuccess_frame / (len(frames) - 1),
+            "numSuccessfullyTrackedFrames": first_unsuccess_frame,
+            "numUnsuccessfullyTrackedFrames": len(frames) - first_unsuccess_frame,
+            "numFrames": len(frames),
+            "reprojectionErrorThreshold_mean": reprojectionErrorThresholdMean,
+            "reprojectionErrorThreshold_std": reprojectionErrorThresholdStd,
+        }
+        return successRateResults
 
     # ---------------------------------------------------------------------------
     # VISUALIZATION FUNCITONS

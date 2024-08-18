@@ -23,7 +23,7 @@ eval = TrackingEvaluation()
 controlOpt = {
     "resultsToLoad": [0],  # 0: modelY, 1: partial, 2: arena
     "methods": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
-    "frames": list(range(0, 650, 5)),
+    "frames": list(range(290, 650, 5)),
     # [5, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650], # for modelY
     # [5, 50, 100, 150, 200, 250, 300], or list(range(0, 300, 5)) # for partial
     # [5, 50, 100, 150, 200, 250, 300, 350, 400, 450, 495], # for arena
@@ -49,7 +49,7 @@ controlOpt = {
     "dpi": 300,
     # --------------------------------------------
     # Simulation
-    "generateResults_Sim": False,
+    "generateResults_Sim": True,
     "showResult_Sim": False,
     # --------------------------------------------
 }

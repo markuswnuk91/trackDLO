@@ -55,15 +55,24 @@ set_text_to_latex_font(scale_axes_labelsize=1.2)
 def plotTrackingError(model, q, pointCloud, plotLegend=False):
     model.setGeneralizedCoordinates(q)
     X, A_adj = model.getJointPositionsAndAdjacencyMatrix()
-    trackingError = (
+    trackingError = 0.5 * (
         1 / len(pointCloud) * np.sum(np.min(distance_matrix(X, pointCloud), axis=0))
+        + 1 / len(X) * np.sum(np.min(distance_matrix(X, pointCloud), axis=1))
     )
     X_2D = X[:, :2]
     pointCloud_2D = pointCloud[:, :2]
     # determine correspondance matrix
-    corresponding_indices = np.argmin(distance_matrix(X, pointCloud), axis=0)
+    # corresponding_indices = np.argmin(distance_matrix(X, pointCloud), axis=0)
+    corresponding_indices_pc_to_nodes = np.argmin(
+        distance_matrix(X, pointCloud), axis=0
+    )
+    corresponding_indices_nodes_to_pc = np.argmin(
+        distance_matrix(X, pointCloud), axis=1
+    )
     C = np.zeros(shape=(len(X_2D), len(pointCloud_2D)))
-    for pcIdx, nodeIdx in enumerate(corresponding_indices):
+    for pcIdx, nodeIdx in enumerate(corresponding_indices_pc_to_nodes):
+        C[nodeIdx, pcIdx] = 1
+    for nodeIdx, pcIdx in enumerate(corresponding_indices_nodes_to_pc):
         C[nodeIdx, pcIdx] = 1
     fig, ax = setupLatexPlot2D(
         figureWidth=styleOpt["figureWidth"], xlabel="$x$ in $m$", ylabel="$y$ in $m$"
@@ -107,7 +116,7 @@ def plotTrackingError(model, q, pointCloud, plotLegend=False):
         ax.legend(
             handles=legendSymbols,
             labels=[
-                "Estimated Configuration",
+                "BDLO",
                 "Point cloud",
                 "Minimal distances",
             ],
@@ -213,14 +222,14 @@ if __name__ == "__main__":
         trackingErrorString_config_1 = "{:.2f}".format(trackingError_config_1 * 100)
         trackingErrorString_config_2 = "{:.2f}".format(trackingError_config_2 * 100)
         trackingErrorString_config_3 = "{:.2f}".format(trackingError_config_3 * 100)
+        tracking_error_str = "Tracking Error of Config 1 [cm]: \n{:.2f}\n\n Tracking Error of Config 2 [cm]: \n{:.2f}\n\n Tracking Error of Config 3 [cm]: \n{:.2f}\n\n".format(
+            trackingError_config_1 * 100,
+            trackingError_config_2 * 100,
+            trackingError_config_3 * 100,
+        )
         with open(os.path.join(saveFolderPaths[0], "trackingErrors.txt"), "w") as file:
-            file.write(
-                "Tracking Error of Config 1 [cm]: \n{:.2f}\n\n Tracking Error of Config 2 [cm]: \n{:.2f}\n\n Tracking Error of Config 3 [cm]: \n{:.2f}\n\n".format(
-                    trackingError_config_1 * 100,
-                    trackingError_config_2 * 100,
-                    trackingError_config_3 * 100,
-                )
-            )
+            file.write(tracking_error_str)
+        print(tracking_error_str)
     if runOpt["showPlots"]:
         plt.show(block=True)
     print("Done.")

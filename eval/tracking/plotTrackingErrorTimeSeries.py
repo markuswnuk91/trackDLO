@@ -106,3 +106,4 @@ if __name__ == "__main__":
         createTrackingErrorTimeSeriesPlot(
             dataSetResult=result, methodsToEvaluate=controlOpt["methodsToEvaluate"]
         )
+    print("Done.")

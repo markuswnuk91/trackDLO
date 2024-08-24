@@ -49,7 +49,10 @@ class TrackingEvaluation(Evaluation):
             )
             T = registrationResult["T"]
             Y = registrationResult["Y"]
-            trackingError = 1 / len(Y) * np.sum(np.min(distance_matrix(T, Y), axis=0))
+            trackingError = 0.5 * (
+                1 / len(Y) * np.sum(np.min(distance_matrix(T, Y), axis=0))
+                + 1 / len(T) * np.sum(np.min(distance_matrix(T, Y), axis=1))
+            )
             trackingErrors.append(trackingError)
         return trackingErrors
 

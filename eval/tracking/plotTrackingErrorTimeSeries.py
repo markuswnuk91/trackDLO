@@ -25,7 +25,7 @@ controlOpt = {
     "resultsToLoad": [0],  # [0,1,2]
     "save": True,
     "saveAs": "pdf",  # tikz, pdf, png
-    "showPlot": True,
+    "showPlot": False,
     "saveFolder": "data/eval/tracking/plots/trackingErrorTimeSeries",
     "saveName": "trackingErrorTimeSeries",
     "methodsToEvaluate": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
@@ -60,7 +60,7 @@ styleOpt = {
 }
 
 # figure font configuration
-latexFontSize_in_pt = 14
+latexFontSize_in_pt = 16
 tex_fonts = {
     #    "pgf.texsystem": "pdflatex",
     # Use LaTeX to write all text

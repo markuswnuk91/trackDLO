@@ -11,6 +11,7 @@ try:
     sys.path.append(os.getcwd().replace("/eval", ""))
     from src.evaluation.tracking.trackingEvaluation import TrackingEvaluation
     from src.visualization.plot2D import *
+    from src.visualization.colors import *
 except:
     print("Imports for plotting reprojection errors as boxplot failed.")
     raise
@@ -23,11 +24,17 @@ controlOpt = {
     "createPlot": True,
     "printNumTrackedFrames": False,
     "save": True,
-    "saveAsTikz": True,
+    "saveAs": "pdf",  # "pdf" , "png", "tikz"
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/successRateBarPlot",
     "saveName": "successRateBarPlot",
     "methodsToEvaluate": ["cpd", "spr", "kpr"],
+}
+
+styleOpt = {
+    "legende": False,
+    "colorPalette": thesisColorPalettes["viridis"],
+    "grid": True,
 }
 
 successfullyTrackedFrames = {
@@ -50,6 +57,23 @@ successfullyTrackedFrames = {
         "krcpd": 497,
     },
 }
+
+# figure font configuration
+latexFontSize_in_pt = 16
+tex_fonts = {
+    #    "pgf.texsystem": "pdflatex",
+    # Use LaTeX to write all text
+    "text.usetex": True,
+    "font.family": "serif",
+    # Use 10pt font in plots, to match 10pt font in document
+    "axes.labelsize": latexFontSize_in_pt,
+    "font.size": latexFontSize_in_pt,
+    # Make the legend/label fonts a little smaller
+    "legend.fontsize": latexFontSize_in_pt,
+    "xtick.labelsize": latexFontSize_in_pt,
+    "ytick.labelsize": latexFontSize_in_pt,
+}
+plt.rcParams.update(tex_fonts)
 
 resultFileName = "result.pkl"
 resultFolderPaths = [
@@ -82,6 +106,8 @@ def createSuccessRateBarPlot(
     dataSetResult,
     methodsToEvaluate=None,
     barWidth=0.5,
+    spacingFactor=1.0,
+    legend=False,
 ):
     trackingResults = dataSetResult["trackingResults"]
     methodsToEvaluate = (
@@ -91,13 +117,27 @@ def createSuccessRateBarPlot(
     # plot error bars
     XTicks = np.arange(len(methodsToEvaluate)) * spacingFactor
 
+    # open plot
+    # fig, ax = setupLatexPlot2D()
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.set_axisbelow(True)
+    ax.grid(styleOpt["grid"])
+
     plotColors = []
-    for x, method in zip(XTicks, methodsToEvaluate):
+    for i, (x, method) in enumerate(zip(XTicks, methodsToEvaluate)):
+        bar_color = styleOpt["colorPalette"].to_rgba(i / (len(methodsToEvaluate) - 1))[
+            :3
+        ]
         barValue = successfullyTrackedFrames[dataSetName][method]
+        successRateResults = eval.calculateSuccessRate(trackingResults[method])
+        barValue = successRateResults["numSuccessfullyTrackedFrames"]
+        successRate = successRateResults["successRate"] * 100
         absNumFrames = len(trackingResults[method]["frames"])
         bottomValue = barValue
-        successBar = plt.bar(x, barValue, barWidth)
-        plt.bar(
+        successBar = ax.bar(x, barValue, barWidth, color=bar_color)
+        # plot unsuccessful bar
+        unsuccessBar = ax.bar(
             x,
             absNumFrames - barValue,
             barWidth,
@@ -105,6 +145,15 @@ def createSuccessRateBarPlot(
             color="gray",
         )
         plotColors.append(successBar.patches[0].get_facecolor())
+        for unsuccessRect, successRect in zip(unsuccessBar, successBar):
+            height = unsuccessRect.get_height() + successRect.get_height()
+            plt.text(
+                successRect.get_x() + successRect.get_width() / 2.0,
+                height,
+                "{:.1f}".format(successRate) + "\%",
+                ha="center",
+                va="bottom",
+            )
 
     # barValues = []
     # absNumFrames = []
@@ -128,24 +177,25 @@ def createSuccessRateBarPlot(
 
     # Set the title, labels, and a legend
     plt.xlabel("methods")
-    plt.ylabel("Successfully tracked frames")
+    plt.ylabel("successfully tracked frames")
     plt.xticks(XTicks, [x.upper() for x in methodsToEvaluate])
     plt.ylim([0, int(absNumFrames * 1.2)])
-    plt.legend()
-    pa1 = Patch(facecolor=plotColors[0], edgecolor="black")
-    pa2 = Patch(facecolor=plotColors[1], edgecolor="black")
-    pa3 = Patch(facecolor=plotColors[2], edgecolor="black")
-    pb1 = Patch(facecolor="gray", edgecolor="gray")
-    pb2 = Patch(facecolor="gray", edgecolor="gray")
-    pb3 = Patch(facecolor="gray", edgecolor="gray")
-    plt.legend(
-        handles=[pa1, pb1, pa2, pb2, pa3, pb3],
-        labels=["", "", "", "", "successful", "not successful"],
-        ncol=3,
-        handletextpad=0.5,
-        handlelength=1.0,
-        columnspacing=-0.5,
-    )
+    if legend:
+        plt.legend()
+        pa1 = Patch(facecolor=plotColors[0], edgecolor="black")
+        pa2 = Patch(facecolor=plotColors[1], edgecolor="black")
+        pa3 = Patch(facecolor=plotColors[2], edgecolor="black")
+        pb1 = Patch(facecolor="gray", edgecolor="gray")
+        pb2 = Patch(facecolor="gray", edgecolor="gray")
+        pb3 = Patch(facecolor="gray", edgecolor="gray")
+        plt.legend(
+            handles=[pa1, pb1, pa2, pb2, pa3, pb3],
+            labels=["", "", "", "", "successful", "not successful"],
+            ncol=3,
+            handletextpad=0.5,
+            handlelength=1.0,
+            columnspacing=-0.5,
+        )
     plt.tight_layout()
 
     if controlOpt["save"]:
@@ -158,10 +208,13 @@ def createSuccessRateBarPlot(
         fileName = controlOpt["saveName"]
         savePath = os.path.join(saveFolderPath, fileName)
         # save as png
-        plt.savefig(savePath)
+        if controlOpt["saveAs"] == "png":
+            plt.savefig(savePath)
         # save as tixfigure
-        if controlOpt["saveAsTikz"]:
+        if controlOpt["saveAs"] == "tikz":
             tikzplotlib.save(savePath + ".tex")
+        if controlOpt["saveAs"] == "pdf":
+            plt.savefig(savePath + ".pdf")
     if controlOpt["showPlot"]:
         plt.show(block=True)
     return
@@ -180,5 +233,7 @@ if __name__ == "__main__":
         if controlOpt["createPlot"]:
             # create plot
             createSuccessRateBarPlot(
-                dataSetResult, methodsToEvaluate=controlOpt["methodsToEvaluate"]
+                dataSetResult,
+                methodsToEvaluate=controlOpt["methodsToEvaluate"],
+                legend=styleOpt["legende"],
             )

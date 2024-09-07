@@ -11,6 +11,7 @@ try:
     from src.evaluation.tracking.trackingEvaluation import TrackingEvaluation
     from src.visualization.plot2D import *
     from src.visualization.colors import *
+    from src.visualization.plotUtils import *
 except:
     print("Imports for plotting reprojection errors as boxplot failed.")
     raise
@@ -19,17 +20,18 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [0],  # 0,1,2
-    "save": False,
-    "saveAsTikz": False,
+    "resultsToLoad": [0, 1, 2],  # 0,1,2
+    "save": True,
+    "saveAs": "pdf",  # "pdf" "tikz" ,"png"
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/reprojectionErrorBarPlot",
     "saveName": "reprojectionErrorBarPlot",
     "methodsToEvaluate": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
 }
 styleOpt = {
-    "legende": False,
+    "legende": True,
     "colorPalette": thesisColorPalettes["viridis"],
+    "meanMarkerSize": 5,
     "errorMarkerSize": 12,
     "errorMarkerAlpha": 0.2,
 }
@@ -75,6 +77,7 @@ def createReprojectionErrorBoxPlots(
     spacingXTicks=5,
     spacingErrorBars=3,
     capsize=3,
+    legende=True,
 ):
     trackingResults = dataSetResult["trackingResults"]
     methodsToEvaluate = (
@@ -157,6 +160,7 @@ def createReprojectionErrorBoxPlots(
             means[i],
             yerr=stds[i],
             fmt="o",
+            markersize=styleOpt["meanMarkerSize"],
             label=method,
             capsize=capsize,
             color=methodColor,
@@ -180,8 +184,45 @@ def createReprojectionErrorBoxPlots(
     plt.xlabel("frames")
     plt.ylabel("mean reprojection error in px")
     plt.xticks(XTicks, framesToPlot)
-    if styleOpt["legende"]:
-        plt.legend()
+    if legende:
+        # create legend
+        legendSymbols = []
+        legendLabels = []
+        for i, method in enumerate(methodsToEvaluate):
+            symbolColor = styleOpt["colorPalette"].to_rgba(
+                i / (len(methodsToEvaluate) - 1)
+            )[:3]
+            # error bar symbol
+            errorBarHandle = configureLegendSymbol(
+                "errorbar",
+                markersize=5,
+                color=symbolColor,
+            )
+            legendSymbols.append(errorBarHandle)
+            legendLabels.append(method.upper())
+
+        # # error bar symbol SPR
+        # errorBarHandle_SPR = configureLegendSymbol(
+        #     "errorbar",
+        #     markersize=5,
+        #     color=symbolColor,
+        # )
+        # legendSymbols.append(errorBarHandle_SPR)
+        # legendLabels.append("SPR")
+
+        # # error bar symbol KPR
+        # errorBarHandle_KPR = configureLegendSymbol(
+        #     "errorbar",
+        #     markersize=5,
+        #     color=symbolColor,
+        # )
+        # legendSymbols.append(errorBarHandle_KPR)
+        # legendLabels.append("KPR")
+        ax.legend(
+            handles=legendSymbols,
+            labels=legendLabels,
+            loc="upper right",
+        )
     plt.tight_layout()
 
     if controlOpt["save"]:
@@ -193,10 +234,13 @@ def createReprojectionErrorBoxPlots(
             os.makedirs(saveFolderPath)
         fileName = controlOpt["saveName"]
         savePath = os.path.join(saveFolderPath, fileName)
-        # save as png
-        plt.savefig(savePath)
-        # save as tixfigure
-        if controlOpt["saveAsTikz"]:
+        if controlOpt["saveAs"] == "png":
+            # save as png
+            plt.savefig(savePath)
+        if controlOpt["saveAs"] == "pdf":
+            plt.savefig(savePath + ".pdf")
+        if controlOpt["saveAs"] == "tikz":
+            # save as tixfigure
             tikzplotlib.save(savePath + ".tex")
     if controlOpt["showPlot"]:
         plt.show(block=True)
@@ -211,7 +255,9 @@ if __name__ == "__main__":
         result = loadResult(resultFilePath)
         dataSetResults.append(result)
     # create plot
-    for dataSetResult in dataSetResults:
+    for i, dataSetResult in enumerate(dataSetResults):
         createReprojectionErrorBoxPlots(
-            dataSetResult, methodsToEvaluate=controlOpt["methodsToEvaluate"]
+            dataSetResult,
+            methodsToEvaluate=controlOpt["methodsToEvaluate"],
+            legende=styleOpt["legende"],
         )

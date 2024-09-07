@@ -260,6 +260,8 @@ class TrackingEvaluation(Evaluation):
         trackingMethodResult,
         reprojectionErrorThresholdMean=None,
         reprojectionErrorThresholdStd=None,
+        geometricErrorThreshold=None,
+        trackingErrorThreshold=None,
     ):
         reprojectionErrorThresholdMean = (
             100
@@ -267,12 +269,31 @@ class TrackingEvaluation(Evaluation):
             else reprojectionErrorThresholdMean
         )
         reprojectionErrorThresholdStd = (
-            70
+            100
             if reprojectionErrorThresholdStd is None
             else reprojectionErrorThresholdStd
         )
+        geometricErrorThreshold = (
+            0.2 if geometricErrorThreshold is None else geometricErrorThreshold
+        )
+        trackingErrorThreshold = (
+            0.03 if trackingErrorThreshold is None else trackingErrorThreshold
+        )
         reprojectionErrors = self.calculateReprojectionErrors(trackingMethodResult)
-
+        geometricErrors = np.array(
+            self.calculateGeometricErrors(trackingMethodResult)["lengthError"]
+        )
+        geometricErrors_avg = np.convolve(
+            geometricErrors,
+            np.ones(5) / 5,
+            mode="same",
+        )
+        trackingErrors = self.calculateTrackingErrors(trackingMethodResult)
+        trackingErrors_avg = np.convolve(
+            trackingErrors,
+            np.ones(5) / 5,
+            mode="same",
+        )
         frames = trackingMethodResult["frames"]
         reprojectionMeans = reprojectionErrors["means"]
         reprojectionStds = reprojectionErrors["stds"]
@@ -280,10 +301,18 @@ class TrackingEvaluation(Evaluation):
         # Find where the thresholds are surpassed
         mean_surpass = np.where(reprojectionMeans > reprojectionErrorThresholdMean)[0]
         std_surpass = np.where(reprojectionStds > reprojectionErrorThresholdStd)[0]
-
+        geometricErrors_surpass = np.where(
+            geometricErrors_avg > geometricErrorThreshold
+        )[0]
+        trackingErrors_surpass = np.where(trackingErrors_avg > trackingErrorThreshold)[
+            0
+        ]
         if len(mean_surpass) > 0 and len(std_surpass) > 0:
             # Get the first index where either condition is True
-            first_surpass_index = min(np.min(mean_surpass), np.min(std_surpass))
+            first_surpass_index = min(
+                np.min(mean_surpass),
+                np.min(std_surpass),
+            )
             # Get the corresponding frame
             first_unsuccess_frame = labeledFrames[first_surpass_index]
         elif len(mean_surpass) > 0:
@@ -293,14 +322,23 @@ class TrackingEvaluation(Evaluation):
             first_surpass_index = np.min(std_surpass)
             first_unsuccess_frame = labeledFrames[first_surpass_index]
         else:
-            first_unsuccess_frame = frames[-1]
+            first_unsuccess_frame = len(frames)
+
+        unsuccessful_frames = (
+            set(geometricErrors_surpass).union(set(frames[first_unsuccess_frame:]))
+        ).union(set(trackingErrors_surpass))
+        n_unsuccessful_frames = len(unsuccessful_frames)
+        n_successful_frames = len(frames) - n_unsuccessful_frames
+        successRate = n_successful_frames / len(frames)
         successRateResults = {
-            "successRate": first_unsuccess_frame / (len(frames) - 1),
-            "numSuccessfullyTrackedFrames": first_unsuccess_frame,
-            "numUnsuccessfullyTrackedFrames": len(frames) - first_unsuccess_frame,
+            "successRate": successRate,
+            "numSuccessfullyTrackedFrames": n_successful_frames,
+            "numUnsuccessfullyTrackedFrames": n_unsuccessful_frames,
             "numFrames": len(frames),
             "reprojectionErrorThreshold_mean": reprojectionErrorThresholdMean,
             "reprojectionErrorThreshold_std": reprojectionErrorThresholdStd,
+            "geometricErrorThreshold": geometricErrorThreshold,
+            "trackingErrorThreshold": trackingErrorThreshold,
         }
         return successRateResults
 

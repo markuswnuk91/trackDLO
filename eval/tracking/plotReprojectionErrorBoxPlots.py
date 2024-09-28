@@ -29,11 +29,15 @@ controlOpt = {
     "methodsToEvaluate": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
 }
 styleOpt = {
+    "plotAspectRatio": "default",  # default , golden
     "legende": True,
+    "legendPosition": "upper left",
     "colorPalette": thesisColorPalettes["viridis"],
     "meanMarkerSize": 5,
     "errorMarkerSize": 12,
     "errorMarkerAlpha": 0.2,
+    "roundToDecimals": True,
+    "grid": True,
 }
 
 # figure font configuration
@@ -105,7 +109,14 @@ def createReprojectionErrorBoxPlots(
     ]
 
     # generate plot
-    fig, ax = setupLatexPlot2D()
+    if styleOpt["plotAspectRatio"] == "default":
+        fig = plt.figure()
+        ax = fig.add_subplot()
+    elif styleOpt["plotAspectRatio"] == "golden":
+        fig, ax = setupLatexPlot2D()
+    else:
+        raise NotImplementedError
+
     if numSamples is None:
         framesToPlot = labeledFrames
         sampleIdx = np.array(range(0, len(labeledFrames))).astype(int)
@@ -183,7 +194,14 @@ def createReprojectionErrorBoxPlots(
     # Set the title, labels, and a legend
     plt.xlabel("frames")
     plt.ylabel("mean reprojection error in px")
+    if styleOpt["roundToDecimals"]:
+        framesToPlot = list(map(lambda x: (x // 10) * 10, framesToPlot))
     plt.xticks(XTicks, framesToPlot)
+    # grid
+    if styleOpt["grid"]:
+        plt.grid(True)
+    else:
+        plt.grid(False)
     if legende:
         # create legend
         legendSymbols = []
@@ -221,8 +239,10 @@ def createReprojectionErrorBoxPlots(
         ax.legend(
             handles=legendSymbols,
             labels=legendLabels,
-            loc="upper right",
+            loc=styleOpt["legendPosition"],
         )
+
+    # Adjust layout to prevent clipping
     plt.tight_layout()
 
     if controlOpt["save"]:
@@ -238,7 +258,7 @@ def createReprojectionErrorBoxPlots(
             # save as png
             plt.savefig(savePath)
         if controlOpt["saveAs"] == "pdf":
-            plt.savefig(savePath + ".pdf")
+            plt.savefig(savePath + ".pdf", bbox_inches="tight")
         if controlOpt["saveAs"] == "tikz":
             # save as tixfigure
             tikzplotlib.save(savePath + ".tex")

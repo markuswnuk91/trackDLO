@@ -37,26 +37,26 @@ styleOpt = {
     "grid": True,
 }
 
-successfullyTrackedFrames = {
-    "20230524_171237_ManipulationSequences_mountedWireHarness_modelY": {
-        "cpd": 397,
-        "spr": 550,
-        "kpr": 695,
-        "krcpd": 695,
-    },
-    "20230807_162939_ManipulationSequences_mountedWireHarness_partial": {
-        "cpd": 120,
-        "spr": 120,
-        "kpr": 315,
-        "krcpd": 315,
-    },
-    "20230524_161235_ManipulationSequences_mountedWireHarness_arena": {
-        "cpd": 55,
-        "spr": 380,
-        "kpr": 497,
-        "krcpd": 497,
-    },
-}
+# successfullyTrackedFrames = {
+#     "20230524_171237_ManipulationSequences_mountedWireHarness_modelY": {
+#         "cpd": 397,
+#         "spr": 550,
+#         "kpr": 695,
+#         "krcpd": 695,
+#     },
+#     "20230807_162939_ManipulationSequences_mountedWireHarness_partial": {
+#         "cpd": 120,
+#         "spr": 120,
+#         "kpr": 315,
+#         "krcpd": 315,
+#     },
+#     "20230524_161235_ManipulationSequences_mountedWireHarness_arena": {
+#         "cpd": 55,
+#         "spr": 380,
+#         "kpr": 497,
+#         "krcpd": 497,
+#     },
+# }
 
 # figure font configuration
 latexFontSize_in_pt = 16
@@ -129,7 +129,7 @@ def createSuccessRateBarPlot(
         bar_color = styleOpt["colorPalette"].to_rgba(i / (len(methodsToEvaluate) - 1))[
             :3
         ]
-        barValue = successfullyTrackedFrames[dataSetName][method]
+        # barValue = successfullyTrackedFrames[dataSetName][method]
         successRateResults = eval.calculateSuccessRate(trackingResults[method])
         barValue = successRateResults["numSuccessfullyTrackedFrames"]
         successRate = successRateResults["successRate"] * 100
@@ -196,6 +196,7 @@ def createSuccessRateBarPlot(
             handlelength=1.0,
             columnspacing=-0.5,
         )
+    # Adjust layout to prevent clipping
     plt.tight_layout()
 
     if controlOpt["save"]:
@@ -214,7 +215,7 @@ def createSuccessRateBarPlot(
         if controlOpt["saveAs"] == "tikz":
             tikzplotlib.save(savePath + ".tex")
         if controlOpt["saveAs"] == "pdf":
-            plt.savefig(savePath + ".pdf")
+            plt.savefig(savePath + ".pdf", bbox_inches="tight")
     if controlOpt["showPlot"]:
         plt.show(block=True)
     return

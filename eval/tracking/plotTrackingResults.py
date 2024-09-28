@@ -147,7 +147,9 @@ def createResultPlot_2D(dataSetResult, frame, method):
         plt.close(fig)
     # save Visualization
     if controlOpt["save"]:
-        filename = controlOpt["saveName"] + "_frame_" + str(frame) + "_2D"
+        filename = (
+            controlOpt["saveName"] + "_" + method + "_" + "_frame_" + str(frame) + "_2D"
+        )
         dataSetPath = dataSetResult["dataSetPath"]
         dataSetName = dataSetPath.split("/")[-2]
         folderPath = os.path.join(controlOpt["saveFolder"], dataSetName, method)

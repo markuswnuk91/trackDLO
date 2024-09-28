@@ -22,16 +22,18 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [0],  # [0,1,2]
+    "resultsToLoad": [2],  # [0,1,2]
     "save": True,
     "saveAs": "pdf",  # tikz, pdf, png
-    "showPlot": False,
+    "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/trackingErrorTimeSeries",
     "saveName": "trackingErrorTimeSeries",
     "methodsToEvaluate": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
 }
 styleOpt = {
+    "plotAspectRatio": "default",  # default , golden
     "legende": True,
+    "legendPosition": "upper left",
     "colorPalette": thesisColorPalettes["viridis"],
     "lineStyles": ["-", "-", "-"],  # line styles for CPD, SPR, KPR respectively
     "movingAverageWindowSize": 10,
@@ -41,14 +43,14 @@ styleOpt = {
     "trackingErrorsLineStyle": "-",
     "trackingErrorsLineWidth": 3,
     "highlightFrames": [
-        [50, 300, 600],
-        [],
-        [],
+        [400, 560, 630],
+        [120, 145, 280],
+        [55, 390, 465],
     ],  # list of list, each sublist for one data set
     "highlightLabels": [
-        ["a)", "b)", "c)"],
-        ["a)", "b)", "c)"],
-        ["a)", "b)", "c)"],
+        ["$t_1$", "$t_2$", "$t_3$"],
+        ["$t_1$", "$t_2$", "$t_3$"],
+        ["$t_1$", "$t_2$", "$t_3$"],
     ],  # list of list, each sublist for one data set
     "highlightColor": [1, 0, 0],
     "highlightTextColor": [0, 0, 0],
@@ -57,6 +59,7 @@ styleOpt = {
     "grid": True,
     "yAxisDescription": "tracking error in cm",
     "unitScalingFactor": 100,  # scale tracking errors to cm
+    "cutOffThreshold": 5,  # leaves out last n values when plotting to avoid unreasonable dropoff from moving average
 }
 
 # figure font configuration
@@ -146,7 +149,14 @@ def createTrackingErrorTimeSeriesPlot(
     )
     grid = True if grid is None else grid
 
-    fig, ax = setupLatexPlot2D()
+    if styleOpt["plotAspectRatio"] == "default":
+        fig = plt.figure()
+        ax = fig.add_subplot()
+    elif styleOpt["plotAspectRatio"] == "golden":
+        fig, ax = setupLatexPlot2D()
+    else:
+        raise NotImplementedError
+
     trackingErrorLines = []
     ymax = 0  # Initialize a variable to track the maximum y value
 
@@ -163,16 +173,16 @@ def createTrackingErrorTimeSeriesPlot(
         )
         color = colorPalette.to_rgba(idx / (len(methodsToEvaluate) - 1))[:3]
         (trackingErrorLine,) = ax.plot(
-            list(range(len(trackingErrors))),
-            trackingErrors,
+            list(range(len(trackingErrors[: -styleOpt["cutOffThreshold"]]))),
+            trackingErrors[: -styleOpt["cutOffThreshold"]],
             color=color,
             linestyle=styleOpt["trackingErrorsLineStyle"],
             linewidth=styleOpt["trackingErrorsLineWidth"],
             alpha=styleOpt["trackingErrorsAlpha"],
         )
         (trackingErrorLine,) = ax.plot(
-            list(range(len(trackingErrors))),
-            trackingErrorsMovingAvg,
+            list(range(len(trackingErrors[: -styleOpt["cutOffThreshold"]]))),
+            trackingErrorsMovingAvg[: -styleOpt["cutOffThreshold"]],
             color=color,
             linestyle=lineStyles[idx],
             linewidth=styleOpt["movingAverageLineWidth"],
@@ -218,12 +228,15 @@ def createTrackingErrorTimeSeriesPlot(
     # create legend
     if styleOpt["legende"]:
         # make legend
-        ax.legend(loc="upper right")
+        ax.legend(loc=styleOpt["legendPosition"])
 
     plt.xlabel("frames")
     plt.ylabel(styleOpt["yAxisDescription"])
 
     ax.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+    # Adjust layout to prevent clipping
+    plt.tight_layout()
+
     # # Use scientific notation on the y-axis
     # formatter = ScalarFormatter(useMathText=True)
     # formatter.set_scientific(True)
@@ -258,7 +271,7 @@ def createTrackingErrorTimeSeriesPlot(
         if controlOpt["saveAs"] == "tikz":
             tikzplotlib.save(savePath + ".tex")
         if controlOpt["saveAs"] == "pdf":
-            plt.savefig(savePath + ".pdf")
+            plt.savefig(savePath + ".pdf", bbox_inches="tight")
     if controlOpt["showPlot"]:
         plt.show(block=True)
 
@@ -276,11 +289,13 @@ if __name__ == "__main__":
             dataSetResult=result,
             methodsToEvaluate=controlOpt["methodsToEvaluate"],
             lineStyles=styleOpt["lineStyles"],
-            highlightFrames=styleOpt["highlightFrames"][i],
+            highlightFrames=styleOpt["highlightFrames"][controlOpt["resultsToLoad"][i]],
             highlightColor=styleOpt["highlightColor"],
-            highlightLabels=styleOpt["highlightLabels"][i],
+            highlightLabels=styleOpt["highlightLabels"][controlOpt["resultsToLoad"][i]],
             highlightAlpha=styleOpt["highlightAlpha"],
-            highlightLineStyles=styleOpt["highlightLineStyles"][i],
+            highlightLineStyles=styleOpt["highlightLineStyles"][
+                controlOpt["resultsToLoad"][i]
+            ],
             highlightLabelFontSize=latexFontSize_in_pt,
             grid=styleOpt["grid"],
         )

@@ -20,8 +20,8 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [0, 1, 2],
-    "save": False,
+    "resultsToLoad": [2],
+    "save": True,
     "saveAs": "pdf",  # tikz, pdf, png
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/geometricErrorTimeSeries",
@@ -37,7 +37,9 @@ resultFolderPaths = [
 ]
 
 styleOpt = {
-    "legende": False,
+    "plotAspectRatio": "default",  # default , golden
+    "legende": True,
+    "legendPosition": "upper left",
     "colorPalette": thesisColorPalettes["viridis"],
     "lineStyles": ["-", "-", "-"],  # line styles for CPD, SPR, KPR respectively
     "movingAverageWindowSize": 10,
@@ -48,14 +50,14 @@ styleOpt = {
     "errorsLineWidth": 3,
     "highlightColor": [1, 0, 0],
     "highlightFrames": [
-        [50, 300, 600],
-        [],
-        [],
+        [400, 560, 630],
+        [120, 150, 280],
+        [55, 390, 465],
     ],  # list of list, each sublist for one data set
     "highlightLabels": [
-        ["a)", "b)", "c)"],
-        ["a)", "b)", "c)"],
-        ["a)", "b)", "c)"],
+        ["$t_1$", "$t_2$", "$t_3$"],
+        ["$t_1$", "$t_2$", "$t_3$"],
+        ["$t_1$", "$t_2$", "$t_3$"],
     ],  # list of list, each sublist for one data set
     "highlightColor": [1, 0, 0],
     "highlightTextColor": [0, 0, 0],
@@ -127,8 +129,13 @@ def createGeometricErrorTimeSeriesPlot(
     )
     grid = True if grid is None else grid
 
-    # plotting
-    fig, ax = setupLatexPlot2D()
+    if styleOpt["plotAspectRatio"] == "default":
+        fig = plt.figure()
+        ax = fig.add_subplot()
+    elif styleOpt["plotAspectRatio"] == "golden":
+        fig, ax = setupLatexPlot2D()
+    else:
+        raise NotImplementedError
 
     geometricErrorLines = []
     ymax = 0  # Initialize a variable to track the maximum y value
@@ -193,9 +200,12 @@ def createGeometricErrorTimeSeriesPlot(
         plt.grid(True)
     if styleOpt["legende"]:
         # make legend
-        ax.legend(loc="upper right")
+        ax.legend(loc=styleOpt["legendPosition"])
     plt.xlabel("frames")
     plt.ylabel(styleOpt["yAxisDescription"])
+
+    # Adjust layout to prevent clipping
+    plt.tight_layout()
 
     # saving
     if controlOpt["save"]:
@@ -212,7 +222,7 @@ def createGeometricErrorTimeSeriesPlot(
             plt.savefig(savePath)
         # save as pdf
         if controlOpt["saveAs"] == "pdf":
-            plt.savefig(savePath + ".pdf")
+            plt.savefig(savePath + ".pdf", bbox_inches="tight")
         # save as tixfigure
         if controlOpt["saveAs"] == "tikz":
             tikzplotlib.save(savePath + ".tex")
@@ -232,12 +242,14 @@ if __name__ == "__main__":
         createGeometricErrorTimeSeriesPlot(
             result,
             methodsToEvaluate=controlOpt["methodsToEvaluate"],
-            highlightFrames=styleOpt["highlightFrames"][i],
+            highlightFrames=styleOpt["highlightFrames"][controlOpt["resultsToLoad"][i]],
             highlightColor=styleOpt["highlightColor"],
             lineStyles=styleOpt["lineStyles"],
-            highlightLabels=styleOpt["highlightLabels"][i],
+            highlightLabels=styleOpt["highlightLabels"][controlOpt["resultsToLoad"][i]],
             highlightAlpha=styleOpt["highlightAlpha"],
-            highlightLineStyles=styleOpt["highlightLineStyles"][i],
+            highlightLineStyles=styleOpt["highlightLineStyles"][
+                controlOpt["resultsToLoad"][i]
+            ],
             highlightLabelFontSize=latexFontSize_in_pt,
             grid=styleOpt["grid"],
         )

@@ -34,7 +34,7 @@ controlOpt = {
     "showPlot": True,
     "makeScatterPlot": True,
     "makeOutlierRatioBarPlot": False,
-    "makeHistogramPlot": False,
+    "makeHistogramPlot": True,
     "makeGraspingAccuracyBoxPlot": False,
     "save": False,
     "saveAs": "PDF",  # "PDF", "TIKZ", "PGF"
@@ -79,7 +79,7 @@ styleOpt = {
     "gaussianThresholdCenterColor": [1, 0, 0],
     "gaussianThresholdCenterAlpha": 0.5,
     "gaussianSigmaFactor": 1.5,
-    "gaussian" "histogramFitLineStyle": "--",
+    "histogramFitLineStyle": "--",
 }
 textwidth_in_pt = 483.6969
 figureScaling = 1

@@ -20,6 +20,7 @@ try:
     )
     from src.visualization.plot2D import *
     from src.visualization.colors import *
+    from src.visualization.plotUtils import *
 except:
     print("Imports for plotting script tracking error time series failed.")
     raise
@@ -33,13 +34,13 @@ controlOpt = {
     "registrationResultsToEvaluate": [-1],
     "showPlot": True,
     "makeScatterPlot": True,
-    "makeOutlierRatioBarPlot": False,
+    "makeOutlierRatioBarPlot": True,
     "makeHistogramPlot": True,
-    "makeGraspingAccuracyBoxPlot": False,
-    "save": False,
+    "makeGraspingAccuracyBoxPlot": True,
+    "save": True,
     "saveAs": "PDF",  # "PDF", "TIKZ", "PGF"
-    "saveAsTikz": False,  # does not work with dashed lines, and does not plot legend
-    "saveAsPGF": False,
+    # "saveAsTikz": False,  # does not work with dashed lines, and does not plot legend
+    # "saveAsPGF": False,
     "verbose": True,
 }
 
@@ -54,6 +55,8 @@ saveOpt = {
 }
 
 styleOpt = {
+    "figureWidth": 7.4,
+    "figureHeight": 5.8,
     "methodColors": {
         "cpd": thesisColorPalettes["viridis"].to_rgba(0)[:3],
         "spr": thesisColorPalettes["viridis"].to_rgba(0.5)[:3],
@@ -67,6 +70,7 @@ styleOpt = {
     "alpha": 0.7,
     "markersize": 20,
     "legendMarkerSize": 5,
+    # scatterPlot
     "plotTreshold": "gaussian",  # "lines", "gaussian_fit"
     "translationalErrorThreshold": 0.05,  # None: do not plot
     "rotationalErrorThreshold": 45,  # None: do not plot
@@ -75,49 +79,75 @@ styleOpt = {
     "thresholdLineStyle": "--",
     "gaussianThresholdContourColorpalette": "Reds",
     "gaussianThresholdContourAlpha": 0.5,
-    "gaussianThresholdLineColor": "red",
+    "gaussianThresholdLineColor": "blue",
     "gaussianThresholdCenterColor": [1, 0, 0],
     "gaussianThresholdCenterAlpha": 0.5,
-    "gaussianSigmaFactor": 1.5,
+    "gaussianInlierDistributionAlpha": 0.1,
+    "gaussianOutlierDistributionAlpha": 0.1,
+    "gaussianInlierDistributionColor": "blue",
+    "gaussianOutlierDistributionColor": "red",
+    "gaussianSigmaFactor": 2,
     "histogramFitLineStyle": "--",
+    # histogram plot
+    "addSecondaryAxis": False,
+    # successRateBarPlot
+    "plotSuccessRateText": True,
+    "plotSuccessRateLegend": False,
+    # box plot
+    "boxPlotFaceAlpha": 0.9,
 }
-textwidth_in_pt = 483.6969
-figureScaling = 1
-latexFontSize_in_pt = 14
-latexFootNoteFontSize_in_pt = 10
-desiredFigureWidth = figureScaling * textwidth_in_pt
-desiredFigureHeight = figureScaling * textwidth_in_pt
+# textwidth_in_pt = 483.6969
+# figureScaling = 1
+# latexFontSize_in_pt = 14
+# latexFootNoteFontSize_in_pt = 10
+# desiredFigureWidth = figureScaling * textwidth_in_pt
+# desiredFigureHeight = figureScaling * textwidth_in_pt
+# tex_fonts = {
+#     #    "pgf.texsystem": "pdflatex",
+#     # Use LaTeX to write all text
+#     "text.usetex": True,
+#     "font.family": "serif",
+#     # Use 10pt font in plots, to match 10pt font in document
+#     "axes.labelsize": latexFootNoteFontSize_in_pt,
+#     "font.size": latexFootNoteFontSize_in_pt,
+#     # Make the legend/label fonts a little smaller
+#     "legend.fontsize": latexFootNoteFontSize_in_pt,
+#     "xtick.labelsize": latexFootNoteFontSize_in_pt,
+#     "ytick.labelsize": latexFootNoteFontSize_in_pt,
+# }
+# figure font configuration
+latexFontSize_in_pt = 20
 tex_fonts = {
     #    "pgf.texsystem": "pdflatex",
     # Use LaTeX to write all text
     "text.usetex": True,
     "font.family": "serif",
     # Use 10pt font in plots, to match 10pt font in document
-    "axes.labelsize": latexFootNoteFontSize_in_pt,
-    "font.size": latexFootNoteFontSize_in_pt,
+    "axes.labelsize": latexFontSize_in_pt,
+    "font.size": latexFontSize_in_pt,
     # Make the legend/label fonts a little smaller
-    "legend.fontsize": latexFootNoteFontSize_in_pt,
-    "xtick.labelsize": latexFootNoteFontSize_in_pt,
-    "ytick.labelsize": latexFootNoteFontSize_in_pt,
+    "legend.fontsize": latexFontSize_in_pt,
+    "xtick.labelsize": latexFontSize_in_pt,
+    "ytick.labelsize": latexFontSize_in_pt,
 }
 
-if controlOpt["saveAs"] == "PDF":
-    # figure font configuration
-    latexFontSize_in_pt = 16
-    tex_fonts = {
-        #    "pgf.texsystem": "pdflatex",
-        # Use LaTeX to write all text
-        "text.usetex": True,
-        "font.family": "serif",
-        # Use 10pt font in plots, to match 10pt font in document
-        "axes.labelsize": latexFontSize_in_pt,
-        "font.size": latexFontSize_in_pt,
-        # Make the legend/label fonts a little smaller
-        "legend.fontsize": latexFontSize_in_pt,
-        "xtick.labelsize": latexFontSize_in_pt,
-        "ytick.labelsize": latexFontSize_in_pt,
-    }
-    plt.rcParams.update(tex_fonts)
+# if controlOpt["saveAs"] == "PDF":
+#     # figure font configuration
+#     latexFontSize_in_pt = 16
+#     tex_fonts = {
+#         #    "pgf.texsystem": "pdflatex",
+#         # Use LaTeX to write all text
+#         "text.usetex": True,
+#         "font.family": "serif",
+#         # Use 10pt font in plots, to match 10pt font in document
+#         "axes.labelsize": latexFontSize_in_pt,
+#         "font.size": latexFontSize_in_pt,
+#         # Make the legend/label fonts a little smaller
+#         "legend.fontsize": latexFontSize_in_pt,
+#         "xtick.labelsize": latexFontSize_in_pt,
+#         "ytick.labelsize": latexFontSize_in_pt,
+#     }
+plt.rcParams.update(tex_fonts)
 
 if controlOpt["saveAs"] == "PGF":
     matplotlib.use("pgf")
@@ -211,7 +241,7 @@ def scatterPlotGraspingErrors(
     # fig, ax = setupLatexPlot2D(
     #     figureWidth=desiredFigureWidth, figureHeight=desiredFigureHeight
     # )
-    fig = plt.figure()
+    fig = plt.figure(figsize=(styleOpt["figureWidth"], styleOpt["figureHeight"]))
     ax = fig.add_subplot()
 
     if colors is None:
@@ -250,30 +280,6 @@ def scatterPlotGraspingErrors(
             alpha=alpha,
             s=styleOpt["markersize"],
         )
-
-    # create legend
-    methodsToList = list(set(correspondingMethods))
-    legendSymbols = []
-    for label in methodsToList:
-        legendSymbol = Line2D(
-            [],
-            [],
-            marker=markers[correspondingMethods.index(label)],
-            color=colors[correspondingMethods.index(label)],
-            linestyle="None",
-            label=label.upper(),
-            markersize=styleOpt["legendMarkerSize"],
-        )
-        legendSymbols.append(legendSymbol)
-    ax.legend(handles=legendSymbols)
-
-    # axis legend
-    ax.set_xlabel(r"translational error in $m$")
-    if controlOpt["saveAs"] == "PGF":
-        ax.set_ylabel(r"rotational error in $^\circ$")
-    else:
-        ax.set_ylabel(r"rotational error in $°$")
-
     # plot threshold lines
     if styleOpt["plotTreshold"] == "lines":
         translationalThresholdLineColor = (
@@ -311,23 +317,108 @@ def scatterPlotGraspingErrors(
             (np.array(translationalGraspingErrors), np.array(rotationalGraspingErrors)),
             axis=1,
         )
-        gm = GaussianMixture(n_components=1, covariance_type="full")
+        gm = GaussianMixture(n_components=2, covariance_type="full")
         gm.fit(data)
+
+        # plot gaussians
         x_grid = np.linspace(0, np.max(translationalGraspingErrors))
         y_grid = np.linspace(0, np.max(rotationalGraspingErrors))
         X_grid, Y_grid = np.meshgrid(x_grid, y_grid)
         XX = np.array([X_grid.ravel(), Y_grid.ravel()]).T
-        Z = -gm.score_samples(XX)
-        Z = Z.reshape(X_grid.shape)
-        CS = plt.contour(
+        # Z_inlier =
+        # Z = -gm.score_samples(XX)
+        # Z = Z.reshape(X_grid.shape)
+        # CS = plt.contour(
+        #     X_grid,
+        #     Y_grid,
+        #     Z,
+        #     norm=LogNorm(vmin=1.0, vmax=1000.0),
+        #     levels=np.logspace(0, 3, 10),
+        #     cmap=styleOpt["gaussianThresholdContourColorpalette"],
+        #     alpha=styleOpt["gaussianThresholdContourAlpha"],
+        # )
+        # Separate inlier and outlier Gaussians based on mean and variance (covariance)
+        means = gm.means_
+        covariances = gm.covariances_
+
+        # Calculate the determinant of the covariance to find the one with the larger spread (outlier)
+        determinants = np.array([np.linalg.det(cov) for cov in covariances])
+
+        # Find the indices of the inlier and outlier Gaussians
+        inlier_idx = np.argmin(determinants)  # Inlier has lower variance
+        outlier_idx = np.argmax(determinants)  # Outlier has higher variance
+
+        # Generate the probability densities for each Gaussian component using score_samples
+        # Inlier Gaussian
+        gm_inlier = GaussianMixture(n_components=1, covariance_type="full")
+        gm_inlier.means_ = means[inlier_idx].reshape(1, -1)
+        gm_inlier.covariances_ = covariances[inlier_idx].reshape(1, 2, 2)
+        gm_inlier.weights_ = np.array([1.0])
+        gm_inlier.precisions_cholesky_ = np.linalg.cholesky(
+            np.linalg.inv(covariances[inlier_idx])
+        ).reshape(1, 2, 2)
+
+        Z_inlier = -gm_inlier.score_samples(XX).reshape(X_grid.shape)
+
+        # Outlier Gaussian
+        gm_outlier = GaussianMixture(n_components=1, covariance_type="full")
+        gm_outlier.means_ = means[outlier_idx].reshape(1, -1)
+        gm_outlier.covariances_ = covariances[outlier_idx].reshape(1, 2, 2)
+        gm_outlier.weights_ = np.array([1.0])
+        gm_outlier.precisions_cholesky_ = np.linalg.cholesky(
+            np.linalg.inv(covariances[outlier_idx])
+        ).reshape(1, 2, 2)
+
+        Z_outlier = -gm_outlier.score_samples(XX).reshape(X_grid.shape)
+
+        # Plotting inlier Gaussian (blue)
+        inlier_levels = np.logspace(0, 1, 5)  # 5 equidistant levels
+        plt.contour(
             X_grid,
             Y_grid,
-            Z,
-            norm=LogNorm(vmin=1.0, vmax=1000.0),
-            levels=np.logspace(0, 3, 10),
-            cmap=styleOpt["gaussianThresholdContourColorpalette"],
-            alpha=styleOpt["gaussianThresholdContourAlpha"],
+            Z_inlier,
+            levels=inlier_levels,
+            colors=styleOpt["gaussianInlierDistributionColor"],
+            linewidths=2,
+            alpha=styleOpt[
+                "gaussianOutlierDistributionAlpha"
+            ],  # Adjust alpha for better visibility
         )
+
+        # Plotting outlier Gaussian (red)
+        outlier_levels = np.logspace(0, 1, 5)  # 5 equidistant levels
+        plt.contour(
+            X_grid,
+            Y_grid,
+            Z_outlier,
+            levels=outlier_levels,
+            colors=styleOpt["gaussianOutlierDistributionColor"],
+            linewidths=2,
+            alpha=styleOpt[
+                "gaussianInlierDistributionAlpha"
+            ],  # Adjust alpha for better visibility
+        )
+
+        # Highlight the means
+        plt.scatter(
+            means[inlier_idx][0],
+            means[inlier_idx][1],
+            color="blue",
+            marker="o",
+            s=100,
+            label="Inlier Mean",
+            alpha=styleOpt["gaussianThresholdCenterAlpha"],
+        )
+        plt.scatter(
+            means[outlier_idx][0],
+            means[outlier_idx][1],
+            color="red",
+            marker="o",
+            s=100,
+            label="Outlier Mean",
+            alpha=styleOpt["gaussianThresholdCenterAlpha"],
+        )
+
         # Set the factor of the standard deviation (1, 2, or any value you want)
         factor = styleOpt[
             "gaussianSigmaFactor"
@@ -339,27 +430,64 @@ def scatterPlotGraspingErrors(
             chi2.ppf(chi2.cdf(factor**2, df=2), df=2)
         )  # Mahalanobis distance for desired factor
         level_sigma = d_sigma**2  # Mahalanobis distance squared
+
         # Highlight the contour for the specified standard deviation factor
         plt.contour(
             X_grid,
             Y_grid,
-            Z,
+            Z_inlier,
             levels=[level_sigma],
             colors=styleOpt["gaussianThresholdLineColor"],
             linewidths=2,
             linestyles=styleOpt["thresholdLineStyle"],
         )
-        # Highlight the mean with a point
-        mean = gm.means_[0]
-        plt.scatter(
-            mean[0],
-            mean[1],
-            color=styleOpt["gaussianThresholdCenterColor"],
-            marker="o",
-            s=100,
-            # label="Gaussian Mean",
-            alpha=styleOpt["gaussianThresholdCenterAlpha"],
-        )
+        # # Highlight the mean with a point
+        # mean = gm.means_[0]
+        # plt.scatter(
+        #     mean[0],
+        #     mean[1],
+        #     color=styleOpt["gaussianThresholdCenterColor"],
+        #     marker="o",
+        #     s=100,
+        #     # label="Gaussian Mean",
+        #     alpha=styleOpt["gaussianThresholdCenterAlpha"],
+        # )
+        # create legend
+        methodsToList = list(set(correspondingMethods))
+        # Define the custom sort order
+        custom_order = ["cpd", "spr", "kpr"]
+        # Sort the list based on the custom order
+        methodsToList = sorted(methodsToList, key=lambda x: custom_order.index(x))
+        legendSymbols = []
+        for label in methodsToList:
+            legendSymbol = Line2D(
+                [],
+                [],
+                marker=markers[correspondingMethods.index(label)],
+                color=colors[correspondingMethods.index(label)],
+                linestyle="None",
+                label=label.upper(),
+                markersize=styleOpt["legendMarkerSize"],
+            )
+            legendSymbols.append(legendSymbol)
+
+        if styleOpt["plotTreshold"] == "gaussian":
+            gaussianInlierDistributionSymbol = configureLegendSymbol(
+                style="line", color=styleOpt["gaussianInlierDistributionColor"]
+            )
+            gaussianInlierDistributionSymbol.set_label("inlier dist.")
+            legendSymbols.append(gaussianInlierDistributionSymbol)
+            gaussianOutlierDistributionSymbol = configureLegendSymbol(
+                style="line", color=styleOpt["gaussianOutlierDistributionColor"]
+            )
+            gaussianOutlierDistributionSymbol.set_label("outlier dist.")
+            legendSymbols.append(gaussianOutlierDistributionSymbol)
+
+        ax.legend(handles=legendSymbols)
+
+        # axis legend
+        ax.set_xlabel(r"translational error in $m$")
+        ax.set_ylabel(r"rotational error in $^\circ$")
 
     return fig, ax
 
@@ -395,14 +523,13 @@ def graspingErrorsHistogram(
     # fig, ax = setupLatexPlot2D(
     #     figureWidth=desiredFigureWidth, figureHeight=desiredFigureHeight
     # )
-    fig = plt.figure()
+    fig = plt.figure(figsize=(styleOpt["figureWidth"], styleOpt["figureHeight"]))
     ax = fig.add_subplot()
     hist_handle = ax.hist(
         x, n_bins, density=False, histtype="bar", color=histogramColors
     )
 
     # # plot gaussian
-
     x_axis = np.linspace(hist_handle[1][0], hist_handle[1][-1], 1000)
     fitLineStyle = styleOpt["histogramFitLineStyle"]
     scalefactor = len(x) * np.mean(np.diff(hist_handle[1]))
@@ -453,16 +580,18 @@ def graspingErrorsHistogram(
             linestyle=fitLineStyle,
         )
 
-    # add density as secondary axis
-    def counts_to_probability(counts):
-        return counts / len(x)
+    if styleOpt["addSecondaryAxis"]:
+        # add density as secondary axis
+        def counts_to_probability(counts):
+            return counts / len(x)
 
-    def probability_to_counts(probability):
-        return probability * len(x)
+        def probability_to_counts(probability):
+            return probability * len(x)
 
-    secax_y = ax.secondary_yaxis(
-        "right", functions=(counts_to_probability, probability_to_counts)
-    )
+        secax_y = ax.secondary_yaxis(
+            "right", functions=(counts_to_probability, probability_to_counts)
+        )
+        secax_y.set_ylabel(r"probability")
 
     # set axis labels
     if mode == "translational":
@@ -470,7 +599,6 @@ def graspingErrorsHistogram(
     elif mode == "rotational":
         ax.set_xlabel(r"rotational error in $^\circ$")
     ax.set_ylabel("counts")
-    secax_y.set_ylabel(r"probability")
     ax.yaxis.set_major_locator(MaxNLocator(integer=True))  # make y axis only integers
     if plotLegend:
         # create legend
@@ -487,10 +615,10 @@ def graspingErrorsHistogram(
                 [],
                 color=styleOpt["methodColors"][method],
                 linestyle=fitLineStyle,
-                label="fitted gaussian, " + method.upper(),
+                label="fitted distribution",
             )
             legendSymbols.append(legendSymbol)
-        ax.legend(handles=legendSymbols)
+        ax.legend(handles=legendSymbols, ncol=2)
     return fig, ax
 
 
@@ -503,6 +631,7 @@ def outlierRatioBarPlot(
     barWidth=None,
     spacingFactor=None,
     methodsToEvaluate=None,
+    mode="gaussian",  # "theshold", "gaussian"
 ):
     barWidth = 0.5 if barWidth is None else barWidth
     spacingFactor = 1 if spacingFactor is None else spacingFactor
@@ -514,35 +643,75 @@ def outlierRatioBarPlot(
     # fig, ax = setupLatexPlot2D(
     #     figureWidth=desiredFigureWidth, figureHeight=desiredFigureHeight
     # )
-    fig = plt.figure()
+    fig = plt.figure(figsize=(styleOpt["figureWidth"], styleOpt["figureHeight"]))
     ax = fig.add_subplot()
 
     inlierCount = {}
     outlierCount = {}
-    for method in methodsToEvaluate:
-        inlierCount[method] = 0
-        outlierCount[method] = 0
-    for i, (transplationalError, rotationalError, method) in enumerate(
-        zip(translationalGraspingErrors, rotationalGraspingErrors, correspondingMethods)
-    ):
-        if (
-            transplationalError > translationalThreshold
-            or rotationalError > rotationalThreshold
+    if mode == "threshold":
+        for method in methodsToEvaluate:
+            inlierCount[method] = 0
+            outlierCount[method] = 0
+        for i, (transplationalError, rotationalError, method) in enumerate(
+            zip(
+                translationalGraspingErrors,
+                rotationalGraspingErrors,
+                correspondingMethods,
+            )
         ):
-            outlierCount[method] += 1
-        else:
-            inlierCount[method] += 1
+            if (
+                transplationalError > translationalThreshold
+                or rotationalError > rotationalThreshold
+            ):
+                outlierCount[method] += 1
+            else:
+                inlierCount[method] += 1
+    elif mode == "gaussian":
+        # fit GMM
+        data = np.stack(
+            (np.array(translationalGraspingErrors), np.array(rotationalGraspingErrors)),
+            axis=1,
+        )
+        gm = GaussianMixture(n_components=2, covariance_type="full")
+        gm.fit(data)
+        # Separate inlier and outlier Gaussians based on mean and variance (covariance)
+        means = gm.means_
+        covariances = gm.covariances_
+        # Calculate the determinant of the covariance to find the one with the larger spread (outlier)
+        determinants = np.array([np.linalg.det(cov) for cov in covariances])
+        # Find the indices of the inlier and outlier Gaussians
+        inlier_idx = np.argmin(determinants)  # Inlier has lower variance
+        outlier_idx = np.argmax(determinants)  # Outlier has higher variance
 
+        # determine correspondance for each data point
+        correspondance = gm.predict(data)
+
+        # count inliers and outliers for each method
+        for method in methodsToEvaluate:
+            inlierCount[method] = 0
+            outlierCount[method] = 0
+        for i, (transplationalError, rotationalError, method) in enumerate(
+            zip(
+                translationalGraspingErrors,
+                rotationalGraspingErrors,
+                correspondingMethods,
+            )
+        ):
+            if correspondance[i] == outlier_idx:
+                outlierCount[method] += 1
+            else:
+                inlierCount[method] += 1
     XTicks = np.arange(len(methodsToEvaluate)) * spacingFactor
     barColors = []
     for x, method in zip(XTicks, methodsToEvaluate):
         barValue = inlierCount[method]
         absValue = inlierCount[method] + outlierCount[method]
         bottomValue = barValue / absValue
+        successRate = bottomValue * 100
         successBar = plt.bar(
             x, bottomValue, barWidth, color=styleOpt["methodColors"][method]
         )
-        plt.bar(
+        unsuccessBar = plt.bar(
             x,
             ((absValue - barValue) / absValue),
             barWidth,
@@ -550,32 +719,40 @@ def outlierRatioBarPlot(
             color="gray",
         )
         barColors.append(styleOpt["methodColors"][method])
-
+        if styleOpt["plotSuccessRateText"]:
+            for unsuccessRect, successRect in zip(unsuccessBar, successBar):
+                height = unsuccessRect.get_height() + successRect.get_height()
+                plt.text(
+                    successRect.get_x() + successRect.get_width() / 2.0,
+                    height,
+                    "{:.1f}".format(successRate) + "\%",
+                    ha="center",
+                    va="bottom",
+                )
     ax.set_xlabel("methods")
-    ax.set_ylabel("Success rate")
+    ax.set_ylabel(r"success rate in \%")
     ax.set_xticks(XTicks, [x.upper() for x in methodsToEvaluate])
     ax.set_ylim([0, 1.3])
-    ax.set_yticks(
-        [0, 0.25, 0.5, 0.75, 1], [r"$0\%$", r"$25\%$", r"$50\%$", r"75\%", r"100\%"]
-    )
-    ax.legend()
-    pa1 = Patch(facecolor=barColors[0], edgecolor="black")
-    pa2 = Patch(facecolor=barColors[1], edgecolor="black")
-    pa3 = Patch(facecolor=barColors[2], edgecolor="black")
-    pb1 = Patch(facecolor="gray", edgecolor="gray")
-    ax.legend(
-        handles=[pa1, pa2, pa3, pb1],
-        labels=[
-            methodsToEvaluate[0].upper(),
-            methodsToEvaluate[1].upper(),
-            methodsToEvaluate[2].upper(),
-            "not successful",
-        ],
-        ncol=2,
-        # handletextpad=0.5,
-        # handlelength=1.0,
-        # columnspacing=-0.5,
-    )
+    ax.set_yticks([0, 0.25, 0.5, 0.75, 1], [r"$0$", r"$25$", r"$50$", r"75", r"100"])
+    if styleOpt["plotSuccessRateLegend"]:
+        ax.legend()
+        pa1 = Patch(facecolor=barColors[0], edgecolor="black")
+        pa2 = Patch(facecolor=barColors[1], edgecolor="black")
+        pa3 = Patch(facecolor=barColors[2], edgecolor="black")
+        pb1 = Patch(facecolor="gray", edgecolor="gray")
+        ax.legend(
+            handles=[pa1, pa2, pa3, pb1],
+            labels=[
+                methodsToEvaluate[0].upper(),
+                methodsToEvaluate[1].upper(),
+                methodsToEvaluate[2].upper(),
+                "outlier",
+            ],
+            ncol=2,
+            # handletextpad=0.5,
+            # handlelength=1.0,
+            # columnspacing=-0.5,
+        )
     return fig, ax
 
 
@@ -598,20 +775,21 @@ def plotGraspingAccuracyBoxPlot(
     # fig, ax = setupLatexPlot2D(
     #     figureWidth=desiredFigureWidth, figureHeight=desiredFigureHeight
     # )
-    fig = plt.figure()
+    fig = plt.figure(figsize=(styleOpt["figureWidth"], styleOpt["figureHeight"]))
     ax = fig.add_subplot()
 
     data = []
     labels = []
     colors = []
 
-    facealpha = 0.3
+    facealpha = styleOpt["boxPlotFaceAlpha"]
     linealpha = 1
 
     for method in grouped_vals:
         data.append(grouped_vals[method])
         labels.append(method.upper())
         colors.append(styleOpt["methodColors"][method])
+
     boxPlot = ax.boxplot(
         data,
         patch_artist=True,  # fill with color
@@ -619,13 +797,19 @@ def plotGraspingAccuracyBoxPlot(
     )
     for median, color in zip(boxPlot["medians"], colors):
         median.set_color(medianColor)
+    # Set the box colors
     for patch, color in zip(boxPlot["boxes"], colors):
         patch.set_facecolor(np.concatenate((color, [facealpha])))
         patch.set_edgecolor(np.concatenate((color, [linealpha])))
+    # Set the flier colors
+    for flier, color in zip(boxPlot["fliers"], colors):
+        flier.set(
+            marker="o", color=color, markersize=6, markerfacecolor=color + (facealpha,)
+        )
     if mode == "translational":
-        ax.set_ylabel(r"grasping accuracy in $m$")
+        ax.set_ylabel(r"translational error in $m$")
     elif mode == "rotational":
-        ax.set_ylabel(r"grasping accuracy in $\circ$")
+        ax.set_ylabel(r"rotational error in $\circ$")
     else:
         raise NotImplementedError
     return fig, ax
@@ -743,7 +927,8 @@ if __name__ == "__main__":
             savePathScatter = os.path.join(saveFolder, saveFileNameScatter)
             if not os.path.exists(saveFolder):
                 os.makedirs(saveFolder, exist_ok=True)
-            fig_scatterPlot.savefig(savePathScatter)
+            if controlOpt["saveAs"] == "png":
+                fig_scatterPlot.savefig(savePathScatter)
             # save as tixfigure
             if controlOpt["saveAs"] == "TIKZ":
                 tikzplotlib_fix_ncols(fig_scatterPlot)
@@ -756,6 +941,9 @@ if __name__ == "__main__":
                     savePathScatter + ".pgf",
                     bbox_inches="tight",
                 )
+            if controlOpt["saveAs"] == "PDF":
+                fig_scatterPlot.savefig(savePathScatter + ".pdf", pad_inches=0.0)
+
         # if controlOpt["showPlot"]:
         #     plt.show(block=True)
     if controlOpt["makeOutlierRatioBarPlot"]:
@@ -772,7 +960,8 @@ if __name__ == "__main__":
             savePathOutlierRatio = os.path.join(saveFolder, saveFileNameOutlierRatio)
             if not os.path.exists(saveFolder):
                 os.makedirs(saveFolder, exist_ok=True)
-            fig_success_rate_plot.savefig(savePathOutlierRatio, bbox_inches="tight")
+            if controlOpt["saveAs"] == "png":
+                fig_success_rate_plot.savefig(savePathOutlierRatio, bbox_inches="tight")
             # save as tixfigure
             if controlOpt["saveAs"] == "TIKZ":
                 tikzplotlib_fix_ncols(fig_success_rate_plot)
@@ -784,6 +973,10 @@ if __name__ == "__main__":
                 fig_success_rate_plot.savefig(
                     savePathOutlierRatio + ".pgf",
                     bbox_inches="tight",
+                )
+            if controlOpt["saveAs"] == "PDF":
+                fig_success_rate_plot.savefig(
+                    savePathOutlierRatio + ".pdf", pad_inches=0.0
                 )
     # histograms
     if controlOpt["makeHistogramPlot"]:
@@ -808,8 +1001,9 @@ if __name__ == "__main__":
             savePathRot = os.path.join(saveFolder, saveFileNameRot)
             if not os.path.exists(saveFolder):
                 os.makedirs(saveFolder, exist_ok=True)
-            fig_histogram_trans.savefig(savePathTrans)
-            fig_histogram_rot.savefig(savePathRot)
+            if controlOpt["saveAs"] == "png":
+                fig_histogram_trans.savefig(savePathTrans)
+                fig_histogram_rot.savefig(savePathRot)
             if controlOpt["saveAs"] == "PGF":
                 fig_histogram_trans.savefig(savePathTrans + ".pgf", bbox_inches="tight")
                 fig_histogram_rot.savefig(savePathRot + ".pgf", bbox_inches="tight")
@@ -823,15 +1017,20 @@ if __name__ == "__main__":
                 tikzplotlib.save(
                     figure=fig_histogram_rot, filepath=savePathRot + ".tex"
                 )
+            if controlOpt["saveAs"] == "PDF":
+                fig_histogram_trans.savefig(savePathTrans + ".pdf", pad_inches=0.0)
+                fig_histogram_rot.savefig(savePathRot + ".pdf", pad_inches=0.0)
     # box plots
     if controlOpt["makeGraspingAccuracyBoxPlot"]:
         fig_box_trans, _ = plotGraspingAccuracyBoxPlot(
             graspingErrors=translationalGraspingErrors,
             correspondingMethods=methods,
+            mode="translational",
         )
         fig_box_rot, _ = plotGraspingAccuracyBoxPlot(
             graspingErrors=rotationalGraspingErrors,
             correspondingMethods=methods,
+            mode="rotational",
         )
         if controlOpt["save"]:
             saveFileNameTrans = saveOpt["saveFileNameBoxPlotTranslational"]
@@ -841,11 +1040,15 @@ if __name__ == "__main__":
             savePathRot = os.path.join(saveFolder, saveFileNameRot)
             if not os.path.exists(saveFolder):
                 os.makedirs(saveFolder, exist_ok=True)
-            fig_box_trans.savefig(savePathTrans)
-            fig_box_rot.savefig(savePathRot)
+            if controlOpt["saveAs"] == "png":
+                fig_box_trans.savefig(savePathTrans)
+                fig_box_rot.savefig(savePathRot)
             if controlOpt["saveAs"] == "PGF":
                 fig_box_trans.savefig(savePathTrans + ".pgf", bbox_inches="tight")
                 fig_box_rot.savefig(savePathRot + ".pgf", bbox_inches="tight")
+            if controlOpt["saveAs"] == "PDF":
+                fig_box_trans.savefig(savePathTrans + ".pdf", pad_inches=0.0)
+                fig_box_rot.savefig(savePathRot + ".pdf", pad_inches=0.0)
     if controlOpt["showPlot"]:
         plt.show(block=True)
     if controlOpt["verbose"]:

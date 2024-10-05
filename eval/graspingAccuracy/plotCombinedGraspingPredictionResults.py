@@ -22,29 +22,36 @@ controlOpt = {
     "resultsToLoad": [-1],
     "methodsToEvaluate": ["cpd", "spr", "kpr"],
     "registrationResultsToEvaluate": [-1],
-    "saveManipulationImg": True,
-    "showPlot": True,
+    "saveManipulationImg": False,
+    "useManipulationImg": True,
+    "showPlot": False,
     "save": True,
     "verbose": True,
 }
 
 saveOpt = {
     "saveFolder": "data/eval/graspingAccuracy/plots/combinedGraspingPredictionResult",
-    "saveFileNames": {"prediction": "predictionResult", "manipulation": "grasp"},
+    "saveFileNames": {
+        "prediction": "predictionResult",
+        "manipulation": "grasp",
+        "legend": "legend",
+    },
 }
 
 styleOpt = {
-    "groundTruthColor": thesisColors["uniSLightBlue"],
+    "groundTruthColor": [0, 1, 0],
     "predictionColors": {
-        "cpd": thesisColors["susieluMagenta"],
-        "spr": thesisColors["susieluGold"],
-        "kpr": thesisColors["susieluBlue"],
+        "cpd": thesisColorPalettes["viridis"].to_rgba(0)[:3],
+        "spr": thesisColorPalettes["viridis"].to_rgba(0.5)[:3],
+        "kpr": thesisColorPalettes["viridis"].to_rgba(1)[:3],
     },
-    "gipperWidth3D": 0.1,
+    "gipperWidth3D": 0.15,
     "fingerWidth2D": 0.5,
-    "centerThickness": 10,
-    "lineThickness": 5,
-    "addLegend": True,
+    "centerThickness": 12,
+    "lineThickness": 8,
+    "addLegend": False,  # add a legend to the image
+    "saveLegend": True,  # save a legend separately as file
+    "legendFontSize": 20,
     "dpi": 150,
 }
 
@@ -131,7 +138,46 @@ def addLegend(ax, methods):
     return fig, ax
 
 
+def saveLegend():
+    fig = plt.figure(figsize=(1, 2))
+    ax = fig.add_subplot()
+    patches = []
+    labels = []
+    for method in controlOpt["methodsToEvaluate"]:
+        patches.append(
+            Patch(facecolor=styleOpt["predictionColors"][method], edgecolor="black")
+        )
+        labels.append(method.upper())
+    # add ground truth
+    patches.append(Patch(facecolor=styleOpt["groundTruthColor"], edgecolor="black"))
+    labels.append("ground\ntruth")
+    ax.legend(
+        handles=patches,
+        labels=labels,
+        loc="center",
+        fontsize=styleOpt["legendFontSize"],
+    )
+    # Turn off axis so only the legend is saved
+    ax.axis("off")
+
+    fileName = saveOpt["saveFileNames"]["legend"]
+    saveFolderPath = os.path.join(saveOpt["saveFolder"], "legend")
+    saveFilePath = os.path.join(saveFolderPath, fileName)
+    if not os.path.exists(saveFolderPath):
+        os.makedirs(saveFolderPath, exist_ok=True)
+    fig.savefig(
+        saveFilePath + ".pdf",
+        bbox_inches="tight",
+        pad_inches=0.01,
+        dpi=styleOpt["dpi"],
+    )
+    plt.show(block=True)
+    return
+
+
 if __name__ == "__main__":
+    if styleOpt["saveLegend"]:
+        saveLegend()
     if controlOpt["resultsToLoad"][0] == -1:
         resultsToEvaluate = resultFolderPaths
     else:
@@ -168,7 +214,11 @@ if __name__ == "__main__":
                 frame = registrationResult["frame"]
                 dataSetPath = result["dataSetPath"]
                 if nMethod == 0:
-                    rgbImg = eval.getDataSet(frame, dataSetPath)[0]
+                    if controlOpt["useManipulationImg"]:
+                        image_index = frame + 1
+                    else:
+                        image_index = frame
+                    rgbImg = eval.getDataSet(image_index, dataSetPath)[0]
 
                 gipperWidth3D = styleOpt["gipperWidth3D"]
                 fingerWidth2D = styleOpt["fingerWidth2D"]
@@ -235,7 +285,8 @@ if __name__ == "__main__":
             if styleOpt["addLegend"] and nRegistrationResult == 0:
                 ax = addLegend(ax, methodsToEvaluate)
             if controlOpt["showPlot"]:
-                fig.show()
+                plt.show(block=True)
+                # fig.show(block=True)
             if controlOpt["save"]:
                 dataSetName = result["dataSetName"]
                 fileName = (
@@ -260,7 +311,6 @@ if __name__ == "__main__":
                 )
                 plt.close("all")
                 # eval.saveImage(rgbImg, saveFilePath_prediction)
-
                 if controlOpt["verbose"]:
                     print(
                         "Saved prediction {}/{} of result {}/{} at {}".format(
@@ -284,26 +334,26 @@ if __name__ == "__main__":
                     saveFilePath_manipulation = os.path.join(
                         saveFolderPath_manipulation, fileName
                     )
-                if not os.path.exists(saveFolderPath_manipulation):
-                    os.makedirs(saveFolderPath_manipulation, exist_ok=True)
-                # eval.saveImage(graspImg, saveFilePath_manipulation)
-                fig, ax = eval.convertImageToFigure(graspImg)
-                fig.savefig(
-                    saveFilePath_manipulation + ".png",
-                    format="png",
-                    bbox_inches="tight",
-                    dpi=styleOpt["dpi"],
-                )
-                plt.close("all")
-                if controlOpt["verbose"]:
-                    print(
-                        "Saved grasp img {}/{} of result {}/{} at {}".format(
-                            nRegistrationResult + 1,
-                            len(registrationResultsToEvaluate),
-                            nResult + 1,
-                            len(resultsToEvaluate),
-                            saveFilePath_prediction,
-                        )
+                    if not os.path.exists(saveFolderPath_manipulation):
+                        os.makedirs(saveFolderPath_manipulation, exist_ok=True)
+                    # eval.saveImage(graspImg, saveFilePath_manipulation)
+                    fig, ax = eval.convertImageToFigure(graspImg)
+                    fig.savefig(
+                        saveFilePath_manipulation + ".png",
+                        format="png",
+                        bbox_inches="tight",
+                        dpi=styleOpt["dpi"],
                     )
+                    plt.close("all")
+                    if controlOpt["verbose"]:
+                        print(
+                            "Saved grasp img {}/{} of result {}/{} at {}".format(
+                                nRegistrationResult + 1,
+                                len(registrationResultsToEvaluate),
+                                nResult + 1,
+                                len(resultsToEvaluate),
+                                saveFilePath_prediction,
+                            )
+                        )
     if controlOpt["verbose"]:
         print("Finished result generation.")

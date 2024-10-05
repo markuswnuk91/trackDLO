@@ -49,6 +49,13 @@ class GraspingAccuracyEvaluation(Evaluation):
         robotEERotationMatrix = transform_BaseToEE[:3, :3]
         return transform_BaseToEE, robotEEPosition, robotEERotationMatrix
 
+    def loadRobotState(self, dataSetFolderPath, fileNumber):
+        filePath = self.dataHandler.getFilePath(
+            fileNumber, dataSetFolderPath, fileType="json"
+        )
+        robotState = self.dataHandler.loadFromJson(filePath)
+        return robotState
+
     def predictGraspingPositionAndAxisFromRegistrationTargets(
         self, T, B, S, graspingLocalCoordinate: tuple
     ):

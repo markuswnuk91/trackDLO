@@ -33,12 +33,13 @@ saveOpt = {
 
 styleOpt = {
     "plotRegistrationResult": True,
-    "groundTruthColor": thesisColors["uniSLightBlue"],
-    "predictionColor": thesisColors["blue"],
-    "gipperWidth3D": 0.1,
+    "plotGroundTruth": True,
+    "groundTruthColor": [0, 1, 0],
+    "predictionColor": [1, 0, 0],
+    "gipperWidth3D": 0.15,
     "fingerWidth2D": 0.5,
-    "centerThickness": 10,
-    "lineThickness": 5,
+    "centerThickness": 12,
+    "lineThickness": 8,
 }
 
 resultFileName = "result.pkl"
@@ -59,9 +60,11 @@ def plotPredictedGraspingPose(
     result,
     method,
     num,
+    frame_offset=1,  # frame offset between registration frame and robot state frame
 ):
     registrationResult = result["trackingResults"][method]["registrationResults"][num]
     frame = registrationResult["frame"]
+    frame_grasp = frame + frame_offset
     dataSetPath = result["dataSetPath"]
 
     # ground truth
@@ -70,7 +73,7 @@ def plotPredictedGraspingPose(
         groundTruthGraspingPosition,
         groundTruthGraspingRotationMatrix,
     ) = eval.loadGroundTruthGraspingPose(
-        dataSetPath, frame + 1
+        dataSetPath, frame_grasp
     )  # ground truth grasping position is given by the frame after the prediction frame
     groundTruthGraspingAxis = groundTruthGraspingRotationMatrix[:3, 0]
     # prediction
@@ -86,21 +89,25 @@ def plotPredictedGraspingPose(
         T, B, S, graspingLocalCoordinate
     )
 
-    graspingPositions3D = np.vstack(
-        (groundTruthGraspingPosition, predictedGraspingPosition)
-    )
-    graspingAxes3D = np.vstack((groundTruthGraspingAxis, predictedGraspingAxis))
-    colors = [styleOpt["groundTruthColor"], styleOpt["predictionColor"]]
+    if styleOpt["plotGroundTruth"]:
+        graspingPositions3D = np.vstack(
+            (groundTruthGraspingPosition, predictedGraspingPosition)
+        )
+        graspingAxes3D = np.vstack((groundTruthGraspingAxis, predictedGraspingAxis))
+        colors = [styleOpt["groundTruthColor"], styleOpt["predictionColor"]]
+    else:
+        graspingPositions3D = predictedGraspingPosition
+        graspingAxes3D = predictedGraspingAxis
+        colors = [styleOpt["predictionColor"]]
     gipperWidth3D = styleOpt["gipperWidth3D"]
     fingerWidth2D = styleOpt["fingerWidth2D"]
     centerThickness = styleOpt["centerThickness"]
     lineThickness = styleOpt["lineThickness"]
 
-    rgbImg = eval.getDataSet(frame, dataSetPath)[0]
+    rgbImg = eval.getDataSet(frame_grasp, dataSetPath)[0]
 
     positions2D = eval.reprojectFrom3DRobotBase(T, dataSetFolderPath=dataSetPath)
     adjacencyMatrix = result["trackingResults"][method]["adjacencyMatrix"]
-    plotRegistrationResult = True
     if styleOpt["plotRegistrationResult"]:
         rgbImg = eval.plotBranchWiseColoredRegistrationResult(
             rgbImg, positions2D, adjacencyMatrix, B
@@ -174,8 +181,9 @@ if __name__ == "__main__":
                 )
                 if controlOpt["showPlot"]:
                     eval.plotImageWithMatplotlib(
-                        rgbImg, title="grasping prediction " + method, block=True
+                        rgbImg, title="grasping prediction " + method
                     )
+                    plt.show(block=True)
 
                 if controlOpt["save"]:
                     dataSetName = result["dataSetName"]
@@ -184,7 +192,10 @@ if __name__ == "__main__":
                             nRegistrationResult
                         ]["fileName"].split("_")[0:3]
                     )
-                    fileName = fileID + "_" + saveOpt["saveFileName"]
+                    # fileName = fileID + "_" + saveOpt["saveFileName"]
+                    fileName = (
+                        saveOpt["saveFileName"] + "_grasp_" + str(nRegistrationResult)
+                    )
                     saveFolderPath = saveOpt["saveFolder"]
                     saveFolderPath = os.path.join(saveFolderPath, dataSetName, method)
                     saveFilePath = os.path.join(saveFolderPath, fileName)

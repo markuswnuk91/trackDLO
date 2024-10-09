@@ -99,117 +99,117 @@ class GraspingAccuracyEvaluation(Evaluation):
         return predictedGraspingPosition, predictedGraspingAxis
 
     # deprecated use calculateGraspingAccuracy
-    def calculateGraspingAccuracyErrors(
-        self,
-        predictedGraspingPositions,
-        predictedGraspingAxes,
-        groundTruthGraspingPoses,
-    ):
-        """calculates the grasping accuracy error
+    # def calculateGraspingAccuracyErrors(
+    #     self,
+    #     predictedGraspingPositions,
+    #     predictedGraspingAxes,
+    #     groundTruthGraspingPoses,
+    # ):
+    #     """calculates the grasping accuracy error
 
-        Args:
-            predictedGraspingPositions (list): set of predicted grasping positions
-            predictedGraspingAxes (list): set of predicted grasping axes describing the axis the robots' x-axis should be aligned with to ensure successful grasping.
-            groundTruthGraspingPoses (list): set of corresponding transformation matrices describing the ground truth
-        """
+    #     Args:
+    #         predictedGraspingPositions (list): set of predicted grasping positions
+    #         predictedGraspingAxes (list): set of predicted grasping axes describing the axis the robots' x-axis should be aligned with to ensure successful grasping.
+    #         groundTruthGraspingPoses (list): set of corresponding transformation matrices describing the ground truth
+    #     """
 
-        print(
-            'Function "calculateGraspingAccuracyError" is deprecated. Use calculateGraspingAccuracy instead.'
-        )
-        graspingPositionErrors = []
-        graspingAngularErrorsInRad = []
-        graspingAngularErrorsInGrad = []
-        projectedGraspingAngularErrorsOnXInRad = []
-        projectedGraspingAngularErrorsOnXInGrad = []
-        projectedGraspingAngularErrorsOnYInRad = []
-        projectedGraspingAngularErrorsOnYInGrad = []
-        projectedGraspingAngularErrorsOnZInRad = []
-        projectedGraspingAngularErrorsOnZInGrad = []
-        groundTruthGraspingAxes = []
+    #     print(
+    #         'Function "calculateGraspingAccuracyError" is deprecated. Use calculateGraspingAccuracy instead.'
+    #     )
+    #     graspingPositionErrors = []
+    #     graspingAngularErrorsInRad = []
+    #     graspingAngularErrorsInGrad = []
+    #     projectedGraspingAngularErrorsOnXInRad = []
+    #     projectedGraspingAngularErrorsOnXInGrad = []
+    #     projectedGraspingAngularErrorsOnYInRad = []
+    #     projectedGraspingAngularErrorsOnYInGrad = []
+    #     projectedGraspingAngularErrorsOnZInRad = []
+    #     projectedGraspingAngularErrorsOnZInGrad = []
+    #     groundTruthGraspingAxes = []
 
-        for i in range(0, len(groundTruthGraspingPoses)):
-            groundTruthGraspingPosition = groundTruthGraspingPoses[i][:3, 3]
-            robotGripperAxisX = groundTruthGraspingPoses[i][:3, 0]
-            robotGripperAxisY = groundTruthGraspingPoses[i][:3, 1]
-            robotGripperAxisZ = groundTruthGraspingPoses[i][:3, 2]
-            groundTruthGraspingAxes.append(robotGripperAxisX)
+    #     for i in range(0, len(groundTruthGraspingPoses)):
+    #         groundTruthGraspingPosition = groundTruthGraspingPoses[i][:3, 3]
+    #         robotGripperAxisX = groundTruthGraspingPoses[i][:3, 0]
+    #         robotGripperAxisY = groundTruthGraspingPoses[i][:3, 1]
+    #         robotGripperAxisZ = groundTruthGraspingPoses[i][:3, 2]
+    #         groundTruthGraspingAxes.append(robotGripperAxisX)
 
-            # positional error
-            graspingPositionErrorVector = (
-                groundTruthGraspingPosition - predictedGraspingPositions[i]
-            )
-            graspingPositionError = np.linalg.norm(graspingPositionErrorVector)
-            graspingPositionErrors.append(graspingPositionError)
+    #         # positional error
+    #         graspingPositionErrorVector = (
+    #             groundTruthGraspingPosition - predictedGraspingPositions[i]
+    #         )
+    #         graspingPositionError = np.linalg.norm(graspingPositionErrorVector)
+    #         graspingPositionErrors.append(graspingPositionError)
 
-            # angular error between predicted and measured axis
-            dotProduct = np.dot(robotGripperAxisX, predictedGraspingAxes[i])
-            # aligtn the direction if direction is inverted
-            if dotProduct < 0:
-                dotProduct = -dotProduct
-            graspingAngularErrorInRad = np.arccos(dotProduct)
-            graspingAngularErrorInGrad = np.degrees(graspingAngularErrorInRad)
-            graspingAngularErrorsInRad.append(graspingAngularErrorInRad)
-            graspingAngularErrorsInGrad.append(graspingAngularErrorInGrad)
+    #         # angular error between predicted and measured axis
+    #         dotProduct = np.dot(robotGripperAxisX, predictedGraspingAxes[i])
+    #         # aligtn the direction if direction is inverted
+    #         if dotProduct < 0:
+    #             dotProduct = -dotProduct
+    #         graspingAngularErrorInRad = np.arccos(dotProduct)
+    #         graspingAngularErrorInGrad = np.degrees(graspingAngularErrorInRad)
+    #         graspingAngularErrorsInRad.append(graspingAngularErrorInRad)
+    #         graspingAngularErrorsInGrad.append(graspingAngularErrorInGrad)
 
-            # projected angular errors
-            rotAxis = np.cross(robotGripperAxisX, predictedGraspingAxes[i])
-            rotAxisNorm = 1 / np.linalg.norm(rotAxis) * rotAxis
-            rotVec = graspingAngularErrorInGrad * rotAxisNorm
-            r = R.from_rotvec(rotVec, degrees=True)
-            # project on X
-            projectedAngularGraspingErrorX = np.dot(r.as_rotvec(), robotGripperAxisX)
-            projectedAngularGraspingErrorXInRad = np.linalg.norm(
-                projectedAngularGraspingErrorX
-            )
-            projectedAngularGraspingErrorXInGrad = np.degrees(
-                projectedAngularGraspingErrorXInRad
-            )
-            projectedGraspingAngularErrorsOnXInRad.append(
-                projectedAngularGraspingErrorXInRad
-            )
-            projectedGraspingAngularErrorsOnXInGrad.append(
-                projectedAngularGraspingErrorXInGrad
-            )
-            # project on Y
-            projectedAngularGraspingErrorY = np.dot(r.as_rotvec(), robotGripperAxisY)
-            projectedAngularGraspingErrorYInRad = np.linalg.norm(
-                projectedAngularGraspingErrorY
-            )
-            projectedAngularGraspingErrorYInGrad = np.degrees(
-                projectedAngularGraspingErrorYInRad
-            )
-            projectedGraspingAngularErrorsOnYInRad.append(
-                projectedAngularGraspingErrorYInRad
-            )
-            projectedGraspingAngularErrorsOnYInGrad.append(
-                projectedAngularGraspingErrorYInGrad
-            )
-            # project on Z
-            projectedAngularGraspingErrorZ = np.dot(r.as_rotvec(), robotGripperAxisZ)
-            projectedAngularGraspingErrorZInRad = np.linalg.norm(
-                projectedAngularGraspingErrorZ
-            )
-            projectedAngularGraspingErrorZInGrad = np.degrees(
-                projectedAngularGraspingErrorZInRad
-            )
-            projectedGraspingAngularErrorsOnZInRad.append(
-                projectedAngularGraspingErrorZInRad
-            )
-            projectedGraspingAngularErrorsOnZInGrad.append(
-                projectedAngularGraspingErrorZInGrad
-            )
+    #         # projected angular errors
+    #         rotAxis = np.cross(robotGripperAxisX, predictedGraspingAxes[i])
+    #         rotAxisNorm = 1 / np.linalg.norm(rotAxis) * rotAxis
+    #         rotVec = graspingAngularErrorInGrad * rotAxisNorm
+    #         r = R.from_rotvec(rotVec, degrees=True)
+    #         # project on X
+    #         projectedAngularGraspingErrorX = np.dot(r.as_rotvec(), robotGripperAxisX)
+    #         projectedAngularGraspingErrorXInRad = np.linalg.norm(
+    #             projectedAngularGraspingErrorX
+    #         )
+    #         projectedAngularGraspingErrorXInGrad = np.degrees(
+    #             projectedAngularGraspingErrorXInRad
+    #         )
+    #         projectedGraspingAngularErrorsOnXInRad.append(
+    #             projectedAngularGraspingErrorXInRad
+    #         )
+    #         projectedGraspingAngularErrorsOnXInGrad.append(
+    #             projectedAngularGraspingErrorXInGrad
+    #         )
+    #         # project on Y
+    #         projectedAngularGraspingErrorY = np.dot(r.as_rotvec(), robotGripperAxisY)
+    #         projectedAngularGraspingErrorYInRad = np.linalg.norm(
+    #             projectedAngularGraspingErrorY
+    #         )
+    #         projectedAngularGraspingErrorYInGrad = np.degrees(
+    #             projectedAngularGraspingErrorYInRad
+    #         )
+    #         projectedGraspingAngularErrorsOnYInRad.append(
+    #             projectedAngularGraspingErrorYInRad
+    #         )
+    #         projectedGraspingAngularErrorsOnYInGrad.append(
+    #             projectedAngularGraspingErrorYInGrad
+    #         )
+    #         # project on Z
+    #         projectedAngularGraspingErrorZ = np.dot(r.as_rotvec(), robotGripperAxisZ)
+    #         projectedAngularGraspingErrorZInRad = np.linalg.norm(
+    #             projectedAngularGraspingErrorZ
+    #         )
+    #         projectedAngularGraspingErrorZInGrad = np.degrees(
+    #             projectedAngularGraspingErrorZInRad
+    #         )
+    #         projectedGraspingAngularErrorsOnZInRad.append(
+    #             projectedAngularGraspingErrorZInRad
+    #         )
+    #         projectedGraspingAngularErrorsOnZInGrad.append(
+    #             projectedAngularGraspingErrorZInGrad
+    #         )
 
-        return (
-            graspingPositionErrors,
-            graspingAngularErrorsInRad,
-            graspingAngularErrorsInGrad,
-            projectedGraspingAngularErrorsOnXInRad,
-            projectedGraspingAngularErrorsOnXInGrad,
-            projectedGraspingAngularErrorsOnYInRad,
-            projectedGraspingAngularErrorsOnYInGrad,
-            projectedGraspingAngularErrorsOnZInRad,
-            projectedGraspingAngularErrorsOnZInGrad,
-        )
+    #     return (
+    #         graspingPositionErrors,
+    #         graspingAngularErrorsInRad,
+    #         graspingAngularErrorsInGrad,
+    #         projectedGraspingAngularErrorsOnXInRad,
+    #         projectedGraspingAngularErrorsOnXInGrad,
+    #         projectedGraspingAngularErrorsOnYInRad,
+    #         projectedGraspingAngularErrorsOnYInGrad,
+    #         projectedGraspingAngularErrorsOnZInRad,
+    #         projectedGraspingAngularErrorsOnZInGrad,
+    #     )
 
     def calculateGraspingAccuracyError(
         self,
@@ -335,6 +335,26 @@ class GraspingAccuracyEvaluation(Evaluation):
             groundTruthGraspingPose=groundTruthGraspingPose,
         )
         return graspingAccuracy
+
+    def filterAccumulatedGraspingResultsByMethod(
+        self,
+        array_of_values,
+        methods_array,
+        method_value,
+    ):
+        """Filters all values corresponding to a method from a array of values
+
+        Args:
+            array_of_values (1D np.array): array of error values
+            methods_array (1D np.array): array of method strings
+            method_value (1D np.array): desired method to filter for
+
+        Returns:
+            np.array : array of values corresponding to the desired method
+        """
+        mask = methods_array == method_value
+        filtered_values = array_of_values[mask]
+        return filtered_values
 
     # def drawGraspingPoses(
     #     self,

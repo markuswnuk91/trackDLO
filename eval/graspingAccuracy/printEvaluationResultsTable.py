@@ -21,6 +21,7 @@ controlOpt = {
     "resultsToLoad": [-1],
     "methodsToEvaluate": ["cpd", "spr", "kpr"],
     "registrationResultsToEvaluate": [-1],
+    "scale_translational_errors": 100,  # convert translational errors to cm
 }
 
 resultFileName = "result.pkl"
@@ -96,6 +97,71 @@ def calculateSuccessRate(
     )
     successRate *= 100  # convert in percent
     return successRate
+
+
+def printTable(statisticalEvaluationResults):
+
+    table_header = r"""& & \multicolumn{2}{c}{translational errors} &\multicolumn{2}{c}{rotational errors} & \\ \cmidrule(lr){3-4} \cmidrule(lr){5-6}
+	method & $n_{\text{grasps}}$ & 
+	$ \left(\tilde{e}_{\text{trans}}\right)$ & $\bar{e}_{\text{trans}}^{\left(\Gamma\right)}$ & 
+	$ \left(\tilde{e}_{\text{rot}}\right)$ & $\bar{e}_{\text{rot}}^{\left(\Gamma\right)}$ & 
+	success rate \\
+	\midrule
+    -------------------------------------------------------------------
+    """
+    table_body = """\n"""
+    for i, method in enumerate(controlOpt["methodsToEvaluate"]):
+        statisticalEvaluationResults[method]
+        method_string = method.upper()
+        n_grasps = len(statisticalEvaluationResults[method]["translational"]["data"])
+        if i == 0:
+            grasp_str = (
+                f"""\\multirow{{{len(methodsToEvaluate)}}}{{*}}{{{int(n_grasps)}}}"""
+            )
+        else:
+            grasp_str = f""
+        median_trans = (
+            statisticalEvaluationResults[method]["translational"]["median"]
+            * controlOpt["scale_translational_errors"]
+        )
+        iqr_trans_low = (
+            statisticalEvaluationResults[method]["translational"]["median"]
+            - statisticalEvaluationResults[method]["translational"]["q1"]
+        ) * controlOpt["scale_translational_errors"]
+        iqr_trans_up = (
+            statisticalEvaluationResults[method]["translational"]["q3"]
+            - statisticalEvaluationResults[method]["translational"]["median"]
+        ) * controlOpt["scale_translational_errors"]
+
+        mean_trans = (
+            statisticalEvaluationResults[method]["translational"]["mean"]
+            * controlOpt["scale_translational_errors"]
+        )
+        std_trans = (
+            statisticalEvaluationResults[method]["translational"]["std"]
+            * controlOpt["scale_translational_errors"]
+        )
+        median_rot = statisticalEvaluationResults[method]["rotational"]["median"]
+        # iqr_rot = statisticalEvaluationResults[method]["rotational"]["iqr"]
+        iqr_rot_low = (
+            statisticalEvaluationResults[method]["rotational"]["median"]
+            - statisticalEvaluationResults[method]["rotational"]["q1"]
+        )
+        iqr_rot_up = (
+            statisticalEvaluationResults[method]["rotational"]["q3"]
+            - statisticalEvaluationResults[method]["rotational"]["median"]
+        )
+        mean_rot = statisticalEvaluationResults[method]["rotational"]["mean"]
+        std_rot = statisticalEvaluationResults[method]["rotational"]["std"]
+        successRate = statisticalEvaluationResults[method]["successRate"]
+        table_body += f"""\\ac{{{method_string}}} & {grasp_str} & ${median_trans:.1f}(-{iqr_trans_low:.1f},+{iqr_trans_up:.1f}) $ & ${mean_trans:.1f} \\pm {std_trans:.1f} $ & ${median_rot:.1f}(-{iqr_rot_low:.1f},+{iqr_rot_up:.1f}) $ & ${mean_rot:.1f} \\pm {std_rot:.1f}$ & ${successRate:.1f}$ \\\\ \n"""
+    # \ac{CPD} & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx \\
+    # \ac{SPR} & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx \\
+    # \ac{KPR} & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx & xx.xx
+
+    table_end = r"""\bottomrule"""
+    print(table_header + table_body + table_end)
+    return
 
 
 # def printTable(
@@ -333,7 +399,7 @@ if __name__ == "__main__":
         ] = data_translational
         statisticalEvaluationResults[method]["rotational"]["data"] = data_rotational
 
-        # calculate median
+        # calculate median and IRQ
         median_tranlsational = np.median(data_translational)
         median_rotational = np.median(data_rotational)
 
@@ -341,6 +407,19 @@ if __name__ == "__main__":
             "median"
         ] = median_tranlsational
         statisticalEvaluationResults[method]["rotational"]["median"] = median_rotational
+        q1_tranlsational = np.percentile(data_translational, 25)
+        q3_tranlsational = np.percentile(data_translational, 75)
+        iqr_translational = np.subtract(*np.percentile(data_translational, [75, 25]))
+        statisticalEvaluationResults[method]["translational"]["iqr"] = iqr_translational
+        statisticalEvaluationResults[method]["translational"]["q1"] = q1_tranlsational
+        statisticalEvaluationResults[method]["translational"]["q3"] = q3_tranlsational
+
+        q1_rotational = np.percentile(data_rotational, 25)
+        q3_rotational = np.percentile(data_rotational, 75)
+        iqr_rotational = np.subtract(*np.percentile(data_rotational, [75, 25]))
+        statisticalEvaluationResults[method]["rotational"]["iqr"] = iqr_rotational
+        statisticalEvaluationResults[method]["rotational"]["q1"] = q1_rotational
+        statisticalEvaluationResults[method]["rotational"]["q3"] = q3_rotational
 
         # fit gamma disribution
         gamma_fit_result_translational = fitGammaAndCalculateMeanAndStd(
@@ -369,6 +448,7 @@ if __name__ == "__main__":
             methodToEvaluate=method,
         )
         statisticalEvaluationResults[method]["successRate"] = successRate
+    printTable(statisticalEvaluationResults=statisticalEvaluationResults)
     # printTable(
     #     translationalErrors=translationalGraspingErrors,
     #     rotationalErrors=rotationalGraspingErrors,

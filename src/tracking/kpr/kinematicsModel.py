@@ -58,12 +58,13 @@ class KinematicsModelDart(object):
         #     J = dartJacobian
         # else:
         #     raise ValueError("Dimension of Jacobian seems wrong.")
-        return self.skel.getWorldJacobian(self.skel.getBodyNode(n))[3:, :]
+
+        # return self.skel.getWorldJacobian(self.skel.getBodyNode(n))[3:, :]
 
         # Darts' world jacobian seems wrong for free floating base (translational degrees of freedom are not identity matrix)
-        # return np.linalg.inv(
-        #     self.skel.getBodyNode(0).getTransform().rotation()
-        # ) @ self.skel.getLinearJacobian(self.skel.getBodyNode(n))
+        return np.linalg.inv(
+            self.skel.getBodyNode(0).getTransform().rotation()
+        ) @ self.skel.getLinearJacobian(self.skel.getBodyNode(n))
         # jacobian = self.skel.getLinearJacobian(self.skel.getBodyNode(n))
         # jacobian[:, :3] = np.eye(3)
         # return self.skel.getLinearJacobian(self.skel.getBodyNode(n))

@@ -1176,7 +1176,7 @@ class Evaluation(object):
         registrationResult["X"] = registration.X.copy()
         registrationResult["Y"] = registration.Y.copy()
         registrationResult["T"] = registration.T.copy()
-        registrationResult["sigma2"] = registration.sigma2.copy()
+        registrationResult["sigma2"] = registration.sigma2
         # gather registration specific results
         if (
             type(registration) == CoherentPointDrift

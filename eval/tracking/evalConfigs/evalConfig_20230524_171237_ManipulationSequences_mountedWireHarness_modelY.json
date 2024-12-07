@@ -2,7 +2,7 @@
     "frameForInitialization": 0,
     "initialFrame": 0,
     "finalFrame": -1,
-    "frameStep": 5,
+    "frameStep": 1,
     "preprocessingParameters": {
         "hsvFilterParameters": {
             "hueMin": 0,
@@ -109,8 +109,8 @@
     },
     "kprParameters": {
         "max_iterations": 1,
-        "ik_iterations": 4,
-        "wStiffness": 0,
+        "ik_iterations": 3,
+        "wStiffness": 1,
         "stiffnessAnnealing": 0.7,
         "damping": 0.7,
         "dampingAnnealing": 1,
@@ -118,8 +118,8 @@
         "mu": 0.1,
         "normalize": 1,
         "method": "spr_ik",
-        "alpha": 3,
-        "beta": 0.5,
+        "alpha": 0.5,
+        "beta": 1,
         "gamma": 1000,
         "knn": 7
     },

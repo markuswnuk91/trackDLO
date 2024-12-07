@@ -502,9 +502,21 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
                     Jn = self.model.getJacobian(self.q, n)
                     Jn_list.append(Jn)
                 J = np.vstack(Jn_list)
-                pInv = dampedPseudoInverse(J, jacobianDamping)
+                # pInv = dampedPseudoInverse(J, jacobianDamping)
+                # self.dq = (
+                #     pInv @ error.flatten()
+                #     + self.sigma2 * wStiffness * stiffnessMatrix @ (self.q0 - self.q)
+                # )
+                # P1_norm = (self.P1 - np.min(self.P1)) / (
+                #     np.max(self.P1) - np.min(self.P1)
+                # )
+                # Wp = np.diag(np.repeat(P1_norm, self.D))
+                # Wp = np.diag(np.repeat(np.exp(-1 * (1 - P1_norm)), self.D))
+                P1_norm = self.P1 / np.mean(self.P1)
+                Wp = np.diag(np.repeat(1 / (1 + (np.exp(-(P1_norm)))), self.D))
+                pInv = dampedPseudoInverse(Wp @ J, jacobianDamping)
                 self.dq = (
-                    pInv @ error.flatten()
+                    pInv @ Wp @ error.flatten()
                     + self.sigma2 * wStiffness * stiffnessMatrix @ (self.q0 - self.q)
                 )
                 # update degrees of freedom

@@ -383,7 +383,7 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             self.update_variance()
         if self.method == "ik":
             for iter in range(0, self.ik_iterations):
-                t_iter_start = time.time()
+                # t_iter_start = time.time()
                 # self.dq = np.zeros(self.Dof)
                 # dP1 = np.diag(self.P1)
                 # self.dq[3:6] = np.mean(np.linalg.inv(dP1) @ self.PY) - np.mean(self.T)
@@ -412,8 +412,8 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
                 self.updateDegreesOfFreedom()
                 # set the new targets
                 self.computeTargets()
-                t_iter_end = time.time()
-                print("Time per iteration: {}".format(t_iter_end - t_iter_start))
+                # t_iter_end = time.time()
+                # print("Time per iteration: {}".format(t_iter_end - t_iter_start))
             self.update_variance()
             print("Sigma: {}".format(self.sigma2))
         if self.method == "gradient_descend":
@@ -481,7 +481,7 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             print("Sigma: {}".format(self.sigma2))
         if self.method == "spr_ik":
             for iter in range(0, self.ik_iterations):
-                t_iter_start = time.time()
+                # t_iter_start = time.time()
                 # error = np.linalg.inv(dP1) @ self.PY - self.T
                 A = (
                     np.dot(np.diag(self.P1), self.G)
@@ -513,20 +513,40 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
                 # Wp = np.diag(np.repeat(P1_norm, self.D))
                 # Wp = np.diag(np.repeat(np.exp(-1 * (1 - P1_norm)), self.D))
                 P1_norm = self.P1 / np.mean(self.P1)
+                # P1_norm[3:6] = np.ones(3)
                 Wp = np.diag(np.repeat(1 / (1 + (np.exp(-(P1_norm)))), self.D))
-                pInv = dampedPseudoInverse(Wp @ J, jacobianDamping)
-                self.dq = (
-                    pInv @ Wp @ error.flatten()
-                    + self.sigma2 * wStiffness * stiffnessMatrix @ (self.q0 - self.q)
+                # A = Wp @ J
+                # # A += wStiffness * stiffnessMatrix @ (self.q0 - self.q)
+                # pInv = dampedPseudoInverse(A, jacobianDamping)
+                # self.dq = (
+                #     pInv @ Wp @ error.flatten()
+                #     + self.sigma2 * wStiffness * stiffnessMatrix @ (self.q0 - self.q)
+                # )
+                # --------------------------------------------------------------
+                A = (
+                    J.T @ Wp.T @ Wp @ J
+                    + wStiffness * stiffnessMatrix
+                    + jacobianDamping**2 * np.eye(self.Dof)
                 )
+                # A += wStiffness * stiffnessMatrix @ (self.q0 - self.q)
+                # pInv = dampedPseudoInverse(A, jacobianDamping)
+                dq_stiff = np.zeros(self.Dof) - self.q
+                dq_stiff[0:6] = np.zeros(6)
+                self.dq = np.linalg.inv(A) @ (
+                    J.T @ Wp.T @ Wp @ error.flatten()
+                    + wStiffness * stiffnessMatrix @ (dq_stiff)
+                )
+                # --------------------------------------------------------------
+                # self.dq[0:3] = self.dq[9:12]
+                # self.dq[6:9] = self.dq[9:12]
                 # update degrees of freedom
                 self.updateDegreesOfFreedom()
                 # set the new targets
                 self.computeTargets()
-                t_iter_end = time.time()
-                print("Time per iteration: {}".format(t_iter_end - t_iter_start))
+                # t_iter_end = time.time()
+                # print("Time per iteration: {}".format(t_iter_end - t_iter_start))
             self.update_variance()
-            print("Sigma: {}".format(self.sigma2))
+            # print("Sigma: {}".format(self.sigma2))
         # -------------------------------------------------------------------
         # for iteration in range(0, 3):
         #     dP1 = np.diag(self.P1)

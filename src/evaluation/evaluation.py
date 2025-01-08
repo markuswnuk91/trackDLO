@@ -1289,6 +1289,7 @@ class Evaluation(object):
         trackingResult["method"] = method
         trackingResult["registrations"] = []
         trackingResult["modelParameters"] = bdloModelParameters
+        trackingResult["parameterConfig"] = self.config
         trackingResult["B"] = B
         trackingResult["S"] = S
         trackingResult["adjacencyMatrix"] = bdloModel.getBodyNodeNodeAdjacencyMatrix()

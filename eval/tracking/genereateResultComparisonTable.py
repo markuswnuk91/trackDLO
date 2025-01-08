@@ -21,7 +21,7 @@ eval = TrackingEvaluation()
 
 # script contol options
 controlOpt = {
-    "resultsToLoad": [0, 1, 2],  # 0: modelY, 1: partial, 2: arena
+    "resultsToLoad": [0],  # 0: modelY, 1: partial, 2: arena
     "methods": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
     "trackingErrorUnitConversionFactor": 100,  # tracking errors in cm
     "geometricErrorUnitConversionFactor": 100,  # geometric errors in cm

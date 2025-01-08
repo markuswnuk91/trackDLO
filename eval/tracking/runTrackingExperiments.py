@@ -38,7 +38,7 @@ visOpt = {
 }
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": False,
+    "trackingResults": True,
     "saveRegistrationsAsImage": False,
     #    "evaluationResults": True,
 }

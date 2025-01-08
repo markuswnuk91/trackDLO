@@ -18,16 +18,22 @@ except:
     print("Imports for plotting tolology extraction failed.")
     raise
 runOpt = {"save": True, "runTopologyExtraction": False, "blockAfterPlotting": False}
-visOpt = {"visLocalizationIterations": True, "plotDartVis": True}
+visOpt = {"visLocalizationIterations": False, "plotDartVis": True}
 saveOpt = {
     "localizationResultSavePath": "data/plots/initialization",
     "imageSavePath": "imgs/initialization",
     "dpi": 300,
 }
-relFilePath = "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120332_090647_image_rgb.png"
+relFilePaths = [
+    "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120332_090647_image_rgb.png",
+    "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120112_746315_image_rgb.png",
+    "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120436_605547_image_rgb.png",
+]
+relFilePath = relFilePaths[2]  # choose the configuration
 configPath = "plot/plotInitialization/evalConfig.json"
 styleOpt = {
     "iterationsToPlot": [0, 1, 2, 3, 5, 10, 29],
+    # "iterationsToPlot": [0, 1, 5, 29],
     "templatePointColor": [0, 0, 1],
     "targetPointColor": [1, 0, 0],
     "elevation": 25,
@@ -48,7 +54,8 @@ styleOpt = {
     "templateLineAlpha": 0.9,
     "correspondenceTemplatePointSize": 20,
     "correspondenceTargetPointSize": 0.1,
-    "eyePosition_DART": [3, 0.5, 1.5],
+    "eyePosition_DART": [2.5, 0, 1.5],
+    "colorPalette": thesisColorPalettes["viridis"],
 }
 
 if __name__ == "__main__":
@@ -58,6 +65,7 @@ if __name__ == "__main__":
     dataFolderPath = os.path.dirname(relFilePath)
     dataSetPath = os.path.dirname(dataFolderPath) + "/"
     frame = eval.getFrameFromFileName(dataSetPath, fileName)
+    save_name = fileName.split(".")[0]
     # configure initial configuration
     model, modelParameters = eval.getModel(dataSetPath)
 
@@ -95,7 +103,7 @@ if __name__ == "__main__":
             data=localizationResult,
             filePath=os.path.join(
                 saveOpt["localizationResultSavePath"],
-                "localizationResult.pkl",
+                "localizationResult" + "_" + save_name + ".pkl",
             ),
             recursionLimit=10000,
         )
@@ -104,7 +112,7 @@ if __name__ == "__main__":
         localizationResult = eval.loadResults(
             os.path.join(
                 saveOpt["localizationResultSavePath"],
-                "localizationResult.pkl",
+                "localizationResult" + "_" + save_name + ".pkl",
             )
         )
 
@@ -133,17 +141,30 @@ if __name__ == "__main__":
         )
         X, X_adjacencyMatrix = model.getJointPositionsAndAdjacencyMatrix(q)
 
-        plotGraph3D(
+        # plotGraph3D(
+        #     ax=ax,
+        #     X=X,
+        #     adjacencyMatrix=X_adjacencyMatrix,
+        #     pointColor=styleOpt["templatePointColor"],
+        #     lineColor=styleOpt["templateLineColor"],
+        #     pointSize=styleOpt["templatePointSize"],
+        #     lineWidth=styleOpt["templateLineWidth"],
+        #     pointAlpha=styleOpt["templatePointAlpha"],
+        #     lineAlpha=styleOpt["templateLineAlpha"],
+        # )
+        (_, _, branchCorrespondanceMatrix) = model.getBranchCorrespondancesForJoints()
+        # make adjacency matrix symmetric
+        X_adj_sym = ((X_adjacencyMatrix + X_adjacencyMatrix.T) > 0).astype(int)
+        plotBranchWiseColoredGraph3D(
             ax=ax,
-            X=X,
-            adjacencyMatrix=X_adjacencyMatrix,
-            pointColor=styleOpt["templatePointColor"],
-            lineColor=styleOpt["templateLineColor"],
-            pointSize=styleOpt["templatePointSize"],
+            positions3D=X,
+            adjacencyMatrix=X_adj_sym,
+            branchCorrespondanceMatrix=branchCorrespondanceMatrix,
+            colorPalette=None,
             lineWidth=styleOpt["templateLineWidth"],
-            pointAlpha=styleOpt["templatePointAlpha"],
-            lineAlpha=styleOpt["templateLineAlpha"],
+            pointSize=styleOpt["correspondenceTemplatePointSize"],
         )
+
         # correspondanes
         Y_target = localizationResult["YTarget"]
         X_sample = model.getSamplePositionsFromLocalCoordinates(
@@ -155,35 +176,48 @@ if __name__ == "__main__":
             X=X_sample,
             Y=Y_target,
             C=C,
-            xSize=styleOpt["correspondenceTemplatePointSize"],
+            xSize=0,
             ySize=styleOpt["correspondenceTargetPointSize"],
             correspondanceColor=styleOpt["correspondanceColor"],
             lineAlpha=styleOpt["correspondacenAlpha"],
         )
 
         scale_axes_to_fit(ax=ax, points=Y_target)
+        ax.set_xlim(0.1, 0.8)
+        ax.set_ylim(-0.3, 0.4)
+        ax.set_zlim(-0.05, 0.65)
+        start, end = ax.get_xlim()
+        ax.xaxis.set_ticks([0.2, 0.4, 0.6, 0.8])
+        ax.yaxis.set_ticks([-0.2, 0, 0.2, 0.4])
+        ax.zaxis.set_ticks([0, 0.2, 0.4, 0.6])
         ax.view_init(azim=styleOpt["azimuth"], elev=styleOpt["elevation"])
         if runOpt["save"]:
+            # check if directory exists
+            path = os.path.join(saveOpt["imageSavePath"], save_name)
+            if not os.path.exists(path):
+                os.makedirs(path)
             plt.savefig(
                 os.path.join(
-                    saveOpt["imageSavePath"],
-                    "initialLocalization_" + str(iterations[i]),
+                    path,
+                    "initialLocalization_" + str(iterations[i]) + ".pdf",
                 ),
                 bbox_inches="tight",
                 pad_inches=0.5,
-                dpi=saveOpt["dpi"],
+                # dpi=saveOpt["dpi"],
             )
         if visOpt["plotDartVis"]:
+            model.setBranchColorsFromColorPalette(styleOpt["colorPalette"])
             dartScene = DartScene(model.skel, q, loadRobot=True, loadCell=True)
             dartScene.addPointCloud(points=Y, colors=[1, 0, 0])
-            dartScene.setModelColor([0, 0, 1])
+            # dartScene.setModelColor([0, 0, 1])
             dartScene.saveFrame(
                 savePath=os.path.join(
                     saveOpt["imageSavePath"],
+                    save_name,
                     "dart_initialLocalization_" + str(iterations[i]),
                 ),
                 eye=styleOpt["eyePosition_DART"],
-                center=np.mean(Y, axis=0),
+                center=[0, 0, 0],
                 up=[0, 0, 1],
             )
         plt.show(block=runOpt["blockAfterPlotting"])

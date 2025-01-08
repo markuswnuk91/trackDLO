@@ -20,8 +20,8 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [2],
-    "save": True,
+    "resultsToLoad": [0],
+    "save": False,
     "saveAs": "pdf",  # tikz, pdf, png
     "showPlot": True,
     "saveFolder": "data/eval/tracking/plots/geometricErrorTimeSeries",

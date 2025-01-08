@@ -110,8 +110,8 @@
     "kprParameters": {
         "max_iterations": 1,
         "ik_iterations": 3,
-        "wStiffness": 1,
-        "stiffnessAnnealing": 0.7,
+        "wStiffness": 0.0001,
+        "stiffnessAnnealing": 1,
         "damping": 0.7,
         "dampingAnnealing": 1,
         "minDampingFactor": 0.01,

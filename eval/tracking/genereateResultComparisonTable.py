@@ -21,7 +21,7 @@ eval = TrackingEvaluation()
 
 # script contol options
 controlOpt = {
-    "resultsToLoad": [0],  # 0: modelY, 1: partial, 2: arena
+    "resultsToLoad": [0, 1, 2],  # 0: modelY, 1: partial, 2: arena
     "methods": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
     "trackingErrorUnitConversionFactor": 100,  # tracking errors in cm
     "geometricErrorUnitConversionFactor": 100,  # geometric errors in cm
@@ -43,7 +43,7 @@ def printTable(tableValueDict):
     header = """----------Cut-------------\n Topology  & Method & $n_{\\text{frames}}$ & $\\nicefrac{\\bar{e}_{\\text{track}}}{\\si{cm}}$ & $\\nicefrac{\\bar{e}_{\\text{reproj}}}{\\si{px}}$ & $\\nicefrac{\\bar{e}_{\\text{geo}}}{\\si{cm}}$ & $\\nicefrac{r_{\\text{success}}}{\\si{cm}}$ & $\\nicefrac{\\bar{t}_{\\text{runtime}}}{\\si{\\milli\\second}}$\\\\\\midrule\n"""
 
     table_section_topology_1 = (
-        """\\multirow{3}{*}{$1$} & \\acs{CPD} & \\multirow{3}{*}{$695$}"""
+        """\\multirow{3}{*}{$\\mathcal{T}_{s1}$} & \\acs{CPD} & \\multirow{3}{*}{$695$}"""
         + (
             f"""& ${tableValueDict["topology_1"]["cpd"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_1"]["cpd"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_1"]["cpd"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_1"]["cpd"]["successRate"]:.1f}$ & $ {tableValueDict["topology_1"]["cpd"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["runtime_std"]:.1f}$\\\\\n"""
         )
@@ -56,7 +56,7 @@ def printTable(tableValueDict):
     )
 
     table_section_topology_2 = (
-        """\\multirow{3}{*}{$2$} & \\acs{CPD} & \\multirow{3}{*}{$315$}"""
+        """\\multirow{3}{*}{$\\mathcal{T}_{s2}$} & \\acs{CPD} & \\multirow{3}{*}{$315$}"""
         + (
             f"""& ${tableValueDict["topology_2"]["cpd"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_2"]["cpd"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_2"]["cpd"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_2"]["cpd"]["successRate"]:.1f}$ & $ {tableValueDict["topology_2"]["cpd"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["runtime_std"]:.1f}$\\\\\n"""
         )
@@ -69,7 +69,7 @@ def printTable(tableValueDict):
     )
 
     table_section_topology_3 = (
-        """\\multirow{3}{*}{$3$} & \\acs{CPD} & \\multirow{3}{*}{$497$}"""
+        """\\multirow{3}{*}{$\\mathcal{T}_{s3}$} & \\acs{CPD} & \\multirow{3}{*}{$497$}"""
         + (
             f"""& ${tableValueDict["topology_3"]["cpd"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_3"]["cpd"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_3"]["cpd"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_3"]["cpd"]["successRate"]:.1f}$ & $ {tableValueDict["topology_3"]["cpd"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["runtime_std"]:.1f}$\\\\\n"""
         )

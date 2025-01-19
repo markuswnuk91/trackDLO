@@ -269,7 +269,7 @@ class TrackingEvaluation(Evaluation):
             else reprojectionErrorThresholdMean
         )
         reprojectionErrorThresholdStd = (
-            100
+            70
             if reprojectionErrorThresholdStd is None
             else reprojectionErrorThresholdStd
         )
@@ -297,36 +297,59 @@ class TrackingEvaluation(Evaluation):
         frames = trackingMethodResult["frames"]
         reprojectionMeans = reprojectionErrors["means"]
         reprojectionStds = reprojectionErrors["stds"]
-        labeledFrames = reprojectionErrors["labeledFrames"]
         # Find where the thresholds are surpassed
-        mean_surpass = np.where(reprojectionMeans > reprojectionErrorThresholdMean)[0]
-        std_surpass = np.where(reprojectionStds > reprojectionErrorThresholdStd)[0]
+        # reprojection_mean_surpass = np.where(
+        #     reprojectionMeans > reprojectionErrorThresholdMean
+        # )
+        # reprojection_std_surpass = np.where(
+        #     reprojectionStds > reprojectionErrorThresholdStd
+        # )
         geometricErrors_surpass = np.where(
             geometricErrors_avg > geometricErrorThreshold
         )[0]
         trackingErrors_surpass = np.where(trackingErrors_avg > trackingErrorThreshold)[
             0
         ]
-        if len(mean_surpass) > 0 and len(std_surpass) > 0:
-            # Get the first index where either condition is True
-            first_surpass_index = min(
-                np.min(mean_surpass),
-                np.min(std_surpass),
-            )
-            # Get the corresponding frame
-            first_unsuccess_frame = labeledFrames[first_surpass_index]
-        elif len(mean_surpass) > 0:
-            first_surpass_index = np.min(mean_surpass)
-            first_unsuccess_frame = labeledFrames[first_surpass_index]
-        elif len(std_surpass) > 0:
-            first_surpass_index = np.min(std_surpass)
-            first_unsuccess_frame = labeledFrames[first_surpass_index]
-        else:
-            first_unsuccess_frame = len(frames)
 
+        labeledFrames = reprojectionErrors["labeledFrames"]
+        reprojection_error_surpass = np.zeros_like(frames, dtype=bool)
+        # Loop through consecutive pairs of labeled frames
+        for i in range(
+            1, len(labeledFrames) - 1
+        ):  # ignore first frame due to initialization unvertainty
+            start_frame = labeledFrames[i]
+            end_frame = labeledFrames[i + 1]
+
+            # Flag frames between start and end as False if reprojection error exceeds threshold
+            if reprojectionMeans[i] > reprojectionErrorThresholdMean:
+                reprojection_error_surpass[start_frame:end_frame] = True
+            if reprojectionStds[i] > reprojectionErrorThresholdStd:
+                reprojection_error_surpass[start_frame:end_frame] = True
+        reprojection_error_surpass = np.where(reprojection_error_surpass)[0]
         unsuccessful_frames = (
-            set(geometricErrors_surpass).union(set(frames[first_unsuccess_frame:]))
+            set(geometricErrors_surpass).union(set(reprojection_error_surpass))
         ).union(set(trackingErrors_surpass))
+
+        # if len(mean_surpass) > 0 and len(std_surpass) > 0:
+        #     # Get the first index where either condition is True
+        #     first_surpass_index = min(
+        #         np.min(mean_surpass),
+        #         np.min(std_surpass),
+        #     )
+        #     # Get the corresponding frame
+        #     first_unsuccess_frame = labeledFrames[first_surpass_index]
+        # elif len(mean_surpass) > 0:
+        #     first_surpass_index = np.min(mean_surpass)
+        #     first_unsuccess_frame = labeledFrames[first_surpass_index]
+        # elif len(std_surpass) > 0:
+        #     first_surpass_index = np.min(std_surpass)
+        #     first_unsuccess_frame = labeledFrames[first_surpass_index]
+        # else:
+        #     first_unsuccess_frame = len(frames)
+        # unsuccessful_frames = (
+        #     set(geometricErrors_surpass).union(set(frames[first_unsuccess_frame:]))
+        # ).union(set(trackingErrors_surpass))
+
         n_unsuccessful_frames = len(unsuccessful_frames)
         n_successful_frames = len(frames) - n_unsuccessful_frames
         successRate = n_successful_frames / len(frames)

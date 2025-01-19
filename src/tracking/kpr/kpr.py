@@ -480,22 +480,32 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             self.update_variance()
             print("Sigma: {}".format(self.sigma2))
         if self.method == "spr_ik":
+            # t_iter_start = time.time()
+            # error = np.linalg.inv(dP1) @ self.PY - self.T
+            A = (
+                np.dot(np.diag(self.P1), self.G)
+                + self.alpha * self.sigma2 * np.eye(self.N)
+                + self.gamma * self.sigma2 * np.dot(self.Phi, self.G)
+            )
+            B = (
+                self.PY
+                - np.dot(np.diag(self.P1), self.T)
+                - self.gamma * self.sigma2 * np.dot(self.Phi, self.T)
+            )
+            self.W = np.linalg.solve(A, B)
+            error = np.dot(self.G, self.W)
+            X_target = self.T + error
+            q_0 = self.q
+            # P1_norm = (self.P1 - np.min(self.P1)) / (
+            #     np.max(self.P1) - np.min(self.P1)
+            # )
+            # Wp = np.diag(np.repeat(P1_norm, self.D))
+            # Wp = np.diag(np.repeat(np.exp(-1 * (1 - P1_norm)), self.D))
+            P1_norm = self.P1 / np.mean(self.P1)
+            # P1_norm[3:6] = np.ones(3)
+            Wp = np.diag(np.repeat(1 / (1 + (np.exp(-(P1_norm)))), self.D))
             for iter in range(0, self.ik_iterations):
-                # t_iter_start = time.time()
-                # error = np.linalg.inv(dP1) @ self.PY - self.T
-                A = (
-                    np.dot(np.diag(self.P1), self.G)
-                    + self.alpha * self.sigma2 * np.eye(self.N)
-                    + self.gamma * self.sigma2 * np.dot(self.Phi, self.G)
-                )
-                B = (
-                    self.PY
-                    - np.dot(np.diag(self.P1), self.T)
-                    - self.gamma * self.sigma2 * np.dot(self.Phi, self.T)
-                )
-                self.W = np.linalg.solve(A, B)
-                error = np.dot(self.G, self.W)
-                X_target = self.T + error
+                error = X_target - self.T
                 # assembly Jacobian
                 Jn_list = []
                 for n in range(0, self.N):
@@ -507,14 +517,6 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
                 #     pInv @ error.flatten()
                 #     + self.sigma2 * wStiffness * stiffnessMatrix @ (self.q0 - self.q)
                 # )
-                # P1_norm = (self.P1 - np.min(self.P1)) / (
-                #     np.max(self.P1) - np.min(self.P1)
-                # )
-                # Wp = np.diag(np.repeat(P1_norm, self.D))
-                # Wp = np.diag(np.repeat(np.exp(-1 * (1 - P1_norm)), self.D))
-                P1_norm = self.P1 / np.mean(self.P1)
-                # P1_norm[3:6] = np.ones(3)
-                Wp = np.diag(np.repeat(1 / (1 + (np.exp(-(P1_norm)))), self.D))
                 # A = Wp @ J
                 # # A += wStiffness * stiffnessMatrix @ (self.q0 - self.q)
                 # pInv = dampedPseudoInverse(A, jacobianDamping)
@@ -530,7 +532,7 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
                 )
                 # A += wStiffness * stiffnessMatrix @ (self.q0 - self.q)
                 # pInv = dampedPseudoInverse(A, jacobianDamping)
-                dq_stiff = np.zeros(self.Dof) - self.q
+                dq_stiff = q_0 - self.q
                 dq_stiff[0:6] = np.zeros(6)
                 self.dq = np.linalg.inv(A) @ (
                     J.T @ Wp.T @ Wp @ error.flatten()

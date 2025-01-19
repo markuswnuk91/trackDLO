@@ -20,7 +20,7 @@ global eval
 eval = TrackingEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [0, 1, 2],  # 0,1,2
+    "resultsToLoad": [0],  # 0,1,2
     "save": True,
     "saveAs": "pdf",  # "pdf" "tikz" ,"png"
     "showPlot": True,

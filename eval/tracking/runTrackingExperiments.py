@@ -26,14 +26,14 @@ runOpt = {
 }
 visOpt = {
     "som": False,
-    "somIterations": True,
+    "somIterations": False,
     "l1": False,
     "l1Iterations": True,
     "topologyExtraction": True,
-    "inverseKinematicsIterations": True,
+    "inverseKinematicsIterations": False,
     "correspondanceEstimation": False,
-    "initializationResult": True,
-    "trackingIterations": True,
+    "initializationResult": False,
+    "trackingIterations": False,
     "reprojectionErrors": True,
 }
 saveOpt = {

@@ -46,7 +46,7 @@ resultFolderPaths = [
 styleOpt = {
     "plotLegendInFrame": 0,
     "colorPalette": thesisColorPalettes["viridis"],
-    "outlierColor": [1, 0, 0],
+    "outlierColor": [0.6, 0.6, 0.6],
     "xAxisRange": [-3, 52],
     "yAxisRange": [-50, 600],
     "meanMarkerSize": 5,
@@ -159,7 +159,7 @@ def createReprojectionErrorBoxPlot(
             markersize=4, color=symbolColor, alpha=styleOpt["alpha"]
         )
         legendSymbols.append(errorPointHandle)
-        legendLabels.append("pointwise rep. error")
+        legendLabels.append("reprojection error")
 
         ax.legend(
             handles=legendSymbols,

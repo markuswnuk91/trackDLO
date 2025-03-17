@@ -15,7 +15,7 @@ except:
     raise
 
 controlOpt = {
-    "dataSetsToLoad": [2],
+    "dataSetsToLoad": [1],
 }
 
 dataSetPaths = [

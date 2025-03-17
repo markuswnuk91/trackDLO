@@ -92,6 +92,74 @@ def printTable(tableValueDict):
     return
 
 
+def printRelativeImprovements(tableValues):
+    methods_to_compare = ["spr", "cpd"]
+    for key in tableValues:
+        for method in methods_to_compare:
+            print("""---------------------------""")
+            print(
+                "Relative improvements KPR over {} for: {}".format(method.upper(), key)
+            )
+            # reprojection error
+            relative_reporjection_error_improvements = (
+                (-1)
+                * (
+                    tableValues[key]["kpr"]["reprojectionError_mean"]
+                    - tableValues[key][method]["reprojectionError_mean"]
+                )
+                / tableValues[key][method]["reprojectionError_mean"]
+            )
+            print(
+                "Reprojection error: {}".format(
+                    relative_reporjection_error_improvements
+                )
+            )
+
+            # tracking error
+            relative_tracking_error_improvements = (
+                (-1)
+                * (
+                    tableValues[key]["kpr"]["trackingError_mean"]
+                    - tableValues[key][method]["trackingError_mean"]
+                )
+                / tableValues[key][method]["trackingError_mean"]
+            )
+            print("Tracking error: {}".format(relative_tracking_error_improvements))
+
+            # geometric error
+            relative_geometric_error_improvements = (
+                (-1)
+                * (
+                    tableValues[key]["kpr"]["geometricError_mean"]
+                    - tableValues[key][method]["geometricError_mean"]
+                )
+                / tableValues[key][method]["geometricError_mean"]
+            )
+            print("Geometric error: {}".format(relative_geometric_error_improvements))
+
+            # Success rate
+            relative_success_rate_improvements = (
+                tableValues[key]["kpr"]["successRate"]
+                - tableValues[key][method]["successRate"]
+            ) / tableValues[key][method]["successRate"]
+            print("Success rate: {}".format(relative_success_rate_improvements))
+
+            # runtime advantage
+            acquisition_time_diff = (
+                135.45967741935485  # computed with evaluate_dataset_fps
+            )
+            runtime_advantage_kpr = (
+                acquisition_time_diff - tableValues[key]["kpr"]["runtime_mean"]
+            )
+            runtime_advantage_spr = (
+                acquisition_time_diff - tableValues[key][method]["runtime_mean"]
+            )
+            relative_runtime_advantage = (
+                runtime_advantage_kpr - runtime_advantage_spr
+            ) / runtime_advantage_spr
+            print("Runtime advantage: {}".format(relative_runtime_advantage))
+
+
 def loadResult(filePath):
     _, file_extension = os.path.splitext(filePath)
     if file_extension == ".pkl":
@@ -280,3 +348,4 @@ if __name__ == "__main__":
                 * controlOpt["runtimeUnitConversionFactor"]
             )
     printTable(tableValues)
+    printRelativeImprovements(tableValues)

@@ -18,9 +18,9 @@ global eval
 eval = GraspingAccuracyEvaluation()
 
 controlOpt = {
-    "resultsToLoad": [-1],
+    "resultsToLoad": [-1],  # -1: all
     "methodsToEvaluate": ["cpd", "spr", "kpr"],
-    "registrationResultsToEvaluate": [-1],
+    "registrationResultsToEvaluate": [-1],  # -1: all
     "scale_translational_errors": 100,  # convert translational errors to cm
 }
 
@@ -162,6 +162,67 @@ def printTable(statisticalEvaluationResults):
     table_end = r"""\bottomrule"""
     print(table_header + table_body + table_end)
     return
+
+
+def printRelativeImprvementsOverSPR(statisticalEvaluationResults):
+    print("Relative improvements for translational errors:")
+
+    # MEAN
+    # relative_improvement_mean = (
+    #     statisticalEvaluationResults["spr"]["translational"]["mean"]
+    #     - statisticalEvaluationResults["kpr"]["translational"]["mean"]
+    # ) / statisticalEvaluationResults["spr"]["translational"]["mean"]
+
+    # STD
+    # relative_improvement_std = (
+    #     statisticalEvaluationResults["spr"]["translational"]["std"]
+    #     - statisticalEvaluationResults["kpr"]["translational"]["std"]
+    # ) / statisticalEvaluationResults["spr"]["translational"]["std"]
+
+    # Median
+    relative_improvement_median_trans = (
+        statisticalEvaluationResults["spr"]["translational"]["median"]
+        - statisticalEvaluationResults["kpr"]["translational"]["median"]
+    ) / statisticalEvaluationResults["spr"]["translational"]["median"]
+    print(
+        "Translational improvements Median: {}".format(
+            relative_improvement_median_trans
+        )
+    )
+
+    # IQR
+    relative_improvement_iqr_trans = (
+        statisticalEvaluationResults["spr"]["translational"]["iqr"]
+        - statisticalEvaluationResults["kpr"]["translational"]["iqr"]
+    ) / statisticalEvaluationResults["spr"]["translational"]["iqr"]
+    print("Translational improvements IQR: {}".format(relative_improvement_iqr_trans))
+
+    print("Relative improvements for rotational errors:")
+    # MEAN
+    # relative_improvement_mean = (
+    #     statisticalEvaluationResults["spr"]["rotational"]["mean"]
+    #     - statisticalEvaluationResults["kpr"]["rotational"]["mean"]
+    # ) / statisticalEvaluationResults["spr"]["rotational"]["mean"]
+
+    # STD
+    # relative_improvement_std = (
+    #     statisticalEvaluationResults["spr"]["rotational"]["std"]
+    #     - statisticalEvaluationResults["kpr"]["rotational"]["std"]
+    # ) / statisticalEvaluationResults["spr"]["rotational"]["std"]
+
+    # Median
+    relative_improvement_median_rot = (
+        statisticalEvaluationResults["spr"]["rotational"]["median"]
+        - statisticalEvaluationResults["kpr"]["rotational"]["median"]
+    ) / statisticalEvaluationResults["spr"]["rotational"]["median"]
+    print("Rotational improvements Median: {}".format(relative_improvement_median_rot))
+
+    # IQR
+    relative_improvement_iqr_rot = (
+        statisticalEvaluationResults["spr"]["rotational"]["iqr"]
+        - statisticalEvaluationResults["kpr"]["rotational"]["iqr"]
+    ) / statisticalEvaluationResults["spr"]["rotational"]["iqr"]
+    print("Rotational improvements IQR: {}".format(relative_improvement_iqr_rot))
 
 
 # def printTable(
@@ -449,6 +510,9 @@ if __name__ == "__main__":
         )
         statisticalEvaluationResults[method]["successRate"] = successRate
     printTable(statisticalEvaluationResults=statisticalEvaluationResults)
+    printRelativeImprvementsOverSPR(
+        statisticalEvaluationResults=statisticalEvaluationResults
+    )
     # printTable(
     #     translationalErrors=translationalGraspingErrors,
     #     rotationalErrors=rotationalGraspingErrors,

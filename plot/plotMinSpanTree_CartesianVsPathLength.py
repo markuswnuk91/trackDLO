@@ -26,7 +26,7 @@ s = np.linspace(0, 1, 30)  # discretization of centerline
 nSamples = 10  # num samples per discretitzed point on centerline
 cov = 0.01 * np.eye(3)  # noise
 distantPointIndices = (5, -5)
-savePath = "imgs/lleExample"
+savePath = "/mnt/c/Users/ac129490/Documents/Dissertation/Thesis/62bebc3388a16f7dcc7f9153/figures/plots/"
 saveNames = [
     "cartesianDistanceMetric.pgf",
     "shortestPathDistanceMetric.pgf",

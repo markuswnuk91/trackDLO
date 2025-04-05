@@ -13,7 +13,11 @@ from src.visualization.plot2D import *
 
 saveFig = True
 savePath = "imgs/lleExample/"
-tex_fonts = get_tex_fonts()
+tex_fonts = get_tex_fonts(
+        latexFontSize_in_pt = 20,
+        latexFootNoteFontSize_in_pt = 16,
+        )
+
 plt.rcParams.update(tex_fonts)
 
 # Generate a twisted cable-like deformable linear object
@@ -48,26 +52,28 @@ ax1.set_xlabel('$x$')
 ax1.set_ylabel('$y$')
 ax1.set_zlabel('$z$')
 
-# 2D Embedding plot
-fig_2 = plt.figure()
-ax2 = fig_2.add_subplot()
-ax2.scatter(embedding[:, 0], embedding[:, 1], c=colors, s=15)
-# ax2.set_title('LLE Embedding Space')
-ax2.set_xlabel('Embedded dimension $y_1$')
-ax2.set_ylabel('Embedded dimension $y_2$')
-
-
 # set background color as white
 ax1.xaxis.pane.fill = False
 ax1.yaxis.pane.fill = False
 ax1.zaxis.pane.fill = False
 
-plt.tight_layout()
+# 2D Embedding plot
+fig_2 = plt.figure(figsize=(5,4))
+ax2 = fig_2.add_subplot()
+ax2.scatter(embedding[:, 0], embedding[:, 1], c=colors, s=15)
+# ax2.set_title('LLE Embedding Space')
+ax2.set_xlabel('Embedded dimension $1$')
+ax2.set_ylabel('Embedded dimension $2$')
+#ax2.set_aspect("equal")
+
+#plt.tight_layout()
+plt.show()
 
 if saveFig:
         fig_1.savefig(
             savePath + "lleExample_3D.pdf",
             bbox_inches="tight",
+            pad_inches=0.3
         )
         fig_2.savefig(
             savePath + "lleExample_embeddingSpace.pdf",

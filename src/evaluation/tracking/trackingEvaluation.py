@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import time
 from scipy.spatial import distance_matrix
+from datetime import datetime
 
 try:
     sys.path.append(os.getcwd().replace("/src/evaluation/tracking", ""))
@@ -254,7 +255,41 @@ class TrackingEvaluation(Evaluation):
             numCorrespondancesPerIteration
         )
         return runtimeResults
+    
+    
+    def calculateDataAcquisitionTimes(self,trackingMethodResult):
+        dataAcquisitonTimeResults= {}
+        dataSetPath = trackingMethodResult["dataSetPath"]
+        frame_names = self.dataHandler.getDataSetFileNames_RBG(dataSetPath + "data")
+        # get the data handler
+        time_stamps = self._extract_timestamps(frame_names)
 
+        time_diffs = self._calculate_time_differences(time_stamps)
+
+        average_time_diff = np.mean(time_diffs)
+        std_time_diff = np.std(time_diffs)
+
+        dataAcquisitonTimeResults["data_acquisition_time_diffs"] = time_diffs
+        dataAcquisitonTimeResults["mean_data_acquistion_time"] = average_time_diff
+        dataAcquisitonTimeResults["std_data_acquistion_time"] = std_time_diff
+        return dataAcquisitonTimeResults
+    
+    def calculateRuntimeEfficiency(self, trackingMethodResult):
+        runtimeEfficiencyResults = {}
+        dataAcquistionTimeResults = self.calculateDataAcquisitionTimes(trackingMethodResult=trackingMethodResult) 
+        runtimeResults = self.calculateRuntimes(trackingMethodResult=trackingMethodResult)
+
+        data_acquisition_time = dataAcquistionTimeResults["mean_data_acquistion_time"]
+        average_runtime = runtimeResults["mean"] * 1000 # convert in ms
+        runtime_margin = data_acquisition_time - average_runtime
+        runtime_efficiency = runtime_margin/data_acquisition_time * 100 # convert to %
+
+        runtimeEfficiencyResults["average_runtime_in_ms"] = average_runtime
+        runtimeEfficiencyResults["runtime_margin_in_ms"] = runtime_margin
+        runtimeEfficiencyResults["runtime_efficiency"] = runtime_efficiency
+
+        return runtimeEfficiencyResults
+    
     def calculateSuccessRate(
         self,
         trackingMethodResult,
@@ -724,3 +759,38 @@ class TrackingEvaluation(Evaluation):
         dartScene.robotSkel.setMobile(False)
         dartScene.setCameraPosition(eye=camEye, center=camCenter, up=camUp)
         return dartScene
+    # --------------------------------------------------------------------------
+    #   UTILS
+    # --------------------------------------------------------------------------
+    def _calculate_time_differences(self, timestamps):
+        # Define the format of the timestamps
+        timestamp_format = "%Y%m%d_%H%M%S_%f"
+
+        # Initialize a list to store the time differences in milliseconds
+        time_differences = []
+
+        # Loop through the timestamps and calculate the differences between consecutive ones
+        for i in range(1, len(timestamps)):
+            # Convert the current and previous timestamp strings to datetime objects
+            datetime1 = datetime.strptime(timestamps[i - 1], timestamp_format)
+            datetime2 = datetime.strptime(timestamps[i], timestamp_format)
+
+            # Calculate the difference between the two datetime objects
+            time_diff = datetime2 - datetime1
+
+            # Convert the time difference to milliseconds and append to the list
+            time_diff_milliseconds = int(time_diff.total_seconds() * 1000)
+            time_differences.append(time_diff_milliseconds)
+
+        return time_differences
+
+
+    def _extract_timestamps(self, filenames):
+        timestamps = []
+
+        for filename in filenames:
+            # Split the filename to extract the timestamp
+            timestamp = filename.split("_image_rgb.png")[0]
+            timestamps.append(timestamp)
+
+        return timestamps

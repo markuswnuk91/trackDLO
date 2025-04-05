@@ -40,45 +40,54 @@ resultFolderPaths = [
 
 def printTable(tableValueDict):
 
-    header = """----------Cut-------------\n Topology  & Method & $n_{\\text{frames}}$ & $\\nicefrac{\\bar{e}_{\\text{track}}}{\\si{cm}}$ & $\\nicefrac{\\bar{e}_{\\text{reproj}}}{\\si{px}}$ & $\\nicefrac{\\bar{e}_{\\text{geo}}}{\\si{cm}}$ & $\\nicefrac{r_{\\text{success}}}{\\si{cm}}$ & $\\nicefrac{\\bar{t}_{\\text{runtime}}}{\\si{\\milli\\second}}$\\\\\\midrule\n"""
+    header = """----------Cut-------------\n Topology  & Method & $n_{\\text{frames}}$ & $\\nicefrac{\\bar{e}_{\\text{track}}}{\\si{cm}}$ & $\\nicefrac{\\bar{e}_{\\text{reproj}}}{\\si{px}}$ & $\\nicefrac{\\bar{e}_{\\text{geo}}}{\\si{cm}}$ & $\\nicefrac{r_{\\text{success}}}{\\si{cm}}$ & $\\nicefrac{\\bar{t}_{\\text{runtime}}}{\\si{\\milli\\second}}$ & $\\nicefrac{\\bar{\\nu}_{\\text{runtime}}}{\\si{\\percent}}$\\\\\\midrule\n"""
 
     table_section_topology_1 = (
         """\\multirow{3}{*}{$\\mathcal{T}_{s1}$} & \\acs{CPD} & \\multirow{3}{*}{$695$}"""
         + (
-            f"""& ${tableValueDict["topology_1"]["cpd"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_1"]["cpd"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_1"]["cpd"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_1"]["cpd"]["successRate"]:.1f}$ & $ {tableValueDict["topology_1"]["cpd"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["runtime_std"]:.1f}$\\\\\n"""
+            f"""& ${tableValueDict["topology_1"]["cpd"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_1"]["cpd"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_1"]["cpd"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_1"]["cpd"]["successRate"]:.1f}$ & $ {tableValueDict["topology_1"]["cpd"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_1"]["cpd"]["runtime_std"]:.1f}$ &
+            ${tableValueDict["topology_1"]["cpd"]["runtime_efficiency"]:.1f}$ \\\\\n"""
         )
         + """& \\acs{SPR} & """
         + (
-            f"""& ${tableValueDict["topology_1"]["spr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["spr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_1"]["spr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["spr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_1"]["spr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["spr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_1"]["spr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_1"]["spr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_1"]["spr"]["runtime_std"]:.1f}$\\\\\n"""
+            f"""& ${tableValueDict["topology_1"]["spr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["spr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_1"]["spr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["spr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_1"]["spr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["spr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_1"]["spr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_1"]["spr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_1"]["spr"]["runtime_std"]:.1f}$ &
+            ${tableValueDict["topology_1"]["spr"]["runtime_efficiency"]:.1f}$\\\\\n"""
         )
         + """& \\acs{KPR} & """
-        + f"""& ${tableValueDict["topology_1"]["kpr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["kpr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_1"]["kpr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["kpr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_1"]["kpr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["kpr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_1"]["kpr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_1"]["kpr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_1"]["kpr"]["runtime_std"]:.1f}$\\\\\\midrule\n"""
+        + f"""& ${tableValueDict["topology_1"]["kpr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["kpr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_1"]["kpr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["kpr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_1"]["kpr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_1"]["kpr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_1"]["kpr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_1"]["kpr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_1"]["kpr"]["runtime_std"]:.1f}$ &
+        ${tableValueDict["topology_1"]["kpr"]["runtime_efficiency"]:.1f}$\\\\\\midrule\n"""
     )
 
     table_section_topology_2 = (
         """\\multirow{3}{*}{$\\mathcal{T}_{s2}$} & \\acs{CPD} & \\multirow{3}{*}{$315$}"""
         + (
-            f"""& ${tableValueDict["topology_2"]["cpd"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_2"]["cpd"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_2"]["cpd"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_2"]["cpd"]["successRate"]:.1f}$ & $ {tableValueDict["topology_2"]["cpd"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["runtime_std"]:.1f}$\\\\\n"""
+            f"""& ${tableValueDict["topology_2"]["cpd"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_2"]["cpd"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_2"]["cpd"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_2"]["cpd"]["successRate"]:.1f}$ & $ {tableValueDict["topology_2"]["cpd"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_2"]["cpd"]["runtime_std"]:.1f}$ &
+            ${tableValueDict["topology_2"]["cpd"]["runtime_efficiency"]:.1f}$\\\\\n"""
         )
         + """& \\acs{SPR} & """
         + (
-            f"""& ${tableValueDict["topology_2"]["spr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["spr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_2"]["spr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["spr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_2"]["spr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["spr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_2"]["spr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_2"]["spr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_2"]["spr"]["runtime_std"]:.1f}$\\\\\n"""
+            f"""& ${tableValueDict["topology_2"]["spr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["spr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_2"]["spr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["spr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_2"]["spr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["spr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_2"]["spr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_2"]["spr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_2"]["spr"]["runtime_std"]:.1f}$ &
+            ${tableValueDict["topology_2"]["spr"]["runtime_efficiency"]:.1f}$\\\\\n"""
         )
         + """& \\acs{KPR} & """
-        + f"""& ${tableValueDict["topology_2"]["kpr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["kpr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_2"]["kpr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["kpr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_2"]["kpr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["kpr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_2"]["kpr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_2"]["kpr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_2"]["kpr"]["runtime_std"]:.1f}$\\\\\\midrule\n"""
+        + f"""& ${tableValueDict["topology_2"]["kpr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["kpr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_2"]["kpr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["kpr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_2"]["kpr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_2"]["kpr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_2"]["kpr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_2"]["kpr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_2"]["kpr"]["runtime_std"]:.1f}$ &
+        ${tableValueDict["topology_2"]["kpr"]["runtime_efficiency"]:.1f}$\\\\\\midrule\n"""
     )
 
     table_section_topology_3 = (
         """\\multirow{3}{*}{$\\mathcal{T}_{s3}$} & \\acs{CPD} & \\multirow{3}{*}{$497$}"""
         + (
-            f"""& ${tableValueDict["topology_3"]["cpd"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_3"]["cpd"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_3"]["cpd"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_3"]["cpd"]["successRate"]:.1f}$ & $ {tableValueDict["topology_3"]["cpd"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["runtime_std"]:.1f}$\\\\\n"""
+            f"""& ${tableValueDict["topology_3"]["cpd"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_3"]["cpd"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_3"]["cpd"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_3"]["cpd"]["successRate"]:.1f}$ & $ {tableValueDict["topology_3"]["cpd"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_3"]["cpd"]["runtime_std"]:.1f}$ &
+            ${tableValueDict["topology_3"]["cpd"]["runtime_efficiency"]:.1f}$ \\\\\n"""
         )
         + """& \\acs{SPR} & """
         + (
-            f"""& ${tableValueDict["topology_3"]["spr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["spr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_3"]["spr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["spr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_3"]["spr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["spr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_3"]["spr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_3"]["spr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_2"]["spr"]["runtime_std"]:.1f}$\\\\\n"""
+            f"""& ${tableValueDict["topology_3"]["spr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["spr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_3"]["spr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["spr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_3"]["spr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["spr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_3"]["spr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_3"]["spr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_3"]["spr"]["runtime_std"]:.1f}$ &
+            ${tableValueDict["topology_3"]["spr"]["runtime_efficiency"]:.1f}$ \\\\\n"""
         )
         + """& \\acs{KPR} & """
-        + f"""& ${tableValueDict["topology_3"]["kpr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["kpr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_3"]["kpr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["kpr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_3"]["kpr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["kpr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_3"]["kpr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_3"]["kpr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_3"]["kpr"]["runtime_std"]:.1f}$\\\\\n"""
+        + f"""& ${tableValueDict["topology_3"]["kpr"]["trackingError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["kpr"]["trackingError_std"]:.1f}$ & ${tableValueDict["topology_3"]["kpr"]["reprojectionError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["kpr"]["reprojectionError_std"]:.1f}$ & ${tableValueDict["topology_3"]["kpr"]["geometricError_mean"]:.1f} \\pm {tableValueDict["topology_3"]["kpr"]["geometricError_std"]:.1f}$ & ${tableValueDict["topology_3"]["kpr"]["successRate"]:.1f}$ & $ {tableValueDict["topology_3"]["kpr"]["runtime_mean"]:.1f} \\pm {tableValueDict["topology_3"]["kpr"]["runtime_std"]:.1f}$ &
+        ${tableValueDict["topology_3"]["kpr"]["runtime_efficiency"]:.1f}$\\\\\n"""
     )
     closure = """\\bottomrule"""
     table = (
@@ -183,6 +192,7 @@ if __name__ == "__main__":
                 "successRate": 0,
                 "runtime_mean": 0,
                 "runtime_std": 0,
+                "runtime_efficiency": 0,
             },
             "spr": {
                 "trackingError_mean": 0,
@@ -194,6 +204,7 @@ if __name__ == "__main__":
                 "successRate": 0,
                 "runtime_mean": 0,
                 "runtime_std": 0,
+                "runtime_efficiency": 0,
             },
             "kpr": {
                 "trackingError_mean": 0,
@@ -205,6 +216,7 @@ if __name__ == "__main__":
                 "successRate": 0,
                 "runtime_mean": 0,
                 "runtime_std": 0,
+                "runtime_efficiency": 0,
             },
         },
         "topology_2": {
@@ -219,6 +231,7 @@ if __name__ == "__main__":
                 "successRate": 0,
                 "runtime_mean": 0,
                 "runtime_std": 0,
+                "runtime_efficiency": 0,
             },
             "spr": {
                 "trackingError_mean": 0,
@@ -230,6 +243,7 @@ if __name__ == "__main__":
                 "successRate": 0,
                 "runtime_mean": 0,
                 "runtime_std": 0,
+                "runtime_efficiency": 0,
             },
             "kpr": {
                 "trackingError_mean": 0,
@@ -241,6 +255,7 @@ if __name__ == "__main__":
                 "successRate": 0,
                 "runtime_mean": 0,
                 "runtime_std": 0,
+                "runtime_efficiency": 0,
             },
         },
         "topology_3": {
@@ -255,6 +270,7 @@ if __name__ == "__main__":
                 "successRate": 0,
                 "runtime_mean": 0,
                 "runtime_std": 0,
+                "runtime_efficiency": 0,
             },
             "spr": {
                 "trackingError_mean": 0,
@@ -266,6 +282,7 @@ if __name__ == "__main__":
                 "successRate": 0,
                 "runtime_mean": 0,
                 "runtime_std": 0,
+                "runtime_efficiency": 0,
             },
             "kpr": {
                 "trackingError_mean": 0,
@@ -277,6 +294,7 @@ if __name__ == "__main__":
                 "successRate": 0,
                 "runtime_mean": 0,
                 "runtime_std": 0,
+                "runtime_efficiency": 0,
             },
         },
     }
@@ -305,6 +323,9 @@ if __name__ == "__main__":
                 result["trackingResults"][method]
             )
             runtimes = eval.calculateRuntimes(result["trackingResults"][method])
+
+            runtimeEfficiency = eval.calculateRuntimeEfficiency(result["trackingResults"][method])
+
             # determine success rate
             successRates = eval.calculateSuccessRate(result["trackingResults"][method])
 
@@ -347,5 +368,7 @@ if __name__ == "__main__":
                 np.std(runtimes["runtimesPerIteration"])
                 * controlOpt["runtimeUnitConversionFactor"]
             )
+            # runtime efficiency
+            tableValues[topologyRef][method]["runtime_efficiency"] = runtimeEfficiency["runtime_efficiency"]
     printTable(tableValues)
     printRelativeImprovements(tableValues)

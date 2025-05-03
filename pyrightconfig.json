@@ -1,0 +1,17 @@
+{
+    "exclude": [
+        "**/__pycache__",
+        "**/.git",
+        "**/.venv",
+        "**/node_modules",
+        "**/build",
+        "**/dist",
+        "**/.mypy_cache",
+        "**/data", // <-- if you have big data dirs
+        "**/logs", // <-- exclude long output logs
+        "**/old", // <-- if you archive code there
+        "eval/20230509_pipeLine", // <-- if it’s slow or not being edited
+        "**/imgs",
+        "**/vids"
+    ]
+}

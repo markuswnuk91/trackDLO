@@ -19,6 +19,7 @@ tex_fonts = get_tex_fonts(
         )
 
 plt.rcParams.update(tex_fonts)
+plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 
 # Generate a twisted cable-like deformable linear object
 n_points = 1500
@@ -62,8 +63,8 @@ fig_2 = plt.figure(figsize=(5,4))
 ax2 = fig_2.add_subplot()
 ax2.scatter(embedding[:, 0], embedding[:, 1], c=colors, s=15)
 # ax2.set_title('LLE Embedding Space')
-ax2.set_xlabel('Embedded dimension $1$')
-ax2.set_ylabel('Embedded dimension $2$')
+ax2.set_xlabel(r"$\text{Embedded\ dimension\ 1}$")
+ax2.set_ylabel(r"$\text{Embedded\ dimension\ 2}$")
 #ax2.set_aspect("equal")
 
 #plt.tight_layout()

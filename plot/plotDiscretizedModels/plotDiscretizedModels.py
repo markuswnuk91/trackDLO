@@ -23,7 +23,7 @@ toleratedErrors = [0.03, 0.015, 0.005]
 
 filePath = "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120402_702175_image_rgb.png"
 saveFolder = "imgs/discretization"
-styleOpt = {}
+styleOpt = {"colorPalette": thesisColorPalettes["viridis"]}
 
 if __name__ == "__main__":
 
@@ -59,6 +59,7 @@ if __name__ == "__main__":
             initialPosition=[0.4, 0.4, 0.3], initialRotation=[np.pi / 2, 0, np.pi / 2]
         )
         # bdloModel.setColor([0.5, 0.5, 0.5])
+        # bdloModel.setBranchColorsFromColorPalette(styleOpt["colorPalette"])
         dartVis = DartScene(
             bdloModel.skel,
             q=bdloModel.getGeneralizedCoordinates(),

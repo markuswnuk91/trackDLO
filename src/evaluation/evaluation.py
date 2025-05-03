@@ -88,6 +88,11 @@ class Evaluation(object):
         # variable to store loaded models
         self.generatedModels = []
 
+        # initialize preprocessor
+        self.preProcessor = PreProcessing(
+            hsvFilterParameters=self.config["preprocessingParameters"]["hsvFilterParameters"],
+            roiFilterParameters=self.config["preprocessingParameters"]["roiFilterParameters"],
+            hsvPassThroughFilters=self.config["preprocessingParameters"]["hsvPassThroughFilters"])
     # ---------------------------------------------------------------------------
     # SETUP FUNCITONS
     # ---------------------------------------------------------------------------

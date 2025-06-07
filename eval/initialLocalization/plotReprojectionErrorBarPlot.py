@@ -24,10 +24,10 @@ REPROJECTION_ERROR_THESHOLD_MEAN = 100
 REPROJECTION_ERROR_THESHOLD_STD = 70
 
 controlOpt = {
-    "resultsToLoad": [-1],
+    "resultsToLoad": [0], #-1: all
     "save": True,
     "showPlot": True,
-    "block": False,
+    "block": True,
     "saveFolder": "data/eval/initialLocalization/plots/reprojectionErrorBarPlots",
     "saveName": "reprojectionErrors",
     "saveAs": "PDF",  # "TIKZ", "PGF", "PNG", "PDF"
@@ -154,12 +154,12 @@ def createReprojectionErrorBoxPlot(
         legendSymbols.append(errorBarSymbol)
         legendLabels.append("outlier")
 
-        # point symbol
-        errorPointHandle = configureLegendSymbol_Point(
-            markersize=4, color=symbolColor, alpha=styleOpt["alpha"]
-        )
-        legendSymbols.append(errorPointHandle)
-        legendLabels.append("reprojection error")
+        # # point symbol
+        # errorPointHandle = configureLegendSymbol_Point(
+        #     markersize=4, color=symbolColor, alpha=styleOpt["alpha"]
+        # )
+        # legendSymbols.append(errorPointHandle)
+        # legendLabels.append("reprojection error")
 
         ax.legend(
             handles=legendSymbols,

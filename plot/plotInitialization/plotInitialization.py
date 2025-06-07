@@ -17,8 +17,8 @@ try:
 except:
     print("Imports for plotting tolology extraction failed.")
     raise
-runOpt = {"save": True, "runTopologyExtraction": False, "blockAfterPlotting": False}
-visOpt = {"visLocalizationIterations": False, "plotDartVis": True}
+runOpt = {"save": True, "runTopologyExtraction": False, "blockAfterPlotting": True}
+visOpt = {"visLocalizationIterations": True, "plotDartVis": False}
 saveOpt = {
     "localizationResultSavePath": "data/plots/initialization",
     "imageSavePath": "imgs/initialization",
@@ -29,10 +29,10 @@ relFilePaths = [
     "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120112_746315_image_rgb.png",
     "data/darus_data_download/data/20230516_Configurations_labeled/20230516_115857_arena/data/20230516_120436_605547_image_rgb.png",
 ]
-relFilePath = relFilePaths[2]  # choose the configuration
+relFilePath = relFilePaths[1]  # choose the configuration
 configPath = "plot/plotInitialization/evalConfig.json"
 styleOpt = {
-    "iterationsToPlot": [0, 1, 2, 3, 5, 10, 29],
+    "iterationsToPlot": [90],
     # "iterationsToPlot": [0, 1, 5, 29],
     "templatePointColor": [0, 0, 1],
     "targetPointColor": [1, 0, 0],
@@ -199,7 +199,7 @@ if __name__ == "__main__":
             plt.savefig(
                 os.path.join(
                     path,
-                    "initialLocalization_" + str(iterations[i]) + ".pdf",
+                    "initialLocalization_" + str(iterations[i-1]) + ".pdf",
                 ),
                 bbox_inches="tight",
                 pad_inches=0.5,

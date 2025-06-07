@@ -19,9 +19,9 @@ global eval
 eval = InitialLocalizationEvaluation()
 
 controlOpt = {
-    "dataSetsToLoad": [5],
-    "resultsToLoad": [4, 5, 6, 7],
-    "save": True,
+    "dataSetsToLoad": [0],
+    "resultsToLoad": [-1],
+    "save": False,
     "showPlot": True,
     "block": True,
     "saveFolder": "data/eval/initialLocalization/plots/reprojectionErrors2D",

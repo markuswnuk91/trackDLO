@@ -25,11 +25,11 @@ except:
 runOpt = {
     "runInitialization": False,
     "runRegistrations": False,
-    "saveInitializationResult": True,
-    "saveRegistrationResults": True,
-    "plotCorrespondances": False,
+    "saveInitializationResult": False,
+    "saveRegistrationResults": False,
+    "plotCorrespondances": True,
     "plotModelFitting": False,
-    "plotKinematicRegularization": True,
+    "plotKinematicRegularization": False,
 }
 visOpt = {"visualizeInitialLocalizationResult": False}
 saveOpt = {
@@ -298,7 +298,7 @@ if __name__ == "__main__":
                     color=colorPalette.to_rgba(0.3 + 0.6 * weight),
                     # linewidth=0.5 + 1.5 * weight,
                     linewidth=1,
-                    alpha=0.1 + (0.5 * weight),
+                    alpha=0.05 + (0.9 * weight),
                 )
         plt.axis("off")
         scale_axes_to_fit(
@@ -313,7 +313,7 @@ if __name__ == "__main__":
         ax.view_init(elev=35, azim=40)
         # add ColorBar
         cbar = plt.colorbar(colorPalette, location="right", shrink=0.75)
-        cbar.set_label("correspondance", rotation=270, labelpad=20)
+        cbar.set_label("$p(\mathbf{x}_{b,n}^t \mid \mathbf{y}_{m}^t)$", rotation=270, labelpad=20)
         # Setting the color bar ticks and labels to reflect the bending radii
         # Convert bending radii to string labels if necessary for formatting
         cbar.set_ticks([0, 1])

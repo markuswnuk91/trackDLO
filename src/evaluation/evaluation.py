@@ -73,6 +73,13 @@ class Evaluation(object):
         if configFilePath is not None:
             self.configFilePath = configFilePath
             self.config = self.dataHandler.loadFromJson(self.configFilePath)
+            self.preProcessor = PreProcessing(
+            hsvFilterParameters=self.config["preprocessingParameters"]["hsvFilterParameters"],
+            roiFilterParameters=self.config["preprocessingParameters"]["roiFilterParameters"],
+            hsvPassThroughFilters=self.config["preprocessingParameters"]["hsvPassThroughFilters"])
+        else:
+            self.preProcessor = PreProcessing()
+
         self.results = {}
         self.resultLog = {
             "topologyExtraction": [],
@@ -89,10 +96,7 @@ class Evaluation(object):
         self.generatedModels = []
 
         # initialize preprocessor
-        self.preProcessor = PreProcessing(
-            hsvFilterParameters=self.config["preprocessingParameters"]["hsvFilterParameters"],
-            roiFilterParameters=self.config["preprocessingParameters"]["roiFilterParameters"],
-            hsvPassThroughFilters=self.config["preprocessingParameters"]["hsvPassThroughFilters"])
+        
     # ---------------------------------------------------------------------------
     # SETUP FUNCITONS
     # ---------------------------------------------------------------------------

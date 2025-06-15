@@ -30,7 +30,7 @@ dpi = 300
 
 textwidth_in_pt = 483.6969
 figureScaling = 0.45
-latexFontSize_in_pt = 30
+latexFontSize_in_pt = 20
 latexFootNoteFontSize_in_pt = 10
 desiredFigureWidth = figureScaling * textwidth_in_pt
 desiredFigureHeight = figureScaling * textwidth_in_pt
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     # disp_img_normalized = 1 / np.max(disp) * disp
     # disp_img_normalized = disp_img_normalized.astype(np.uint8)
     disp_img_normalized = (disp - min_cutoff_val) / (max_cutoff_val - min_cutoff_val)
-    cmap = plt.colormaps["rainbow"]
+    cmap = plt.colormaps["viridis"]
     # cmap = LinearSegmentedColormap.from_list("red_to_blue", colors, N=n_bins)
     colored_disp_img = cmap(disp_img_normalized)
     colored_disp_img[disp == 0] = invalid_val
@@ -89,12 +89,12 @@ if __name__ == "__main__":
     # cv2.imshow("Disparity Image", colored_disp_img_bgr)
     (img_height, image_width, _) = img.shape
     # plt.figure(figsize=(img_height / 100, image_width / 100), dpi=100)
-    plt.imshow(colored_disp_img_rgb, vmin=0, vmax=1, cmap=plt.colormaps["rainbow_r"])
+    plt.imshow(colored_disp_img_rgb, vmin=0, vmax=1, cmap=plt.colormaps["viridis"])
     plt.axis("off")
     cbar = plt.colorbar(ticks=[0.05, 0.95])
     cbar.ax.tick_params(size=0)
     cbar.set_label("Disparity", labelpad=-20)
-    cbar.ax.set_yticklabels(["High", "Low"])
+    cbar.ax.set_yticklabels(["Low", "High"])
     if save:
         plt.savefig(
             os.path.join(saveFolderPath, "disparityMap"),
@@ -109,11 +109,14 @@ if __name__ == "__main__":
     # generate point cloud
     preProcessor = PreProcessing(defaultLoadFolderPath=dirPath)
 
+    # filter out all irrelevant points
+    mask = preProcessor.getMaskFromRGB_applyHSVFilter(img,hMin=0,hMax=10, sMin=0, sMax=255, vMin=0, vMax= 255)
+
     pointCloud = preProcessor.calculatePointCloud(
-        img, disp, preProcessor.cameraParameters["qmatrix"]
+        img, disp, preProcessor.cameraParameters["qmatrix"], mask=mask
     )
-    points = pointCloud[0][::50, :]
-    colors = pointCloud[1][::50, :]
+    points = pointCloud[0][::10, :]
+    colors = pointCloud[1][::10, :]
 
     # transfrom points in robot coodinate sytem
     points = preProcessor.transformPointsFromCameraToRobotBaseCoordinates(points)

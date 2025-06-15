@@ -1,0 +1,55 @@
+{
+    "preprocessingParameters": {
+        "hsvFilterParameters": {
+            "hueMin": 0,
+            "hueMax": 10,
+            "saturationMin": 0,
+            "saturationMax": 255,
+            "valueMin": 0,
+            "valueMax": 255
+        },
+        "roiFilterParameters": {
+            "uMin": 0,
+            "uMax": 1,
+            "vMin": 0,
+            "vMax": 1
+        },
+        "hsvPassThroughFilters": [
+            {
+                "hueMin": 0,
+                "hueMax": 255,
+                "saturationMin": 0,
+                "saturationMax": 255,
+                "valueMin": 0,
+                "valueMax": 255
+            },
+            {
+                "hueMin": 0,
+                "hueMax": 255,
+                "saturationMin": 0,
+                "saturationMax": 255,
+                "valueMin": 0,
+                "valueMax": 255
+            }
+        ],
+        "cameraCoordinateBoundingBoxParameters": {
+            "xMin": -1,
+            "xMax": 1,
+            "yMin": -1,
+            "yMax": 1,
+            "zMin": 0,
+            "zMax": 2
+        },
+        "robotCoordinateBoundingBoxParameters": {
+            "xMin": 0.0,
+            "xMax": 1,
+            "yMin": -1,
+            "yMax": 1,
+            "zMin": 0.0,
+            "zMax": 1
+        },
+        "downsamplingParameters": {
+            "nthElement": 10
+        }
+    }
+}

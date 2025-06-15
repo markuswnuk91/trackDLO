@@ -78,15 +78,32 @@ if __name__ == "__main__":
     #     alpha=0.5,
     #     markerStyle=".",
     # )
-    plotPointSet(
+    # plotPointSet(
+    #     ax=ax,
+    #     X=points,
+    #     color=[0.0, 0.0, 0.0],
+    #     size=pointSize,
+    #     alpha=1,
+    #     markerStyle=".",
+    # )
+    plotPointCloud(
         ax=ax,
-        X=points,
-        color=[0, 0, 0],
+        points=points,
+        colors=[0.7,0.7,0.7],
         size=pointSize,
-        alpha=0.5,
+        alpha=1,
         markerStyle=".",
     )
-    plotPointSet(ax=ax, X=outliers, color=[1, 0, 0], alpha=1, size=outlierSize)
+    # plotPointSet(ax=ax, X=outliers, color=[1, 1, 1], alpha=0.1, size=outlierSize, markerStyle='o',edgeColor=[1, 0, 0], edgeAlpha)
+    ax.scatter(
+        outliers[:, 0],
+        outliers[:, 1],
+        outliers[:, 2],
+        facecolors='none',          # transparent fill
+        edgecolors=(1, 0, 0, 1),           # red circle outline
+        s=50,
+        marker='o',                 # circle
+    )
     if save:
         plt.savefig(
             os.path.join(saveFolderPath, "outliers"),

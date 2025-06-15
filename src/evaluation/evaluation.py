@@ -78,8 +78,8 @@ class Evaluation(object):
             roiFilterParameters=self.config["preprocessingParameters"]["roiFilterParameters"],
             hsvPassThroughFilters=self.config["preprocessingParameters"]["hsvPassThroughFilters"])
         else:
+            self.config = self.getDefaultConfig()
             self.preProcessor = PreProcessing()
-
         self.results = {}
         self.resultLog = {
             "topologyExtraction": [],
@@ -103,6 +103,68 @@ class Evaluation(object):
     def setConfig(self, config):
         self.config = config
 
+    def getDefaultConfig(self):
+        defaultConfig= {
+            "preprocessingParameters": {
+                        "hsvFilterParameters" : {
+                            "hueMin": 0,
+                            "hueMax": 180,
+                            "saturationMin": 0,
+                            "saturationMax": 255,
+                            "valueMin": 0,
+                            "valueMax": 255
+                        },
+                        "roiFilterParameters" : {
+                            "uMin" : 0,
+                            "uMax" : 1,
+                            "vMin" : 0,
+                            "vMax" : 1
+                        },
+                        "hsvPassThroughFilters" : [
+                            {
+                                "hueMin": 0,
+                                "hueMax": 180,
+                                "saturationMin": 0,
+                                "saturationMax": 255,
+                                "valueMin": 0,
+                                "valueMax": 255
+                            },
+                            {
+                                "hueMin": 0,
+                                "hueMax": 180,
+                                "saturationMin": 0,
+                                "saturationMax": 255,
+                                "valueMin": 0,
+                                "valueMax": 255
+                            }
+                        ],
+                        "cameraCoordinateBoundingBoxParameters" : {
+                            "xMin" : -1,
+                            "xMax" : 1,
+                            "yMin" : -1,
+                            "yMax" : 1,
+                            "zMin" : 0,
+                            "zMax" : 2
+                        },
+                        
+                        "robotCoordinateBoundingBoxParameters" : {
+                            "xMin" : 0.0,
+                            "xMax" : 1,
+                            "yMin" : -1,
+                            "yMax" : 1,
+                            "zMin" : 0.0,
+                            "zMax" : 1
+                        },
+                        "downsamplingParameters" : {
+                            "nthElement" : 1
+                        },
+                        "skeletonizationParameters" : {
+                            "thresholdValue" : 167,
+                            "maxValue": 255
+                        }
+                    }
+                }
+        return defaultConfig
     def setupColorMaps(self):
         colorMapDict = {}
         # set all colormaps to range from 0 to 1

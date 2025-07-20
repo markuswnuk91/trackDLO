@@ -11,6 +11,8 @@ try:
     from src.modelling.discretization import (
         determineNumSegments,
         # calcualteSegmentLength,
+        determineNumSegmentsOptimal,
+        determineNumSegmentsIteratively
     )
 except:
     print("Imports for discretization failed.")
@@ -56,3 +58,13 @@ numSegments = determineNumSegments(
 )
 plt.show(block=True)
 print(numSegments)
+
+result_opt = determineNumSegmentsOptimal(total_length=length,
+    minimal_bending_radius=bending_radius,
+    max_tolerated_error=max_tolerated_error)
+print(result_opt)
+
+result_iter = determineNumSegmentsIteratively(total_length=length,
+    minimal_bending_radius=bending_radius,
+    max_tolerated_error=max_tolerated_error)
+print(result_iter)

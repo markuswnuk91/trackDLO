@@ -281,3 +281,43 @@ def determineNumSegments(
     segment_length = l_circle / n_segments
     total_num_segments = np.ceil(total_length / segment_length)
     return total_num_segments
+
+def determineNumSegmentsOptimal(
+    total_length,
+    minimal_bending_radius,
+    max_tolerated_error,
+    verbose=False,
+):
+    # chord length
+    segment_length_opt = 2*np.sqrt(2*minimal_bending_radius * max_tolerated_error - (max_tolerated_error)**2)
+    n_segments = np.ceil(total_length / segment_length_opt)
+    segment_length = total_length / n_segments
+    result = {
+        "optimal_segment_length": segment_length_opt,
+        "n_segments":n_segments,
+        "segment_length": segment_length
+    }
+    return result
+
+
+def determineNumSegmentsIteratively(
+    total_length,
+    minimal_bending_radius,
+    max_tolerated_error,
+    verbose=False,
+):
+    n_sub = 1
+    Ns = 0
+    segment_length = 2*minimal_bending_radius
+    geometric_error = minimal_bending_radius - np.sqrt(minimal_bending_radius**2 - (segment_length/2)**2)
+
+    while geometric_error >= max_tolerated_error:
+        segment_length = 2*minimal_bending_radius * np.sin(np.pi/(2*n_sub))
+        n_sub += 1
+        geometric_error = minimal_bending_radius - np.sqrt(minimal_bending_radius**2 - (segment_length/2)**2)
+    Ns = np.ceil(total_length/segment_length)
+    result = {
+        "n_segments":Ns,
+        "segment_length": segment_length
+    }
+    return result

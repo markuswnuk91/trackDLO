@@ -174,7 +174,7 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
         self.L = -np.inf
 
         # cpd_ik specific
-        self.beta = 2 if beta is None else beta
+        self.beta = 0.5 if beta is None else beta
         self.G = gaussian_kernel(X, self.beta)
         self.W = np.zeros((self.N, self.D))
 

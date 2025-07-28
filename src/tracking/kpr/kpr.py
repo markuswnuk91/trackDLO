@@ -504,12 +504,13 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
             P1_norm = self.P1 / np.mean(self.P1)
             # P1_norm[3:6] = np.ones(3)
             Wp = np.diag(np.repeat(1 / (1 + (np.exp(-(P1_norm)))), self.D))
+            # Wp = np.eye(Wp.shape[0])
             for iter in range(0, self.ik_iterations):
                 error = X_target - self.T
                 # assembly Jacobian
                 Jn_list = []
                 for n in range(0, self.N):
-                    Jn = self.model.getJacobian(self.q, n)
+                    Jn = self.model.getJacobian(self.q, n, method="first_body")
                     Jn_list.append(Jn)
                 J = np.vstack(Jn_list)
                 # pInv = dampedPseudoInverse(J, jacobianDamping)
@@ -534,10 +535,21 @@ class KinematicsPreservingRegistration(NonRigidRegistration):
                 # pInv = dampedPseudoInverse(A, jacobianDamping)
                 dq_stiff = q_0 - self.q
                 dq_stiff[0:6] = np.zeros(6)
-                self.dq = np.linalg.inv(A) @ (
-                    J.T @ Wp.T @ Wp @ error.flatten()
-                    + wStiffness * stiffnessMatrix @ (dq_stiff)
-                )
+                stiffnessMatrix[0:6,0:6] = np.zeros((6,6))
+                # t_start_solve_q_inverse = time.time()
+                # self.dq = np.linalg.inv(A) @ (
+                #     J.T @ Wp.T @ Wp @ error.flatten()
+                #     + wStiffness * stiffnessMatrix @ (dq_stiff)
+                # )
+                # t_end_solve_q_inverse = time.time()
+                # print("Time for inverse: {}".format(t_end_solve_q_inverse - t_start_solve_q_inverse))
+
+                # t_start_solve_q_linsys = time.time()
+                rhs = (
+                    J.T @ Wp.T @ Wp @ error.flatten()+ wStiffness * stiffnessMatrix @ dq_stiff)
+                self.dq = np.linalg.solve(A, rhs)
+                # t_end_solve_q_linsys = time.time()
+                # print("Time for linear system: {}".format(t_end_solve_q_linsys-t_start_solve_q_linsys))
                 # --------------------------------------------------------------
                 # self.dq[0:3] = self.dq[9:12]
                 # self.dq[6:9] = self.dq[9:12]

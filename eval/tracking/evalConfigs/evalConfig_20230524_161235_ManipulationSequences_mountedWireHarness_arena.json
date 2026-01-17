@@ -112,7 +112,7 @@
         "wStiffness": 0,
         "stiffnessAnnealing": 0.7,
         "ik_iterations": 3,
-        "damping": 0.7,
+        "damping": 1.3,
         "dampingAnnealing": 1.0,
         "minDampingFactor": 0.1,
         "mu": 0.1,

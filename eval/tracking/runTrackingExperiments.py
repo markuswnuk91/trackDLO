@@ -33,12 +33,12 @@ visOpt = {
     "inverseKinematicsIterations": False,
     "correspondanceEstimation": False,
     "initializationResult": False,
-    "trackingIterations": False,
+    "trackingIterations": True,
     "reprojectionErrors": True,
 }
 saveOpt = {
     "localizationResults": False,
-    "trackingResults": True,
+    "trackingResults": False,
     "saveRegistrationsAsImage": False,
     #    "evaluationResults": True,
 }

@@ -21,9 +21,9 @@ eval = TrackingEvaluation()
 
 # script contol options
 controlOpt = {
-    "resultsToLoad": [0],  # 0: modelY, 1: partial, 2: arena
-    "methods": ["cpd", "spr", "kpr"],  # "cpd", "spr", "kpr", "krcpd"
-    "frames": list(range(290, 650, 5)),
+    "resultsToLoad": [2],  # 0: modelY, 1: partial, 2: arena
+    "methods": ["kpr"],  # "cpd", "spr", "kpr", "krcpd"
+    "frames": [-1], # [-1] auto, every frame
     # [5, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650], # for modelY
     # [5, 50, 100, 150, 200, 250, 300], or list(range(0, 300, 5)) # for partial
     # [5, 50, 100, 150, 200, 250, 300, 350, 400, 450, 495], # for arena
@@ -33,23 +33,24 @@ controlOpt = {
     "saveInputs": False,
     "save": True,
     "saveFolder": "data/eval/tracking/plots/trackingResults",
-    "saveName": "trackingResult",
+    "saveName": "trackingResultRefined",
     "verbose": True,
     # --------------------------------------------
     # 2D plots
-    "generateResults_2D": False,
+    "generateResults_2D": True,
     "showResult_2D": False,
-    "blockResultPlot_2D": True,
+    "blockResultPlot_2D": False,
+    "refineResult":True,
     # --------------------------------------------
     # 3D plots
-    "generateResults_3D": True,
+    "generateResults_3D": False,
     "showResult_3D": False,
-    "blockResultPlot_3D": True,
+    "blockResultPlot_3D": False,
     "saveFormat_3D": ".pdf",
     "dpi": 300,
     # --------------------------------------------
     # Simulation
-    "generateResults_Sim": True,
+    "generateResults_Sim": False,
     "showResult_Sim": False,
     # --------------------------------------------
 }
@@ -139,6 +140,7 @@ def createResultPlot_2D(dataSetResult, frame, method):
         colorPalette=styleOpt_2D["colorPalette"],
         lineThickness=styleOpt_2D["lineThickness"],
         circleRadius=styleOpt_2D["circleRadius"],
+        refine_result=controlOpt["refineResult"]
     )
     fig = eval.plotImageWithMatplotlib(resultImg)
     if controlOpt["showResult_2D"]:
@@ -148,7 +150,7 @@ def createResultPlot_2D(dataSetResult, frame, method):
     # save Visualization
     if controlOpt["save"]:
         filename = (
-            controlOpt["saveName"] + "_" + method + "_" + "_frame_" + str(frame) + "_2D"
+            controlOpt["saveName"] + "_" + method + "_" + "frame_" + str(frame) + "_2D"
         )
         dataSetPath = dataSetResult["dataSetPath"]
         dataSetName = dataSetPath.split("/")[-2]
@@ -215,7 +217,11 @@ def createResultPlot_3D(dataSetResult, frame, method):
     if controlOpt["save"]:
         fileName = (
             controlOpt["saveName"]
-            + "_frame_"
+            + "_" 
+            + method 
+            + "_" 
+            + "frame" 
+            + "_"
             + str(frame)
             + "_3D"
             + controlOpt["saveFormat_3D"]
@@ -234,7 +240,12 @@ def createResultPlot_3D(dataSetResult, frame, method):
             )
     # display figure
     if controlOpt["showResult_3D"]:
-        plt.show(block=True)
+        if controlOpt["blockResultPlot_3D"] == True:
+            plt.show(block=True)
+        else:
+            plt.show(block=False)
+            time.sleep(1)
+            plt.close(fig)
     else:
         plt.close(fig)
     return None
@@ -321,8 +332,14 @@ if __name__ == "__main__":
             for frame in controlOpt["frames"]:
                 saveInputImage(result, frame)
     # create plot
-    for i, result in enumerate(results):
+    for i, result in enumerate(results):     
         for method in controlOpt["methods"]:
+            if len(controlOpt["frames"]) == 1:
+                    if controlOpt["frames"][0] == -1:
+                        # determine length of each data set automatically and set frames to a list for 0 to len(data set)
+                        controlOpt["frames"] = result["trackingResults"][method]["frames"]
+                    else:
+                        warn("Length of list frames is only 1. Are you sure you didn't mean to put [-1]?")
             for frame in controlOpt["frames"]:
                 if controlOpt["generateResults_2D"]:
                     createResultPlot_2D(result, frame, method)

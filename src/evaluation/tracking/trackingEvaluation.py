@@ -648,6 +648,7 @@ class TrackingEvaluation(Evaluation):
         colorPalette=None,
         lineThickness=None,
         circleRadius=None,
+        refine_result=None,
     ):
         colorPalette = (
             thesisColorPalettes["viridis"] if colorPalette is None else colorPalette
@@ -667,6 +668,11 @@ class TrackingEvaluation(Evaluation):
             model.getBranchCorrespondancesForSegmentCenters()
         )
         positions3D = result["trackingResults"][method]["registrations"][frame]["T"]
+        if refine_result: # refine by additional registration
+           Y_target =  result["trackingResults"][method]["registrations"][frame]["Y"]
+           refinement_reg = StructurePreservedRegistration(**{"X": positions3D, "Y": Y_target, "lambdaFactor": 10, "tauFactor": 500, "beta": 3,"normalize":0, "max_iterations": 30, "mu": 0.1})
+           refinement_reg.register()
+           positions3D = refinement_reg.T
         positions2D = self.reprojectFrom3DRobotBase(positions3D, dataSetPath)
         numBranches = branchCorrespondanceMatrix.shape[1]
 
